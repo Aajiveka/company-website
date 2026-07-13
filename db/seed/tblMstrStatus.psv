@@ -1,0 +1,30 @@
+StatusID|Descr|RoleID|ActualStatusText
+1|Account created|1|Account created
+2|Candidate not interested|2|Candidate not interested
+3|CV created|1|CV created
+4|CV approved|2|CV approved
+5|Mapped to job|3|Mapped to job
+6|Shortlisted|4|Shortlisted
+7|Intervew scheduled|4|Intervew scheduled
+8|Interview sent|3|Interview sent to candidate
+9|Reschedule requested|1|Reschedule requested by candidate
+10|Reshedule requested by candidate|3|Reshedule request sent to Client
+11|Intervew rescheduled|4|Intervew rescheduled
+12|Interview|1|Interview
+13|Selected|4|Selected
+14|Rejected|4|Rejected
+15|Document mapping|4|Document mapping
+16|Document required|3|Document required
+17|Document submittied|1|Document submittied
+18|Document rejected|3|Document rejected
+19|Document approved|3|Document approved
+20|Document resubmittied|1|Document resubmittied
+21|Document sent|3|Document sent
+22|Document rejected|4|Document rejected
+23|Document approved|4|Document approved
+24|Resubmit document|3|Resubmit document
+25|Document resubmittied|1|Document resubmittied
+26|Document sent|3|Document sent
+27|Document approved|4|Document approved
+28|Position Closed|4|Position Closed
+29|Not attended|1|Intervew not attended by candidate

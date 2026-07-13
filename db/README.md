@@ -1,40 +1,49 @@
-# Database — db_aajiveka (deliverable #10)
+# Database — db_aajiveka (AajivikaPortal ATS)
 
-This folder is the reverse-engineered analysis of `db_aajiveka.bak`, the SQL Server backup
-that powers the reference AajivikaPortal ATS.
+Everything here is **extracted from a real restore** of `db_aajiveka.bak` on SQL Server 2022 —
+not inferred. See `SCHEMA_REPORT.md` for the inventory and the findings that shape the rebuild.
 
 ## Contents
 
 | File | What it is |
 |------|-----------|
-| `SCHEMA_REPORT.md` | Human-readable analysis: 61 tables grouped by domain, reconstructed columns, login flow, and the 79 recovered stored procedures. |
-| `procs/*.sql` | The **actual stored-procedure definitions** recovered from the backup, grouped by domain (`spsubscriber`, `spclient`, `spsec`, `spqc`, …). These are real and runnable. The API calls these directly. |
-| `schema.sql` | CREATE TABLE DDL for the tables whose columns were confidently reconstructed. Non-authoritative — see below. |
+| `SCHEMA_REPORT.md` | Authoritative inventory: 73 tables, 97 procs, PKs, row counts, and the two findings that drive the rebuild. |
+| `schema.sql` | 73 `CREATE TABLE` — real types, nullability, `IDENTITY`, defaults, primary keys. |
+| `indexes.sql` | 18 non-primary-key indexes. |
+| `types.sql` | The 10 `udt_*` table-valued types. **Every write proc takes one as a parameter** — without these the write path cannot be called at all. |
+| `procs/` | 99 modules (97 stored procedures + 2 functions), one clean file each. |
+| `seed/` | 19 master/lookup tables (pipe-separated). This is the app's real reference data — roles, functions, cities, designations, statuses. |
+| `procs_damaged_strings_extraction/` | The previous `strings`-scraped extraction. **Do not use.** 24 of its procs had bytes deleted mid-statement, precisely on `FROM`/`JOIN`/`ON` text. Kept only for diffing. |
 
-## Why the DDL is partial
+## Restoring the backup
 
-A `.bak` stores table definitions in **binary system catalogs** that only SQL Server can read.
-Stored-procedure *bodies*, however, are stored as text and were fully recovered (`db/procs/`).
-Columns in `SCHEMA_REPORT.md`/`schema.sql` are inferred from how the procs read/write each table,
-so they cover the columns the app actually uses — not necessarily every column or exact type.
+The machine is arm64, so SQL Server runs under amd64 emulation.
 
-## Getting the authoritative schema
+```bash
+docker run -d --name aajiveka-mssql --platform linux/amd64 \
+  -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD='<password>' -e MSSQL_PID=Developer \
+  -p 11433:1433 mcr.microsoft.com/mssql/server:2022-latest
 
-Restore the backup on any SQL Server (2017+) instance, then script it out:
+docker exec aajiveka-mssql mkdir -p /var/opt/mssql/backup
+docker cp db_aajiveka.bak aajiveka-mssql:/var/opt/mssql/backup/
+```
+
+The backup's logical file names are `db_aajivika_dev` / `db_aajivika_dev_log` (note the spelling
+differs from the database name):
 
 ```sql
 RESTORE DATABASE db_aajiveka
-  FROM DISK = N'/path/db_aajiveka.bak'
-  WITH MOVE 'db_aajiveka'     TO N'/var/opt/mssql/data/db_aajiveka.mdf',
-       MOVE 'db_aajiveka_log' TO N'/var/opt/mssql/data/db_aajiveka_log.ldf';
+  FROM DISK = N'/var/opt/mssql/backup/db_aajiveka.bak'
+  WITH MOVE 'db_aajivika_dev'     TO N'/var/opt/mssql/data/db_aajiveka.mdf',
+       MOVE 'db_aajivika_dev_log' TO N'/var/opt/mssql/data/db_aajiveka_log.ldf',
+       REPLACE, RECOVERY;
 ```
 
-Then generate full DDL (SSMS: *Tasks → Generate Scripts*, or `mssql-scripter`):
+Scripting the catalogs out requires `SET QUOTED_IDENTIFIER ON` (the `FOR XML PATH` aggregation
+fails without it), and `sqlcmd -y 0` to stop long proc bodies being truncated.
 
-```bash
-mssql-scripter -S localhost -d db_aajiveka -U sa \
-  --schema-and-data --file-per-object -f ./generated
-```
+## Reading this schema before you model it
 
-The API in `apps/api` connects to this restored database via the connection string in
-`apps/api/.env` and invokes the procs in `procs/` — no ORM, mirroring the original Dapper layer.
+The legacy database declares **no foreign keys and no primary key on half its tables**. Do not
+mirror that. The relational model for PostgreSQL has to be *derived* from how the procs join —
+`procs/` is the specification, `schema.sql` is only the column truth.

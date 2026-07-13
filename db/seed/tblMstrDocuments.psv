@@ -1,0 +1,9 @@
+DocumentID|DocumentName|FolderName|flgCandidateUpload|RootFolder
+1|CV|cv|1|files
+2|PAN Card|pancard|1|files
+3|Aadhar|aadhar|1|files
+4|Passport|passport|1|files
+5|Police Verfication|policeverification|1|files
+6|Driving Licence|dl|1|files
+19|CompanyLogo|companylogo|0|files
+20|candidatephoto|candidatephoto|0|files

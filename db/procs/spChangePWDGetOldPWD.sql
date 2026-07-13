@@ -1,0 +1,7 @@
+CREATE PROC spChangePWDGetOldPWD
+@USerID BIGINT
+AS
+BEGIN
+	SELECT password from tblSecUser WHERE UserID  =@USerID
+END
+GO

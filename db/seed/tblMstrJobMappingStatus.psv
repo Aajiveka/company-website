@@ -1,0 +1,12 @@
+JobMapStatusID|Descr
+1|Mapped
+2|Shortlisted
+3|Interview scheduled
+4|Selected
+5|Rejected
+6|Interview attended
+7|Reschedule requested
+8|Rescheduled
+9|Interview not attended
+10|Interview passed to candidate
+11|Interview passed to Client
