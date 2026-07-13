@@ -20,7 +20,7 @@ datasource db {
 
 model CandidateDocumentMap {
   documentMapID                BigInt                             @id @default(autoincrement()) @map("DocumentMapID")
-  jobSubscriberMapID           BigInt?                            @map("JobSubscriberMapID")
+  jobSubscriberMapID           BigInt?                            @map("JobSubscriberMapID")  // FK -> JobSubscriberMapping (unverified-empty)
   subscriberID                 BigInt?                            @map("SubscriberID")
   documentTypeID               Int?                               @map("DocumentTypeID")  // FK -> MstrDocumentType (unverified-empty)
   flgStatus                    Int? @db.SmallInt                  @map("flgStatus")
@@ -30,6 +30,8 @@ model CandidateDocumentMap {
   loginIDUpd                   Int?                               @map("LoginIDUpd")
 
   documentType                 MstrDocumentType?                  @relation("CandidateDocumentMapToMstrDocumentType", fields: [documentTypeID], references: [documentTypeID])
+  jobSubscriberMap             JobSubscriberMapping?              @relation("CandidateDocumentMapToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+  CandidateDocumentUploaded    CandidateDocumentUploaded[]        @relation("CandidateDocumentUploadedToCandidateDocumentMap")
   @@map("tblCandidateDocumentMap")
 }
 
@@ -46,7 +48,7 @@ model CandidateDocumentStatus {
 
 model CandidateDocumentUploaded {
   docUploadID                  BigInt                             @id @default(autoincrement()) @map("DocUploadID")
-  documentMapID                BigInt?                            @map("DocumentMapID")
+  documentMapID                BigInt?                            @map("DocumentMapID")  // FK -> CandidateDocumentMap (unverified-empty)
   subscriberID                 BigInt?                            @map("SubscriberID")
   documentTypeID               Int?                               @map("DocumentTypeID")  // FK -> MstrDocumentType (unverified-empty)
   documentPath                 String? @db.VarChar(500)           @map("DocumentPath")
@@ -56,6 +58,7 @@ model CandidateDocumentUploaded {
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDUpd                   Int?                               @map("LoginIDUpd")
 
+  documentMap                  CandidateDocumentMap?              @relation("CandidateDocumentUploadedToCandidateDocumentMap", fields: [documentMapID], references: [documentMapID])
   documentType                 MstrDocumentType?                  @relation("CandidateDocumentUploadedToMstrDocumentType", fields: [documentTypeID], references: [documentTypeID])
   @@map("tblCandidateDocumentUploaded")
 }
@@ -179,16 +182,19 @@ model ForgotPassword {
 
 model JobInterviewStatus {
   interviewStatusID            BigInt                             @id @default(autoincrement()) @map("InterviewStatusID")
-  jobSubscriberMapID           BigInt?                            @map("JobSubscriberMapID")
+  jobSubscriberMapID           BigInt?                            @map("JobSubscriberMapID")  // FK -> JobSubscriberMapping (confirmed)
   interviewTime                DateTime? @db.Timestamp(6)         @map("InterviewTime")
   interviewScheduledOn         DateTime? @db.Timestamp(6)         @map("InterviewScheduledOn")
   timestampIns                 DateTime? @db.Timestamp(6)         @map("TimestampIns")
   loginIDIns                   BigInt?                            @map("LoginIDIns")
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDUpd                   BigInt?                            @map("LoginIDUpd")
-  interviewModeID              Int?                               @map("InterviewModeID")
+  interviewModeID              Int?                               @map("InterviewModeID")  // FK -> MstrInterviewMode (confirmed)
   interviewLocation            String? @db.VarChar(100)           @map("InterviewLocation")
   praposedTime                 DateTime? @db.Timestamp(6)         @map("PraposedTime")
+
+  interviewMode                MstrInterviewMode?                 @relation("JobInterviewStatusToMstrInterviewMode", fields: [interviewModeID], references: [interviewModeID])
+  jobSubscriberMap             JobSubscriberMapping?              @relation("JobInterviewStatusToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
   @@map("tblJobInterviewStatus")
 }
 
@@ -206,12 +212,16 @@ model JobSubscriberMapping {
   job                          ClientJobs?                        @relation("JobSubscriberMappingToClientJobs", fields: [jobID], references: [jobID])
   jobMapStatus                 MstrJobMappingStatus?              @relation("JobSubscriberMappingToMstrJobMappingStatus", fields: [jobMapStatusID], references: [jobMapStatusID])
   subscriber                   SubscriberRegistration?            @relation("JobSubscriberMappingToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  CandidateDocumentMap         CandidateDocumentMap[]             @relation("CandidateDocumentMapToJobSubscriberMapping")
+  JobInterviewStatus           JobInterviewStatus[]               @relation("JobInterviewStatusToJobSubscriberMapping")
+  JobSubscriberStatus          JobSubscriberStatus[]              @relation("JobSubscriberStatusToJobSubscriberMapping")
+  SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToJobSubscriberMapping")
   @@map("tblJobSubscriberMapping")
 }
 
 model JobSubscriberStatus {
   statusID                     BigInt                             @id @default(autoincrement()) @map("StatusID")
-  jobSubscriberMapID           BigInt?                            @map("JobSubscriberMapID")
+  jobSubscriberMapID           BigInt?                            @map("JobSubscriberMapID")  // FK -> JobSubscriberMapping (confirmed)
   jobMapStatusID               Int?                               @map("JobMapStatusID")
   mappedbyUserID               Int?                               @map("MappedbyUserID")
   mappedTimestamp              DateTime? @db.Timestamp(6)         @map("MappedTimestamp")
@@ -220,6 +230,8 @@ model JobSubscriberStatus {
   loginIDIns                   BigInt?                            @map("LoginIDIns")
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDUpd                   BigInt?                            @map("LoginIDUpd")
+
+  jobSubscriberMap             JobSubscriberMapping?              @relation("JobSubscriberStatusToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
   @@map("tblJobSubscriberStatus")
 }
 
@@ -231,6 +243,8 @@ model MstrCily {
   state                        MstrState?                         @relation("MstrCilyToMstrState", fields: [stateID], references: [stateID])
   ClientJobs                   ClientJobs[]                       @relation("ClientJobsToMstrCily")
   ClientMstr                   ClientMstr[]                       @relation("ClientMstrToMstrCily")
+  SubscriberCVDetails_CityID   SubscriberCVDetails[]              @relation("SubscriberCVDetails_CityID_To_MstrCily")
+  SubscriberCVDetails_CurrentCityID SubscriberCVDetails[]              @relation("SubscriberCVDetails_CurrentCityID_To_MstrCily")
   SubscriberPrefferedLocations SubscriberPrefferedLocations[]     @relation("SubscriberPrefferedLocationsToMstrCily")
   @@map("tblMstrCily")
 }
@@ -257,6 +271,8 @@ model MstrCourseType {
   courseTypeID                 Int                                @id @default(autoincrement()) @map("CourseTypeID")
   descr                        String @db.VarChar(100)            @map("Descr")
   highestSeq                   Int @db.SmallInt                   @map("HighestSeq")
+
+  SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToMstrCourseType")
   @@map("tblMstrCourseType")
 }
 
@@ -272,6 +288,7 @@ model MstrDesignation {
   descr                        String? @db.VarChar(100)           @map("Descr")
 
   ClientJobs                   ClientJobs[]                       @relation("ClientJobsToMstrDesignation")
+  SubscriberEmployer           SubscriberEmployer[]               @relation("SubscriberEmployerToMstrDesignation")
   @@map("tblMstrDesignation")
 }
 
@@ -306,6 +323,7 @@ model MstrEducationDegree {
   educationTypeID              Int                                @map("EducationTypeID")  // FK -> MstrEducationType (confirmed)
 
   educationType                MstrEducationType                  @relation("MstrEducationDegreeToMstrEducationType", fields: [educationTypeID], references: [educationTypeID])
+  SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToMstrEducationDegree")
   @@map("tblMstrEducationDegree")
 }
 
@@ -325,6 +343,7 @@ model MstrEmpType {
   descr                        String? @db.VarChar(100)           @map("Descr")
 
   ClientJobs                   ClientJobs[]                       @relation("ClientJobsToMstrEmpType")
+  SubscriberEmployer           SubscriberEmployer[]               @relation("SubscriberEmployerToMstrEmpType")
   @@map("tblMstrEmpType")
 }
 
@@ -348,12 +367,15 @@ model MstrIndustryType {
 
   ClientJobs                   ClientJobs[]                       @relation("ClientJobsToMstrIndustryType")
   ClientMstr                   ClientMstr[]                       @relation("ClientMstrToMstrIndustryType")
+  SubscriberCVDetails          SubscriberCVDetails[]              @relation("SubscriberCVDetailsToMstrIndustryType")
   @@map("tblMstrIndustryType")
 }
 
 model MstrInterviewMode {
   interviewModeID              Int                                @id @default(autoincrement()) @map("InterviewModeID")
   descr                        String? @db.VarChar(100)           @map("Descr")
+
+  JobInterviewStatus           JobInterviewStatus[]               @relation("JobInterviewStatusToMstrInterviewMode")
   @@map("tblMstrInterviewMode")
 }
 
@@ -602,19 +624,22 @@ model SubscriberCVDetails {
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDIns                   BigInt                             @map("LoginIDIns")
   loginIDUpd                   BigInt?                            @map("loginIDUpd")
-  cityID                       Int?                               @map("CityID")
+  cityID                       Int?                               @map("CityID")  // FK -> MstrCily (dirty)
   skillID                      Int?                               @map("SkillID")  // FK -> MstrSkills (confirmed)
   subFunctionID                Int?                               @map("SubFunctionID")  // FK -> MstrSubFunctions (confirmed)
   totalExp                     Int?                               @map("TotalExp")
   currentCTC                   Decimal? @db.Decimal(18, 0)        @map("CurrentCTC")
-  currentCityID                Int?                               @map("CurrentCityID")
+  currentCityID                Int?                               @map("CurrentCityID")  // FK -> MstrCily (confirmed)
   flgReadyToRelocate           Int? @db.SmallInt                  @map("flgReadyToRelocate")
   noticePeriod                 Int? @db.SmallInt                  @map("NoticePeriod")
   photoName                    String? @db.VarChar(500)           @map("PhotoName")
   cVPath                       String? @db.VarChar(2000)          @map("CVPath")
-  industryTypeID               Int?                               @map("IndustryTypeID")
+  industryTypeID               Int?                               @map("IndustryTypeID")  // FK -> MstrIndustryType (confirmed)
   strTag                       String? @db.VarChar(500)           @map("strTag")
 
+  city                         MstrCily?                          @relation("SubscriberCVDetails_CityID_To_MstrCily", fields: [cityID], references: [cityID])
+  currentCity                  MstrCily?                          @relation("SubscriberCVDetails_CurrentCityID_To_MstrCily", fields: [currentCityID], references: [cityID])
+  industryType                 MstrIndustryType?                  @relation("SubscriberCVDetailsToMstrIndustryType", fields: [industryTypeID], references: [industryTypeID])
   skill                        MstrSkills?                        @relation("SubscriberCVDetailsToMstrSkills", fields: [skillID], references: [skillID])
   subFunction                  MstrSubFunctions?                  @relation("SubscriberCVDetailsToMstrSubFunctions", fields: [subFunctionID], references: [subFunctionID])
   subscriber                   SubscriberRegistration             @relation("SubscriberCVDetailsToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
@@ -622,13 +647,15 @@ model SubscriberCVDetails {
 }
 
 model SubscriberCVUploaded {
-  subscriberID                 BigInt                             @id @map("SubscriberID")
+  subscriberID                 BigInt                             @id @map("SubscriberID")  // FK -> SubscriberRegistration (unverified-empty)
   latestCVPath                 String @db.VarChar(200)            @map("LatestCVPath")
   cVName                       String @db.VarChar(1000)           @map("CVName")
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
   tImestampUpd                 DateTime? @db.Timestamp(6)         @map("TImestampUpd")
   loginIDIns                   BigInt                             @map("LoginIDIns")
   loginIDUpd                   BigInt?                            @map("LoginIDUpd")
+
+  subscriber                   SubscriberRegistration             @relation("SubscriberCVUploadedToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
   @@map("tblSubscriberCVUploaded")
 }
 
@@ -648,23 +675,25 @@ model SubscriberCertificate {
 model SubscriberEducation {
   subscriberEducationID        BigInt                             @id @default(autoincrement()) @map("SubscriberEducationID")
   subscriberID                 BigInt                             @map("SubscriberID")  // FK -> SubscriberRegistration (confirmed)
-  courseTypeID                 Int                                @map("CourseTypeID")
-  degreeID                     Int                                @map("DegreeID")
+  courseTypeID                 Int?                               @map("CourseTypeID")  // FK -> MstrCourseType (dirty)
+  degreeID                     Int?                               @map("DegreeID")  // FK -> MstrEducationDegree (dirty)
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDIns                   BigInt                             @map("LoginIDIns")
   loginIDUpd                   BigInt?                            @map("loginIDUpd")
 
+  courseType                   MstrCourseType?                    @relation("SubscriberEducationToMstrCourseType", fields: [courseTypeID], references: [courseTypeID])
+  degree                       MstrEducationDegree?               @relation("SubscriberEducationToMstrEducationDegree", fields: [degreeID], references: [degreeID])
   subscriber                   SubscriberRegistration             @relation("SubscriberEducationToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
   @@map("tblSubscriberEducation")
 }
 
 model SubscriberEmployer {
   subscriberEmployerID         BigInt                             @id @default(autoincrement()) @map("SubscriberEmployerID")
-  subscriberID                 BigInt                             @map("SubscriberID")
-  employeeTypeID               Int?                               @map("EmployeeTypeID")
+  subscriberID                 BigInt?                            @map("SubscriberID")  // FK -> SubscriberRegistration (unverified-empty)
+  employeeTypeID               Int?                               @map("EmployeeTypeID")  // FK -> MstrEmpType (unverified-empty)
   employer                     String @db.VarChar(1000)           @map("Employer")
-  designationID                Int?                               @map("DesignationID")
+  designationID                Int?                               @map("DesignationID")  // FK -> MstrDesignation (unverified-empty)
   joiningDate                  DateTime? @db.Date                 @map("JoiningDate")
   releavingDate                DateTime? @db.Date                 @map("ReleavingDate")
   salary                       Int?                               @map("Salary")
@@ -675,13 +704,17 @@ model SubscriberEmployer {
   loginIDIns                   BigInt                             @map("LoginIDIns")
   loginIDUpd                   BigInt?                            @map("loginIDUpd")
   flgCurrent                   Int? @db.SmallInt                  @map("flgCurrent")
+
+  designation                  MstrDesignation?                   @relation("SubscriberEmployerToMstrDesignation", fields: [designationID], references: [designationID])
+  employeeType                 MstrEmpType?                       @relation("SubscriberEmployerToMstrEmpType", fields: [employeeTypeID], references: [employeeTypeID])
+  subscriber                   SubscriberRegistration?            @relation("SubscriberEmployerToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
   @@map("tblSubscriberEmployer")
 }
 
 model SubscriberJobStatusLatest {
   clientID                     BigInt?                            @map("ClientID")  // FK -> ClientMstr (sentinel-zero)
   jobID                        BigInt?                            @map("JobID")  // FK -> ClientJobs (sentinel-zero)
-  jobSubscriberMapID           BigInt                             @map("JobSubscriberMapID")
+  jobSubscriberMapID           BigInt?                            @map("JobSubscriberMapID")  // FK -> JobSubscriberMapping (sentinel-zero)
   jobMapStatusID               Int?                               @map("JobMapStatusID")  // FK -> MstrJobMappingStatus (sentinel-zero)
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
   flgClose                     Int @db.SmallInt                   @map("flgClose")
@@ -691,6 +724,7 @@ model SubscriberJobStatusLatest {
   client                       ClientMstr?                        @relation("SubscriberJobStatusLatestToClientMstr", fields: [clientID], references: [clientID])
   job                          ClientJobs?                        @relation("SubscriberJobStatusLatestToClientJobs", fields: [jobID], references: [jobID])
   jobMapStatus                 MstrJobMappingStatus?              @relation("SubscriberJobStatusLatestToMstrJobMappingStatus", fields: [jobMapStatusID], references: [jobMapStatusID])
+  jobSubscriberMap             JobSubscriberMapping?              @relation("SubscriberJobStatusLatestToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
   subscriber                   SubscriberRegistration             @relation("SubscriberJobStatusLatestToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
   @@map("tblSubscriberJobStatusLatest")
 }
@@ -734,13 +768,16 @@ model SubscriberRegistration {
   flgstatus                    Int? @db.SmallInt                  @map("flgstatus")
 
   JobSubscriberMapping         JobSubscriberMapping[]             @relation("JobSubscriberMappingToSubscriberRegistration")
-  SubscriberCVDetails          SubscriberCVDetails[]              @relation("SubscriberCVDetailsToSubscriberRegistration")
+  SubscriberCVDetails          SubscriberCVDetails?               @relation("SubscriberCVDetailsToSubscriberRegistration")
+  SubscriberCVUploaded         SubscriberCVUploaded?              @relation("SubscriberCVUploadedToSubscriberRegistration")
   SubscriberCertificate        SubscriberCertificate[]            @relation("SubscriberCertificateToSubscriberRegistration")
   SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToSubscriberRegistration")
-  SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToSubscriberRegistration")
+  SubscriberEmployer           SubscriberEmployer[]               @relation("SubscriberEmployerToSubscriberRegistration")
+  SubscriberJobStatusLatest    SubscriberJobStatusLatest?         @relation("SubscriberJobStatusLatestToSubscriberRegistration")
   SubscriberPrefferedLocations SubscriberPrefferedLocations[]     @relation("SubscriberPrefferedLocationsToSubscriberRegistration")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToSubscriberRegistration")
   SubscriberTags               SubscriberTags[]                   @relation("SubscriberTagsToSubscriberRegistration")
+  jobAlerts                    SubscriberJobAlert[]               @relation("SubscriberJobAlertToSubscriberRegistration")
   @@map("tblSubscriberRegistration")
 }
 
@@ -786,3 +823,19 @@ model SubscriberTags {
   @@map("tblSubscriberTags")
 }
 
+
+/// Job alerts have NO legacy equivalent — no such table exists anywhere in db_aajiveka.bak.
+/// The feature lived only in the MSW mocks, so this is a genuinely new table, not a port.
+model SubscriberJobAlert {
+  alertID                      BigInt                             @id @default(autoincrement()) @map("AlertID")
+  subscriberID                 BigInt                             @map("SubscriberID")
+  keyword                      String @db.VarChar(200)            @map("Keyword")
+  location                     String @db.VarChar(200)            @map("Location")
+  frequency                    String @db.VarChar(10)             @map("Frequency")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+
+  subscriber                   SubscriberRegistration             @relation("SubscriberJobAlertToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+
+  @@index([subscriberID])
+  @@map("tblSubscriberJobAlert")
+}

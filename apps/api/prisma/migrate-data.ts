@@ -37,7 +37,7 @@ const MSSQL = {
 /** FK columns where the legacy data uses 0 as a "no value" sentinel. */
 const SENTINEL_ZERO: Record<string, string[]> = {
   tblMstrPerson: ['ClientID'],
-  tblSubscriberJobStatusLatest: ['ClientID', 'JobID', 'JobMapStatusID'],
+  tblSubscriberJobStatusLatest: ['ClientID', 'JobID', 'JobMapStatusID', 'JobSubscriberMapID'],
 };
 
 type Fk = { child: string; col: string; parent: string; pcol: string };

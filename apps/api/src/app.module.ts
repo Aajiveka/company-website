@@ -4,6 +4,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { AuthModule } from '@/modules/auth/auth.module';
+import { CandidatesModule } from '@/modules/candidates/candidates.module';
+import { ClientsModule } from '@/modules/clients/clients.module';
+import { JobsModule } from '@/modules/jobs/jobs.module';
+import { RecruitmentModule } from '@/modules/recruitment/recruitment.module';
 import { HealthController } from '@/modules/health/health.controller';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -14,6 +18,10 @@ import { RolesGuard } from '@/common/guards/roles.guard';
     JwtModule.register({}),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     AuthModule,
+    JobsModule,
+    CandidatesModule,
+    ClientsModule,
+    RecruitmentModule,
   ],
   controllers: [HealthController],
   providers: [

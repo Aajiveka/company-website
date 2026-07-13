@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "tblSecUser" ALTER COLUMN "Password" SET DATA TYPE VARCHAR(255);

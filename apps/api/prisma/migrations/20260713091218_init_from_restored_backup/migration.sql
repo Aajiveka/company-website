@@ -350,7 +350,7 @@ CREATE TABLE "tblMstrPerson" (
     "LoginIDIns" INTEGER NOT NULL,
     "TimestampUpd" TIMESTAMP(6),
     "LoginIDUpd" INTEGER,
-    "ClientID" BIGINT NOT NULL,
+    "ClientID" BIGINT,
 
     CONSTRAINT "tblMstrPerson_pkey" PRIMARY KEY ("PersonNodeID")
 );
@@ -427,7 +427,7 @@ CREATE TABLE "tblPMstNodeTypes" (
 
 -- CreateTable
 CREATE TABLE "tblSecActiveSessions" (
-    "RowID" INTEGER NOT NULL,
+    "RowID" SERIAL NOT NULL,
     "SessionID" VARCHAR(50),
     "UserID" INTEGER,
     "StartTime" TIMESTAMP(6),
@@ -511,7 +511,7 @@ CREATE TABLE "tblSecUser" (
     "NodeID" BIGINT,
     "NodeType" INTEGER,
     "UserName" VARCHAR(50),
-    "Password" VARCHAR(50),
+    "Password" VARCHAR(255),
     "PwdStatus" INTEGER,
     "Active" CHAR(1),
     "LoginType" SMALLINT,
@@ -524,7 +524,7 @@ CREATE TABLE "tblSecUser" (
 -- CreateTable
 CREATE TABLE "tblSecUserLogin" (
     "LoginID" BIGSERIAL NOT NULL,
-    "UserID" BIGINT NOT NULL,
+    "UserID" BIGINT,
     "LoginTime" TIMESTAMP(6) NOT NULL,
     "Logouttime" TIMESTAMP(6),
     "SessionID" VARCHAR(50),
@@ -616,8 +616,8 @@ CREATE TABLE "tblSubscriberCertificate" (
 CREATE TABLE "tblSubscriberEducation" (
     "SubscriberEducationID" BIGSERIAL NOT NULL,
     "SubscriberID" BIGINT NOT NULL,
-    "CourseTypeID" INTEGER NOT NULL,
-    "DegreeID" INTEGER NOT NULL,
+    "CourseTypeID" INTEGER,
+    "DegreeID" INTEGER,
     "TimestampIns" TIMESTAMP(6) NOT NULL,
     "TimestampUpd" TIMESTAMP(6),
     "LoginIDIns" BIGINT NOT NULL,
@@ -629,7 +629,7 @@ CREATE TABLE "tblSubscriberEducation" (
 -- CreateTable
 CREATE TABLE "tblSubscriberEmployer" (
     "SubscriberEmployerID" BIGSERIAL NOT NULL,
-    "SubscriberID" BIGINT NOT NULL,
+    "SubscriberID" BIGINT,
     "EmployeeTypeID" INTEGER,
     "Employer" VARCHAR(1000) NOT NULL,
     "DesignationID" INTEGER,
@@ -649,10 +649,10 @@ CREATE TABLE "tblSubscriberEmployer" (
 
 -- CreateTable
 CREATE TABLE "tblSubscriberJobStatusLatest" (
-    "ClientID" BIGINT NOT NULL,
-    "JobID" BIGINT NOT NULL,
-    "JobSubscriberMapID" BIGINT NOT NULL,
-    "JobMapStatusID" INTEGER NOT NULL,
+    "ClientID" BIGINT,
+    "JobID" BIGINT,
+    "JobSubscriberMapID" BIGINT,
+    "JobMapStatusID" INTEGER,
     "TimestampIns" TIMESTAMP(6) NOT NULL,
     "flgClose" SMALLINT NOT NULL,
     "SubscriberID" BIGINT NOT NULL,
@@ -739,8 +739,29 @@ CREATE TABLE "tblSubscriberTags" (
     CONSTRAINT "tblSubscriberTags_pkey" PRIMARY KEY ("SubscriberID","TagID")
 );
 
+-- CreateTable
+CREATE TABLE "tblSubscriberJobAlert" (
+    "AlertID" BIGSERIAL NOT NULL,
+    "SubscriberID" BIGINT NOT NULL,
+    "Keyword" VARCHAR(200) NOT NULL,
+    "Location" VARCHAR(200) NOT NULL,
+    "Frequency" VARCHAR(10) NOT NULL,
+    "TimestampIns" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "tblSubscriberJobAlert_pkey" PRIMARY KEY ("AlertID")
+);
+
+-- CreateIndex
+CREATE INDEX "tblSubscriberJobAlert_SubscriberID_idx" ON "tblSubscriberJobAlert"("SubscriberID");
+
 -- AddForeignKey
 ALTER TABLE "tblCandidateDocumentMap" ADD CONSTRAINT "tblCandidateDocumentMap_DocumentTypeID_fkey" FOREIGN KEY ("DocumentTypeID") REFERENCES "tblMstrDocumentType"("DocumentTypeID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblCandidateDocumentMap" ADD CONSTRAINT "tblCandidateDocumentMap_JobSubscriberMapID_fkey" FOREIGN KEY ("JobSubscriberMapID") REFERENCES "tblJobSubscriberMapping"("JobSubscriberMapID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblCandidateDocumentUploaded" ADD CONSTRAINT "tblCandidateDocumentUploaded_DocumentMapID_fkey" FOREIGN KEY ("DocumentMapID") REFERENCES "tblCandidateDocumentMap"("DocumentMapID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tblCandidateDocumentUploaded" ADD CONSTRAINT "tblCandidateDocumentUploaded_DocumentTypeID_fkey" FOREIGN KEY ("DocumentTypeID") REFERENCES "tblMstrDocumentType"("DocumentTypeID") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -794,6 +815,12 @@ ALTER TABLE "tblClientMstr" ADD CONSTRAINT "tblClientMstr_IndustryTypeID_fkey" F
 ALTER TABLE "tblClientMstr" ADD CONSTRAINT "tblClientMstr_UserID_fkey" FOREIGN KEY ("UserID") REFERENCES "tblSecUser"("UserID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "tblJobInterviewStatus" ADD CONSTRAINT "tblJobInterviewStatus_InterviewModeID_fkey" FOREIGN KEY ("InterviewModeID") REFERENCES "tblMstrInterviewMode"("InterviewModeID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblJobInterviewStatus" ADD CONSTRAINT "tblJobInterviewStatus_JobSubscriberMapID_fkey" FOREIGN KEY ("JobSubscriberMapID") REFERENCES "tblJobSubscriberMapping"("JobSubscriberMapID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "tblJobSubscriberMapping" ADD CONSTRAINT "tblJobSubscriberMapping_JobID_fkey" FOREIGN KEY ("JobID") REFERENCES "tblClientJobs"("JobID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -801,6 +828,9 @@ ALTER TABLE "tblJobSubscriberMapping" ADD CONSTRAINT "tblJobSubscriberMapping_Jo
 
 -- AddForeignKey
 ALTER TABLE "tblJobSubscriberMapping" ADD CONSTRAINT "tblJobSubscriberMapping_SubscriberID_fkey" FOREIGN KEY ("SubscriberID") REFERENCES "tblSubscriberRegistration"("SubscriberID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblJobSubscriberStatus" ADD CONSTRAINT "tblJobSubscriberStatus_JobSubscriberMapID_fkey" FOREIGN KEY ("JobSubscriberMapID") REFERENCES "tblJobSubscriberMapping"("JobSubscriberMapID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tblMstrCily" ADD CONSTRAINT "tblMstrCily_StateID_fkey" FOREIGN KEY ("StateID") REFERENCES "tblMstrState"("StateID") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -812,7 +842,7 @@ ALTER TABLE "tblMstrCourse" ADD CONSTRAINT "tblMstrCourse_EducationTypeID_fkey" 
 ALTER TABLE "tblMstrEducationDegree" ADD CONSTRAINT "tblMstrEducationDegree_EducationTypeID_fkey" FOREIGN KEY ("EducationTypeID") REFERENCES "tblMstrEducationType"("EducationTypeID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tblMstrPerson" ADD CONSTRAINT "tblMstrPerson_ClientID_fkey" FOREIGN KEY ("ClientID") REFERENCES "tblClientMstr"("ClientID") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tblMstrPerson" ADD CONSTRAINT "tblMstrPerson_ClientID_fkey" FOREIGN KEY ("ClientID") REFERENCES "tblClientMstr"("ClientID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tblMstrState" ADD CONSTRAINT "tblMstrState_CountryID_fkey" FOREIGN KEY ("CountryID") REFERENCES "tblMstrCountry"("CountryID") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -833,7 +863,16 @@ ALTER TABLE "tblSecMapUserRoles" ADD CONSTRAINT "tblSecMapUserRoles_UserID_fkey"
 ALTER TABLE "tblSecUser" ADD CONSTRAINT "tblSecUser_NodeID_fkey" FOREIGN KEY ("NodeID") REFERENCES "tblMstrPerson"("PersonNodeID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tblSecUserLogin" ADD CONSTRAINT "tblSecUserLogin_UserID_fkey" FOREIGN KEY ("UserID") REFERENCES "tblSecUser"("UserID") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tblSecUserLogin" ADD CONSTRAINT "tblSecUserLogin_UserID_fkey" FOREIGN KEY ("UserID") REFERENCES "tblSecUser"("UserID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberCVDetails" ADD CONSTRAINT "tblSubscriberCVDetails_CityID_fkey" FOREIGN KEY ("CityID") REFERENCES "tblMstrCily"("CityID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberCVDetails" ADD CONSTRAINT "tblSubscriberCVDetails_CurrentCityID_fkey" FOREIGN KEY ("CurrentCityID") REFERENCES "tblMstrCily"("CityID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberCVDetails" ADD CONSTRAINT "tblSubscriberCVDetails_IndustryTypeID_fkey" FOREIGN KEY ("IndustryTypeID") REFERENCES "tblMstrIndustryType"("IndustryTypeID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tblSubscriberCVDetails" ADD CONSTRAINT "tblSubscriberCVDetails_SkillID_fkey" FOREIGN KEY ("SkillID") REFERENCES "tblMstrSkills"("SkillID") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -845,19 +884,40 @@ ALTER TABLE "tblSubscriberCVDetails" ADD CONSTRAINT "tblSubscriberCVDetails_SubF
 ALTER TABLE "tblSubscriberCVDetails" ADD CONSTRAINT "tblSubscriberCVDetails_SubscriberID_fkey" FOREIGN KEY ("SubscriberID") REFERENCES "tblSubscriberRegistration"("SubscriberID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "tblSubscriberCVUploaded" ADD CONSTRAINT "tblSubscriberCVUploaded_SubscriberID_fkey" FOREIGN KEY ("SubscriberID") REFERENCES "tblSubscriberRegistration"("SubscriberID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "tblSubscriberCertificate" ADD CONSTRAINT "tblSubscriberCertificate_SubscriberID_fkey" FOREIGN KEY ("SubscriberID") REFERENCES "tblSubscriberRegistration"("SubscriberID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberEducation" ADD CONSTRAINT "tblSubscriberEducation_CourseTypeID_fkey" FOREIGN KEY ("CourseTypeID") REFERENCES "tblMstrCourseType"("CourseTypeID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberEducation" ADD CONSTRAINT "tblSubscriberEducation_DegreeID_fkey" FOREIGN KEY ("DegreeID") REFERENCES "tblMstrEducationDegree"("DegreeID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tblSubscriberEducation" ADD CONSTRAINT "tblSubscriberEducation_SubscriberID_fkey" FOREIGN KEY ("SubscriberID") REFERENCES "tblSubscriberRegistration"("SubscriberID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tblSubscriberJobStatusLatest" ADD CONSTRAINT "tblSubscriberJobStatusLatest_ClientID_fkey" FOREIGN KEY ("ClientID") REFERENCES "tblClientMstr"("ClientID") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tblSubscriberEmployer" ADD CONSTRAINT "tblSubscriberEmployer_DesignationID_fkey" FOREIGN KEY ("DesignationID") REFERENCES "tblMstrDesignation"("DesignationID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tblSubscriberJobStatusLatest" ADD CONSTRAINT "tblSubscriberJobStatusLatest_JobID_fkey" FOREIGN KEY ("JobID") REFERENCES "tblClientJobs"("JobID") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tblSubscriberEmployer" ADD CONSTRAINT "tblSubscriberEmployer_EmployeeTypeID_fkey" FOREIGN KEY ("EmployeeTypeID") REFERENCES "tblMstrEmpType"("EmployeeTypeID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tblSubscriberJobStatusLatest" ADD CONSTRAINT "tblSubscriberJobStatusLatest_JobMapStatusID_fkey" FOREIGN KEY ("JobMapStatusID") REFERENCES "tblMstrJobMappingStatus"("JobMapStatusID") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tblSubscriberEmployer" ADD CONSTRAINT "tblSubscriberEmployer_SubscriberID_fkey" FOREIGN KEY ("SubscriberID") REFERENCES "tblSubscriberRegistration"("SubscriberID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberJobStatusLatest" ADD CONSTRAINT "tblSubscriberJobStatusLatest_ClientID_fkey" FOREIGN KEY ("ClientID") REFERENCES "tblClientMstr"("ClientID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberJobStatusLatest" ADD CONSTRAINT "tblSubscriberJobStatusLatest_JobID_fkey" FOREIGN KEY ("JobID") REFERENCES "tblClientJobs"("JobID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberJobStatusLatest" ADD CONSTRAINT "tblSubscriberJobStatusLatest_JobMapStatusID_fkey" FOREIGN KEY ("JobMapStatusID") REFERENCES "tblMstrJobMappingStatus"("JobMapStatusID") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberJobStatusLatest" ADD CONSTRAINT "tblSubscriberJobStatusLatest_JobSubscriberMapID_fkey" FOREIGN KEY ("JobSubscriberMapID") REFERENCES "tblJobSubscriberMapping"("JobSubscriberMapID") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tblSubscriberJobStatusLatest" ADD CONSTRAINT "tblSubscriberJobStatusLatest_SubscriberID_fkey" FOREIGN KEY ("SubscriberID") REFERENCES "tblSubscriberRegistration"("SubscriberID") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -888,3 +948,6 @@ ALTER TABLE "tblSubscriberTags" ADD CONSTRAINT "tblSubscriberTags_SubscriberID_f
 
 -- AddForeignKey
 ALTER TABLE "tblSubscriberTags" ADD CONSTRAINT "tblSubscriberTags_TagID_fkey" FOREIGN KEY ("TagID") REFERENCES "tblMstrTags"("TagID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tblSubscriberJobAlert" ADD CONSTRAINT "tblSubscriberJobAlert_SubscriberID_fkey" FOREIGN KEY ("SubscriberID") REFERENCES "tblSubscriberRegistration"("SubscriberID") ON DELETE RESTRICT ON UPDATE CASCADE;
