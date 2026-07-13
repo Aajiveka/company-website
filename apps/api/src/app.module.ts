@@ -12,6 +12,9 @@ import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { ClientsModule } from '@/modules/clients/clients.module';
 import { JobsModule } from '@/modules/jobs/jobs.module';
 import { RecruitmentModule } from '@/modules/recruitment/recruitment.module';
+import { StorageModule } from '@/modules/storage/storage.module';
+import { FilesModule } from '@/modules/files/files.module';
+import { ExportsModule } from '@/modules/exports/exports.module';
 import { HealthController } from '@/modules/health/health.controller';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -29,6 +32,9 @@ import { RolesGuard } from '@/common/guards/roles.guard';
     CandidatesModule,
     ClientsModule,
     RecruitmentModule,
+    StorageModule,
+    FilesModule,
+    ExportsModule,
   ],
   controllers: [HealthController],
   providers: [

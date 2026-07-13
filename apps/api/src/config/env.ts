@@ -24,6 +24,13 @@ const schema = z.object({
   /** Where password-reset links point. */
   APP_URL: z.string().default('http://localhost:5173'),
 
+  // File storage. Local writes to disk and serves through the API; s3 keeps the bucket
+  // private and hands out short-lived signed URLs.
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+  STORAGE_LOCAL_ROOT: z.string().default('./storage'),
+  S3_BUCKET: z.string().optional(),
+  AWS_REGION: z.string().default('ap-south-1'),
+
   // Access and refresh tokens are signed with SEPARATE secrets. The Express API signed both
   // with one key and verified them identically, so an access token was accepted as a refresh
   // token and vice versa.
