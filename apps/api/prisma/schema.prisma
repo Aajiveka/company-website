@@ -382,9 +382,9 @@ model MstrPerson {
   loginIDIns                   Int                                @map("LoginIDIns")
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDUpd                   Int?                               @map("LoginIDUpd")
-  clientID                     BigInt                             @map("ClientID")  // FK -> ClientMstr (sentinel-zero)
+  clientID                     BigInt?                            @map("ClientID")  // FK -> ClientMstr (sentinel-zero)
 
-  client                       ClientMstr                         @relation("MstrPersonToClientMstr", fields: [clientID], references: [clientID])
+  client                       ClientMstr?                        @relation("MstrPersonToClientMstr", fields: [clientID], references: [clientID])
   SecUser                      SecUser[]                          @relation("SecUserToMstrPerson")
   @@map("tblMstrPerson")
 }
@@ -541,7 +541,7 @@ model SecUser {
   nodeID                       BigInt?                            @map("NodeID")  // FK -> MstrPerson (confirmed)
   nodeType                     Int?                               @map("NodeType")
   userName                     String? @db.VarChar(50)            @map("UserName")
-  password                     String? @db.VarChar(50)            @map("Password")
+  password                     String? @db.VarChar(255)           @map("Password")
   pwdStatus                    Int?                               @map("PwdStatus")
   active                       String? @db.Char(1)                @map("Active")
   loginType                    Int? @db.SmallInt                  @map("LoginType")
@@ -558,7 +558,7 @@ model SecUser {
 
 model SecUserLogin {
   loginID                      BigInt                             @id @default(autoincrement()) @map("LoginID")
-  userID                       BigInt                             @map("UserID")  // FK -> SecUser (dirty-audit-log) (widened from int)
+  userID                       BigInt?                            @map("UserID")  // FK -> SecUser (dirty-audit-log) (widened from int)
   loginTime                    DateTime @db.Timestamp(6)          @map("LoginTime")
   logouttime                   DateTime? @db.Timestamp(6)         @map("Logouttime")
   sessionID                    String? @db.VarChar(50)            @map("SessionID")
@@ -572,7 +572,7 @@ model SecUserLogin {
   nodeID                       Int?                               @map("NodeID")
   nodeType                     Int?                               @map("NodeType")
 
-  user                         SecUser                            @relation("SecUserLoginToSecUser", fields: [userID], references: [userID])
+  user                         SecUser?                           @relation("SecUserLoginToSecUser", fields: [userID], references: [userID])
   @@map("tblSecUserLogin")
 }
 
@@ -679,18 +679,18 @@ model SubscriberEmployer {
 }
 
 model SubscriberJobStatusLatest {
-  clientID                     BigInt                             @map("ClientID")  // FK -> ClientMstr (sentinel-zero)
-  jobID                        BigInt                             @map("JobID")  // FK -> ClientJobs (sentinel-zero)
+  clientID                     BigInt?                            @map("ClientID")  // FK -> ClientMstr (sentinel-zero)
+  jobID                        BigInt?                            @map("JobID")  // FK -> ClientJobs (sentinel-zero)
   jobSubscriberMapID           BigInt                             @map("JobSubscriberMapID")
-  jobMapStatusID               Int                                @map("JobMapStatusID")  // FK -> MstrJobMappingStatus (sentinel-zero)
+  jobMapStatusID               Int?                               @map("JobMapStatusID")  // FK -> MstrJobMappingStatus (sentinel-zero)
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
   flgClose                     Int @db.SmallInt                   @map("flgClose")
   subscriberID                 BigInt                             @id @map("SubscriberID")  // FK -> SubscriberRegistration (confirmed)
   flgApprovedByQC              Int? @db.SmallInt                  @map("flgApprovedByQC")
 
-  client                       ClientMstr                         @relation("SubscriberJobStatusLatestToClientMstr", fields: [clientID], references: [clientID])
-  job                          ClientJobs                         @relation("SubscriberJobStatusLatestToClientJobs", fields: [jobID], references: [jobID])
-  jobMapStatus                 MstrJobMappingStatus               @relation("SubscriberJobStatusLatestToMstrJobMappingStatus", fields: [jobMapStatusID], references: [jobMapStatusID])
+  client                       ClientMstr?                        @relation("SubscriberJobStatusLatestToClientMstr", fields: [clientID], references: [clientID])
+  job                          ClientJobs?                        @relation("SubscriberJobStatusLatestToClientJobs", fields: [jobID], references: [jobID])
+  jobMapStatus                 MstrJobMappingStatus?              @relation("SubscriberJobStatusLatestToMstrJobMappingStatus", fields: [jobMapStatusID], references: [jobMapStatusID])
   subscriber                   SubscriberRegistration             @relation("SubscriberJobStatusLatestToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
   @@map("tblSubscriberJobStatusLatest")
 }
