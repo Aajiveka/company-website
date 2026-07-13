@@ -21,11 +21,16 @@ export interface CandidatesPage {
   total: number;
 }
 
+/**
+ * spQC1GetDashboardData is a COMPLETENESS dashboard — it reports, per registration, what is
+ * still MISSING (CV / education / employment). It is not a pending/approved/rejected funnel;
+ * that was invented by the mocks and the cards rendered blank against the real API.
+ */
 export interface QC1Stats {
-  pending: number;
-  approved: number;
-  rejected: number;
-  interview: number;
+  total: number;
+  cvMissing: number;
+  educationMissing: number;
+  employmentMissing: number;
 }
 
 export interface InterviewRow {

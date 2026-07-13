@@ -1,16 +1,23 @@
-import { CalendarClock, CheckCircle2, Clock, XCircle, type LucideIcon } from 'lucide-react';
+import { Briefcase, FileX2, GraduationCap, Users, type LucideIcon } from 'lucide-react';
 import { Breadcrumbs, Card, Skeleton } from '@/components/ui';
 import { useQC1Stats } from '../recruitment.api';
 import type { QC1Stats } from '../recruitment.types';
 
 const CARDS: { key: keyof QC1Stats; label: string; icon: LucideIcon; color: string }[] = [
-  { key: 'pending', label: 'Pending Review', icon: Clock, color: 'text-amber-600 bg-amber-50' },
-  { key: 'approved', label: 'Approved', icon: CheckCircle2, color: 'text-green-600 bg-green-50' },
-  { key: 'rejected', label: 'Rejected', icon: XCircle, color: 'text-red-600 bg-red-50' },
-  { key: 'interview', label: 'In Interview', icon: CalendarClock, color: 'text-purple-600 bg-purple-50' },
+  { key: 'total', label: 'Registrations', icon: Users, color: 'text-primary bg-primary/10' },
+  { key: 'cvMissing', label: 'CV not uploaded', icon: FileX2, color: 'text-amber-600 bg-amber-50' },
+  { key: 'educationMissing', label: 'Education missing', icon: GraduationCap, color: 'text-red-600 bg-red-50' },
+  { key: 'employmentMissing', label: 'Employment missing', icon: Briefcase, color: 'text-purple-600 bg-purple-50' },
 ];
 
-/** QC1 dashboard KPI cards (dashboard-QC1.aspx / spQC1GetDashboardData). */
+/**
+ * QC1 dashboard (dashboard-QC1.aspx / spQC1GetDashboardData).
+ *
+ * The proc reports what each registration is still MISSING — CV, education, employment. It
+ * is a completeness view, not an approval funnel. The cards used to be
+ * Pending/Approved/Rejected/In-Interview, which the mocks invented; against the real API
+ * every one of them rendered blank.
+ */
 export default function QC1DashboardPage() {
   const { data, isLoading } = useQC1Stats();
 

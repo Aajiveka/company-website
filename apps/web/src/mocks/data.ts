@@ -156,7 +156,15 @@ export const CANDIDATE_ROWS: CandidateRow[] = Array.from({ length: 57 }, (_, i) 
   appliedOn: `2026-0${(i % 6) + 1}-${((i % 27) + 1).toString().padStart(2, '0')}`,
 }));
 
-export const QC1_STATS: QC1Stats = { pending: 34, approved: 128, rejected: 22, interview: 15 };
+// The real shape: spQC1GetDashboardData reports what registrations are still MISSING, not
+// an approval funnel. The old mock invented pending/approved/rejected and the dashboard
+// rendered blank the moment it met the real API.
+export const QC1_STATS: QC1Stats = {
+  total: 10,
+  cvMissing: 5,
+  educationMissing: 8,
+  employmentMissing: 10,
+};
 
 export const APPLIED_JOBS = [
   { jobId: 101, designation: 'Senior Software Engineer', company: 'Acme Technologies', city: 'Bengaluru', appliedOn: '2026-06-20', status: 'Interview' },
