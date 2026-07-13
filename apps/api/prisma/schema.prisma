@@ -112,7 +112,6 @@ model ClientJobs {
   employeeType                 MstrEmpType                        @relation("ClientJobsToMstrEmpType", fields: [employeeTypeID], references: [employeeTypeID])
   industryType                 MstrIndustryType?                  @relation("ClientJobsToMstrIndustryType", fields: [industryTypeID], references: [industryTypeID])
   jobCity                      MstrCily                           @relation("ClientJobsToMstrCily", fields: [jobCityID], references: [cityID])
-  status                       MstrStatus?                        @relation("ClientJobsToMstrStatus", fields: [statusID], references: [statusID])
   workMode                     MstrWorkMode                       @relation("ClientJobsToMstrWorkMode", fields: [workModeID], references: [workModeID])
   ClientJobSkill               ClientJobSkill[]                   @relation("ClientJobSkillToClientJobs")
   ClientJobs_EducationType     ClientJobs_EducationType[]         @relation("ClientJobs_EducationTypeToClientJobs")
@@ -437,7 +436,6 @@ model MstrStatus {
   roleID                       Int                                @map("RoleID")
   actualStatusText             String? @db.VarChar(1000)          @map("ActualStatusText")
 
-  ClientJobs                   ClientJobs[]                       @relation("ClientJobsToMstrStatus")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToMstrStatus")
   @@map("tblMstrStatus")
 }

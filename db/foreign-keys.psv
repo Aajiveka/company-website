@@ -13,7 +13,6 @@ tblClientJobs|DesignationID|tblMstrDesignation|DesignationID|confirmed
 tblClientJobs|EmployeeTypeID|tblMstrEmpType|EmployeeTypeID|confirmed
 tblClientJobs|IndustryTypeID|tblMstrIndustryType|IndustryTypeID|confirmed
 tblClientJobs|JobCityID|tblMstrCily|CityID|confirmed
-tblClientJobs|StatusID|tblMstrStatus|StatusID|confirmed
 tblClientJobs|WorkModeID|tblMstrWorkMode|WorkModeID|confirmed
 tblClientMstr|CityID|tblMstrCily|CityID|confirmed
 tblClientMstr|IndustryTypeID|tblMstrIndustryType|IndustryTypeID|confirmed

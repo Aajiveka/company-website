@@ -78,9 +78,9 @@ export const COMPANY_PROFILE: CompanyProfile = {
 };
 
 export const COMPANY_JOBS: JobListing[] = [
-  { jobId: 101, designation: 'Frontend Engineer', city: 'Bengaluru', workMode: 'Hybrid', employmentType: 'Full-time', minExp: 3, minCtc: 1200000, maxCtc: 1800000, status: 'Open', applicants: 24, postedOn: '2026-06-20' },
-  { jobId: 102, designation: 'Backend Engineer', city: 'Pune', workMode: 'Remote', employmentType: 'Full-time', minExp: 4, minCtc: 1500000, maxCtc: 2200000, status: 'Open', applicants: 18, postedOn: '2026-06-25' },
-  { jobId: 103, designation: 'QA Analyst', city: 'Bengaluru', workMode: 'On-site', employmentType: 'Full-time', minExp: 2, minCtc: 800000, maxCtc: 1200000, status: 'Open', applicants: 9, postedOn: '2026-07-01' },
+  { jobId: 101, designation: 'Frontend Engineer', city: 'Bengaluru', workMode: 'Hybrid', employmentType: 'Full-time', minExp: 3, minCtc: 1200000, maxCtc: 1800000, status: 'Active', applicants: 24, postedOn: '2026-06-20' },
+  { jobId: 102, designation: 'Backend Engineer', city: 'Pune', workMode: 'Remote', employmentType: 'Full-time', minExp: 4, minCtc: 1500000, maxCtc: 2200000, status: 'Active', applicants: 18, postedOn: '2026-06-25' },
+  { jobId: 103, designation: 'QA Analyst', city: 'Bengaluru', workMode: 'On-site', employmentType: 'Full-time', minExp: 2, minCtc: 800000, maxCtc: 1200000, status: 'Closed', applicants: 9, postedOn: '2026-07-01' },
 ];
 
 /* ------------------------- Public job search ---------------------------- */

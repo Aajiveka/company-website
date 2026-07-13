@@ -2,6 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import type { CreateJobDto } from './dto/clients.dto';
 
+/**
+ * A job is Active or Closed, nothing else.
+ *
+ * spClientGetJoblisting reads tblClientJobs.StatusID as
+ *   CASE WHEN StatusID = 1 THEN 'Active' ELSE 'Closed' END
+ * and spClientManageJob writes 1 on insert. It is a flag, not a lookup — tblMstrStatus is
+ * the CANDIDATE journey, and joining it made every job display "Account created".
+ */
+const JOB_STATUS_ACTIVE = 1;
+const jobStatus = (statusId: number | null) =>
+  statusId === JOB_STATUS_ACTIVE ? 'Active' : 'Closed';
+
 /** The employer (client) side — tblClientMstr and the jobs it owns. */
 @Injectable()
 export class ClientsService {
@@ -72,7 +84,6 @@ export class ClientsService {
         designation: { select: { descr: true } },
         employeeType: { select: { descr: true } },
         workMode: { select: { descr: true } },
-        status: { select: { descr: true } },
         _count: { select: { JobSubscriberMapping: true } },
       },
     });
@@ -86,7 +97,7 @@ export class ClientsService {
       minExp: j.minExp ?? 0,
       minCtc: j.minCTC,
       maxCtc: j.maxCTC,
-      status: j.status?.descr ?? '',
+      status: jobStatus(j.statusID),
       applicants: j._count.JobSubscriberMapping,
       postedOn: j.timestampIns.toISOString().slice(0, 10),
     }));
@@ -115,7 +126,7 @@ export class ClientsService {
           minCTC: dto.minCtc,
           maxCTC: dto.maxCtc,
           maxEmp: dto.openings ?? null,
-          statusID: 1, // Open
+          statusID: JOB_STATUS_ACTIVE,
           timestampIns: new Date(),
           loginIDIns: userId,
         },

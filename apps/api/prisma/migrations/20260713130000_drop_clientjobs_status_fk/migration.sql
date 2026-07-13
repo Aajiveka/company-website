@@ -1,0 +1,12 @@
+-- tblClientJobs.StatusID is NOT a foreign key to tblMstrStatus.
+--
+-- spClientGetJoblisting reads it as:
+--     CASE WHEN StatusID = 1 THEN 'Active' ELSE 'Closed' END
+-- and spClientManageJob writes 1 on insert. It never joins tblMstrStatus, which is the
+-- CANDIDATE journey (Account created -> CV approved -> Mapped to job -> Shortlisted ->
+-- Selected/Rejected -> document flow), not a job status.
+--
+-- The relation was derived by name-matching, and the orphan check passed only because
+-- StatusID 1 happens to exist in tblMstrStatus as "Account created". That is why the
+-- employer's job list displayed "Account created" as the status of every job.
+ALTER TABLE "tblClientJobs" DROP CONSTRAINT IF EXISTS "tblClientJobs_StatusID_fkey";

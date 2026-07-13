@@ -32,7 +32,9 @@ export function statusTone(status: string): BadgeTone {
     Verified: 'green',
     Uploaded: 'blue',
     Pending: 'amber',
-    Open: 'green',
+    // A job is Active or Closed — spClientGetJoblisting derives exactly those two from
+    // tblClientJobs.StatusID. "Open" was a mock invention.
+    Active: 'green',
     Approved: 'green',
     Closed: 'gray',
   };
