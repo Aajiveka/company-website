@@ -1,0 +1,13 @@
+tblCandidateJobDocumentMap_1
+tblMstrCategory
+tblMstrCourseSpecialization
+tblMstrEducationCollage
+tblMstrEmployeeType
+tblMstrEmployer
+tblMstrLanguage
+tblMstrMaritalStatus
+tblMstrPIN
+tblSecUserRoleBasedPermissions
+tblSubscriberDocs_1
+tblSubscriberDocsStatus_1
+tblMstrDegination_not
