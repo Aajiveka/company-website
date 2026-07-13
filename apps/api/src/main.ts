@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { text } from 'express';
 import { AppModule } from './app.module';
 import { env } from './config/env';
 
@@ -10,6 +11,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
+  // BillDesk posts a JWS with Content-Type: application/jose. Express's JSON parser would
+  // reject it, so the raw body is captured for that one route.
+  app.use('/api/payments/webhook', text({ type: '*/*' }));
   app.use(helmet());
   app.enableCors({ origin: env.CORS_ORIGIN, credentials: true });
 

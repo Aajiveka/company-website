@@ -211,9 +211,35 @@ async function seedDemoUsers() {
   }
 }
 
+/**
+ * The 12 subscription plans, verbatim from Pricing.aspx. They live in the database rather
+ * than in frontend data so an order can reference a plan and the price is never taken from
+ * the client.
+ */
+const PLANS: [string, string, [number, number, number, number]][] = [
+  ['entry', 'Entry Level (0-7yrs)', [199, 399, 699, 999]],
+  ['mid', 'Mid Level (8-15yrs)', [299, 499, 899, 1499]],
+  ['senior', 'Senior Level (15+yrs)', [499, 999, 1499, 1999]],
+];
+const MONTHS = [1, 3, 6, 12];
+
+async function seedPlans() {
+  for (const [tier, tierLabel, prices] of PLANS) {
+    for (const [i, priceInr] of prices.entries()) {
+      await prisma.subscriptionPlan.upsert({
+        where: { tier_months: { tier, months: MONTHS[i] } },
+        update: { priceInr, tierLabel },
+        create: { tier, tierLabel, months: MONTHS[i], priceInr },
+      });
+    }
+  }
+  console.log(`  subscription plans          ${PLANS.length * MONTHS.length} rows`);
+}
+
 async function main() {
   console.log('seeding master data (real values from the restored backup)');
   await seedMasterData();
+  await seedPlans();
 
   if (process.env.SEED_DEMO_USERS === '1') {
     console.log('\nseeding demo users (SEED_DEMO_USERS=1 — never do this in production)');

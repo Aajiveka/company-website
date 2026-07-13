@@ -70,8 +70,12 @@ These are real, and deliberately not papered over:
 
 - **Email and SMS are logged, not sent** until a provider is configured. The API says so at
   boot. The credentials in the legacy `Web.config` are compromised and must be rotated.
-- **BillDesk payment is not implemented.** It existed only in the legacy C#, which was not
-  recovered.
+- **BillDesk payment is implemented but NOT verified against BillDesk.** We have no sandbox
+  credentials, and the ones in the legacy `Web.config` are compromised. The signing,
+  verification, order lifecycle, amount checking and idempotency are proved end to end
+  against `tests/billdesk-stub.mjs`, which implements BillDesk's documented ve1_2 contract.
+  That proves *our* side — not that BillDesk agrees with our reading of its spec. **A sandbox
+  run is required before go-live.**
 - **Candidate logins migrated from the legacy DB have no `SubscriberID` link**, because the
   legacy schema records none. They get a 404 on `/candidates/me` until the mapping is
   supplied. Guessing it would hand one candidate another candidate's CV.

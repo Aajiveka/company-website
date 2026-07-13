@@ -79,8 +79,29 @@ Set `SMTP_*` and `TWOFACTOR_API_KEY` to send for real. **The credentials in the 
 `Web.config` are compromised** (they were committed in plaintext, along with the BillDesk
 merchant key and the production SQL Server `sa` password) and must be rotated first.
 
-BillDesk payment is **not implemented**. It existed only in the legacy C#, which was not
-recovered, so it needs designing from scratch against a merchant sandbox.
+## Payments (BillDesk)
+
+Set `BILLDESK_CLIENT_ID`, `BILLDESK_MERCHANT_ID` and `BILLDESK_SECRET_KEY`. Without them,
+`POST /payments/orders` returns a clear 400 rather than pretending.
+
+**It has never been run against BillDesk.** We have no sandbox credentials, and the ones in
+the legacy `Web.config` are compromised. Everything on our side is proved end to end against
+`tests/billdesk-stub.mjs` — signing, signature verification, the order lifecycle, amount
+checking, idempotency — but that only proves our side. **Do a sandbox run before go-live.**
+
+The design, for review:
+
+- The amount is read from the plan in the database and copied onto the order. It is never
+  taken from the client; the request DTO has no amount field at all.
+- A subscription is activated **only** by the server-to-server webhook, whose JWS signature
+  is verified before the payload is read. The browser redirect is a UI hint — it arrives
+  through the user's own browser, so trusting it would let anyone mark their own order paid.
+- If the settled amount does not match the order, the payment is **failed and audited**, not
+  honoured.
+- Webhook delivery is idempotent: a unique constraint on `Subscription.OrderID` means a
+  redelivery cannot extend a subscription twice, even under a race.
+- A renewal extends from the current expiry, not from today, so renewing early does not throw
+  away time already paid for.
 
 ## Storage
 

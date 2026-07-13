@@ -39,6 +39,13 @@ const schema = z.object({
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('7d'),
 
+  // BillDesk. Without these, /payments/orders returns a clear 400 rather than pretending.
+  // The values in the legacy Web.config are COMPROMISED and must be rotated.
+  BILLDESK_BASE_URL: z.string().default('https://api.billdesk.com'),
+  BILLDESK_CLIENT_ID: z.string().optional(),
+  BILLDESK_MERCHANT_ID: z.string().optional(),
+  BILLDESK_SECRET_KEY: z.string().optional(),
+
   TWOFACTOR_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),

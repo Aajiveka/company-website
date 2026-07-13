@@ -16,5 +16,8 @@ export default defineConfig({
   },
   datasource: {
     url: process.env.DATABASE_URL ?? '',
+    // Prisma needs a scratch database to diff a migrations directory against the schema.
+    // Only used by `migrate diff` / `migrate dev` in development; never touched in prod.
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL ?? '',
   },
 });

@@ -788,6 +788,8 @@ model SubscriberRegistration {
   SubscriberTags               SubscriberTags[]                   @relation("SubscriberTagsToSubscriberRegistration")
   jobAlerts                    SubscriberJobAlert[]               @relation("SubscriberJobAlertToSubscriberRegistration")
   SecUser                      SecUser?                           @relation("SecUserToSubscriberRegistration")
+  PaymentOrder                 PaymentOrder[]                     @relation("PaymentOrderToSubscriberRegistration")
+  Subscription                 Subscription[]                     @relation("SubscriptionToSubscriberRegistration")
   @@map("tblSubscriberRegistration")
 }
 
@@ -887,4 +889,85 @@ model AuditLog {
   @@index([userID])
   @@index([timestampIns])
   @@map("tblAuditLog")
+}
+
+/// Subscription plans. ALL NEW — the legacy database has no payment, order or subscription
+/// table anywhere; the prices lived only in Pricing.aspx markup. Putting them in the
+/// database means an order references a plan and the amount is never taken from the client.
+model SubscriptionPlan {
+  planID                       Int                                @id @default(autoincrement()) @map("PlanID")
+  /// entry | mid | senior — the experience tier from Pricing.aspx.
+  tier                         String @db.VarChar(20)             @map("Tier")
+  tierLabel                    String @db.VarChar(60)             @map("TierLabel")
+  months                       Int                                @map("Months")
+  /// Whole rupees. Money is never a float.
+  priceInr                     Int                                @map("PriceINR")
+  active                       Boolean                            @default(true) @map("Active")
+
+  orders                       PaymentOrder[]                     @relation("PaymentOrderToSubscriptionPlan")
+  subscriptions                Subscription[]                     @relation("SubscriptionToSubscriptionPlan")
+
+  @@unique([tier, months])
+  @@map("tblSubscriptionPlan")
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCESS
+  FAILED
+  ABORTED
+}
+
+/// One row per attempt to pay. Append-only in spirit: the raw BillDesk response is kept so
+/// a disputed transaction can be reconstructed.
+model PaymentOrder {
+  orderID                      BigInt                             @id @default(autoincrement()) @map("OrderID")
+  /// Our reference, sent to BillDesk as orderid. Unique and unguessable.
+  orderRef                     String @db.VarChar(40)             @unique @map("OrderRef")
+  subscriberID                 BigInt                             @map("SubscriberID")
+  planID                       Int                                @map("PlanID")
+  /// Copied from the plan at creation time, so a later price change cannot alter a past order.
+  amountInr                    Int                                @map("AmountINR")
+  status                       PaymentStatus                      @default(CREATED) @map("Status")
+
+  /// BillDesk's own order id, returned by the create-order call.
+  bdOrderId                    String? @db.VarChar(60)            @map("BDOrderID")
+  /// The transaction id on the settled payment.
+  transactionId                String? @db.VarChar(60)            @unique @map("TransactionID")
+  authStatus                   String? @db.VarChar(10)            @map("AuthStatus")
+  paymentMethod                String? @db.VarChar(40)            @map("PaymentMethod")
+  errorDescription             String? @db.VarChar(300)           @map("ErrorDescription")
+  /// The verified JWS payload, as received. Kept for dispute resolution.
+  rawResponse                  String? @db.Text                   @map("RawResponse")
+
+  createdAt                    DateTime @db.Timestamp(6)          @default(now()) @map("CreatedAt")
+  settledAt                    DateTime? @db.Timestamp(6)         @map("SettledAt")
+
+  subscriber                   SubscriberRegistration             @relation("PaymentOrderToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  plan                         SubscriptionPlan                   @relation("PaymentOrderToSubscriptionPlan", fields: [planID], references: [planID])
+  subscription                 Subscription?                      @relation("SubscriptionToPaymentOrder")
+
+  @@index([subscriberID])
+  @@index([status])
+  @@map("tblPaymentOrder")
+}
+
+/// What a successful payment actually buys. Also new.
+model Subscription {
+  subscriptionID               BigInt                             @id @default(autoincrement()) @map("SubscriptionID")
+  subscriberID                 BigInt                             @map("SubscriberID")
+  planID                       Int                                @map("PlanID")
+  /// One subscription row per paid order — this is what makes activation idempotent.
+  orderID                      BigInt                             @unique @map("OrderID")
+  startsAt                     DateTime @db.Timestamp(6)          @map("StartsAt")
+  endsAt                       DateTime @db.Timestamp(6)          @map("EndsAt")
+  createdAt                    DateTime @db.Timestamp(6)          @default(now()) @map("CreatedAt")
+
+  subscriber                   SubscriberRegistration             @relation("SubscriptionToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  plan                         SubscriptionPlan                   @relation("SubscriptionToSubscriptionPlan", fields: [planID], references: [planID])
+  order                        PaymentOrder                       @relation("SubscriptionToPaymentOrder", fields: [orderID], references: [orderID])
+
+  @@index([subscriberID])
+  @@map("tblSubscription")
 }
