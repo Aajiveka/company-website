@@ -1,98 +1,168 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import argon2 from 'argon2';
 import { randomUUID } from 'node:crypto';
-import { queryProc } from '@/db/callProc';
-import { signAccessToken, signRefreshToken, type JwtPayload } from '@/utils/jwt';
-import { notImplemented, unauthorized } from '@/utils/httpError';
-import type { LoginInput } from './auth.schemas';
+import { env } from '@/config/env';
+import { PrismaService } from '@/prisma/prisma.service';
+import { Role, type RoleId } from '@/shared/roles';
 
-/**
- * Row shape returned by spSecUserLogin (see db/procs/spsec.sql). The proc
- * returns a login-result code plus user/role/name details.
- */
-interface LoginRow {
-  UserID: number;
-  UserName: string;
-  RoleId: number;
-  PersonName: string;
-  EmailId: string;
-  LoginRslt: number; // 1=invalid, 2=duplicate session, 3=success
-}
-
-export interface AuthUserDto {
+export interface AuthUser {
   userId: number;
   userName: string;
   fullName: string;
   email: string;
-  roleId: number;
+  roleId: RoleId;
 }
 
-export interface AuthSessionDto {
-  user: AuthUserDto;
-  accessToken: string;
-  refreshToken: string;
+export interface TokenPayload {
+  sub: number;
+  roleId: RoleId;
+  /** Distinguishes an access token from a refresh token. Without it the two are interchangeable. */
+  type: 'access' | 'refresh';
+  /** Token id — lets a single refresh token be revoked on logout. */
+  jti: string;
 }
 
-function toSession(user: AuthUserDto): AuthSessionDto {
-  const payload: JwtPayload = { userId: user.userId, userName: user.userName, roleId: user.roleId };
-  return {
-    user,
-    accessToken: signAccessToken(payload),
-    refreshToken: signRefreshToken(payload),
-  };
-}
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+  ) {}
 
-export const authService = {
+  private get db() {
+    return this.prisma.client;
+  }
+
   /**
-   * Authenticate via spSecUserLogin. Session/IP bookkeeping is handled inside
-   * the proc; here we map the result to a JWT session.
+   * Replaces spSecUserLogin. The proc compared PLAINTEXT passwords; the migration hashed
+   * every one with Argon2id, so this verifies against the hash instead.
    */
-  async login(input: LoginInput, meta: { ip: string; ua: string }): Promise<AuthSessionDto> {
-    const rows = await queryProc<LoginRow>('spSecUserLogin', {
-      UserName: input.userName,
-      UserPwd: input.password, // NOTE: reference stores plaintext; migrate to hashing.
-      SessionIdNw: randomUUID(),
-      IPAddress: meta.ip.slice(0, 16),
-      BrwsrVer: meta.ua.slice(0, 20),
-      ScrRsltn: '',
+  async login(userName: string, password: string) {
+    const user = await this.db.secUser.findFirst({
+      // Active is char('1'/'0') in the legacy schema, not a bit.
+      where: { userName, active: '1' },
+      select: { userID: true, userName: true, password: true, nodeID: true },
     });
 
-    const row = rows[0];
-    if (!row || row.LoginRslt === 1 || !row.UserID) {
-      throw unauthorized('Invalid username or password');
+    // Always run a verify, even when the user does not exist, so a missing account and a
+    // wrong password take the same time and cannot be told apart by timing.
+    const hash = user?.password || '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$invalidinvalidinvalidinvalidin';
+    const ok = await argon2.verify(hash, password).catch(() => false);
+    if (!user || !ok) throw new UnauthorizedException('Invalid username or password');
+
+    // Role comes from tblSecMapUserRoles, which is what spSecUserLogin reads (line 38).
+    // tblSecUser also has a RoleID column, but it DISAGREES with the mapping table — for
+    // UserID 2 it claims 5 (Admin) where the mapping says 3 (QC2). Trusting it would be a
+    // privilege escalation, so it is deliberately ignored.
+    const mapping = await this.db.secMapUserRoles.findFirst({
+      where: { userID: user.userID },
+      select: { roleId: true },
+    });
+    const roleId = (mapping?.roleId ?? Role.Subscriber) as RoleId;
+
+    const person = user.nodeID
+      ? await this.db.mstrPerson.findUnique({
+          where: { personNodeID: user.nodeID },
+          select: { descr: true, emailID: true },
+        })
+      : null;
+
+    const authUser: AuthUser = {
+      userId: Number(user.userID),
+      userName: user.userName ?? '',
+      fullName: person?.descr?.trim() || user.userName || '',
+      email: person?.emailID ?? '',
+      roleId,
+    };
+
+    return { user: authUser, ...(await this.issueTokens(authUser)) };
+  }
+
+  /**
+   * Rotates the refresh token: the presented one is revoked and a new one issued, so a
+   * stolen token is usable at most once. The old API's /logout was a no-op with no
+   * revocation at all.
+   */
+  async refresh(refreshToken: string) {
+    let payload: TokenPayload;
+    try {
+      payload = await this.jwt.verifyAsync<TokenPayload>(refreshToken, {
+        secret: env.JWT_REFRESH_SECRET,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
     }
+    if (payload.type !== 'refresh') throw new UnauthorizedException('Not a refresh token');
+    if (await this.isRevoked(payload.jti)) throw new UnauthorizedException('Refresh token revoked');
 
-    return toSession({
-      userId: row.UserID,
-      userName: row.UserName ?? input.userName,
-      fullName: row.PersonName ?? input.userName,
-      email: row.EmailId ?? '',
-      roleId: Number(row.RoleId),
+    const user = await this.db.secUser.findFirst({
+      where: { userID: payload.sub, active: '1' },
+      select: { userID: true, userName: true, nodeID: true },
     });
-  },
+    if (!user) throw new UnauthorizedException('User no longer active');
 
-  /** Re-issue tokens from a valid refresh payload (verified in the controller). */
-  refresh(payload: JwtPayload, user: AuthUserDto): AuthSessionDto {
-    void payload;
-    return toSession(user);
-  },
+    const person = user.nodeID
+      ? await this.db.mstrPerson.findUnique({
+          where: { personNodeID: user.nodeID },
+          select: { descr: true, emailID: true },
+        })
+      : null;
 
-  async register(input: { fullName: string; email: string; mobile: string; password: string }) {
-    const rows = await queryProc<{ UserID: number }>('spSubscriberRegistration', {
-      FullName: input.fullName,
-      EmailId: input.email,
-      MobileNo: input.mobile,
-      Password: input.password,
+    // Rebuild the full user from the database. The old implementation rebuilt it from the
+    // JWT payload, so fullName silently degraded to userName and email became '' after
+    // every refresh.
+    const authUser: AuthUser = {
+      userId: Number(user.userID),
+      userName: user.userName ?? '',
+      fullName: person?.descr?.trim() || user.userName || '',
+      email: person?.emailID ?? '',
+      roleId: payload.roleId,
+    };
+
+    await this.revoke(payload.jti);
+    return { user: authUser, ...(await this.issueTokens(authUser)) };
+  }
+
+  async logout(refreshToken: string | undefined) {
+    if (!refreshToken) return;
+    const payload = await this.jwt
+      .verifyAsync<TokenPayload>(refreshToken, { secret: env.JWT_REFRESH_SECRET })
+      .catch(() => null);
+    if (payload?.jti) await this.revoke(payload.jti);
+  }
+
+  private async issueTokens(user: AuthUser) {
+    const jti = randomUUID();
+    const base = { sub: user.userId, roleId: user.roleId };
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwt.signAsync(
+        { ...base, type: 'access', jti },
+        { secret: env.JWT_ACCESS_SECRET, expiresIn: env.JWT_ACCESS_TTL as `${number}${'s' | 'm' | 'h' | 'd'}` },
+      ),
+      this.jwt.signAsync(
+        { ...base, type: 'refresh', jti },
+        { secret: env.JWT_REFRESH_SECRET, expiresIn: env.JWT_REFRESH_TTL as `${number}${'s' | 'm' | 'h' | 'd'}` },
+      ),
+    ]);
+    // Record the session so the refresh token can later be revoked by jti.
+    await this.db.secActiveSessions.create({
+      data: { sessionID: jti, userID: user.userId, startTime: new Date() },
     });
-    return { userId: rows[0]?.UserID ?? 0, otpRequired: true };
-  },
+    return { accessToken, refreshToken };
+  }
 
-  async forgotPassword(_email: string): Promise<void> {
-    // NOT IMPLEMENTED. This called `spSecForgotPassword`, which does not exist in the
-    // backup — and swallowed the resulting failure with .catch(), so callers were told
-    // the reset email had been sent when nothing had happened at all.
-    //
-    // tblForgotPassword (EmailId, Token, ExpiryDate, IsUsed) is real, but no proc reads
-    // or writes it. Token issuing + delivery are built in the NestJS rebuild, where email
-    // goes through the queue rather than a stored procedure.
-    throw notImplemented('Password reset is not yet implemented.');
-  },
-};
+  /**
+   * Sessions are an allow-list, not a deny-list: a refresh token is only valid while its jti
+   * is still present in tblSecActiveSessions. Logout and rotation delete the row, which
+   * immediately invalidates the token — the table already existed for exactly this purpose.
+   */
+  private async revoke(jti: string) {
+    await this.db.secActiveSessions.deleteMany({ where: { sessionID: jti } });
+  }
+
+  private async isRevoked(jti: string) {
+    const live = await this.db.secActiveSessions.findFirst({ where: { sessionID: jti } });
+    return !live;
+  }
+}

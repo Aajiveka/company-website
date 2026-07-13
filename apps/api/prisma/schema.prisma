@@ -464,7 +464,7 @@ model PMstNodeTypes {
 }
 
 model SecActiveSessions {
-  rowID                        Int                                @id @map("RowID")
+  rowID                        Int                                @id @default(autoincrement()) @map("RowID")
   sessionID                    String? @db.VarChar(50)            @map("SessionID")
   userID                       Int?                               @map("UserID")
   startTime                    DateTime? @db.Timestamp(6)         @map("StartTime")
