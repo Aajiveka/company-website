@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/* Base — mirrors the reference NewTheme typography/colors             */
+/* ------------------------------------------------------------------ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply font-sans text-[#121212] antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+  h2 {
+    @apply text-[40px] font-bold text-navy;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Reusable component utilities (Tailwind @apply — no inline CSS)      */
+/* ------------------------------------------------------------------ */
+@layer components {
+  /* Public hero banner */
+  .hero-banner {
+    background-image: url('/image/banner.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  /* Public "pill" primary button (search / know-more) */
+  .btn-pill {
+    @apply rounded-full bg-primary-light px-6 py-2.5 font-medium text-white transition
+      hover:bg-primary disabled:opacity-60;
+  }
+}
