@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { callProc, queryProc } from '@/db/callProc';
+import { queryProc } from '@/db/callProc';
 import { signAccessToken, signRefreshToken, type JwtPayload } from '@/utils/jwt';
-import { unauthorized } from '@/utils/httpError';
+import { notImplemented, unauthorized } from '@/utils/httpError';
 import type { LoginInput } from './auth.schemas';
 
 /**
@@ -85,8 +85,14 @@ export const authService = {
     return { userId: rows[0]?.UserID ?? 0, otpRequired: true };
   },
 
-  async forgotPassword(email: string): Promise<void> {
-    // Backed by the forgot-password proc / tblForgotPassword in the real DB.
-    await callProc('spSecForgotPassword', { EmailId: email }).catch(() => undefined);
+  async forgotPassword(_email: string): Promise<void> {
+    // NOT IMPLEMENTED. This called `spSecForgotPassword`, which does not exist in the
+    // backup — and swallowed the resulting failure with .catch(), so callers were told
+    // the reset email had been sent when nothing had happened at all.
+    //
+    // tblForgotPassword (EmailId, Token, ExpiryDate, IsUsed) is real, but no proc reads
+    // or writes it. Token issuing + delivery are built in the NestJS rebuild, where email
+    // goes through the queue rather than a stored procedure.
+    throw notImplemented('Password reset is not yet implemented.');
   },
 };
