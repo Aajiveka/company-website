@@ -4,10 +4,17 @@ import { PrismaService } from '@/prisma/prisma.service';
 import type { CreateJobAlertDto } from './dto/candidates.dto';
 
 /**
- * The subscriber (candidate) side. A user's SecUser.NodeID is the person node, but the
- * CV lives under a SubscriberID — the legacy procs take SubscriberID directly, and the
- * candidate pages pass the logged-in user's own. We resolve it the same way
- * spSubscriberGetCVToDisplay does: by user id.
+ * The subscriber (candidate) side.
+ *
+ * A login does NOT imply a subscriber id. The legacy schema has no link between
+ * tblSecUser and tblSubscriberRegistration — the C# put SubscriberID straight into
+ * Session, and we did not recover it. This used to pass user.userId straight through as
+ * the subscriber id, which only worked because UserID 1 and SubscriberID 1 happened to
+ * collide in the dev data. They are independent identity sequences.
+ *
+ * The link is now explicit (tblSecUser.SubscriberID). It is NULL for the migrated legacy
+ * rows, because the mapping is not discoverable from the data and guessing it would hand
+ * one candidate another candidate's CV.
  */
 @Injectable()
 export class CandidatesService {
@@ -15,6 +22,18 @@ export class CandidatesService {
 
   private get db() {
     return this.prisma.client;
+  }
+
+  /** Resolves the caller's own subscriber id, or fails loudly. */
+  async subscriberIdFor(userId: number): Promise<number> {
+    const user = await this.db.secUser.findUnique({
+      where: { userID: userId },
+      select: { subscriberID: true },
+    });
+    if (!user?.subscriberID) {
+      throw new NotFoundException('This login is not linked to a candidate profile');
+    }
+    return Number(user.subscriberID);
   }
 
   /** Port of spSubscriberGetCVToDisplay. */

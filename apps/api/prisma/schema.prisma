@@ -575,6 +575,14 @@ model SecUser {
   SecMapUserRoles              SecMapUserRoles[]                  @relation("SecMapUserRolesToSecUser")
   SecUserLogin                 SecUserLogin[]                     @relation("SecUserLoginToSecUser")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToSecUser")
+  /// The candidate profile this login owns. NEW COLUMN — the legacy schema has no link at
+  /// all between tblSecUser and tblSubscriberRegistration, and the C# that knew the mapping
+  /// (it put SubscriberID straight into Session) was not recovered. /candidates/me happened
+  /// to work only because UserID 1 and SubscriberID 1 collided in the dev data; they are
+  /// independent identity sequences and would diverge immediately.
+  subscriberID                 BigInt?                            @unique @map("SubscriberID")
+  subscriber                   SubscriberRegistration?            @relation("SecUserToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+
   AuthPasswordReset            AuthPasswordReset[]                @relation("AuthPasswordResetToSecUser")
   @@map("tblSecUser")
 }
@@ -779,6 +787,7 @@ model SubscriberRegistration {
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToSubscriberRegistration")
   SubscriberTags               SubscriberTags[]                   @relation("SubscriberTagsToSubscriberRegistration")
   jobAlerts                    SubscriberJobAlert[]               @relation("SubscriberJobAlertToSubscriberRegistration")
+  SecUser                      SecUser?                           @relation("SecUserToSubscriberRegistration")
   @@map("tblSubscriberRegistration")
 }
 

@@ -15,32 +15,32 @@ export class CandidatesController {
 
   @Get('me')
   @ApiOperation({ summary: 'The signed-in candidate’s CV (spSubscriberGetCVToDisplay)' })
-  profile(@CurrentUser() user: RequestUser) {
-    return this.candidates.profile(user.userId);
+  async profile(@CurrentUser() user: RequestUser) {
+    return this.candidates.profile(await this.candidates.subscriberIdFor(user.userId));
   }
 
   @Get('me/applied-jobs')
   @ApiOperation({ summary: 'Jobs the candidate has applied to' })
-  appliedJobs(@CurrentUser() user: RequestUser) {
-    return this.candidates.appliedJobs(user.userId);
+  async appliedJobs(@CurrentUser() user: RequestUser) {
+    return this.candidates.appliedJobs(await this.candidates.subscriberIdFor(user.userId));
   }
 
   @Get('me/documents')
   @ApiOperation({ summary: 'Documents mapped to the candidate and their upload status' })
-  documents(@CurrentUser() user: RequestUser) {
-    return this.candidates.documents(user.userId);
+  async documents(@CurrentUser() user: RequestUser) {
+    return this.candidates.documents(await this.candidates.subscriberIdFor(user.userId));
   }
 
   @Get('me/job-alerts')
   @ApiOperation({ summary: 'Saved job alerts (new table — no legacy equivalent)' })
-  jobAlerts(@CurrentUser() user: RequestUser) {
-    return this.candidates.jobAlerts(user.userId);
+  async jobAlerts(@CurrentUser() user: RequestUser) {
+    return this.candidates.jobAlerts(await this.candidates.subscriberIdFor(user.userId));
   }
 
   @Post('me/job-alerts')
   @ApiOperation({ summary: 'Create a job alert' })
-  createJobAlert(@CurrentUser() user: RequestUser, @Body() dto: CreateJobAlertDto) {
-    return this.candidates.createJobAlert(user.userId, dto);
+  async createJobAlert(@CurrentUser() user: RequestUser, @Body() dto: CreateJobAlertDto) {
+    return this.candidates.createJobAlert(await this.candidates.subscriberIdFor(user.userId), dto);
   }
 
   @Post('me/change-password')

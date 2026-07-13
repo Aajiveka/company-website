@@ -260,6 +260,21 @@ async function main() {
     }
   }
 
+  // tblSecUser.SubscriberID is a NEW column: the legacy schema links a login to a candidate
+  // NOWHERE, and the C# that knew the mapping was not recovered. It is left NULL here on
+  // purpose. Guessing it — e.g. assuming UserID == SubscriberID, which is only true because
+  // ids 1 and 1 collide — would hand one candidate another candidate's CV.
+  const unlinked = await prisma.secUser.count({ where: { subscriberID: null } });
+  const candidates = await prisma.secMapUserRoles.count({ where: { roleId: 1 } });
+  if (candidates) {
+    console.log(
+      `\nUNRESOLVED: ${candidates} candidate login(s) have no SubscriberID link ` +
+        `(${unlinked} users unlinked in total).\n` +
+        `  The legacy DB records no mapping between tblSecUser and tblSubscriberRegistration.\n` +
+        `  /candidates/me will 404 for them until the mapping is supplied.`,
+    );
+  }
+
   console.log('\nOrphaned FKs set to NULL (parent row does not exist):');
   const n = Object.entries(nulled);
   console.log(n.length ? n.map(([k, v]) => `  ${k}: ${v}`).join('\n') : '  none');

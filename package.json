@@ -14,5 +14,8 @@
     "build": "npm run build --workspace apps/web && npm run build --workspace apps/api",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "wait-on": "^9.0.10"
   }
 }

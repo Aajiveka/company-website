@@ -1,107 +1,77 @@
-# Aajiveka — Modern React + Node/TS Rebuild
+# Aajiveka
 
-A production-grade rebuild of **AajivikaPortal**, a recruitment / ATS platform, migrating the
-legacy ASP.NET Web Forms app to a modern **React (Vite + TypeScript + Tailwind)** frontend and a
-**Node.js + Express + TypeScript** API that reuses the existing **SQL Server** database and its
-179 stored procedures.
+Recruitment / ATS platform. A rebuild of **AajivikaPortal** (ASP.NET Web Forms + SQL Server)
+on a modern stack, working from the legacy backup and reference sources.
 
-> **Status — Milestone 1 (foundation + vertical slice).** The shared architecture, design
-> system, auth flow and one representative page per role are built end-to-end. Remaining pages
-> follow the same patterns (see `Roadmap`).
+| | |
+|---|---|
+| **Web** | React 19 · Vite 7 · TypeScript · Tailwind v4 · Radix (shadcn structure, Aajiveka skin) · TanStack Query · Zustand · RHF + Zod |
+| **API** | NestJS 11 · Prisma 7 · PostgreSQL 16 · Redis · BullMQ · Argon2 · Swagger |
+| **Infra** | Docker Compose · nginx · GitHub Actions |
 
-## Monorepo layout
-
-```
-aajiveka/
-├── apps/
-│   ├── web/     # React 18 + Vite + TS + Tailwind + React Query + RHF/Zod
-│   └── api/     # Express + TS + mssql (stored-proc layer) + JWT
-├── db/          # Reverse-engineered schema report, DDL, and recovered procs
-└── reference/   # Extracted legacy app (read-only reference, git-ignored)
-```
-
-## Prerequisites
-
-- Node.js ≥ 20, npm ≥ 10
-- (Optional, for real data) SQL Server with `db_aajiveka` restored from `db_aajiveka.bak` — see `db/README.md`.
-
-## Quick start
+## Run it
 
 ```bash
-# 1. Install all workspaces
-npm install
-
-# 2. Generate the MSW mock service worker (one-time, for the web app)
-npm --workspace apps/web exec msw init public --save
-
-# 3. Configure env
-cp apps/web/.env.example apps/web/.env
-cp apps/api/.env.example apps/api/.env
-
-# 4. Run the frontend (uses the MSW mock API by default — no DB needed)
-npm run dev:web        # http://localhost:5173
-
-# 5. (Optional) Run the API against a real SQL Server
-npm run dev:api        # http://localhost:4000
+docker compose up -d --build                                  # http://localhost:8080
+docker compose exec -e SEED_DEMO_USERS=1 api npx tsx prisma/seed.ts
 ```
 
-### Demo logins (mock mode)
+Demo logins (dev/CI only — password equals the username): `anuj` (candidate), `qc1` (QC),
+`anuj@aajiveka.com` (employer).
 
-The MSW layer seeds one user per role. Password for all: **`demo123`**.
+See **[deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md)** for configuration, secrets and the
+legacy data migration.
 
-| Username    | Role      | Lands on              |
-|-------------|-----------|-----------------------|
-| `candidate` | Candidate | `/candidate/profile`  |
-| `qc1`       | QC1       | `/recruitment/candidates` |
-| `employer`  | Employer  | `/company/profile`    |
-| `admin`     | Admin     | `/company/profile`    |
+## Develop
 
-Set `VITE_USE_MOCKS=0` in `apps/web/.env` to talk to the real API instead.
+```bash
+npm install
+npm run dev              # web on :5173, proxying /api to :4100
+npm run dev:api          # api on :4000 (PORT=4100 to match the web proxy)
 
-## Architecture highlights
+npm run typecheck && npm run lint
+node tests/e2e.mjs       # drives every page and all three roles against the real API
+```
 
-- **Feature-based structure** (`src/features/<feature>/{pages,components,api,types}`).
-- **Reusable UI kit** in `src/components/ui` (Button, Input, Select, Card, Modal, Alert, Toast,
-  Table, Pagination, Breadcrumbs, Loader, Skeleton, Dropdown).
-- **Auth**: JWT with in-memory access token + refresh; Axios interceptors attach the token and
-  perform one-shot refresh on 401. Role-based `ProtectedRoute`.
-- **Data**: TanStack Query with centralized `queryKeys`; forms via React Hook Form + Zod.
-- **Performance**: route-level code splitting (`React.lazy`), manual vendor chunks, lazy images,
-  skeleton screens, memoized table columns.
-- **API**: every DB access goes through `callProc()` → the recovered stored procedures. Zod
-  validation, `helmet`, CORS, rate-limited auth endpoints, centralized error handler, RBAC.
+`tests/e2e.mjs` is the regression suite that matters: it runs against a **real API and
+database, no mocks**. It is what caught the frontend sending a search parameter the API
+rejects.
 
-## Scripts
+## Layout
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev:web` / `dev:api` | Start web / API in watch mode |
-| `npm run build` | Build both apps |
-| `npm run typecheck` | `tsc --noEmit` across workspaces |
-| `npm run lint` | ESLint across workspaces |
-| `npm --workspace apps/api test` | API unit tests (proc-caller) |
+```
+apps/web            React SPA — feature-based (auth, candidates, clients, jobs, recruitment, public)
+apps/api            NestJS — modules mirror the same domains
+apps/api/prisma     schema, migrations, seed, and the legacy data migration
+db/                 the restored database: schema, 97 procs, 10 udt types, ER diagram, seed data
+deploy/             nginx config + deployment guide
+tests/e2e.mjs       end-to-end regression suite
+reference/          extracted legacy sources (git-ignored)
+```
 
-## Pages built
+## Where the schema came from
 
-**Milestone 1 — foundation + vertical slice:** Home, Login, Register (+OTP), Forgot/Reset
-password, Candidate Profile, Company Profile, Candidates list, QC1 Dashboard.
+`db/` is **not** guesswork. `db_aajiveka.bak` was restored on SQL Server and the catalogs read
+directly — 73 tables, 97 stored procedures, 10 table-valued types. `db/SCHEMA_REPORT.md` has
+the inventory; `db/ER-DIAGRAM.md` has the model.
 
-**Milestone 2 — public site + dashboards:**
-- **Public:** About, Contact, Career, Pricing, Subscription, Resume/Services, Testimonial,
-  Privacy, Terms, Blogs + blog detail.
-- **Candidate:** CV Manager, Applied Jobs, Job Alerts, Documents (upload), Change Password.
-- **Client:** Manage Jobs, Post a Job, Applicants.
-- **Recruitment/QC:** Candidate Details, Interviews, Document Verification.
+Two facts drove every schema decision:
 
-### Remaining (Milestone 3)
+- **The legacy database declares zero foreign keys**, and 36 of its 73 tables have no primary
+  key. Referential integrity lived entirely in the stored procedures. The relational model was
+  therefore *derived* from the `JOIN … ON` clauses in `db/procs/` and then **validated against
+  the real data with orphan checks** — see `db/foreign-keys.psv`, which records the confidence
+  of each of the 66 relations. It was not transcribed, and it was not guessed.
+- **13 tables are dead** (no rows, referenced by no procedure) and are omitted.
 
-Payment/PaymentResponse (BillDesk), company-details, opening/manage-opening, dashboard-messages,
-assign-job, interview scheduling/reschedule, and any remaining long-tail `.aspx` — all on the
-same architecture, each verified visually against its reference page.
+## Known gaps
 
-## Security notes
+These are real, and deliberately not papered over:
 
-- Secrets live only in `.env` (never committed). The legacy `Web.config` hard-coded DB
-  credentials and BillDesk keys — these must be rotated and moved to env.
-- The legacy DB stores **plaintext passwords** (`spSecUserLogin`). Plan a migration to hashed
-  passwords (bcrypt/argon2) — the `authService` is the single seam to add this.
+- **Email and SMS are logged, not sent** until a provider is configured. The API says so at
+  boot. The credentials in the legacy `Web.config` are compromised and must be rotated.
+- **BillDesk payment is not implemented.** It existed only in the legacy C#, which was not
+  recovered.
+- **Candidate logins migrated from the legacy DB have no `SubscriberID` link**, because the
+  legacy schema records none. They get a 404 on `/candidates/me` until the mapping is
+  supplied. Guessing it would hand one candidate another candidate's CV.

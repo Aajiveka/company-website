@@ -16,6 +16,14 @@ export default defineConfig({
       '/api': { target: process.env.VITE_API_PROXY ?? 'http://localhost:4100', changeOrigin: true },
     },
   },
+  // `vite preview` serves the production build. CI drives the e2e suite against it, so it
+  // needs the same /api proxy the dev server has — otherwise every API call 404s.
+  preview: {
+    port: 5173,
+    proxy: {
+      '/api': { target: process.env.VITE_API_PROXY ?? 'http://localhost:4000', changeOrigin: true },
+    },
+  },
   build: {
     // Deterministic vendor/ui chunk splitting for better long-term caching.
     rollupOptions: {

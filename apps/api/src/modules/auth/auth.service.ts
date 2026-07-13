@@ -244,6 +244,8 @@ export class AuthService {
             pwdStatus: 0,
             nodeID: person.personNodeID,
             nodeType: NODE_TYPE_PERSON,
+            // The explicit login -> candidate link. Legacy had none.
+            subscriberID: subscriber.subscriberID,
           },
           select: { userID: true, userName: true, nodeID: true },
         });

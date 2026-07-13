@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+**/dist
+**/.env
+.git
+reference
+storage
+db/procs_damaged_strings_extraction
+*.log
