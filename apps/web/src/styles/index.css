@@ -1,6 +1,52 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/*                                                                     */
+/* Tailwind v4 is CSS-first: these replace tailwind.config.ts. Values  */
+/* are unchanged — extracted from the reference themes:                */
+/*   NewTheme/css/style.css  (public site)                             */
+/*   css/style.css           (dashboard — "Superio", Jost + Inter)     */
+/* ------------------------------------------------------------------ */
+@theme {
+  /* Public site primary teal-blue header */
+  --color-primary: #005985;
+  --color-primary-light: #035a86;
+  --color-primary-dark: #00405f;
+
+  /* Deep navy used in hero / footer */
+  --color-navy: #000b33;
+  --color-navy-deep: #030314;
+
+  /* Accent yellow (CTA highlights) */
+  --color-accent: #ffcc2a;
+  --color-accent-light: #ffd54f;
+
+  --color-danger: #fd4c5c;
+  --color-muted: #5a5b5e;
+
+  /* Dashboard theme blue (Superio) for the ATS side */
+  --color-brand: #1967d2;
+  --color-brand-soft: #f0f5f7;
+
+  --font-sans: Inter, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: Jost, Inter, system-ui, sans-serif;
+
+  --shadow-card: 0 6px 15px rgba(64, 79, 104, 0.05);
+}
+
+/*
+ * v4 has no `container.center` / `container.padding` config — the container utility is
+ * now just `max-width`. Re-create the v3 behaviour as a custom utility so the 30-odd
+ * pages that use `container` keep their centring and padding.
+ */
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  @media (width >= 64rem) {
+    padding-inline: 2rem;
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /* Base — mirrors the reference NewTheme typography/colors             */
@@ -26,7 +72,7 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Reusable component utilities (Tailwind @apply — no inline CSS)      */
+/* Reusable component utilities                                        */
 /* ------------------------------------------------------------------ */
 @layer components {
   /* Public hero banner */
