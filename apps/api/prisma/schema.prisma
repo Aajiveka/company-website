@@ -406,7 +406,6 @@ model MstrPerson {
   clientID                     BigInt?                            @map("ClientID")  // FK -> ClientMstr (sentinel-zero)
 
   client                       ClientMstr?                        @relation("MstrPersonToClientMstr", fields: [clientID], references: [clientID])
-  SecUser                      SecUser[]                          @relation("SecUserToMstrPerson")
   @@map("tblMstrPerson")
 }
 
@@ -558,7 +557,15 @@ model SecRoles {
 
 model SecUser {
   userID                       BigInt                             @id @default(autoincrement()) @map("UserID")
-  nodeID                       BigInt?                            @map("NodeID")  // FK -> MstrPerson (confirmed)
+  /// POLYMORPHIC — it cannot carry a foreign key.
+  ///   role Subscriber  -> NodeID is a tblSubscriberRegistration.SubscriberID
+  ///   every other role -> NodeID is a tblMstrPerson.PersonNodeID
+  /// tblPMstNodeTypes is the discriminator (100 = "Subscriber"). spSubscriberRegistration
+  /// writes NodeID = @SubscriberID; spClientGetCompanyInfo joins NodeID = PersonNodeID.
+  /// The data cannot tell them apart — ids 1, 2 and 3 exist in BOTH tables — so an orphan
+  /// check "confirmed" a relation that is only true for some rows. Resolve it by role, and
+  /// use the explicit SubscriberID column below rather than reading NodeID directly.
+  nodeID                       BigInt?                            @map("NodeID")
   nodeType                     Int?                               @map("NodeType")
   userName                     String? @db.VarChar(50)            @map("UserName")
   password                     String? @db.VarChar(255)           @map("Password")
@@ -568,7 +575,6 @@ model SecUser {
   roleID                       Int?                               @map("RoleID")
   userMail                     String? @db.VarChar(100)           @map("UserMail")
 
-  node                         MstrPerson?                        @relation("SecUserToMstrPerson", fields: [nodeID], references: [personNodeID])
   ClientMstr                   ClientMstr[]                       @relation("ClientMstrToSecUser")
   SecMapUserRoles              SecMapUserRoles[]                  @relation("SecMapUserRolesToSecUser")
   SecUserLogin                 SecUserLogin[]                     @relation("SecUserLoginToSecUser")

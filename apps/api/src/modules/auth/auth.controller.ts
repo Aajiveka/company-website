@@ -3,7 +3,6 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '@/common/decorators/public.decorator';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
-import { PrismaService } from '@/prisma/prisma.service';
 import { AuthService } from './auth.service';
 import {
   ForgotPasswordDto,
@@ -17,10 +16,7 @@ import {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly auth: AuthService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly auth: AuthService) {}
 
   @Public()
   @Post('login')
@@ -88,23 +84,8 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'The authenticated user' })
-  async me(@CurrentUser() current: RequestUser) {
-    const user = await this.prisma.client.secUser.findUnique({
-      where: { userID: current.userId },
-      select: { userID: true, userName: true, nodeID: true },
-    });
-    const person = user?.nodeID
-      ? await this.prisma.client.mstrPerson.findUnique({
-          where: { personNodeID: user.nodeID },
-          select: { descr: true, emailID: true },
-        })
-      : null;
-    return {
-      userId: Number(user?.userID ?? current.userId),
-      userName: user?.userName ?? '',
-      fullName: person?.descr?.trim() || user?.userName || '',
-      email: person?.emailID ?? '',
-      roleId: current.roleId,
-    };
+  me(@CurrentUser() current: RequestUser) {
+    // Resolved in the service, because NodeID is polymorphic and this has to branch on role.
+    return this.auth.me(current.userId, current.roleId);
   }
 }

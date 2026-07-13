@@ -33,7 +33,6 @@ tblMstrTags|SkillID|tblMstrSkills|SkillID|confirmed
 tblSecMapUserRoles|RoleId|tblSecRoles|RoleId|confirmed
 tblSecMapUserRoles|UserID|tblSecUser|UserID|confirmed
 tblSecUserLogin|UserID|tblSecUser|UserID|dirty-audit-log
-tblSecUser|NodeID|tblMstrPerson|PersonNodeID|confirmed
 tblSubscriberCVDetails|CityID|tblMstrCily|CityID|dirty
 tblSubscriberCVDetails|CurrentCityID|tblMstrCily|CityID|confirmed
 tblSubscriberCVDetails|IndustryTypeID|tblMstrIndustryType|IndustryTypeID|confirmed

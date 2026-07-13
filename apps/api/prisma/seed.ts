@@ -162,7 +162,7 @@ async function seedDemoUsers() {
           data: {
             subscriberID: reg.subscriberID,
             fullName: demo.descr,
-            emailID: 'anuj@example.com',
+            emailID: demo.email || 'anuj@example.com',
             mobileNo1: '9873174794',
             gender: 'M',
             addressLine1: '',
@@ -173,26 +173,36 @@ async function seedDemoUsers() {
         });
       }
 
-      const person = await tx.mstrPerson.create({
-        data: {
-          descr: demo.descr,
-          emailID: demo.email,
-          nodeType: 100,
-          flgActive: 1,
-          tImestampIns: new Date(),
-          loginIDIns: 0,
-          // Only the employer is attached to a company.
-          clientID: demo.roleId === 4 ? clientId : null,
-        },
-        select: { personNodeID: true },
-      });
+      // NodeID is polymorphic: for a subscriber it IS the SubscriberID
+      // (spSubscriberRegistration writes NodeID = @SubscriberID); every other role points at
+      // a person node, which is how spClientGetCompanyInfo joins it.
+      let nodeId: bigint;
+      if (demo.roleId === 1) {
+        nodeId = subscriberId!;
+      } else {
+        const person = await tx.mstrPerson.create({
+          data: {
+            descr: demo.descr,
+            emailID: demo.email,
+            nodeType: 100,
+            flgActive: 1,
+            tImestampIns: new Date(),
+            loginIDIns: 0,
+            // Only the employer is attached to a company.
+            clientID: demo.roleId === 4 ? clientId : null,
+          },
+          select: { personNodeID: true },
+        });
+        nodeId = person.personNodeID;
+      }
+
       const user = await tx.secUser.create({
         data: {
           userName: demo.userName,
           password: await argon2.hash(demo.userName, { type: argon2.argon2id }),
           active: '1',
           pwdStatus: 1,
-          nodeID: person.personNodeID,
+          nodeID: nodeId,
           nodeType: 100,
           subscriberID: subscriberId,
         },
@@ -202,7 +212,7 @@ async function seedDemoUsers() {
         data: {
           userID: user.userID,
           roleId: demo.roleId,
-          userNodeId: person.personNodeID,
+          userNodeId: nodeId,
           userNodeType: 100,
         },
       });

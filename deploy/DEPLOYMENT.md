@@ -60,10 +60,13 @@ restored SQL Server running (see `db/README.md`). It hashes the plaintext passwo
 Argon2id, maps sentinel zeros to NULL, and reports every orphaned row it had to NULL rather
 than silently coercing it.
 
-It will also tell you that candidate logins have **no SubscriberID link**. That is real: the
-legacy schema records no mapping between `tblSecUser` and `tblSubscriberRegistration`, and
-the C# that knew it was not recovered. Those users get a 404 on `/candidates/me` until the
-mapping is supplied. Do not guess it — guessing hands one candidate another candidate's CV.
+It also backfills `tblSecUser.SubscriberID`, which links a login to its candidate profile.
+That link is not a guess: `tblSecUser.NodeID` is **polymorphic**, and for a *Subscriber* it
+IS the SubscriberID — `spSubscriberRegistration` writes
+`INSERT INTO tblsecuserlogin(..., NodeID, NodeType) VALUES(..., @SubscriberID, 100)`, and the
+legacy C# reads it back as `Session["NodeID"] = dr["SubscriberID"]`. For every other role the
+same column is a `tblMstrPerson.PersonNodeID`, which is how `spClientGetCompanyInfo` joins it.
+The migration reports how many it linked, and names any it could not.
 
 ## What is NOT sending
 

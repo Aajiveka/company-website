@@ -260,18 +260,66 @@ async function main() {
     }
   }
 
-  // tblSecUser.SubscriberID is a NEW column: the legacy schema links a login to a candidate
-  // NOWHERE, and the C# that knew the mapping was not recovered. It is left NULL here on
-  // purpose. Guessing it — e.g. assuming UserID == SubscriberID, which is only true because
-  // ids 1 and 1 collide — would hand one candidate another candidate's CV.
-  const unlinked = await prisma.secUser.count({ where: { subscriberID: null } });
-  const candidates = await prisma.secMapUserRoles.count({ where: { roleId: 1 } });
-  if (candidates) {
+  /*
+   * Backfill tblSecUser.SubscriberID.
+   *
+   * tblSecUser.NodeID is POLYMORPHIC — what it points at depends on the role, and
+   * tblPMstNodeTypes is the discriminator (NodeType 100 = "Subscriber", DetTable
+   * "tblsubscribers"). Two sources settle it, and neither is a guess:
+   *
+   *   spSubscriberRegistration writes the candidate's session row as
+   *       INSERT INTO tblsecuserlogin(..., NodeID, NodeType) VALUES(..., @SubscriberID, 100)
+   *   and the legacy C# (Comman.LoginwithOtp) reads that result back as
+   *       Session["NodeID"] = dr["SubscriberID"];
+   *
+   * So for a SUBSCRIBER, NodeID IS the SubscriberID. For every other role it is a person
+   * node — which is exactly how spClientGetCompanyInfo joins it
+   * (tblSecUser.NodeID = tblMstrPerson.PersonNodeID).
+   *
+   * The data alone cannot tell the two apart: NodeID 1, 2 and 3 all exist as BOTH a
+   * SubscriberID and a PersonNodeID. Only the procedure and the C# resolve it, which is why
+   * this was left unlinked until they were read.
+   */
+  const ROLE_SUBSCRIBER = 1;
+  const subscriberLogins = await prisma.secMapUserRoles.findMany({
+    where: { roleId: ROLE_SUBSCRIBER },
+    select: { userID: true },
+  });
+
+  let linked = 0;
+  const unresolvable: number[] = [];
+  for (const { userID } of subscriberLogins) {
+    const user = await prisma.secUser.findUnique({
+      where: { userID },
+      select: { nodeID: true, subscriberID: true },
+    });
+    if (!user?.nodeID || user.subscriberID) continue;
+
+    // Only link if that SubscriberID actually exists. A dangling NodeID must not silently
+    // become a link to somebody else's CV.
+    const exists = await prisma.subscriberRegistration.findUnique({
+      where: { subscriberID: user.nodeID },
+      select: { subscriberID: true },
+    });
+    if (!exists) {
+      unresolvable.push(Number(userID));
+      continue;
+    }
+    await prisma.secUser.update({
+      where: { userID },
+      data: { subscriberID: user.nodeID },
+    });
+    linked++;
+  }
+
+  console.log(
+    `\nSubscriberID backfill: ${linked} of ${subscriberLogins.length} candidate login(s) linked ` +
+      `(NodeID -> SubscriberID, per spSubscriberRegistration).`,
+  );
+  if (unresolvable.length) {
     console.log(
-      `\nUNRESOLVED: ${candidates} candidate login(s) have no SubscriberID link ` +
-        `(${unlinked} users unlinked in total).\n` +
-        `  The legacy DB records no mapping between tblSecUser and tblSubscriberRegistration.\n` +
-        `  /candidates/me will 404 for them until the mapping is supplied.`,
+      `  UNRESOLVED: user(s) ${unresolvable.join(', ')} have a NodeID with no matching ` +
+        `SubscriberID. /candidates/me will 404 for them.`,
     );
   }
 

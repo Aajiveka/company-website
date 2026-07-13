@@ -9,8 +9,21 @@ import { NotificationsService } from '@/modules/notifications/notifications.serv
 import { Role, type RoleId } from '@/shared/roles';
 import { OtpService } from './otp.service';
 
-/** tblSecUser.NodeType / tblMstrPerson.NodeType — 100 is a person, in every row of the data. */
-const NODE_TYPE_PERSON = 100;
+/**
+ * tblPMstNodeTypes: NodeType 100 = "Subscriber", DetTable "tblsubscribers".
+ *
+ * tblSecUser.NodeID is polymorphic — for a SUBSCRIBER it is the SubscriberID
+ * (spSubscriberRegistration writes `NodeID = @SubscriberID, NodeType = 100`, and the legacy
+ * C# reads it back as `Session["NodeID"] = dr["SubscriberID"]`); for every other role it is
+ * a tblMstrPerson node, which is how spClientGetCompanyInfo joins it.
+ *
+ * We keep NodeID meaning the same thing it did, and ALSO carry the explicit
+ * tblSecUser.SubscriberID column, so nothing downstream has to know about the polymorphism.
+ */
+const NODE_TYPE_SUBSCRIBER = 100;
+
+/** tblMstrStatus 1 = "Account created" — the first step of the candidate journey. */
+const STATUS_ACCOUNT_CREATED = 1;
 
 export interface AuthUser {
   userId: number;
@@ -51,7 +64,7 @@ export class AuthService {
     const user = await this.db.secUser.findFirst({
       // Active is char('1'/'0') in the legacy schema, not a bit.
       where: { userName, active: '1' },
-      select: { userID: true, userName: true, password: true, nodeID: true },
+      select: { userID: true, userName: true, password: true, nodeID: true, subscriberID: true },
     });
 
     // Always run a verify, even when the user does not exist, so a missing account and a
@@ -70,18 +83,10 @@ export class AuthService {
     });
     const roleId = (mapping?.roleId ?? Role.Subscriber) as RoleId;
 
-    const person = user.nodeID
-      ? await this.db.mstrPerson.findUnique({
-          where: { personNodeID: user.nodeID },
-          select: { descr: true, emailID: true },
-        })
-      : null;
-
     const authUser: AuthUser = {
       userId: Number(user.userID),
       userName: user.userName ?? '',
-      fullName: person?.descr?.trim() || user.userName || '',
-      email: person?.emailID ?? '',
+      ...(await this.identityFor(user, roleId)),
       roleId,
     };
 
@@ -110,16 +115,9 @@ export class AuthService {
 
     const user = await this.db.secUser.findFirst({
       where: { userID: payload.sub, active: '1' },
-      select: { userID: true, userName: true, nodeID: true },
+      select: { userID: true, userName: true, nodeID: true, subscriberID: true },
     });
     if (!user) throw new UnauthorizedException('User no longer active');
-
-    const person = user.nodeID
-      ? await this.db.mstrPerson.findUnique({
-          where: { personNodeID: user.nodeID },
-          select: { descr: true, emailID: true },
-        })
-      : null;
 
     // Rebuild the full user from the database. The old implementation rebuilt it from the
     // JWT payload, so fullName silently degraded to userName and email became '' after
@@ -127,8 +125,7 @@ export class AuthService {
     const authUser: AuthUser = {
       userId: Number(user.userID),
       userName: user.userName ?? '',
-      fullName: person?.descr?.trim() || user.userName || '',
-      email: person?.emailID ?? '',
+      ...(await this.identityFor(user, payload.roleId)),
       roleId: payload.roleId,
     };
 
@@ -171,16 +168,37 @@ export class AuthService {
 
     const subscriber =
       existing ??
-      (await this.db.subscriberRegistration.create({
-        data: {
-          registrationMobileNo: input.mobile,
-          registrationCountryCode: input.countryCode ?? '+91',
-          registrationIPNo: input.ipAddress ?? '',
-          registrationDateTime: new Date(),
-          flgCVUploaded: 0,
-          flgstatus: 0,
-        },
-        select: { subscriberID: true },
+      // spSubscriberRegistration does not just insert the registration — it also creates the
+      // CV row and seeds the status history. Skipping those left a candidate whose profile
+      // 404'd on their very first login.
+      (await this.db.$transaction(async (tx) => {
+        const reg = await tx.subscriberRegistration.create({
+          data: {
+            registrationMobileNo: input.mobile,
+            registrationCountryCode: (input.countryCode ?? '+91').replace('+', ''),
+            registrationIPNo: input.ipAddress ?? '',
+            registrationDateTime: new Date(),
+            flgCVUploaded: 0,
+            flgstatus: 0,
+          },
+          select: { subscriberID: true },
+        });
+        await tx.subscriberCVDetails.create({
+          data: {
+            subscriberID: reg.subscriberID,
+            mobileNo1: input.mobile,
+            timestampIns: new Date(),
+            loginIDIns: 0,
+          },
+        });
+        await tx.subscriberStatusHistory.create({
+          data: {
+            subscriberID: reg.subscriberID,
+            statusID: STATUS_ACCOUNT_CREATED,
+            timestampIns: new Date(),
+          },
+        });
+        return reg;
       }));
 
     const code = await this.otp.issue('register', input.mobile);
@@ -223,28 +241,15 @@ export class AuthService {
     });
     if (!user) {
       user = await this.db.$transaction(async (tx) => {
-        const person = await tx.mstrPerson.create({
-          data: {
-            // tblMstrPerson carries no mobile column — the number lives on
-            // tblSubscriberRegistration. Name and email arrive later, with the CV.
-            descr: '',
-            emailID: '',
-            nodeType: NODE_TYPE_PERSON,
-            flgActive: 1,
-            tImestampIns: new Date(),
-            loginIDIns: 0,
-          },
-          select: { personNodeID: true },
-        });
         const created = await tx.secUser.create({
           data: {
             userName: mobile,
             password: null,
             active: '1',
             pwdStatus: 0,
-            nodeID: person.personNodeID,
-            nodeType: NODE_TYPE_PERSON,
-            // The explicit login -> candidate link. Legacy had none.
+            // For a subscriber, NodeID IS the SubscriberID — see NODE_TYPE_SUBSCRIBER above.
+            nodeID: subscriber.subscriberID,
+            nodeType: NODE_TYPE_SUBSCRIBER,
             subscriberID: subscriber.subscriberID,
           },
           select: { userID: true, userName: true, nodeID: true },
@@ -253,8 +258,8 @@ export class AuthService {
           data: {
             userID: created.userID,
             roleId: Role.Subscriber,
-            userNodeId: person.personNodeID,
-            userNodeType: NODE_TYPE_PERSON,
+            userNodeId: subscriber.subscriberID,
+            userNodeType: NODE_TYPE_SUBSCRIBER,
           },
         });
         return created;
@@ -264,8 +269,10 @@ export class AuthService {
     const authUser: AuthUser = {
       userId: Number(user.userID),
       userName: user.userName ?? mobile,
-      fullName: mobile,
-      email: '',
+      ...(await this.identityFor(
+        { ...user, subscriberID: subscriber.subscriberID },
+        Role.Subscriber,
+      )),
       roleId: Role.Subscriber,
     };
     await this.audit.record({
@@ -353,6 +360,57 @@ export class AuthService {
 
     await this.audit.record({ userId: Number(reset.userID), action: 'password.reset_completed' });
     return { message: 'Your password has been updated.' };
+  }
+
+  /**
+   * Display name + email for a login.
+   *
+   * NodeID is polymorphic, so this MUST branch on role. Reading tblMstrPerson for a
+   * subscriber would resolve their SubscriberID against PersonNodeID and hand back a
+   * different person's name and email — the ids overlap.
+   */
+  /** The authenticated user, resolved the same way login does. */
+  async me(userId: number, roleId: RoleId): Promise<AuthUser> {
+    const user = await this.db.secUser.findUnique({
+      where: { userID: userId },
+      select: { userID: true, userName: true, nodeID: true, subscriberID: true },
+    });
+    if (!user) throw new UnauthorizedException('User no longer exists');
+    return {
+      userId: Number(user.userID),
+      userName: user.userName ?? '',
+      ...(await this.identityFor(user, roleId)),
+      roleId,
+    };
+  }
+
+  private async identityFor(
+    user: { userID: bigint; userName: string | null; nodeID: bigint | null; subscriberID: bigint | null },
+    roleId: RoleId,
+  ): Promise<{ fullName: string; email: string }> {
+    if (roleId === Role.Subscriber) {
+      const cv = user.subscriberID
+        ? await this.db.subscriberCVDetails.findUnique({
+            where: { subscriberID: user.subscriberID },
+            select: { fullName: true, emailID: true, mobileNo1: true },
+          })
+        : null;
+      return {
+        fullName: cv?.fullName?.trim() || cv?.mobileNo1 || user.userName || '',
+        email: cv?.emailID ?? '',
+      };
+    }
+
+    const person = user.nodeID
+      ? await this.db.mstrPerson.findUnique({
+          where: { personNodeID: user.nodeID },
+          select: { descr: true, emailID: true },
+        })
+      : null;
+    return {
+      fullName: person?.descr?.trim() || user.userName || '',
+      email: person?.emailID ?? '',
+    };
   }
 
   private async issueTokens(user: AuthUser) {

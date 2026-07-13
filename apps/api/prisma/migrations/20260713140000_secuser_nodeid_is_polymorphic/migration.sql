@@ -1,0 +1,14 @@
+-- tblSecUser.NodeID is POLYMORPHIC and cannot carry a foreign key.
+--
+--   role Subscriber  -> NodeID is a tblSubscriberRegistration.SubscriberID
+--   every other role -> NodeID is a tblMstrPerson.PersonNodeID
+--
+-- tblPMstNodeTypes is the discriminator (NodeType 100 = "Subscriber", DetTable
+-- "tblsubscribers"). spSubscriberRegistration writes NodeID = @SubscriberID with
+-- NodeType = 100, and the legacy C# reads it back as Session["NodeID"] = dr["SubscriberID"].
+-- spClientGetCompanyInfo, by contrast, joins tblSecUser.NodeID = tblMstrPerson.PersonNodeID.
+--
+-- The orphan check "confirmed" the MstrPerson relation only because NodeID 1, 2 and 3 exist
+-- as BOTH a SubscriberID and a PersonNodeID. It is true for staff and clients, and false for
+-- candidates. Downstream code uses the explicit tblSecUser.SubscriberID column instead.
+ALTER TABLE "tblSecUser" DROP CONSTRAINT IF EXISTS "tblSecUser_NodeID_fkey";
