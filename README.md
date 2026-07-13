@@ -1,7 +1,7 @@
 # Aajiveka
 
-Recruitment / ATS platform. A rebuild of **AajivikaPortal** (ASP.NET Web Forms + SQL Server)
-on a modern stack, working from the legacy backup and reference sources.
+Recruitment / ATS platform. A rebuild of **AajivikaPortal** (ASP.NET Web Forms + SQL Server),
+working from the legacy backup and reference sources.
 
 | | |
 |---|---|
@@ -12,30 +12,35 @@ on a modern stack, working from the legacy backup and reference sources.
 ## Run it
 
 ```bash
-docker compose up -d --build                                  # http://localhost:8080
-docker compose exec -e SEED_DEMO_USERS=1 api npx tsx prisma/seed.ts
+cp .env.example .env      # fill in POSTGRES_PASSWORD and the two JWT secrets
+docker compose up -d --build
+
+docker compose exec -e SEED_DEMO_USERS=1 api npm run db:seed
 ```
 
-Demo logins (dev/CI only — password equals the username): `anuj` (candidate), `qc1` (QC),
-`anuj@aajiveka.com` (employer).
+The app is on **http://localhost:8080**; the API docs are at **/api/docs**. Migrations apply
+on start, and nginx proxies `/api` to the API container — the API is never exposed directly.
 
-See **[deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md)** for configuration, secrets and the
+Demo logins (**dev/CI only** — the password equals the username): `anuj` (candidate), `qc1`
+(QC), `anuj@aajiveka.com` (employer).
+
+See **[deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md)** for secrets, storage, payments and the
 legacy data migration.
 
 ## Develop
 
 ```bash
 npm install
-npm run dev              # web on :5173, proxying /api to :4100
-npm run dev:api          # api on :4000 (PORT=4100 to match the web proxy)
+npm run dev:api          # PORT=4100, to match the web proxy
+npm run dev              # web on :5173
 
 npm run typecheck && npm run lint
-node tests/e2e.mjs       # drives every page and all three roles against the real API
+node tests/e2e.mjs       # every page, all three roles, against a REAL api + database
 ```
 
-`tests/e2e.mjs` is the regression suite that matters: it runs against a **real API and
-database, no mocks**. It is what caught the frontend sending a search parameter the API
-rejects.
+`tests/e2e.mjs` is the check that matters. It drives every public page and all three roles
+against a real API and database — **no mocks**. Mocks agree with whatever you tell them; this
+suite is what caught the frontend sending a search parameter the API rejects.
 
 ## Layout
 
@@ -45,7 +50,7 @@ apps/api            NestJS — modules mirror the same domains
 apps/api/prisma     schema, migrations, seed, and the legacy data migration
 db/                 the restored database: schema, 97 procs, 10 udt types, ER diagram, seed data
 deploy/             nginx config + deployment guide
-tests/e2e.mjs       end-to-end regression suite
+tests/              e2e regression suite + a BillDesk stub
 reference/          extracted legacy sources (git-ignored)
 ```
 
@@ -55,24 +60,32 @@ reference/          extracted legacy sources (git-ignored)
 directly — 73 tables, 97 stored procedures, 10 table-valued types. `db/SCHEMA_REPORT.md` has
 the inventory; `db/ER-DIAGRAM.md` has the model.
 
-Two facts drove every schema decision:
+Three facts drove every schema decision:
 
 - **The legacy database declares zero foreign keys**, and 36 of its 73 tables have no primary
   key. Referential integrity lived entirely in the stored procedures. The relational model was
-  therefore *derived* from the `JOIN … ON` clauses in `db/procs/` and then **validated against
-  the real data with orphan checks** — see `db/foreign-keys.psv`, which records the confidence
-  of each of the 66 relations. It was not transcribed, and it was not guessed.
+  *derived* from the `JOIN … ON` clauses in `db/procs/` and then **validated against the real
+  data with orphan checks** — `db/foreign-keys.psv` records the confidence of each of the 63
+  relations. Not transcribed, and not guessed.
+- **A passing orphan check is not proof.** Several columns look like foreign keys, and the data
+  does not contradict them, and they are still wrong — a column that is its own `IDENTITY` key,
+  a flag that happens to overlap a lookup's ids, a polymorphic column that points at a
+  different table depending on the role. Each was only settled by reading the procedure that
+  uses it. `db/ER-DIAGRAM.md` lists every one, with the evidence, so nobody re-derives them.
 - **13 tables are dead** (no rows, referenced by no procedure) and are omitted.
 
 ## Known gaps
 
-These are real, and deliberately not papered over:
+Real, and deliberately not papered over:
 
 - **Email and SMS are logged, not sent** until a provider is configured. The API says so at
-  boot. The credentials in the legacy `Web.config` are compromised and must be rotated.
-- **BillDesk payment is implemented but NOT verified against BillDesk.** We have no sandbox
-  credentials, and the ones in the legacy `Web.config` are compromised. The signing,
-  verification, order lifecycle, amount checking and idempotency are proved end to end
-  against `tests/billdesk-stub.mjs`, which implements BillDesk's documented ve1_2 contract.
-  That proves *our* side — not that BillDesk agrees with our reading of its spec. **A sandbox
-  run is required before go-live.**
+  boot: *"SMTP not configured — emails will be logged, not sent"*. Sending a reset link that
+  never arrives is worse than not claiming to have sent it.
+- **BillDesk payment has never run against BillDesk.** There are no sandbox credentials.
+  Signing, signature verification, the order lifecycle, amount checking and idempotency are all
+  proved end to end against `tests/billdesk-stub.mjs`, which implements BillDesk's documented
+  ve1_2 contract — but that proves *our* side, not that BillDesk agrees with our reading of its
+  spec. **A sandbox run is required before go-live.**
+- **The credentials in the legacy `Web.config` are compromised** — the BillDesk merchant key,
+  the 2Factor SMS key, the SMTP password and the production SQL Server `sa` password were all
+  committed in plaintext. Rotate them; do not reuse any of them.

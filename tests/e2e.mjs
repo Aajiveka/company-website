@@ -9,9 +9,11 @@
  *
  * Requires the database to be seeded (npm run db:seed --workspace apps/api).
  */
+import os from 'node:os';
 import { chromium } from 'playwright';
 
-const SHOT = process.env.E2E_SHOT_DIR ?? '.';
+// Screenshots are a debugging aid, not an artifact — keep them out of the repo.
+const SHOT = process.env.E2E_SHOT_DIR ?? os.tmpdir();
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
 
 const PUBLIC = ['/', '/jobs', '/login', '/register', '/forgot-password', '/pricing', '/about',

@@ -12,3 +12,6 @@ coverage/
 reference/
 storage/
 *.tsbuildinfo
+
+# e2e screenshots (tests/e2e.mjs writes these; set E2E_SHOT_DIR to relocate)
+e2e-*.png
