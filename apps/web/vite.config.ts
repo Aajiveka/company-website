@@ -12,7 +12,7 @@ export default defineConfig({
     port: 5173,
     // Proxy API calls to the Express server in dev to avoid CORS.
     proxy: {
-      '/api': { target: 'http://localhost:4000', changeOrigin: true },
+      '/api': { target: process.env.VITE_API_PROXY ?? 'http://localhost:4100', changeOrigin: true },
     },
   },
   build: {

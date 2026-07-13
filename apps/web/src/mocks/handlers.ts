@@ -11,7 +11,8 @@ import {
   DOC_REVIEWS,
   INTERVIEWS,
   JOB_ALERTS,
-  JOB_FUNCTIONS,
+  JOB_DESIGNATIONS,
+  JOB_INDUSTRIES,
   JOB_LOCATIONS,
   PUBLIC_JOBS,
   QC1_STATS,
@@ -115,18 +116,26 @@ export const handlers = [
 
   // Public job search — no auth, powers the home hero + /jobs page.
   http.get(`${BASE}/jobs/filters`, () =>
-    HttpResponse.json({ functions: JOB_FUNCTIONS, locations: JOB_LOCATIONS }),
+    HttpResponse.json({
+      designations: JOB_DESIGNATIONS,
+      industries: JOB_INDUSTRIES,
+      locations: JOB_LOCATIONS,
+    }),
   ),
 
   http.get(`${BASE}/jobs`, ({ request }) => {
     const url = new URL(request.url);
-    const jobFunction = url.searchParams.get('jobFunction') ?? '';
+    const designation = url.searchParams.get('designation') ?? '';
+    const industry = url.searchParams.get('industry') ?? '';
     const location = url.searchParams.get('location') ?? '';
     const page = Number(url.searchParams.get('page') ?? '1');
     const pageSize = Number(url.searchParams.get('pageSize') ?? '10');
 
     const filtered = PUBLIC_JOBS.filter(
-      (j) => (!jobFunction || j.jobFunction === jobFunction) && (!location || j.city === location),
+      (j) =>
+        (!designation || j.designation === designation) &&
+        (!industry || j.industry === industry) &&
+        (!location || j.city === location),
     );
     const start = (page - 1) * pageSize;
     return HttpResponse.json({ rows: filtered.slice(start, start + pageSize), total: filtered.length });

@@ -85,69 +85,58 @@ export const COMPANY_JOBS: JobListing[] = [
 
 /* ------------------------- Public job search ---------------------------- */
 
-/** Master lists behind the hero's Function / Location dropdowns (legacy ddlFunction / ddlCityState). */
-export const JOB_FUNCTIONS = [
-  'Engineering',
-  'Sales',
-  'Marketing',
-  'Human Resources',
-  'Finance',
-  'Operations',
-  'Design',
-  'Customer Support',
+/**
+ * The REAL master lists, taken from the restored database — not invented.
+ *
+ * A job has no "function": tblMstrDesignation is only (DesignationID, Descr), and the
+ * SubFunction -> Function chain hangs off the CANDIDATE side. So a job is searchable by
+ * designation, industry and city, and these are the actual values in the data.
+ */
+export const JOB_DESIGNATIONS = [
+  'Aws Solution Architect',
+  'Azure Solution Architect',
+  'Data Base Administrator',
+  'Project Manager',
+  'Software Developer',
+  'Team Leader',
+  'Trainee',
 ];
+
+export const JOB_INDUSTRIES = ['Banking', 'IT', 'Real Estate', 'Retail'];
 
 export const JOB_LOCATIONS = [
-  'Pune',
-  'Bengaluru',
-  'Mumbai',
-  'Hyderabad',
+  'Amritsar',
+  'Arga',
   'Delhi',
-  'Chennai',
-  'Kolkata',
-  'Ahmedabad',
+  'Faridabad',
+  'Gurgaon',
+  'Noida',
+  'Sonipat',
 ];
 
-// Designations per function, so a filtered search returns coherent-looking roles.
-const DESIGNATIONS_BY_FUNCTION: Record<string, string[]> = {
-  Engineering: ['Frontend Engineer', 'Backend Engineer', 'DevOps Engineer', 'QA Analyst'],
-  Sales: ['Sales Executive', 'Account Manager', 'Business Development Manager'],
-  Marketing: ['Digital Marketing Executive', 'Content Strategist', 'SEO Analyst'],
-  'Human Resources': ['HR Executive', 'Talent Acquisition Specialist', 'HR Business Partner'],
-  Finance: ['Financial Analyst', 'Accountant', 'Audit Associate'],
-  Operations: ['Operations Executive', 'Supply Chain Analyst', 'Process Manager'],
-  Design: ['UX Designer', 'Graphic Designer', 'Product Designer'],
-  'Customer Support': ['Support Executive', 'Customer Success Manager'],
-};
+const COMPANIES = ['aajiveka', 'Globex Corp', 'Initech Solutions'];
+const WORK_MODES = ['Work From Home', 'Work From Office', 'Hybrid'];
+const EMPLOYMENT_TYPES = ['Full Time', 'Part Time'];
 
-const COMPANIES = ['Acme Technologies', 'Globex Corp', 'Initech Solutions', 'Umbrella Group', 'Stark Industries'];
-const WORK_MODES = ['On-site', 'Hybrid', 'Remote'];
-const EMPLOYMENT_TYPES = ['Full-time', 'Contract', 'Part-time'];
-
-/**
- * Deterministic public job pool — one opening per (function, location, designation),
- * so every dropdown combination returns a handful of coherent results rather than one.
- */
-export const PUBLIC_JOBS: PublicJob[] = JOB_FUNCTIONS.flatMap((jobFunction, f) =>
-  JOB_LOCATIONS.flatMap((city, c) =>
-    DESIGNATIONS_BY_FUNCTION[jobFunction].map((designation, d) => {
-      const i = (f * JOB_LOCATIONS.length + c) * 4 + d;
-      const minCtc = 400000 + (i % 10) * 150000;
-      return {
-        jobId: 500 + i,
-        designation,
-        company: COMPANIES[i % COMPANIES.length],
-        jobFunction,
-        city,
-        workMode: WORK_MODES[i % WORK_MODES.length],
-        employmentType: EMPLOYMENT_TYPES[i % EMPLOYMENT_TYPES.length],
-        minExp: i % 8,
-        minCtc,
-        maxCtc: minCtc + 600000,
-        postedOn: `2026-0${(i % 7) + 1}-${((i % 27) + 1).toString().padStart(2, '0')}`,
-      };
-    }),
-  ),
+/** Deterministic pool covering every (designation, location) pair. */
+export const PUBLIC_JOBS: PublicJob[] = JOB_DESIGNATIONS.flatMap((designation, d) =>
+  JOB_LOCATIONS.map((city, c) => {
+    const i = d * JOB_LOCATIONS.length + c;
+    const minCtc = 400000 + (i % 10) * 150000;
+    return {
+      jobId: 500 + i,
+      designation,
+      company: COMPANIES[i % COMPANIES.length],
+      industry: JOB_INDUSTRIES[i % JOB_INDUSTRIES.length],
+      city,
+      workMode: WORK_MODES[i % WORK_MODES.length],
+      employmentType: EMPLOYMENT_TYPES[i % EMPLOYMENT_TYPES.length],
+      minExp: i % 8,
+      minCtc,
+      maxCtc: minCtc + 600000,
+      postedOn: `2026-0${(i % 7) + 1}-${((i % 27) + 1).toString().padStart(2, '0')}`,
+    };
+  }),
 );
 
 const FIRST = ['Rahul', 'Priya', 'Amit', 'Sneha', 'Vikram', 'Anjali', 'Rohit', 'Kavya', 'Arjun', 'Divya', 'Sameer', 'Nisha'];

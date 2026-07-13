@@ -5,25 +5,28 @@ import { Button } from '@/components/ui';
 import { useJobFilters } from '../jobs.api';
 
 export interface JobSearchBarProps {
-  initialFunction?: string;
+  initialDesignation?: string;
   initialLocation?: string;
 }
 
 /**
- * The function/location search pill (legacy ddlFunction + ddlCityState). Shared by
- * the home hero and the /jobs results page; submitting navigates to /jobs with the
- * selection as query params, so a search is shareable and back/forward works.
+ * The role/location search pill. Shared by the home hero and the /jobs results page;
+ * submitting navigates to /jobs with the selection as query params, so a search is
+ * shareable and back/forward works.
+ *
+ * The legacy hero labelled the first dropdown "Function / keyword", but a job has no
+ * function in the database — see JobFilters in ../jobs.types. It searches by designation.
  */
-export function JobSearchBar({ initialFunction = '', initialLocation = '' }: JobSearchBarProps) {
+export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: JobSearchBarProps) {
   const navigate = useNavigate();
   const { data } = useJobFilters();
-  const [jobFunction, setJobFunction] = useState(initialFunction);
+  const [designation, setDesignation] = useState(initialDesignation);
   const [location, setLocation] = useState(initialLocation);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (jobFunction) params.set('function', jobFunction);
+    if (designation) params.set('designation', designation);
     if (location) params.set('location', location);
     navigate({ pathname: '/jobs', search: params.toString() });
   };
@@ -36,15 +39,15 @@ export function JobSearchBar({ initialFunction = '', initialLocation = '' }: Job
       <div className="flex flex-1 items-center gap-2 border-gray-200 xl:border-r xl:pr-3">
         <Search className="h-5 w-5 shrink-0 text-primary" aria-hidden />
         <select
-          aria-label="Function / keyword"
+          aria-label="Role"
           className="h-11 w-full bg-transparent text-sm text-gray-700 outline-none"
-          value={jobFunction}
-          onChange={(e) => setJobFunction(e.target.value)}
+          value={designation}
+          onChange={(e) => setDesignation(e.target.value)}
         >
-          <option value="">Function / keyword</option>
-          {data?.functions.map((f) => (
-            <option key={f} value={f}>
-              {f}
+          <option value="">Role / keyword</option>
+          {data?.designations.map((d) => (
+            <option key={d} value={d}>
+              {d}
             </option>
           ))}
         </select>

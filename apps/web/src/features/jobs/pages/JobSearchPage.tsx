@@ -23,7 +23,7 @@ function JobCard({ job }: { job: PublicJob }) {
           </p>
         </div>
         <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          {job.jobFunction}
+          {job.industry}
         </span>
       </div>
 
@@ -48,11 +48,11 @@ function JobCard({ job }: { job: PublicJob }) {
 /** Public job search results — driven entirely by the `function`/`location`/`page` query params. */
 export default function JobSearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const jobFunction = searchParams.get('function') ?? '';
+  const designation = searchParams.get('designation') ?? '';
   const location = searchParams.get('location') ?? '';
   const page = Number(searchParams.get('page') ?? '1');
 
-  const { data, isLoading } = usePublicJobs({ jobFunction, location, page, pageSize: PAGE_SIZE });
+  const { data, isLoading } = usePublicJobs({ designation, location, page, pageSize: PAGE_SIZE });
   const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
 
   const goToPage = (next: number) => {
@@ -68,8 +68,8 @@ export default function JobSearchPage() {
         <div className="mx-auto mt-8 max-w-3xl">
           {/* Remount on param change so the dropdowns reflect the URL after a back/forward. */}
           <JobSearchBar
-            key={`${jobFunction}|${location}`}
-            initialFunction={jobFunction}
+            key={`${designation}|${location}`}
+            initialDesignation={designation}
             initialLocation={location}
           />
         </div>
@@ -79,7 +79,7 @@ export default function JobSearchPage() {
         <div className="container">
           <p className="mb-6 text-sm text-gray-500">
             {isLoading ? 'Searching…' : `${data?.total ?? 0} job${data?.total === 1 ? '' : 's'} found`}
-            {jobFunction && ` in ${jobFunction}`}
+            {designation && ` for ${designation}`}
             {location && ` · ${location}`}
           </p>
 
