@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { LogOut, Menu as MenuIcon, UserCircle2 } from 'lucide-react';
-import { useAuth } from '@/features/auth/AuthContext';
+import { useAuth } from '@/features/auth/auth.store';
 import { ROLE_LABEL } from '@/types/roles';
 import { Dropdown } from '@/components/ui';
 import { Sidebar } from './Sidebar';

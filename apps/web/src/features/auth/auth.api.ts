@@ -15,7 +15,10 @@ export const authApi = {
 
   me: () => api.get<AuthUser>('/auth/me').then((r) => r.data),
 
-  logout: () => api.post('/auth/logout').then((r) => r.data),
+  // The refresh token has to go in the body — that is what the API revokes. Posting an
+  // empty body means logout revokes nothing and the token stays valid until it expires.
+  logout: (refreshToken: string | null) =>
+    api.post('/auth/logout', { refreshToken: refreshToken ?? undefined }).then((r) => r.data),
 
   forgotPassword: (values: ForgotValues) =>
     api.post<{ message: string }>('/auth/forgot-password', values).then((r) => r.data),

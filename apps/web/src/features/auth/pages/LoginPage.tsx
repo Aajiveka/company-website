@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { Button, Input, useToast } from '@/components/ui';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
 import { loginSchema, type LoginValues } from '../auth.types';
 import { ROLE_HOME } from '@/types/roles';
