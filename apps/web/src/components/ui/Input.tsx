@@ -11,6 +11,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, id, ...props }, ref) => {
     const autoId = useId();
     const inputId = id ?? autoId;
+    const errorId = `${inputId}-error`;
     return (
       <div className="w-full">
         {label && (
@@ -22,6 +23,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           ref={ref}
           aria-invalid={!!error}
+          // aria-invalid alone tells a screen reader something is wrong but not WHAT.
+          // Point at the message so it is announced.
+          aria-describedby={error ? errorId : undefined}
           className={cn(
             'h-11 w-full rounded-lg border bg-white px-3.5 text-sm outline-none transition',
             'placeholder:text-gray-400 focus:ring-2 focus:ring-primary/30',
@@ -30,7 +34,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           {...props}
         />
-        {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+        {error && (
+          <p id={errorId} role="alert" className="mt-1 text-xs text-danger">
+            {error}
+          </p>
+        )}
       </div>
     );
   },

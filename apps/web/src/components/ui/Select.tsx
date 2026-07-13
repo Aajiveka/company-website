@@ -19,6 +19,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, error, options, placeholder, id, ...props }, ref) => {
     const autoId = useId();
     const selectId = id ?? autoId;
+    const errorId = `${selectId}-error`;
     return (
       <div className="w-full">
         {label && (
@@ -30,6 +31,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <select
             id={selectId}
             ref={ref}
+            aria-invalid={!!error}
+            aria-describedby={error ? errorId : undefined}
             className={cn(
               'h-11 w-full appearance-none rounded-lg border bg-white px-3.5 pr-9 text-sm outline-none transition',
               'focus:ring-2 focus:ring-primary/30',
@@ -50,7 +53,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             aria-hidden
           />
         </div>
-        {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+        {error && (
+          <p id={errorId} role="alert" className="mt-1 text-xs text-danger">
+            {error}
+          </p>
+        )}
       </div>
     );
   },

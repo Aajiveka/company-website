@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import * as Menu from '@radix-ui/react-dropdown-menu';
 import { cn } from '@/lib/cn';
 
 export interface DropdownItem {
@@ -14,52 +14,42 @@ export interface DropdownProps {
   align?: 'left' | 'right';
 }
 
-/** Click-outside-aware dropdown menu (used for user/account menus). */
+/**
+ * Radix DropdownMenu behind the same props.
+ *
+ * The hand-rolled version closed on click-outside but had no keyboard support at all —
+ * arrow keys did nothing, Esc did nothing, focus never entered the menu. This is the
+ * account menu, so Logout was effectively mouse-only. Radix gives roving focus, typeahead,
+ * Esc, and the correct ARIA wiring.
+ */
 export function Dropdown({ trigger, items, align = 'right' }: DropdownProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [open]);
-
   return (
-    <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
+    <Menu.Root>
+      <Menu.Trigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2">
         {trigger}
-      </button>
-      {open && (
-        <div
-          role="menu"
-          className={cn(
-            'absolute z-50 mt-2 min-w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg',
-            align === 'right' ? 'right-0' : 'left-0',
-          )}
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content
+          align={align === 'right' ? 'end' : 'start'}
+          sideOffset={8}
+          className="z-50 min-w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
         >
           {items.map((item, i) => (
-            <button
+            <Menu.Item
               key={i}
-              role="menuitem"
-              onClick={() => {
-                item.onSelect();
-                setOpen(false);
-              }}
+              onSelect={item.onSelect}
               className={cn(
-                'flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-50',
+                'flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm outline-none',
+                'data-[highlighted]:bg-gray-50',
                 item.danger ? 'text-danger' : 'text-gray-700',
               )}
             >
               {item.icon}
               {item.label}
-            </button>
+            </Menu.Item>
           ))}
-        </div>
-      )}
-    </div>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

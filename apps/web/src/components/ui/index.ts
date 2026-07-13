@@ -1,4 +1,5 @@
 export { Button } from './Button';
+export { buttonVariants } from './button-variants';
 export { Input } from './Input';
 export { Select } from './Select';
 export type { SelectOption } from './Select';
