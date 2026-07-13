@@ -19,6 +19,10 @@ const schema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  REDIS_URL: z.string().default('redis://localhost:16379'),
+
+  /** Where password-reset links point. */
+  APP_URL: z.string().default('http://localhost:5173'),
 
   // Access and refresh tokens are signed with SEPARATE secrets. The Express API signed both
   // with one key and verified them identically, so an access token was accepted as a refresh

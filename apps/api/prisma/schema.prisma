@@ -575,6 +575,7 @@ model SecUser {
   SecMapUserRoles              SecMapUserRoles[]                  @relation("SecMapUserRolesToSecUser")
   SecUserLogin                 SecUserLogin[]                     @relation("SecUserLoginToSecUser")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToSecUser")
+  AuthPasswordReset            AuthPasswordReset[]                @relation("AuthPasswordResetToSecUser")
   @@map("tblSecUser")
 }
 
@@ -838,4 +839,43 @@ model SubscriberJobAlert {
 
   @@index([subscriberID])
   @@map("tblSubscriberJobAlert")
+}
+
+/// Password-reset tokens. tblForgotPassword EXISTS in the legacy DB but is useless — it is
+/// only (forgotPasswordID, USERID, TimestampIns), with no token, no expiry and no used
+/// flag, so it cannot back a reset flow. (The old inferred SCHEMA_REPORT claimed it had
+/// EmailId/Token/ExpiryDate/IsUsed; the real catalog says otherwise.) This is new.
+model AuthPasswordReset {
+  resetID                      BigInt                             @id @default(autoincrement()) @map("ResetID")
+  userID                       BigInt                             @map("UserID")
+  /// SHA-256 of the token. The plaintext only ever exists in the email — a database leak
+  /// must not hand over working reset links.
+  tokenHash                    String @db.VarChar(64)             @unique @map("TokenHash")
+  expiresAt                    DateTime @db.Timestamp(6)          @map("ExpiresAt")
+  usedAt                       DateTime? @db.Timestamp(6)         @map("UsedAt")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+
+  user                         SecUser                            @relation("AuthPasswordResetToSecUser", fields: [userID], references: [userID])
+
+  @@index([userID])
+  @@map("tblAuthPasswordReset")
+}
+
+/// Audit trail. The legacy app had none — there is no such table in the backup, and the
+/// 97 procs write no history beyond tblSubscriberStatusHistory (which is domain state, not
+/// an audit log).
+model AuditLog {
+  auditID                      BigInt                             @id @default(autoincrement()) @map("AuditID")
+  userID                       BigInt?                            @map("UserID")
+  action                       String @db.VarChar(60)             @map("Action")
+  entity                       String? @db.VarChar(60)            @map("Entity")
+  entityID                     String? @db.VarChar(60)            @map("EntityID")
+  ipAddress                    String? @db.VarChar(45)            @map("IPAddress")
+  userAgent                    String? @db.VarChar(300)           @map("UserAgent")
+  detail                       String? @db.Text                   @map("Detail")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+
+  @@index([userID])
+  @@index([timestampIns])
+  @@map("tblAuditLog")
 }

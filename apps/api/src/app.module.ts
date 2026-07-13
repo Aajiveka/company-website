@@ -2,7 +2,11 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '@/prisma/prisma.module';
+import { AuditModule } from '@/modules/audit/audit.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
+import { env } from '@/config/env';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { ClientsModule } from '@/modules/clients/clients.module';
@@ -15,6 +19,9 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 @Module({
   imports: [
     PrismaModule,
+    AuditModule,
+    BullModule.forRoot({ connection: { url: env.REDIS_URL } }),
+    NotificationsModule,
     JwtModule.register({}),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     AuthModule,
