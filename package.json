@@ -8,9 +8,10 @@
     "apps/api"
   ],
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green -k \"npm:dev:api\" \"npm:dev:web\"",
+    "dev": "concurrently -n api,web,pay -c blue,green,magenta -k \"npm:dev:api\" \"npm:dev:web\" \"npm:dev:billdesk\"",
     "dev:web": "npm run dev --workspace apps/web",
     "dev:api": "npm run dev --workspace apps/api",
+    "dev:billdesk": "node tests/billdesk-stub.mjs",
     "build": "npm run build --workspace apps/web && npm run build --workspace apps/api",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"

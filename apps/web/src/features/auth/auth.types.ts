@@ -17,7 +17,7 @@ export interface AuthSession {
 
 /** Login form schema (React Hook Form + Zod). */
 export const loginSchema = z.object({
-  userName: z.string().min(1, 'Username or mobile is required'),
+  userName: z.string().min(1, 'Username, email or mobile is required'),
   password: z.string().min(1, 'Password is required'),
 });
 export type LoginValues = z.infer<typeof loginSchema>;
