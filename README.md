@@ -31,12 +31,14 @@ legacy data migration.
 
 ```bash
 npm install
-npm run dev:api          # PORT=4100, to match the web proxy
-npm run dev              # web on :5173
+npm run dev              # api on :4000 + web on :5173 (proxied), together
 
 npm run typecheck && npm run lint
 node tests/e2e.mjs       # every page, all three roles, against a REAL api + database
 ```
+
+`npm run dev` starts both halves; use `npm run dev:api` or `npm run dev:web` to run either
+alone.
 
 `tests/e2e.mjs` is the check that matters. It drives every public page and all three roles
 against a real API and database — **no mocks**. Mocks agree with whatever you tell them; this
