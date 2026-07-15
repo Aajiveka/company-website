@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/shared/roles';
 import { ClientsService } from './clients.service';
-import { CreateJobDto } from './dto/clients.dto';
+import { ApplicantDecisionDto, CreateJobDto, UpdateJobDto } from './dto/clients.dto';
 
 @ApiTags('clients')
 @ApiBearerAuth()
@@ -35,5 +35,37 @@ export class ClientsController {
   @ApiOperation({ summary: 'Candidates who applied to the company’s jobs' })
   applicants(@CurrentUser() user: RequestUser) {
     return this.clients.applicants(user.userId);
+  }
+
+  @Get('masters')
+  @ApiOperation({ summary: 'id-backed lookup lists for the job post/edit form' })
+  masters() {
+    return this.clients.masters();
+  }
+
+  @Patch('me/jobs/:id')
+  @ApiOperation({ summary: 'Edit a job posting' })
+  updateJob(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: UpdateJobDto,
+  ) {
+    return this.clients.updateJob(user.userId, id, dto);
+  }
+
+  @Post('me/jobs/:id/deactivate')
+  @ApiOperation({ summary: 'Close a job posting (spClientMarkJobInactive)' })
+  deactivateJob(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: RequestUser) {
+    return this.clients.deactivateJob(user.userId, id);
+  }
+
+  @Post('me/applicants/:jobSubscriberMapId/decision')
+  @ApiOperation({ summary: 'Shortlist or reject an applicant (spClientShortListRejectSubscriber)' })
+  decideApplicant(
+    @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: ApplicantDecisionDto,
+  ) {
+    return this.clients.decideApplicant(user.userId, jobSubscriberMapId, dto);
   }
 }

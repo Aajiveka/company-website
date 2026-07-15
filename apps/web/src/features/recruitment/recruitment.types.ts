@@ -35,6 +35,8 @@ export interface QC1Stats {
 
 export interface InterviewRow {
   interviewId: number;
+  interviewStatusId: number;
+  jobSubscriberMapId: number | null;
   candidate: string;
   designation: string;
   company: string;
@@ -43,9 +45,38 @@ export interface InterviewRow {
   status: 'Scheduled' | 'Completed' | 'Cancelled';
 }
 
+/** A Mapped application with no interview yet — the schedule-interview candidate picker. */
+export interface EligibleApplication {
+  jobSubscriberMapId: number;
+  candidate: string;
+  designation: string;
+  company: string;
+}
+
+export interface InterviewMode {
+  id: number;
+  label: string;
+}
+
+/** A candidate-uploadable document type (tblMstrDocuments), for the assign-documents checklist. */
+export interface DocumentTypeOption {
+  documentTypeId: number;
+  name: string;
+}
+
 export interface CandidateDocReview {
   documentId: number;
   candidate: string;
   document: string;
   status: 'Pending' | 'Verified' | 'Rejected';
+}
+
+/** tblSubscriberRegistration.flgstatus, surfaced by the QC candidate-detail read. */
+export type RegistrationStatus = 'Pending' | 'Approved' | 'Rejected';
+
+/** An active job, for the assign-job picker (assign-job.aspx). */
+export interface JobOption {
+  jobId: number;
+  designation: string;
+  company: string;
 }

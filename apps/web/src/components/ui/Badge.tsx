@@ -25,8 +25,12 @@ export function Badge({ tone = 'gray', children }: { tone?: BadgeTone; children:
 export function statusTone(status: string): BadgeTone {
   const map: Record<string, BadgeTone> = {
     Applied: 'blue',
+    Mapped: 'blue',
     Shortlisted: 'amber',
     Interview: 'purple',
+    'Interview scheduled': 'purple',
+    'Interview attended': 'purple',
+    'Interview not attended': 'red',
     Rejected: 'red',
     Selected: 'green',
     Verified: 'green',

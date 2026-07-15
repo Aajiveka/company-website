@@ -1,14 +1,34 @@
 import { http, HttpResponse } from 'msw';
+import type { CvEmploymentEntry, CvPersonal, CvProfessional } from '@/features/candidates/candidate.types';
+import type { JobListing } from '@/features/clients/client.types';
 import {
+  ACTIVE_JOBS,
+  addAppliedJob,
+  addInterview,
   addJobAlert,
-  APPLIED_JOBS,
+  APPLICANT_ROWS,
+  APPLIED_JOB_LIST,
+  assignDocumentTypes,
   CANDIDATE_DOCUMENTS,
   CANDIDATE_PROFILE,
+  CANDIDATE_REGISTRATION_STATUS,
   CANDIDATE_ROWS,
   COMPANY_JOBS,
+  COMPANY_MASTERS,
   COMPANY_PROFILE,
+  CV_EDIT_PROFILE,
+  CV_MASTERS,
+  deactivateCompanyJob,
+  decideApplicant,
+  decideCandidate,
+  deleteCvCertificate,
+  deleteCvEducation,
+  deleteCvEmployment,
   DEMO_USERS,
   DOC_REVIEWS,
+  DOCUMENT_TYPES,
+  ELIGIBLE_APPLICATIONS,
+  INTERVIEW_MODES,
   INTERVIEWS,
   JOB_ALERTS,
   JOB_DESIGNATIONS,
@@ -18,6 +38,14 @@ import {
   QC1_STATS,
   makeSession,
   reviewDoc,
+  updateCompanyJob,
+  updateCvPersonal,
+  updateCvProfessional,
+  updateInterviewStatus,
+  uploadCandidateDocument,
+  upsertCvCertificate,
+  upsertCvEducation,
+  upsertCvEmployment,
 } from './data';
 
 const BASE = '/api';
@@ -99,8 +127,46 @@ export const handlers = [
     if (!userFromAuth(request)) return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
     return HttpResponse.json(CANDIDATE_PROFILE);
   }),
-  http.get(`${BASE}/candidates/me/applied-jobs`, () => HttpResponse.json(APPLIED_JOBS)),
+  http.get(`${BASE}/candidates/me/applied-jobs`, () => HttpResponse.json(APPLIED_JOB_LIST)),
   http.get(`${BASE}/candidates/me/documents`, () => HttpResponse.json(CANDIDATE_DOCUMENTS)),
+  http.post(`${BASE}/candidates/me/documents/:documentTypeId`, async ({ params }) => {
+    uploadCandidateDocument(Number(params.documentTypeId));
+    return HttpResponse.json({ ok: true });
+  }),
+  http.get(`${BASE}/candidates/me/cv-masters`, () => HttpResponse.json(CV_MASTERS)),
+  http.get(`${BASE}/candidates/me/cv-edit`, () => HttpResponse.json(CV_EDIT_PROFILE)),
+  http.put(`${BASE}/candidates/me/personal`, async ({ request }) => {
+    updateCvPersonal((await request.json()) as CvPersonal);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/professional`, async ({ request }) => {
+    updateCvProfessional((await request.json()) as CvProfessional);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/education`, async ({ request }) => {
+    upsertCvEducation((await request.json()) as { subscriberEducationId?: number; courseTypeId: number; degreeId: number });
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete(`${BASE}/candidates/me/education/:id`, ({ params }) => {
+    deleteCvEducation(Number(params.id));
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/employment`, async ({ request }) => {
+    upsertCvEmployment((await request.json()) as Partial<CvEmploymentEntry> & { employer: string });
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete(`${BASE}/candidates/me/employment/:id`, ({ params }) => {
+    deleteCvEmployment(Number(params.id));
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/certificates`, async ({ request }) => {
+    upsertCvCertificate((await request.json()) as { subscriberCertificateId?: number; certificateName: string });
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete(`${BASE}/candidates/me/certificates/:id`, ({ params }) => {
+    deleteCvCertificate(Number(params.id));
+    return HttpResponse.json({ ok: true });
+  }),
   http.get(`${BASE}/candidates/me/job-alerts`, () => HttpResponse.json(JOB_ALERTS)),
   http.post(`${BASE}/candidates/me/job-alerts`, async ({ request }) => {
     const body = (await request.json()) as { keyword: string; location: string; frequency: 'Daily' | 'Weekly' };
@@ -124,7 +190,22 @@ export const handlers = [
     const body = await request.json();
     return HttpResponse.json({ ok: true, job: body }, { status: 201 });
   }),
-  http.get(`${BASE}/clients/me/applicants`, () => HttpResponse.json(CANDIDATE_ROWS.slice(0, 20))),
+  http.get(`${BASE}/clients/masters`, () => HttpResponse.json(COMPANY_MASTERS)),
+  http.patch(`${BASE}/clients/me/jobs/:id`, async ({ request, params }) => {
+    const body = (await request.json()) as Partial<JobListing>;
+    updateCompanyJob(Number(params.id), body);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.post(`${BASE}/clients/me/jobs/:id/deactivate`, ({ params }) => {
+    deactivateCompanyJob(Number(params.id));
+    return HttpResponse.json({ ok: true });
+  }),
+  http.get(`${BASE}/clients/me/applicants`, () => HttpResponse.json(APPLICANT_ROWS)),
+  http.post(`${BASE}/clients/me/applicants/:id/decision`, async ({ request, params }) => {
+    const { decision } = (await request.json()) as { decision: 'Shortlisted' | 'Rejected' };
+    decideApplicant(Number(params.id), decision);
+    return HttpResponse.json({ ok: true });
+  }),
 
   // ---------------------------- Recruitment ---------------------------
   http.get(`${BASE}/recruitment/candidates`, ({ request }) => {
@@ -170,14 +251,67 @@ export const handlers = [
     return HttpResponse.json({ rows: filtered.slice(start, start + pageSize), total: filtered.length });
   }),
 
-  http.get(`${BASE}/recruitment/qc1/stats`, () => HttpResponse.json(QC1_STATS)),
+  http.get(`${BASE}/jobs/:id`, ({ params }) => {
+    const job = PUBLIC_JOBS.find((j) => j.jobId === Number(params.id));
+    if (!job) return HttpResponse.json({ message: 'Job not found' }, { status: 404 });
+    return HttpResponse.json(job);
+  }),
 
-  http.get(`${BASE}/recruitment/candidates/:id`, () => HttpResponse.json(CANDIDATE_PROFILE)),
+  http.post(`${BASE}/jobs/:id/apply`, ({ request, params }) => {
+    if (!userFromAuth(request)) return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const job = PUBLIC_JOBS.find((j) => j.jobId === Number(params.id));
+    if (!job) return HttpResponse.json({ message: 'Job not found or no longer active' }, { status: 404 });
+    if (APPLIED_JOB_LIST.some((a) => a.jobId === job.jobId)) {
+      return HttpResponse.json({ message: 'Already applied to this job' }, { status: 400 });
+    }
+    addAppliedJob(job);
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.get(`${BASE}/recruitment/qc1/stats`, () => HttpResponse.json(QC1_STATS)),
+  http.get(`${BASE}/recruitment/jobs`, () => HttpResponse.json(ACTIVE_JOBS)),
+  http.post(`${BASE}/recruitment/candidates/:id/assign-job`, async ({ request }) => {
+    const { jobId } = (await request.json()) as { jobId: number };
+    const job = ACTIVE_JOBS.find((j) => j.jobId === Number(jobId));
+    if (!job) return HttpResponse.json({ message: 'Job not found or no longer active' }, { status: 404 });
+    if (!APPLIED_JOB_LIST.some((a) => a.jobId === job.jobId)) {
+      addAppliedJob({ ...job, industry: '', city: '', workMode: '', employmentType: '', minExp: 0, minCtc: 0, maxCtc: 0, postedOn: '' });
+    }
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.get(`${BASE}/recruitment/candidates/:id`, () =>
+    HttpResponse.json({ ...CANDIDATE_PROFILE, registrationStatus: CANDIDATE_REGISTRATION_STATUS }),
+  ),
   http.get(`${BASE}/recruitment/interviews`, () => HttpResponse.json(INTERVIEWS)),
+  http.get(`${BASE}/recruitment/interviews/eligible`, () => HttpResponse.json(ELIGIBLE_APPLICATIONS)),
+  http.get(`${BASE}/recruitment/interview-modes`, () => HttpResponse.json(INTERVIEW_MODES)),
+  http.post(`${BASE}/recruitment/interviews`, async ({ request }) => {
+    const body = (await request.json()) as {
+      jobSubscriberMapId: number; interviewModeId: number; interviewTime: string; location?: string;
+    };
+    return HttpResponse.json(addInterview(body));
+  }),
+  http.post(`${BASE}/recruitment/interviews/:id/status`, async ({ request, params }) => {
+    const { status } = (await request.json()) as { status: 'Completed' | 'Cancelled' };
+    updateInterviewStatus(Number(params.id), status);
+    return HttpResponse.json({ ok: true });
+  }),
   http.get(`${BASE}/recruitment/documents`, () => HttpResponse.json(DOC_REVIEWS)),
   http.post(`${BASE}/recruitment/documents/review`, async ({ request }) => {
     const { documentId, status } = (await request.json()) as { documentId: number; status: 'Verified' | 'Rejected' };
     reviewDoc(documentId, status);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.post(`${BASE}/recruitment/candidates/:id/decision`, async ({ request }) => {
+    const { decision } = (await request.json()) as { decision: 'Approved' | 'Rejected' };
+    decideCandidate(decision);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.get(`${BASE}/recruitment/document-types`, () => HttpResponse.json(DOCUMENT_TYPES)),
+  http.post(`${BASE}/recruitment/candidates/:id/documents`, async ({ request }) => {
+    const { documentTypeIds } = (await request.json()) as { documentTypeIds: number[] };
+    assignDocumentTypes(documentTypeIds);
     return HttpResponse.json({ ok: true });
   }),
 ];

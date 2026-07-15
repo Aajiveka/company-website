@@ -1,5 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { CandidatesService } from '@/modules/candidates/candidates.service';
+import { JOB_STATUS_ACTIVE } from '@/shared/status';
+import { JobApplicationsService } from './job-application.service';
 import type { JobSearchQueryDto } from './dto/jobs.dto';
 
 /** A job as the public site shows it (tblClientJobs joined out to its lookups). */
@@ -19,7 +22,11 @@ export interface PublicJob {
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly candidates: CandidatesService,
+    private readonly applications: JobApplicationsService,
+  ) {}
 
   private get db() {
     return this.prisma.client;
@@ -60,6 +67,7 @@ export class JobsService {
       value ? { equals: value, mode: 'insensitive' as const } : undefined;
 
     const where = {
+      statusID: JOB_STATUS_ACTIVE,
       ...(q.designation ? { designation: { descr: eq(q.designation) } } : {}),
       ...(q.industry ? { industryType: { industryType: eq(q.industry) } } : {}),
       ...(q.location ? { jobCity: { descr: eq(q.location) } } : {}),
@@ -101,5 +109,40 @@ export class JobsService {
       ),
       total,
     };
+  }
+
+  /** A single public job listing, for the job-detail page. */
+  async byId(jobId: number): Promise<PublicJob> {
+    const j = await this.db.clientJobs.findUnique({
+      where: { jobID: jobId },
+      include: {
+        client: { select: { clientName: true } },
+        jobCity: { select: { descr: true } },
+        designation: { select: { descr: true } },
+        industryType: { select: { industryType: true } },
+        employeeType: { select: { descr: true } },
+        workMode: { select: { descr: true } },
+      },
+    });
+    if (!j) throw new NotFoundException('Job not found');
+    return {
+      jobId: Number(j.jobID),
+      designation: j.designation?.descr ?? '',
+      company: j.client?.clientName ?? '',
+      industry: j.industryType?.industryType ?? '',
+      city: j.jobCity?.descr ?? '',
+      workMode: j.workMode?.descr ?? '',
+      employmentType: j.employeeType?.descr ?? '',
+      minExp: j.minExp ?? 0,
+      minCtc: j.minCTC,
+      maxCtc: j.maxCTC,
+      postedOn: j.timestampIns.toISOString().slice(0, 10),
+    };
+  }
+
+  /** Candidate self-apply (applyforjob.aspx's structured-application counterpart). */
+  async apply(userId: number, jobId: number) {
+    const subscriberId = await this.candidates.subscriberIdFor(userId);
+    return this.applications.apply(subscriberId, jobId, userId);
   }
 }

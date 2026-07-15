@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { Card, CardSkeleton, Pagination } from '@/components/ui';
 import { PageBanner } from '@/features/public/components/PageBanner';
@@ -13,35 +13,37 @@ const lpa = (rupees: number) => (rupees / 100_000).toFixed(1).replace(/\.0$/, ''
 
 function JobCard({ job }: { job: PublicJob }) {
   return (
-    <Card className="transition hover:shadow-md">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-heading text-lg font-semibold text-navy">{job.designation}</h3>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
-            <Building2 className="h-4 w-4 text-primary" aria-hidden />
-            {job.company}
-          </p>
+    <Link to={`/jobs/${job.jobId}`} className="block">
+      <Card className="transition hover:shadow-md">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-heading text-lg font-semibold text-navy">{job.designation}</h3>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
+              <Building2 className="h-4 w-4 text-primary" aria-hidden />
+              {job.company}
+            </p>
+          </div>
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            {job.industry}
+          </span>
         </div>
-        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          {job.industry}
-        </span>
-      </div>
 
-      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
-        <span className="flex items-center gap-1.5">
-          <MapPin className="h-4 w-4 text-gray-400" aria-hidden />
-          {job.city}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Briefcase className="h-4 w-4 text-gray-400" aria-hidden />
-          {job.minExp === 0 ? 'Fresher' : `${job.minExp}+ yrs`} · {job.workMode} · {job.employmentType}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <IndianRupee className="h-4 w-4 text-gray-400" aria-hidden />
-          {lpa(job.minCtc)}–{lpa(job.maxCtc)} LPA
-        </span>
-      </div>
-    </Card>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
+          <span className="flex items-center gap-1.5">
+            <MapPin className="h-4 w-4 text-gray-400" aria-hidden />
+            {job.city}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Briefcase className="h-4 w-4 text-gray-400" aria-hidden />
+            {job.minExp === 0 ? 'Fresher' : `${job.minExp}+ yrs`} · {job.workMode} · {job.employmentType}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <IndianRupee className="h-4 w-4 text-gray-400" aria-hidden />
+            {lpa(job.minCtc)}–{lpa(job.maxCtc)} LPA
+          </span>
+        </div>
+      </Card>
+    </Link>
   );
 }
 

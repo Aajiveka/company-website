@@ -41,6 +41,7 @@ const BlogsPage = lazy(() => import('@/features/public/pages/BlogsPage'));
 const BlogDetailPage = lazy(() => import('@/features/public/pages/BlogDetailPage'));
 
 const JobSearchPage = lazy(() => import('@/features/jobs/pages/JobSearchPage'));
+const JobDetailPage = lazy(() => import('@/features/jobs/pages/JobDetailPage'));
 
 const PaymentReturnPage = lazy(() => import('@/features/payments/pages/PaymentReturnPage'));
 const MembershipPage = lazy(() => import('@/features/payments/pages/MembershipPage'));
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
       { path: '/forgot-password', element: withSuspense(<ForgotPasswordPage />) },
       { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
       { path: '/jobs', element: withSuspense(<JobSearchPage />) },
+      { path: '/jobs/:id', element: withSuspense(<JobDetailPage />) },
       { path: '/pricing', element: withSuspense(<PricingPage />) },
       { path: '/about', element: withSuspense(<AboutPage />) },
       { path: '/contact', element: withSuspense(<ContactPage />) },
@@ -99,6 +101,7 @@ export const router = createBrowserRouter([
               { path: '/company/profile', element: withSuspense(<CompanyProfilePage />) },
               { path: '/company/jobs', element: withSuspense(<ManageJobsPage />) },
               { path: '/company/post-job', element: withSuspense(<JobPostPage />) },
+              { path: '/company/jobs/:id/edit', element: withSuspense(<JobPostPage />) },
               { path: '/company/applicants', element: withSuspense(<ApplicantsPage />) },
             ],
           },

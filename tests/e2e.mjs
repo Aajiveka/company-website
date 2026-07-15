@@ -16,14 +16,14 @@ import { chromium } from 'playwright';
 const SHOT = process.env.E2E_SHOT_DIR ?? os.tmpdir();
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
 
-const PUBLIC = ['/', '/jobs', '/login', '/register', '/forgot-password', '/pricing', '/about',
+const PUBLIC = ['/', '/jobs', '/jobs/1', '/login', '/register', '/forgot-password', '/pricing', '/about',
   '/contact', '/blogs', '/career', '/testimonial', '/privacy', '/terms', '/subscription', '/resume'];
 
 const ROLES = {
   candidate: { user: 'anuj', pass: 'anuj', pages: ['/candidate/profile', '/candidate/cv-manager',
     '/candidate/applied-jobs', '/candidate/job-alerts', '/candidate/documents', '/candidate/change-password'] },
   employer: { user: 'anuj@aajiveka.com', pass: 'anuj@aajiveka.com', pages: ['/company/profile',
-    '/company/jobs', '/company/post-job', '/company/applicants'] },
+    '/company/jobs', '/company/post-job', '/company/jobs/1/edit', '/company/applicants'] },
   qc1: { user: 'qc1', pass: 'qc1', pages: ['/recruitment/candidates', '/recruitment/qc1',
     '/recruitment/documents', '/recruitment/interviews', '/recruitment/candidates/1'] },
 };

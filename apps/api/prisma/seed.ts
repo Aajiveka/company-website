@@ -38,9 +38,14 @@ const ORDER = [
   'tblMstrWorkMode',
   'tblMstrGender',
   'tblMstrEducationType',
+  // Same real rows the extraction dumped as tblMstrCourse.psv — tblMstrCourse and
+  // tblMstrEducationDegree are identically-shaped legacy duplicates, and
+  // tblSubscriberEducation.DegreeID is the one that actually FKs to MstrEducationDegree.
+  'tblMstrEducationDegree',
   'tblMstrDocumentType',
   'tblMstrDocuments',
   'tblMstrJobMappingStatus',
+  'tblMstrInterviewMode',
   'tblMstrState',
   'tblMstrCily',
 ];
@@ -111,8 +116,10 @@ const DEMO_USERS = [
   // The candidate gets a real subscriber profile, because a login on its own has no
   // candidate identity — tblSecUser.SubscriberID has to be set explicitly.
   { userName: 'anuj', roleId: 1, descr: 'anuj', email: '' },
-  { userName: 'qc1', roleId: 2, descr: 'Aajiveka Admin', email: 'admin@aajiveka.com' },
+  { userName: 'qc1', roleId: 2, descr: 'QC1 Reviewer', email: 'qc1@aajiveka.com' },
+  { userName: 'qc2', roleId: 3, descr: 'QC2 Reviewer', email: 'qc2@aajiveka.com' },
   { userName: 'anuj@aajiveka.com', roleId: 4, descr: 'anuj garg', email: 'anuj@aajiveka.com' },
+  { userName: 'admin', roleId: 5, descr: 'Aajiveka Admin', email: 'admin@aajiveka.com' },
 ];
 
 async function seedDemoUsers() {
