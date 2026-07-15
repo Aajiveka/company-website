@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,6 +23,8 @@ import type {
   CvEmploymentEntry,
   CvMasterOption,
   CvMasters,
+  CvPersonal,
+  CvProfessional,
 } from '../candidate.types';
 
 const opts = (list?: CvMasterOption[]) => (list ?? []).map((o) => ({ label: o.label, value: o.id }));
@@ -46,15 +48,18 @@ const personalSchema = z.object({
 });
 type PersonalValues = z.infer<typeof personalSchema>;
 
-function PersonalSection({ data, masters }: { data: NonNullable<ReturnType<typeof useCvEditProfile>['data']>['personal']; masters?: CvMasters }) {
+function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMasters }) {
   const update = useUpdatePersonal();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<PersonalValues>({ resolver: zodResolver(personalSchema) });
-
-  useEffect(() => {
-    if (data) reset({ ...data, email: data.email ?? '', cityId: data.cityId ?? undefined });
-  }, [data, reset]);
+  // defaultValues seeds the form once, on mount, from whatever the parent already loaded — it
+  // must NOT be kept in sync with `data` reactively, or saving any OTHER section on this page
+  // (which refetches the same shared cv-edit query) would reset whatever the user is mid-typing
+  // here back to the last-saved server value.
+  const { register, handleSubmit, formState: { errors } } = useForm<PersonalValues>({
+    resolver: zodResolver(personalSchema),
+    defaultValues: { ...data, email: data.email ?? '', cityId: data.cityId ?? undefined },
+  });
 
   const onSubmit = (values: PersonalValues) =>
     update.mutate(
@@ -114,34 +119,29 @@ function ProfessionalSection({
   data,
   masters,
 }: {
-  data: NonNullable<ReturnType<typeof useCvEditProfile>['data']>['professional'];
+  data: CvProfessional;
   masters?: CvMasters;
 }) {
   const update = useUpdateProfessional();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfessionalValues>({
+  // Seeded once from `data` at mount — see the comment in PersonalSection for why this must
+  // not reactively resync when a sibling section's save refetches the shared cv-edit query.
+  const { register, handleSubmit, formState: { errors } } = useForm<ProfessionalValues>({
     resolver: zodResolver(professionalSchema),
+    defaultValues: {
+      subFunctionId: data.subFunctionId ?? undefined,
+      skillId: data.skillId ?? undefined,
+      industryTypeId: data.industryTypeId ?? undefined,
+      totalExp: data.totalExp,
+      currentCtc: data.currentCtc ?? undefined,
+      currentCityId: data.currentCityId ?? undefined,
+      noticePeriod: data.noticePeriod ?? undefined,
+      flgReadyToRelocate: data.flgReadyToRelocate,
+    },
   });
-  const [preferredCityIds, setPreferredCityIds] = useState<number[]>([]);
-  const [tagsText, setTagsText] = useState('');
-
-  useEffect(() => {
-    if (data) {
-      reset({
-        subFunctionId: data.subFunctionId ?? undefined,
-        skillId: data.skillId ?? undefined,
-        industryTypeId: data.industryTypeId ?? undefined,
-        totalExp: data.totalExp,
-        currentCtc: data.currentCtc ?? undefined,
-        currentCityId: data.currentCityId ?? undefined,
-        noticePeriod: data.noticePeriod ?? undefined,
-        flgReadyToRelocate: data.flgReadyToRelocate,
-      });
-      setPreferredCityIds(data.preferredCityIds);
-      setTagsText(data.tagNames.join(', '));
-    }
-  }, [data, reset]);
+  const [preferredCityIds, setPreferredCityIds] = useState<number[]>(data.preferredCityIds);
+  const [tagsText, setTagsText] = useState(data.tagNames.join(', '));
 
   const toggleCity = (id: number) =>
     setPreferredCityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -208,8 +208,11 @@ function ProfessionalSection({
 /* ------------------------------- Education -------------------------------- */
 
 function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters?: CvMasters }) {
+  // Seeded once from `rows` at mount. No resync effect: every other section's save refetches
+  // the same shared cv-edit query, and resyncing here on every change would wipe out whatever
+  // the user is mid-editing in this section before they've clicked ITS Save. Instead, each row
+  // updates its own local entry directly from its own mutation's result below.
   const [list, setList] = useState<CvEducationEntry[]>(rows);
-  useEffect(() => setList(rows), [rows]);
   const upsert = useUpsertEducation();
   const del = useDeleteEducation();
   const { notify } = useToast();
@@ -218,11 +221,17 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
   const update = (i: number, patch: Partial<CvEducationEntry>) =>
     setList((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
-  const save = (row: CvEducationEntry) => {
+  const save = (row: CvEducationEntry, i: number) => {
     if (!row.courseTypeId || !row.degreeId) return;
     upsert.mutate(
       { subscriberEducationId: row.subscriberEducationId || undefined, courseTypeId: row.courseTypeId, degreeId: row.degreeId },
-      { onSuccess: () => notify('Education saved.', 'success'), onError: onError('Could not save this entry') },
+      {
+        onSuccess: (result) => {
+          update(i, { subscriberEducationId: result.subscriberEducationId });
+          notify('Education saved.', 'success');
+        },
+        onError: onError('Could not save this entry'),
+      },
     );
   };
   const remove = (row: CvEducationEntry, i: number) => {
@@ -230,7 +239,13 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
       setList((prev) => prev.filter((_, idx) => idx !== i));
       return;
     }
-    del.mutate(row.subscriberEducationId, { onSuccess: () => notify('Education removed.', 'success'), onError: onError('Could not remove this entry') });
+    del.mutate(row.subscriberEducationId, {
+      onSuccess: () => {
+        setList((prev) => prev.filter((_, idx) => idx !== i));
+        notify('Education removed.', 'success');
+      },
+      onError: onError('Could not remove this entry'),
+    });
   };
 
   return (
@@ -261,7 +276,7 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
               value={row.degreeId ?? ''}
               onChange={(e) => update(i, { degreeId: Number(e.target.value) })}
             />
-            <Button type="button" size="sm" onClick={() => save(row)} isLoading={upsert.isPending}>
+            <Button type="button" size="sm" onClick={() => save(row, i)} isLoading={upsert.isPending}>
               Save
             </Button>
             <button
@@ -283,8 +298,8 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
 /* ------------------------------- Employment -------------------------------- */
 
 function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; masters?: CvMasters }) {
+  // See EducationSection above — seeded once at mount, no resync effect.
   const [list, setList] = useState<CvEmploymentEntry[]>(rows);
-  useEffect(() => setList(rows), [rows]);
   const upsert = useUpsertEmployment();
   const del = useDeleteEmployment();
   const { notify } = useToast();
@@ -298,7 +313,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
   const update = (i: number, patch: Partial<CvEmploymentEntry>) =>
     setList((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
-  const save = (row: CvEmploymentEntry) => {
+  const save = (row: CvEmploymentEntry, i: number) => {
     if (!row.employer.trim()) return;
     upsert.mutate(
       {
@@ -312,7 +327,13 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
         salary: row.salary ?? undefined,
         noticePeriodDays: row.noticePeriodDays ?? undefined,
       },
-      { onSuccess: () => notify('Employment saved.', 'success'), onError: onError('Could not save this entry') },
+      {
+        onSuccess: (result) => {
+          update(i, { subscriberEmployerId: result.subscriberEmployerId });
+          notify('Employment saved.', 'success');
+        },
+        onError: onError('Could not save this entry'),
+      },
     );
   };
   const remove = (row: CvEmploymentEntry, i: number) => {
@@ -320,7 +341,13 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
       setList((prev) => prev.filter((_, idx) => idx !== i));
       return;
     }
-    del.mutate(row.subscriberEmployerId, { onSuccess: () => notify('Employment removed.', 'success'), onError: onError('Could not remove this entry') });
+    del.mutate(row.subscriberEmployerId, {
+      onSuccess: () => {
+        setList((prev) => prev.filter((_, idx) => idx !== i));
+        notify('Employment removed.', 'success');
+      },
+      onError: onError('Could not remove this entry'),
+    });
   };
 
   return (
@@ -368,7 +395,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
                 Currently working here
               </label>
               <div className="flex gap-2">
-                <Button type="button" size="sm" onClick={() => save(row)} isLoading={upsert.isPending}>
+                <Button type="button" size="sm" onClick={() => save(row, i)} isLoading={upsert.isPending}>
                   Save
                 </Button>
                 <button
@@ -392,18 +419,24 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
 /* ------------------------------- Certificates -------------------------------- */
 
 function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
+  // See EducationSection above — seeded once at mount, no resync effect.
   const [list, setList] = useState<CvCertificateEntry[]>(rows);
-  useEffect(() => setList(rows), [rows]);
   const upsert = useUpsertCertificate();
   const del = useDeleteCertificate();
   const { notify } = useToast();
   const onError = useErrorNotify();
 
-  const save = (row: CvCertificateEntry) => {
+  const save = (row: CvCertificateEntry, i: number) => {
     if (!row.certificateName.trim()) return;
     upsert.mutate(
       { subscriberCertificateId: row.subscriberCertificateId || undefined, certificateName: row.certificateName },
-      { onSuccess: () => notify('Certificate saved.', 'success'), onError: onError('Could not save this entry') },
+      {
+        onSuccess: (result) => {
+          setList((prev) => prev.map((r, idx) => (idx === i ? { ...r, subscriberCertificateId: result.subscriberCertificateId } : r)));
+          notify('Certificate saved.', 'success');
+        },
+        onError: onError('Could not save this entry'),
+      },
     );
   };
   const remove = (row: CvCertificateEntry, i: number) => {
@@ -411,7 +444,13 @@ function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
       setList((prev) => prev.filter((_, idx) => idx !== i));
       return;
     }
-    del.mutate(row.subscriberCertificateId, { onSuccess: () => notify('Certificate removed.', 'success'), onError: onError('Could not remove this entry') });
+    del.mutate(row.subscriberCertificateId, {
+      onSuccess: () => {
+        setList((prev) => prev.filter((_, idx) => idx !== i));
+        notify('Certificate removed.', 'success');
+      },
+      onError: onError('Could not remove this entry'),
+    });
   };
 
   return (
@@ -435,7 +474,7 @@ function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
               value={row.certificateName}
               onChange={(e) => setList((prev) => prev.map((r, idx) => (idx === i ? { ...r, certificateName: e.target.value } : r)))}
             />
-            <Button type="button" size="sm" onClick={() => save(row)} isLoading={upsert.isPending}>
+            <Button type="button" size="sm" onClick={() => save(row, i)} isLoading={upsert.isPending}>
               Save
             </Button>
             <button
