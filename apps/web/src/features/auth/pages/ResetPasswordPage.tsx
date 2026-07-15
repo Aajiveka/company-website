@@ -43,7 +43,12 @@ export default function ResetPasswordPage() {
     >
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
         <input type="hidden" {...register('token')} />
-        <Input label="New Password" type="password" error={errors.password?.message} {...register('password')} />
+        <Input
+          label="New Password"
+          type="password"
+          error={errors.newPassword?.message}
+          {...register('newPassword')}
+        />
         <Input
           label="Confirm Password"
           type="password"

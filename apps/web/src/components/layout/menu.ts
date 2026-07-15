@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   Bell,
   Briefcase,
   Building2,
@@ -31,6 +32,7 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { label: 'Applied Jobs', to: '/candidate/applied-jobs', icon: Briefcase },
     { label: 'Job Alerts', to: '/candidate/job-alerts', icon: Bell },
     { label: 'Documents', to: '/candidate/documents', icon: Upload },
+    { label: 'Membership', to: '/candidate/subscription', icon: BadgeCheck },
     { label: 'Change Password', to: '/candidate/change-password', icon: KeyRound },
   ],
   [Role.QC1]: [

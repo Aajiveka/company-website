@@ -205,6 +205,7 @@ export class AuthService {
     await this.notifications.sendSms({
       to: input.mobile,
       text: `Your Aajiveka verification code is ${code}. It expires in 10 minutes.`,
+      otp: code,
     });
     await this.audit.record({
       action: existing ? 'register.otp_resent' : 'register.started',
@@ -214,12 +215,17 @@ export class AuthService {
     });
 
     // The same response either way, so the endpoint cannot be used to discover which
-    // mobile numbers are already registered.
-    return { otpRequired: true };
+    // mobile numbers are already registered. Outside production we also return the code so it
+    // can be entered without a live SMS gateway — never leaked in production.
+    return { otpRequired: true, ...(env.NODE_ENV !== 'production' ? { devCode: code } : {}) };
   }
 
   /** Step 2: verify the OTP, create the login, and return a session. */
-  async verifyOtp(mobile: string, code: string) {
+  async verifyOtp(
+    mobile: string,
+    code: string,
+    profile?: { fullName?: string; email?: string; password?: string },
+  ) {
     const ok = await this.otp.verify('register', mobile, code);
     if (!ok) throw new BadRequestException('Incorrect code');
 
@@ -263,6 +269,29 @@ export class AuthService {
           },
         });
         return created;
+      });
+    }
+
+    // Persist the profile captured on the full registration form. Done here — the moment the
+    // account exists — so identityFor() below returns the saved name/email in the session.
+    if (profile?.fullName || profile?.email) {
+      await this.db.subscriberCVDetails.update({
+        where: { subscriberID: subscriber.subscriberID },
+        data: {
+          ...(profile.fullName ? { fullName: profile.fullName } : {}),
+          ...(profile.email ? { emailID: profile.email } : {}),
+          timestampUpd: new Date(),
+        },
+      });
+    }
+    if (profile?.password) {
+      // Same hashing as candidates.service.changePassword; pwdStatus 1 = user set their own password.
+      await this.db.secUser.update({
+        where: { userID: user.userID },
+        data: {
+          password: await argon2.hash(profile.password, { type: argon2.argon2id }),
+          pwdStatus: 1,
+        },
       });
     }
 

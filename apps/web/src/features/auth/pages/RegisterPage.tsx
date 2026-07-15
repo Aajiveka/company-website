@@ -11,13 +11,21 @@ import { registerSchema, type RegisterValues } from '../auth.types';
 import { ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
 
-/** Candidate registration → 2Factor-style OTP verification (single page). */
+const apiMessage = (err: unknown, fallback: string) =>
+  isAxiosError(err) ? ((err.response?.data as { message?: string })?.message ?? fallback) : fallback;
+
+/**
+ * Candidate registration — full form (Full Name, Email, Mobile, Password) with OTP verification.
+ * The backend register only takes the mobile (it texts an OTP); the rest of the form is held in
+ * state and sent to verify-otp, which persists it when the account is created.
+ */
 export default function RegisterPage() {
   const { notify } = useToast();
   const { setSession } = useAuth();
   const navigate = useNavigate();
-  const [userId, setUserId] = useState<number | null>(null);
-  const [otp, setOtp] = useState('');
+  // Once set, the account details are captured and we're on the OTP step.
+  const [pending, setPending] = useState<RegisterValues | null>(null);
+  const [code, setCode] = useState('');
 
   const {
     register,
@@ -27,31 +35,34 @@ export default function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (res) => {
-      setUserId(res.userId);
-      notify('OTP sent to your mobile number.', 'success');
+    onSuccess: (res, values) => {
+      setPending(values);
+      // In dev (no SMS gateway) the API returns the code — pre-fill it and show it so the
+      // user can just click Verify. In production `devCode` is absent and this is a no-op.
+      if (res.devCode) {
+        setCode(res.devCode);
+        notify(`Dev OTP: ${res.devCode}`, 'info');
+      } else {
+        notify('OTP sent to your mobile number.', 'success');
+      }
     },
-    onError: (err) =>
-      notify(
-        isAxiosError(err) ? ((err.response?.data as { message?: string })?.message ?? 'Registration failed') : 'Registration failed',
-        'error',
-      ),
+    onError: (err) => notify(apiMessage(err, 'Registration failed'), 'error'),
   });
 
   const otpMutation = useMutation({
     mutationFn: authApi.verifyOtp,
     onSuccess: (session) => {
       setSession(session);
-      notify('Account verified!', 'success');
+      notify('Account created!', 'success');
       navigate(ROLE_HOME[session.user.roleId], { replace: true });
     },
-    onError: () => notify('Invalid OTP. Please try again.', 'error'),
+    onError: (err) => notify(apiMessage(err, 'Invalid OTP. Please try again.'), 'error'),
   });
 
   return (
     <AuthShell
-      title={userId ? 'Verify your mobile' : 'Create your account'}
-      subtitle={userId ? 'Enter the OTP we sent you' : 'Sign up as a candidate'}
+      title={pending ? 'Verify your mobile' : 'Create your account'}
+      subtitle={pending ? `Enter the 6-digit code sent to ${pending.mobile}` : 'Sign up as a candidate'}
       footer={
         <>
           Already registered?{' '}
@@ -61,11 +72,17 @@ export default function RegisterPage() {
         </>
       }
     >
-      {!userId ? (
-        <form onSubmit={handleSubmit((v) => registerMutation.mutate(v))} className="space-y-4" noValidate>
+      {!pending ? (
+        <form key="register-form" onSubmit={handleSubmit((v) => registerMutation.mutate(v))} className="space-y-4" noValidate>
           <Input label="Full Name" error={errors.fullName?.message} {...register('fullName')} />
           <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
-          <Input label="Mobile Number" inputMode="numeric" error={errors.mobile?.message} {...register('mobile')} />
+          <Input
+            label="Mobile Number"
+            inputMode="numeric"
+            placeholder="10-digit mobile number"
+            error={errors.mobile?.message}
+            {...register('mobile')}
+          />
           <Input label="Password" type="password" error={errors.password?.message} {...register('password')} />
           <Button type="submit" className="w-full" isLoading={registerMutation.isPending}>
             Register
@@ -73,21 +90,38 @@ export default function RegisterPage() {
         </form>
       ) : (
         <form
+          key="otp-form"
           onSubmit={(e) => {
             e.preventDefault();
-            otpMutation.mutate({ userId, otp });
+            otpMutation.mutate({
+              mobile: pending.mobile,
+              code,
+              fullName: pending.fullName,
+              email: pending.email,
+              password: pending.password,
+            });
           }}
           className="space-y-4"
         >
           <Input
             label="One-Time Password"
             inputMode="numeric"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
+            maxLength={6}
+            placeholder="6-digit code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
           />
           <Button type="submit" className="w-full" isLoading={otpMutation.isPending}>
             Verify &amp; Continue
           </Button>
+          <button
+            type="button"
+            onClick={() => registerMutation.mutate(pending)}
+            className="block w-full text-center text-sm text-primary hover:underline"
+            disabled={registerMutation.isPending}
+          >
+            Resend code
+          </button>
         </form>
       )}
     </AuthShell>

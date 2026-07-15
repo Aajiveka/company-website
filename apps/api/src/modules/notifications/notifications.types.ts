@@ -7,6 +7,8 @@ export interface EmailMessage {
 export interface SmsMessage {
   to: string;
   text: string;
+  /** The exact OTP to deliver. When set, 2Factor sends this value instead of AUTOGEN-ing its own. */
+  otp?: string;
 }
 
 export interface EmailProvider {

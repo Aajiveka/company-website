@@ -28,11 +28,15 @@ export default function ForgotPasswordPage() {
     >
       {mutation.isSuccess ? (
         <Alert variant="success">
-          If an account exists for that email, a password reset link is on its way. Please check your inbox.
+          If an account exists, a password reset link is on its way to the email on file. Please check your inbox.
         </Alert>
       ) : (
         <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
-          <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+          <Input
+            label="Username or registered mobile"
+            error={errors.userName?.message}
+            {...register('userName')}
+          />
           <Button type="submit" className="w-full" isLoading={mutation.isPending}>
             Send reset link
           </Button>

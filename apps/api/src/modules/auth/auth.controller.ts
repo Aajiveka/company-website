@@ -61,7 +61,11 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({ summary: 'Verify the OTP and receive a session' })
   verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.auth.verifyOtp(dto.mobile, dto.code);
+    return this.auth.verifyOtp(dto.mobile, dto.code, {
+      fullName: dto.fullName,
+      email: dto.email,
+      password: dto.password,
+    });
   }
 
   @Public()

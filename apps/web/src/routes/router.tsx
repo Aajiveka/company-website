@@ -42,6 +42,9 @@ const BlogDetailPage = lazy(() => import('@/features/public/pages/BlogDetailPage
 
 const JobSearchPage = lazy(() => import('@/features/jobs/pages/JobSearchPage'));
 
+const PaymentReturnPage = lazy(() => import('@/features/payments/pages/PaymentReturnPage'));
+const MembershipPage = lazy(() => import('@/features/payments/pages/MembershipPage'));
+
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -67,6 +70,7 @@ export const router = createBrowserRouter([
       { path: '/terms', element: withSuspense(<LegalPage variant="terms" />) },
       { path: '/subscription', element: withSuspense(<SubscriptionPage />) },
       { path: '/resume', element: withSuspense(<ResumePage />) },
+      { path: '/payment/return', element: withSuspense(<PaymentReturnPage />) },
     ],
   },
   {
@@ -84,6 +88,7 @@ export const router = createBrowserRouter([
               { path: '/candidate/applied-jobs', element: withSuspense(<AppliedJobsPage />) },
               { path: '/candidate/job-alerts', element: withSuspense(<JobAlertsPage />) },
               { path: '/candidate/documents', element: withSuspense(<DocumentsPage />) },
+              { path: '/candidate/subscription', element: withSuspense(<MembershipPage />) },
               { path: '/candidate/change-password', element: withSuspense(<ChangePasswordPage />) },
             ],
           },

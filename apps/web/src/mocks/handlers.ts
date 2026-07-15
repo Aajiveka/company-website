@@ -57,13 +57,42 @@ export const handlers = [
     return HttpResponse.json(makeSession(user));
   }),
 
+  // Same contract as the real NestJS backend (username-keyed; always the same response).
   http.post(`${BASE}/auth/forgot-password`, () =>
-    HttpResponse.json({ message: 'If the email exists, a reset link was sent.' }),
+    HttpResponse.json({ message: 'If that account exists, a reset link has been sent.' }),
   ),
-  http.post(`${BASE}/auth/reset-password`, () => HttpResponse.json({ message: 'Password updated.' })),
+  http.post(`${BASE}/auth/reset-password`, async ({ request }) => {
+    const { newPassword } = (await request.json()) as { token: string; newPassword: string };
+    if (!newPassword || newPassword.length < 8) {
+      return HttpResponse.json({ message: 'Password must be at least 8 characters' }, { status: 400 });
+    }
+    return HttpResponse.json({ message: 'Your password has been updated.' });
+  }),
 
-  http.post(`${BASE}/auth/register`, () => HttpResponse.json({ userId: 999, otpRequired: true })),
-  http.post(`${BASE}/auth/verify-otp`, () => HttpResponse.json(makeSession(DEMO_USERS[0]))),
+  // Mobile-first OTP registration. Mock accepts any 10-digit mobile; the code is always 123456,
+  // surfaced as devCode to mirror the backend's dev behaviour.
+  http.post(`${BASE}/auth/register`, async ({ request }) => {
+    const { mobile } = (await request.json()) as { mobile: string };
+    if (!/^\d{10}$/.test(mobile ?? '')) {
+      return HttpResponse.json({ message: 'Mobile must be 10 digits' }, { status: 400 });
+    }
+    return HttpResponse.json({ otpRequired: true, devCode: '123456' });
+  }),
+  http.post(`${BASE}/auth/verify-otp`, async ({ request }) => {
+    const { code, fullName, email } = (await request.json()) as {
+      mobile: string;
+      code: string;
+      fullName?: string;
+      email?: string;
+    };
+    if (code !== '123456') return HttpResponse.json({ message: 'Incorrect code' }, { status: 400 });
+    // Reflect the profile captured on the full form (mirrors the real backend persisting it).
+    const session = makeSession(DEMO_USERS[0]);
+    return HttpResponse.json({
+      ...session,
+      user: { ...session.user, fullName: fullName ?? session.user.fullName, email: email ?? session.user.email },
+    });
+  }),
 
   // ---------------------------- Candidate -----------------------------
   http.get(`${BASE}/candidates/me`, ({ request }) => {

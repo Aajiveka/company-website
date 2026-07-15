@@ -23,12 +23,30 @@ export const authApi = {
   forgotPassword: (values: ForgotValues) =>
     api.post<{ message: string }>('/auth/forgot-password', values).then((r) => r.data),
 
+  // Backend consumes `{ token, newPassword }` — send only those two.
   resetPassword: (values: ResetValues) =>
-    api.post<{ message: string }>('/auth/reset-password', values).then((r) => r.data),
+    api
+      .post<{ message: string }>('/auth/reset-password', {
+        token: values.token,
+        newPassword: values.newPassword,
+      })
+      .then((r) => r.data),
 
+  // The backend's register only takes the mobile (it texts an OTP). The rest of the full
+  // form is carried to verify-otp below. `devCode` is returned only outside production so the
+  // OTP can be entered without a live SMS gateway.
   register: (values: RegisterValues) =>
-    api.post<{ userId: number; otpRequired: boolean }>('/auth/register', values).then((r) => r.data),
+    api
+      .post<{ otpRequired: boolean; devCode?: string }>('/auth/register', { mobile: values.mobile })
+      .then((r) => r.data),
 
-  verifyOtp: (payload: { userId: number; otp: string }) =>
-    api.post<AuthSession>('/auth/verify-otp', payload).then((r) => r.data),
+  // Verify the OTP and receive a full session. The profile fields are persisted server-side
+  // when the account is created.
+  verifyOtp: (payload: {
+    mobile: string;
+    code: string;
+    fullName?: string;
+    email?: string;
+    password?: string;
+  }) => api.post<AuthSession>('/auth/verify-otp', payload).then((r) => r.data),
 };

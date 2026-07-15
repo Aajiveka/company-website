@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({ example: 'anuj' })
@@ -42,6 +42,25 @@ export class VerifyOtpDto {
   @IsString()
   @Matches(/^[0-9]{6}$/, { message: 'Code must be 6 digits' })
   code!: string;
+
+  // Optional profile captured on the full registration form — persisted to the CV / login
+  // when the account is created during verification. Endpoint stays backward-compatible.
+  @ApiPropertyOptional({ example: 'Rahul Sharma' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2, { message: 'Enter your full name' })
+  fullName?: string;
+
+  @ApiPropertyOptional({ example: 'rahul@example.com' })
+  @IsOptional()
+  @IsEmail({}, { message: 'Enter a valid email' })
+  email?: string;
+
+  @ApiPropertyOptional({ minLength: 8 })
+  @IsOptional()
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  password?: string;
 }
 
 export class ForgotPasswordDto {

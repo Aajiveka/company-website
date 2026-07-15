@@ -104,15 +104,17 @@ const server = createServer((req, res) => {
       });
 
       // Server-to-server callback — this is what actually settles the order.
-      const hook = await fetch(`${API}/api/payments/webhook`, {
+      await fetch(`${API}/api/payments/webhook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/jose' },
         body: txn,
       }).catch((e) => ({ status: 0, text: async () => String(e) }));
 
-      res
-        .writeHead(200, { 'Content-Type': 'application/json' })
-        .end(JSON.stringify({ webhookStatus: hook.status, orderid, outcome }));
+      // Real BillDesk returns the browser to the merchant's return URL (`ru`)
+      // after settling. Mirror that so the whole flow is clickable end to end.
+      const sep = known.ru.includes('?') ? '&' : '?';
+      const location = `${known.ru}${sep}ref=${encodeURIComponent(orderid)}&outcome=${outcome}`;
+      res.writeHead(302, { Location: location }).end();
       return;
     }
 

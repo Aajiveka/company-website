@@ -11,9 +11,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    // Proxy API calls to the Express server in dev to avoid CORS.
+    // Proxy API calls to the NestJS backend (default PORT=4000) to avoid CORS.
+    // Override with VITE_API_PROXY if the API runs elsewhere.
     proxy: {
-      '/api': { target: process.env.VITE_API_PROXY ?? 'http://localhost:4100', changeOrigin: true },
+      '/api': { target: process.env.VITE_API_PROXY ?? 'http://localhost:4000', changeOrigin: true },
     },
   },
   // `vite preview` serves the production build. CI drives the e2e suite against it, so it
