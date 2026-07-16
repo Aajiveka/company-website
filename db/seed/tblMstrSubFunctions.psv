@@ -1,6 +1,1441 @@
 SubFunctionID|Descr|FunctionID
-1|Planning|1
-2|UI Designer|2
-3|DVA|2
-4|Planning|3
-5|IT|1
+1|Any Roles|1
+2|Banking Operations|1
+3|Acquisition Manager|1
+4|Area / Territory Manager|1
+5|Asset Operations|1
+6|ATM Operations Manager|1
+7|Back Office Executive|1
+8|Bank Teller / Clerk|1
+9|Branch Manager|1
+10|Branch Operations Manager|1
+11|Business Correspondent|1
+12|Card Operations Executive / Lead|1
+13|Cashier|1
+14|Personal Banker|1
+15|Phone Banking Officer|1
+16|Regional Manager|1
+17|Relationship Manager|1
+18|Sales Officer|1
+19|Banking Operations - Other|1
+20|General Insurance|1
+21|Actuarial Analyst|1
+22|Actuarial Manager|1
+23|Agency Manager|1
+24|Area / Territory Manager|1
+25|Bancassurance Manager|1
+26|Branch Manager|1
+27|Claims Executive|1
+28|Claims Manager|1
+29|Insurance Agent / Advisor|1
+30|Insurance Analyst|1
+31|Insurance Operations Executive|1
+32|Insurance Operations Manager|1
+33|Insurance Sales / BD Manager|1
+34|Pricing Manager|1
+35|Regional Manager|1
+36|Relationship Manager|1
+37|Underwriter|1
+38|General Insurance - Other|1
+39|Investment Banking, Private Equity & VC|1
+40|Hedge Fund Manager|1
+41|Investment Banking Analyst|1
+42|Investment Banking Associate|1
+43|Principal / Partner / Director|1
+44|Private Equity Analyst|1
+45|Private Equity Associate|1
+46|Venture Capital Investor|1
+47|Investment Banking, Private Equity & VC - Other|1
+48|Lending|1
+49|Agency Development Manager|1
+50|Area / Territory Manager|1
+51|Collection / Recovery Manager|1
+52|Collection Executive / Officer|1
+53|Collection Head|1
+54|Credit Analyst|1
+55|Credit Manager|1
+56|Debt Recovery Agent|1
+57|Direct Sales Agent|1
+58|KYC Analyst|1
+59|Loan Officer|1
+60|Microfinance Executive|1
+61|Project Finance Manager|1
+62|Regional Manager|1
+63|Risk Analyst|1
+64|Risk Manager|1
+65|Sales Manager|1
+66|Lending - Other|1
+67|Life Insurance|1
+68|Actuarial Analyst|1
+69|Actuarial Manager|1
+70|Agency Manager|1
+71|Area / Territory Manager|1
+72|Bancassurance Manager|1
+73|Branch Manager|1
+74|Claims Executive|1
+75|Claims Manager|1
+76|Insurance Agent / Advisor|1
+77|Insurance Analyst|1
+78|Insurance Operations Executive|1
+79|Insurance Operations Manager|1
+80|Insurance Sales / BD Manager|1
+81|Pricing Manager|1
+82|Regional Manager|1
+83|Relationship Manager|1
+84|Underwriter|1
+85|Life Insurance - Other|1
+86|Trading, Asset & Wealth Management|1
+87|Asset Manager|1
+88|Commodity Dealer|1
+89|Cryptocurrency Trader|1
+90|Derivatives Trader|1
+91|Equity Dealer|1
+92|Equity Research Analyst|1
+93|Financial Advisor|1
+94|Fixed Income Dealer|1
+95|Fund Manager|1
+96|Investment Advisor|1
+97|MF Distributer / Advisor|1
+98|Mutual Fund Operations|1
+99|Portfolio Manager|1
+100|Research Analyst|1
+101|Sales Manager|1
+102|Stock Broker|1
+103|Wealth Manager|1
+104|Trading, Asset & Wealth Management - Other|1
+105|Treasury & Forex|1
+106|Forex Dealer|1
+107|Forex Manager|1
+108|Treasury Analyst|1
+109|Treasury Head|1
+110|Treasury Manager|1
+111|Treasury Operations|1
+112|Treasury & Forex - Other|1
+113|BFSI, Investments & Trading - Other|1
+114|After Sales Service & Repair|2
+115|Appliance Installer / Repairman|2
+116|Electrician|2
+117|Electronics Installer / Repairman|2
+118|Mechanic|2
+119|Plumber|2
+120|Service Engineer|2
+121|Service Manager|2
+122|After Sales Service & Repair - Other|2
+123|Back Office|2
+124|Back Office Operations|2
+125|Billing / Records|2
+126|Data Entry / MIS|2
+127|Dialer Manager|2
+128|Back Office - Other|2
+129|Customer Success|2
+130|Customer Success Associate|2
+131|Customer Success Manager|2
+132|Head - Customer Success|2
+133|Customer Success - Other|2
+134|Non Voice|2
+135|Account / Relationship Management - Non Voice|2
+136|Bilingual / Multilingual Support - Non Voice|2
+137|Chat Support|2
+138|Customer Advocacy|2
+139|Customer Onboarding - Non Voice|2
+140|Customer Retention - Non Voice|2
+141|Email Support|2
+142|Non Tech Support - Non Voice|2
+143|Technical Support - Non Voice|2
+144|Non Voice - Other|2
+145|Operations|2
+146|Assistant Manager|2
+147|Head - Operations|2
+148|Operations Manager|2
+149|Subject Matter Expert|2
+150|Team Leader|2
+151|Operations - Other|2
+152|Operations Support|2
+153|MIS Executive|2
+154|Operations Engineer|2
+155|Technical Operations (Tech Ops)|2
+156|Operations Support - Other|2
+157|Service Delivery|2
+158|Service Delivery Associate|2
+159|Service Delivery Leader|2
+160|Service Delivery Manager|2
+161|Service Delivery - Other|2
+162|Voice / Blended|2
+163|Account / Relationship Management - Voice / Blended|2
+164|Bilingual / Multilingual Support - Voice / Blended|2
+165|Collections|2
+166|Customer Onboarding - Voice / Blended|2
+167|Customer Retention - Voice / Blended|2
+168|Guest Services|2
+169|Non Tech Support - Voice / Blended|2
+170|Technical Support - Voice / Blended|2
+171|Voice / Blended - Other|2
+172|Customer Success, Service & Operations - Other|2
+173|Customer Service|2
+174|Customer Success, Service & Operations - Other|2
+175|Accounting & Taxation|3
+176|Accountant / Accounts Executive|3
+177|Accounts Manager|3
+178|Accounts Payable Executive|3
+179|Accounts Payable Manager|3
+180|Accounts Receivable Executive|3
+181|Accounts Receivable Manager|3
+182|Cashier|3
+183|Chartered Accountant (CA)|3
+184|Chief Accountant|3
+185|Chief Accounting Officer (CAO)|3
+186|Company Secretary / Compliance Officer|3
+187|Cost Accountant|3
+188|Financial Accountant|3
+189|Head - Taxation|3
+190|Manager Taxation|3
+191|Tax Analyst|3
+192|Taxation Executive|3
+193|Accounting & Taxation - Other|3
+194|Audit & Control|3
+195|Audit Executive|3
+196|Audit Manager|3
+197|Internal Auditor|3
+198|Audit & Control - Other|3
+199|Finance|3
+200|Analyst - Financial Planning & Analysis|3
+201|Chief Financial Officer (CFO)|3
+202|Finance Executive|3
+203|Finance Manager|3
+204|Financial Analyst|3
+205|Financial Controller|3
+206|Head - Finance & Accounts|3
+207|Investor Relations Officer|3
+208|Manager - Financial Planning & Analysis|3
+209|MIS Executive|3
+210|Finance - Other|3
+211|Payroll & Transactions|3
+212|Billing Executive|3
+213|Payroll Executive|3
+214|Payroll Manager|3
+215|Payroll & Transactions - Other|3
+216|Treasury|3
+217|Forex Officer|3
+218|Treasury Analyst|3
+219|Treasury Executive|3
+220|Treasury Head|3
+221|Treasury Manager|3
+222|Treasury Operations Manager|3
+223|Treasury - Other|3
+224|Finance & Accounting - Other|3
+225|Compensation & Benefits|4
+226|C & B Management|4
+227|Head - C & B|4
+228|Performance Management|4
+229|Compensation & Benefits - Other|4
+230|Employee Relations|4
+231|Employee Relations Management|4
+232|HR Policy & Compliance|4
+233|Industrial Relations|4
+234|Employee Relations - Other|4
+235|HR Business Advisory|4
+236|Advisor / Consultant|4
+237|HR Business Advisory - Other|4
+238|HR Operations|4
+239|Background Verification|4
+240|Diversity & Inclusion|4
+241|Exit Management|4
+242|Head - HR|4
+243|Head - HRBP|4
+244|Head - Shared Services|4
+245|HR Analyst|4
+246|HR Business Partner (HRBP)|4
+247|HR Generalist|4
+248|Outplacement|4
+249|Shared Services|4
+250|HR Operations - Other|4
+251|Recruitment & Talent Acquisition|4
+252|Blue Collar Recruiter|4
+253|Campus Recruitment / Campus Relations|4
+254|Head - Recruitment|4
+255|IT Recruiter|4
+256|Leadership Recruiter|4
+257|Non IT Recruiter|4
+258|Staffing Management|4
+259|Recruitment & Talent Acquisition - Other|4
+260|Recruitment Marketing & Branding|4
+261|Employer / Employee Branding|4
+262|Recruitment Marketing & Branding - Other|4
+263|Human Resources - Other|4
+264|IT Infrastructure Services|5
+265|Cloud System Administration|5
+266|Configuration and Deployment Management|5
+267|Data Centre Ops and Server Management|5
+268|Incident Management|5
+269|Infrastructure Architect|5
+270|IT Audit|5
+271|IT Operations Management|5
+272|IT Vendor Management|5
+273|Network Manager|5
+274|Software Compliance - License Management|5
+275|System Analyst|5
+276|IT Infrastructure Services - Other|5
+277|IT Security|5
+278|Application Security Engineer|5
+279|Chief Information Security Officer (CISO)|5
+280|Cyber Security|5
+281|DevSec Engineer|5
+282|Head - Information Security|5
+283|Manager Information Security|5
+284|Network Security Engineer|5
+285|Security Administrator|5
+286|Security Architect / Consultant|5
+287|Security Auditor|5
+288|Security Engineer / Analyst|5
+289|System Security Engineer|5
+290|IT Security - Other|5
+291|IT Support|5
+292|Desktop Engineer|5
+293|Head - Tech Support|5
+294|IT Asset Management|5
+295|Problem Management|5
+296|IT Support - Other|5
+297|IT & Information Security - Other|5
+298|Advertising & Creative|6
+299|Account Director|6
+300|Advertising Management|6
+301|Art Direction (Advertisement)|6
+302|Client Servicing|6
+303|Copywriter|6
+304|Head - Creative|6
+305|Media Buying|6
+306|Media Planning|6
+307|Visualiser|6
+308|Advertising & Creative - Other|6
+309|Corporate Communication|6
+310|Analyst Relations|6
+311|Channel Partner / Client Relations|6
+312|Community Management|6
+313|Head - Client Relations|6
+314|Head - Corporate Communication|6
+315|Head - Media Relations|6
+316|Public Relations|6
+317|Social Responsibility Marketing (CSR)|6
+318|Corporate Communication - Other|6
+319|Digital Marketing|6
+320|Campaign Manager|6
+321|Content Marketing Manager|6
+322|Email Marketing|6
+323|Growth Marketing|6
+324|Head - Digital Marketing|6
+325|Marketing Automation Specialist|6
+326|Performance Marketing Manager|6
+327|SEM / PPC Specialist|6
+328|SEO|6
+329|Social Media Marketing|6
+330|Digital Marketing - Other|6
+331|Market Research & Insights|6
+332|Market Research / Insights Head|6
+333|Market Research Executive|6
+334|Market Research Manager|6
+335|Market Research & Insights - Other|6
+336|Marketing|6
+337|Affiliate Marketing|6
+338|Brand Management|6
+339|Creative Marketing|6
+340|Direct Marketing|6
+341|Event Marketing|6
+342|Head - Marketing|6
+343|Marketing Manager|6
+344|Medical Representative (MR)|6
+345|Product Marketing|6
+346|Marketing - Other|6
+347|Marketing and Communication - Other|6
+348|Product Management - Technology|7
+349|Product Analyst|7
+350|Product Head|7
+351|Product Manager|7
+352|Product Operations Associate / Lead|7
+353|Technical Product Manager|7
+354|Technology Product Management - Other|7
+355|Product Management - Other|7
+356|Product Manager - Cards|7
+357|Product Manager - Insurance|7
+358|Product Manager - Loans|7
+359|Product Manager - Pharma|7
+360|Product Manager - Other|7
+361|Engineering|8
+362|Additive Manufacturing (3D Printing)|8
+363|Application Engineer|8
+364|Assembly Engineer|8
+365|Automation Engineer|8
+366|Design Engineer|8
+367|Electrical / Electronics Engineer|8
+368|Environmental Engineer|8
+369|Industrial Engineer|8
+370|Instrumentation Engineer|8
+371|Manufacturing Engineer|8
+372|Manufacturing Engineering Manager|8
+373|Mechanical Engineer|8
+374|Mechatronics Engineer|8
+375|MEP Engineer|8
+376|PPC Engineer|8
+377|Process Engineer|8
+378|Product Engineer|8
+379|Production Engineer|8
+380|Tool Room Engineer|8
+381|Engineering - Other|8
+382|Management|8
+383|Maintenance Head|8
+384|Manufacturing Operations Manager|8
+385|Plant / Factory Head|8
+386|Plant / Factory Manager|8
+387|Production / Manufacturing Head|8
+388|Service Head|8
+389|Management - Other|8
+390|Operations, Maintenance & Support|8
+391|Assembly Line Operator|8
+392|Chemist|8
+393|Electrician|8
+394|Fitter / Turner|8
+395|Foreman / Technician|8
+396|HVAC Supervisor|8
+397|Line Leader / Supervisor|8
+398|Machine Operator / Machinist|8
+399|Machine Shop Incharge / Supervisor|8
+400|Maintenance Engineer|8
+401|MEP Supervisor|8
+402|Production Manager / Supervisor|8
+403|Service / Maintenance Supervisor|8
+404|Service Engineer|8
+405|Site Supervisor|8
+406|Tool & Die Maker|8
+407|Tool Room Manager|8
+408|Welder|8
+409|Welding Inspector / Supervisor|8
+410|Workshop Manager / Supervisor|8
+411|Operations, Maintenance & Support - Other|8
+412|Production & Manufacturing - Others|8
+413|Construction / Manufacturing|9
+414|Program Manager - Manufacturing|9
+415|Project Head - Construction|9
+416|Project Head - Manufacturing|9
+417|Project Manager - Construction|9
+418|Project Manager - Manufacturing|9
+419|Construction / Manufacturing - Other|9
+420|Finance|9
+421|Finance Program Manager|9
+422|Finance Project Head|9
+423|Finance Project Manager|9
+424|Finance - Other|9
+425|Technology / IT|9
+426|Change Manager|9
+427|Director - Program Management|9
+428|Hardware & Network - Project Management|9
+429|Head - Program Management|9
+430|IT Project Lead|9
+431|IT Project Manager|9
+432|Principal Program Manager|9
+433|Program Manager - Technology / IT|9
+434|Technology / IT - Other|9
+435|Other Program / Project Management|9
+436|Document Controller|9
+437|Head - Program / Project|9
+438|Implementation Manager|9
+439|PMO Executive|9
+440|Program Manager|9
+441|Project Coordinator|9
+442|Project Manager|9
+443|Project Planner / Scheduler|9
+444|Other Program / Project Man|9
+445|Business Process Quality|10
+446|Call Quality Analyst|10
+447|Head - Quality|10
+448|Process / Operational Excellence|10
+449|Process Excellence / Six Sigma Manager|10
+450|Quality Analyst|10
+451|Quality Auditor / Inspector|10
+452|Quality Manager / Supervisor|10
+453|Quality Specialist|10
+454|Business Process Quality - Other|10
+455|Production & Manufacturing|10
+456|IPQA Officer|10
+457|QA / QC Analyst|10
+458|QA / QC Executive|10
+459|QA / QC Manager|10
+460|QC / Lab Chemist|10
+461|QC Microbiologist|10
+462|Quality Engineer|10
+463|Quality Head|10
+464|Production & Manufacturing - Other|10
+465|Quality Assurance - Other|10
+466|Quality Consultant|10
+467|Quality Assurance - Other|10
+468|BD / Pre Sales|11
+469|Bidding / Auction / Proposal|11
+470|Business Development Executive (BDE)|11
+471|Business Development Manager (BDM)|11
+472|Events & Promotions|11
+473|Head - BD / Pre Sales|11
+474|Lead Generation / Qualification|11
+475|Merchant Acquisition - BD / Pre Sales|11
+476|Pre Sales Consultant|11
+477|Pre Sales Engineer|11
+478|Pre Sales Head|11
+479|BD / Pre Sales - Other|11
+480|Enterprise & B2B Sales|11
+481|Advertising Sales|11
+482|Area Sales Manager (B2B)|11
+483|Branch Sales Executive|11
+484|Branch Sales Manager (B2B)|11
+485|Channel Management|11
+486|Enterprise Sales Manager|11
+487|Key Account Manager|11
+488|Regional Sales Manager (B2B)|11
+489|Sales Head (B2B)|11
+490|Territory Sales Manager (B2B)|11
+491|Zonal Sales Manager (B2B)|11
+492|Enterprise & B2B Sales - Other|11
+493|Retail & B2C Sales|11
+494|Area Sales Manager (B2C)|11
+495|Branch Sales Manager (B2C)|11
+496|Direct Sales Executive|11
+497|Field Sales Executive|11
+498|Real Estate Consultant / Agent|11
+499|Regional Sales Manager (B2C)|11
+500|Retail Banking Sales|11
+501|Retail Sales|11
+502|Sales Head (B2C)|11
+503|Telesales|11
+504|Territory Sales Manager (B2C)|11
+505|Zonal Sales Manager (B2C)|11
+506|Retail & B2C Sales - Other|11
+507|Sales Support & Operations|11
+508|Client Retention|11
+509|Customer Engagement|11
+510|Sales Operations / Enablement|11
+511|Sales Support & Operations|11
+512|Architecture & Interior Design|12
+513|3D Visualizer / Artist|12
+514|Architect|12
+515|Design Manager|12
+516|Director - Architecture|12
+517|Draughtsman|12
+518|Interior Designer|12
+519|Landscape Architect|12
+520|Naval Architect|12
+521|Project Architect|12
+522|Store Designer|12
+523|Town / Urban Planner|12
+524|Architecture & Interior Design - Other|12
+525|Fashion & Accessories|12
+526|Accessory Designer|12
+527|Fashion Designer|12
+528|Fashion Stylist|12
+529|Footwear Designer|12
+530|Jewellery Designer|12
+531|Pattern Master|12
+532|Textile Designer|12
+533|Fashion & Accessories - Other|12
+534|UI / UX|12
+535|Content Designer|12
+536|Interaction Designer|12
+537|UI / UX Designer|12
+538|User Research Manager|12
+539|User Researcher|12
+540|UX Architect|12
+541|UX Design Manager|12
+542|UX Head|12
+543|UX Writer|12
+544|UI / UX - Other|12
+545|Other Design|12
+546|3D Modeller|12
+547|Animator|12
+548|Chief Creative Officer (CCO)|12
+549|Chief Design Officer (CDO)|12
+550|Communication Designer|12
+551|Creative / Art Director|12
+552|Game Designer|12
+553|Graphic Designer|12
+554|Illustrator|12
+555|Image Editor|12
+556|Industrial Designer|12
+557|Motion Graphics Designer|12
+558|Product Designer|12
+559|Storyboard Artist|12
+560|Video Editor|12
+561|Visual Designer|12
+562|VR / AR Designer|12
+563|Web Designer|12
+564|UX, Design & Architecture - Other|12
+565|Administration|13
+566|Employee Health and Safety Management|13
+567|Front Office|13
+568|Head - Administration|13
+569|Inventory Management|13
+570|Office Admin|13
+571|Transport Management|13
+572|Travel Desk Coordination|13
+573|Vendor Management|13
+574|Administration - Other|13
+575|Facility Management|13
+576|Back Office|13
+577|Equipment Management|13
+578|Facility Manager|13
+579|Floor / Building Manager|13
+580|Food & Beverage Management|13
+581|Head - Facilities|13
+582|Housekeeping|13
+583|Property Manager|13
+584|Repair and Maintenance|13
+585|Security Management|13
+586|Facility Management - Other|13
+587|Airline Services|14
+588|Cabin Crew Supervisor|14
+589|Flight Attendant / Steward|14
+590|Airline Services - Other|14
+591|Aviation Engineering|14
+592|Aerospace Engineer|14
+593|Aircraft / Flight Technician|14
+594|Aircraft Maintenance Engineer|14
+595|Aviation Engineer|14
+596|Flight Engineer|14
+597|Radio Engineer / Operator|14
+598|Aviation Engineering - Other|14
+599|Flight & Airport Operations|14
+600|Air Traffic Controller|14
+601|Airport Duty Manager|14
+602|Airport Operations Manager|14
+603|Aviation Security Officer|14
+604|Cargo Agent / Cargo Officer|14
+605|Flight Dispatcher|14
+606|Flight Load Controller|14
+607|Ground Staff|14
+608|Ramp Agent|14
+609|Revenue Management Analyst|14
+610|Ticketing & Reservation Executive|14
+611|Flight & Airport Operations - Other|14
+612|Pilot|14
+613|Cadet Pilot|14
+614|Captain / Commander|14
+615|Co-Pilot / First Officer / Second Officer|14
+616|Flight Instructor|14
+617|Helicopter Pilot|14
+618|UAV Pilot|14
+619|Pilot - Other|14
+620|Aviation & Aerospace - Other|14
+621|Construction Engineering|15
+622|3D Designer|15
+623|Billing / Planning Engineer|15
+624|Chief Engineer|15
+625|Civil Engineer|15
+626|Construction / Site Supervisor|15
+627|Construction Materials Manager|15
+628|Electrical Engineer|15
+629|FEA Engineer|15
+630|Geotechnical Engineer|15
+631|Layout Engineer|15
+632|Mechanical Engineer|15
+633|MEP Engineer|15
+634|Project Engineer|15
+635|Structural Engineer|15
+636|Tender Executive|15
+637|Tender Manager|15
+638|Transportation Engineer|15
+639|Tunnel Engineer|15
+640|Construction Engineering - Other|15
+641|Surveying|15
+642|Geographic Information System / GIS|15
+643|Hydrographic Surveying|15
+644|Land Surveying|15
+645|Quantity Surveying|15
+646|Surveying - Other|15
+647|IT Consulting|16
+648|Cloud Consultant|16
+649|Functional Consultant|16
+650|IT Security Consultant|16
+651|Subject Matter Expert - IT|16
+652|Technical Consultant|16
+653|Transition Manager|16
+654|IT Consulting - Other|16
+655|Management Consulting|16
+656|Associate / Consultant|16
+657|Associate Partner|16
+658|Engagement Manager|16
+659|Partner / Director|16
+660|Principal Consultant|16
+661|Sr. Consultant|16
+662|Management Consulting - Other|16
+663|Other Consulting|16
+664|Buying / Merchandising Consultant|16
+665|Career Coach|16
+666|Environmental Consultant|16
+667|Executive Assistant|16
+668|Financial Consultant|16
+669|Human Resources Consultant|16
+670|Image Consultant|16
+671|Marketing Consultant|16
+672|Operations Consultant|16
+673|Risk & Compliance Consultant|16
+674|Sales Consultant|16
+675|Security Consultant|16
+676|Social Media Consultant|16
+677|Other Consulting - Other|16
+678|Content Management (Print / Online / Electronic)|17
+679|Chief Content Officer (CCO)|17
+680|Content Creation / Writer|17
+681|Content Designer / Strategist|17
+682|Content Moderator|17
+683|Content Publisher|17
+684|Technical Content Developer|17
+685|Content Management (Print / Online / Electronic) - Other|17
+686|Instructional Designer|17
+687|Editing (Print / Online / Electronic)|17
+688|Assignment Editor|17
+689|Copy Editor|17
+690|Editor / Content Analyst|17
+691|Editor In Chief|17
+692|Input / Output Editor|17
+693|Managing Editor|17
+694|Editing (Print / Online / Electronic) - Other|17
+695|Journalism|17
+696|Anchorperson|17
+697|Reporting / Corresponding|17
+698|Journalism - Other|17
+699|Content, Editorial & Journalism - Other|17
+700|CSR & Sustainability|18
+701|CSR Coordinator/Associate|18
+702|CSR Head|18
+703|CSR Manager|18
+704|Sustainability Manager|18
+705|CSR & Sustainability - Other|18
+706|Social & Public Service|18
+707|Civil Servant|18
+708|Fundraising Officer|18
+709|Social Worker|18
+710|Volunteer - Social & Public Service|18
+711|Social & Public Service - Othe|18
+712|Downstream|19
+713|Chemical Engineer (Refining)|19
+714|Engineering Support Manager|19
+715|Mechanical Engineer (Refining)|19
+716|Process Engineer (Refining)|19
+717|Project Engineer (Refining)|19
+718|Refinery Maintenance Manager|19
+719|Refinery Manager|19
+720|Refinery Operations Manager|19
+721|Refinery Operator|19
+722|Downstream - Other|19
+723|Midstream|19
+724|Pipeline Control Center Operator|19
+725|Pipeline Design Engineer|19
+726|Pipeline Project Supervisor|19
+727|Supervisor - Instrumentation Pipeline|19
+728|Midstream - Other|19
+729|Mining|19
+730|Construction Manager|19
+731|Electrical Engineer (Mining)|19
+732|Geo Technician|19
+733|Metallurgist|19
+734|Mine Manager|19
+735|Mining Engineer|19
+736|Mining Geologist|19
+737|Mining Surveyor|19
+738|Planning Engineer|19
+739|Process Engineer (Mining)|19
+740|Mining - Other|19
+741|Power Generation|19
+742|Business Development Manager - Power Generation|19
+743|Engineering Supervisor|19
+744|Nuclear Engineer|19
+745|Plant Maintenance Manager|19
+746|Plant Mechanical Engineer|19
+747|Plant Performance Engineer|19
+748|Plant Project Manager|19
+749|Power Plant Technician|19
+750|Power Production Manager|19
+751|Power Generation - Other|19
+752|Power Supply and Distribution|19
+753|Distribution Supervisor|19
+754|Distribution System Designer|19
+755|Engineering Services Supervisor|19
+756|Load Dispatcher|19
+757|Power Supply Manager|19
+758|Power Supply Technician|19
+759|Supply & Transmission Services Supervisor|19
+760|Power Supply and Distribution - Other|19
+761|Upstream|19
+762|Completion Engineer|19
+763|Derrickman|19
+764|Drilling Engineer|19
+765|Exploration and Production Director|19
+766|Exploration Manager|19
+767|Geologist|19
+768|Geophysicist|19
+769|Geoscientist Manager|19
+770|Oil Field Manager|19
+771|Operations Manager - Upstream|19
+772|Petrophysicist|19
+773|Production Engineer (Oil and Gas)|19
+774|Production Manager (Oil & Gas)|19
+775|Project Engineer|19
+776|Reservoir Engineer|19
+777|Rig Supervisor|19
+778|Upstream - Other|19
+779|Energy & Mining - Other|19
+780|Community Health & Safety|20
+781|EHS Officer|20
+782|Food Safety|20
+783|Community Health & Safety - Other|20
+784|Occupational Health & Safety|20
+785|Chief Safety Officer (CSO)|20
+786|Construction Safety|20
+787|Hazard / Fire / Injury|20
+788|Risk Control|20
+789|Safety Consulting|20
+790|Safety Operations|20
+791|Occupational Health & Safety - Other|20
+792|Environment Health and Safety - Other|20
+793|Events & Banquet|21
+794|Banquet Manager|21
+795|Catering Executive|21
+796|Catering Manager / Supervisor|21
+797|Event Executive|21
+798|Event Planner / Manager|21
+799|Sponsorship / Partnership Manager|21
+800|Events & Banquet - Other|21
+801|F&B Service|21
+802|Bar Manager|21
+803|Barista|21
+804|Bartender|21
+805|Busser|21
+806|Captain / Restaurant Supervisor|21
+807|F&B Manager|21
+808|Head - F&B|21
+809|Restaurant Manager|21
+810|Shift Manager / Supervisor|21
+811|Sommelier|21
+812|Steward / Waiter / Waitress|21
+813|F&B Service - Other|21
+814|Front Office & Guest Services|21
+815|Bell Boy / Porter|21
+816|Bell Captain|21
+817|Butler|21
+818|Cashier|21
+819|Concierge|21
+820|Driver|21
+821|Duty Manager|21
+822|Front Office Executive|21
+823|Front Office Manager|21
+824|Guest Service Associate|21
+825|Host / Hostess|21
+826|Hotel / General Manager|21
+827|Leisure / Casino Manager|21
+828|Night Auditor / Manager|21
+829|Receptionist|21
+830|Revenue Manager|21
+831|Travel Desk Manager|21
+832|Front Office & Guest Services - Other|21
+833|Housekeeping & Laundry|21
+834|Housekeeping Executive / Attendant|21
+835|Housekeeping Manager / Supervisor|21
+836|Laundry Manager / Supervisor|21
+837|Housekeeping & Laundry - Other|21
+838|Kitchen / F&B Production|21
+839|Brew Master|21
+840|Chef De Partie / Demi Chef De Partie|21
+841|Commis (Commi 1 / 2 / 3)|21
+842|Executive Chef|21
+843|Executive Sous Chef / Chef De Cuisine|21
+844|Kitchen Steward / Dishwasher|21
+845|Pastry Chef|21
+846|Sous Chef|21
+847|Trainee / Apprentice Chef|21
+848|Kitchen / F&B Production - Other|21
+849|Tourism Services|21
+850|Activities Coordinator|21
+851|Head - Tour Management|21
+852|Reservation Executive|21
+853|Reservation Manager|21
+854|Tour Guide / Coordinator|21
+855|Tour Manager|21
+856|Tourist Driver|21
+857|Travel Agent / Consultant|21
+858|Visa / Immigration Consultant|21
+859|Tourism Services - Other|21
+860|Food, Beverage & Hospitality - Other|21
+861|Doctor|22
+862|Allergist / Immunologist|22
+863|Anesthesiologist|22
+864|Ayurved Practitioners|22
+865|Bariatric Surgeon|22
+866|Breast Surgeon|22
+867|Cardiologist|22
+868|Chief Medical Officer|22
+869|Colon / Rectal Surgeon|22
+870|Critical Care Physician|22
+871|Dentist|22
+872|Dermatologist|22
+873|Endocrine Surgeon|22
+874|Endocrinologist|22
+875|Gastroenterologist|22
+876|General Physician|22
+877|General Surgeon|22
+878|Geriatrician|22
+879|Gynecological Surgeon|22
+880|Gynecologist|22
+881|Hand / Neck Surgeon|22
+882|Hematologist|22
+883|Homeopathy Physician|22
+884|Infectiologist|22
+885|Laparoscopic Surgeon|22
+886|Medical Officer|22
+887|Neonatologist|22
+888|Neuro Surgeon|22
+889|Neurologist|22
+890|Neuropsychiatrist|22
+891|Oncologist|22
+892|Ophthalmological Surgeon|22
+893|Orthopedist|22
+894|Otolaryngologist (ENT)|22
+895|Pain Specialist|22
+896|Pediatric Surgeon|22
+897|Pediatrician|22
+898|Physiotherapist|22
+899|Plastic / Reconstructive Surgeon|22
+900|Podiatry Surgeon|22
+901|Psychiatrist|22
+902|Pulmonologist|22
+903|Radiologist - Doctor|22
+904|Respiratory Therapist|22
+905|Rheumatologist|22
+906|Robotic Surgeon|22
+907|Somnologist|22
+908|Thoracic Surgeon|22
+909|Transplant Surgeon|22
+910|Unani Physician|22
+911|Urologic Surgeon|22
+912|Urologist|22
+913|Vascular Surgeon|22
+914|Doctor - Other|22
+915|Health Informatics|22
+916|Allied Health Manager|22
+917|Clinical Informatics|22
+918|Hospital Administration|22
+919|Medical Biller / Coder|22
+920|Medical Illustrator|22
+921|Medical Record / Health Informatics|22
+922|Medical Transcriptionist|22
+923|Nurse Informaticist|22
+924|Pharmacy Analyst|22
+925|Registrar|22
+926|Schedulers|22
+927|TPA Executive|22
+928|Health Informatics - Other|22
+929|Imaging & Diagnostics|22
+930|Cardiovascular Technologist|22
+931|Dental Laboratory Technician|22
+932|Diagnostic Molecular Scientist|22
+933|Electrocardiogram Technician|22
+934|Electroencephalographic Technician|22
+935|Histotechnologist|22
+936|Lab Technician|22
+937|Neuromonitoring Technician|22
+938|Optometrist|22
+939|Pathologist|22
+940|Phlebotomist|22
+941|Radiologist Technician|22
+942|Sonographer|22
+943|Ultrasound Technologist|22
+944|Imaging & Diagnostics - Other|22
+945|Nursing|22
+946|Associate Nurse Unit Manager|22
+947|Clinical Nurse Specialist|22
+948|Emergency Department Nurse|22
+949|Enrolled Nurse|22
+950|Nurse Practitioners|22
+951|Nurse Unit Manager|22
+952|Registered Nurse|22
+953|Nursing - Other|22
+954|Healthcare & Life Sciences - Other|22
+955|Healthcare & Life Sciences - Other|22
+956|Other Hospital Staff|22
+957|Clinical Assistant|22
+958|Patient Service Assistant|22
+959|Pharmacist|22
+960|Volunteer|22
+961|Ward Clerk|22
+962|Other Hospital Staff - Other|22
+963|Corporate Affairs|23
+964|Corporate Law|23
+965|Digital Media & Internet|23
+966|Head - Regulatory Affairs|23
+967|Intellectual Property (IP)|23
+968|Labour / Employment|23
+969|Legal Management Consulting|23
+970|Mergers & Acquisitions (M & A)|23
+971|Real Estate|23
+972|Regulatory Affairs Compliance|23
+973|Corporate Affairs - Other|23
+974|Crime / Arbitration|23
+975|Criminal Law|23
+976|Legal Malpractice / Professional Responsibility|23
+977|Personal Injury|23
+978|Crime / Arbitration - Other|23
+979|Legal Operations|23
+980|Chief Legal Officer (CLO)|23
+981|Due Diligence|23
+982|Legal Administration|23
+983|Legal Documentation / Research|23
+984|Legal Entity Management|23
+985|Legal Liaisoning|23
+986|Legal Officer|23
+987|Legal Operations - Other|23
+988|Legal & Regulatory - Other|23
+989|Bankruptcy|23
+990|Civil Litigation|23
+991|Family Law|23
+992|Immigration|23
+993|Private Attorney / Lawyer|23
+994|Legal & Regulatory - Other|23
+995|Legal Rights - Other|23
+996|Animation / Effects|24
+997|Animator|24
+998|VFX Editor|24
+999|Visual Effect Artist|24
+1000|Visual Effect Supervisor|24
+1001|Animation / Effects - Other|24
+1002|Artists|24
+1003|Actor|24
+1004|Choreographer|24
+1005|Dance Crew Member|24
+1006|Junior Artist|24
+1007|Lyricist|24
+1008|Music Arranger|24
+1009|Music Composer|24
+1010|Photographer|24
+1011|Radio Jockey / Voiceover Artist|24
+1012|Screen Writer|24
+1013|Script Writer|24
+1014|Singer / Vocalist|24
+1015|Stunt Man / Body Double|24
+1016|Videographer|24
+1017|Voice-over Artist|24
+1018|Artists - Other|24
+1019|Direction|24
+1020|Animation Director|24
+1021|Art Director|24
+1022|Assistant Director|24
+1023|Casting Director|24
+1024|Cinematographer|24
+1025|Creative Director|24
+1026|Director Of Photography|24
+1027|Film Director|24
+1028|Sound Director|24
+1029|Technical Director|24
+1030|Direction - Other|24
+1031|Editing|24
+1032|Film Editor|24
+1033|Music Editor|24
+1034|News Copy Editor|24
+1035|Publicist|24
+1036|Script Editor|24
+1037|Sound Editor|24
+1038|Story Editor|24
+1039|Video Editor|24
+1040|Editing - Other|24
+1041|Make Up / Costume|24
+1042|Costume Designer|24
+1043|Hair Dresser|24
+1044|Make Up Artist|24
+1045|Make Up / Costume - Other|24
+1046|Production|24
+1047|Assistant Producer|24
+1048|Broadcast Engineering|24
+1049|Executive Producer|24
+1050|Film Producer|24
+1051|Line Producer|24
+1052|Location Manager|24
+1053|Music Producer|24
+1054|Producer|24
+1055|TV Producer|24
+1056|Video Producer|24
+1057|Production - Other|24
+1058|Sound / Light / Technical Support|24
+1059|Boom Operator|24
+1060|Camera Operator|24
+1061|Electrician|24
+1062|Light Engineer|24
+1063|Sound Engineer|24
+1064|Sound Mixer|24
+1065|Spot Boy|24
+1066|Stage Manager|24
+1067|Sound / Light / Technical Support - Other|24
+1068|Media Production & Entertainment - Other|24
+1069|Category Management & Operations|25
+1070|Category Executive|25
+1071|Category Head|25
+1072|Category Manager|25
+1073|Category Management & Operations - Other|25
+1074|eCommerce Operations|25
+1075|Catalog Executive|25
+1076|Catalog Manager|25
+1077|eCommerce Executive|25
+1078|eCommerce Manager|25
+1079|eCommerce Operations - Other|25
+1080|Merchandising & Planning|25
+1081|Merchandise / Retail Planner|25
+1082|Merchandiser|25
+1083|Merchandising Head|25
+1084|Merchandising Manager|25
+1085|Site Merchandiser|25
+1086|Visual Merchandiser|25
+1087|Merchandising & Planning - Other|25
+1088|Retail Store Operations|25
+1089|Assistant Store Manager|25
+1090|Customer Service Representative|25
+1091|Department / Floor Manager|25
+1092|Optometrist|25
+1093|Personal Shopper|25
+1094|Retail Cashier|25
+1095|Retail Operations Manager|25
+1096|Retail Sales Associate|25
+1097|Retail Store Auditor|25
+1098|Retail Store Manager|25
+1099|Retail Team Leader|25
+1100|Sales Advisor|25
+1101|Shift Supervisor|25
+1102|Merchandising & Planning - Other|25
+1103|Merchandising, Retail & eCommerce - Other|25
+1104|Import & Export|26
+1105|Documentation Executive|26
+1106|Export / Import Executive|26
+1107|Export / Import Manager|26
+1108|Import & Export - Other|26
+1109|Procurement & Purchase|26
+1110|Buyer / Senior Buyer|26
+1111|Chief Purchase Officer / Chief Procurement Officer (CPO)|26
+1112|Commodity Manager|26
+1113|Procurement / Purchase Engineer|26
+1114|Procurement / Purchase Manager|26
+1115|Procurement / Sourcing Head|26
+1116|Procurement Analyst|26
+1117|Procurement Category Manager|26
+1118|Purchase Executive / Officer|26
+1119|Strategic Sourcing Manager|26
+1120|Vendor Relations|26
+1121|Procurement & Purchase - Other|26
+1122|SCM & Logistics|26
+1123|Cluster / Hub Manager|26
+1124|Delivery Executive|26
+1125|Dispatch Executive / Officer|26
+1126|Fleet / Transport Manager|26
+1127|Forklift Operator|26
+1128|Head - Logistics / SCM|26
+1129|Logistics / SCM Analyst|26
+1130|Logistics / SCM Engineer|26
+1131|Logistics Executive|26
+1132|Logistics Manager|26
+1133|Logistics Operations Manager|26
+1134|Supply Chain Manager|26
+1135|Warehouse Executive|26
+1136|Warehouse Manager|26
+1137|SCM & Logistics - Other|26
+1138|Stores & Material Management|26
+1139|Demand Planner|26
+1140|Inventory Controller|26
+1141|Materials / Inventory Analyst|26
+1142|Materials Manager|26
+1143|Store Executive|26
+1144|Store Keeper / Manager|26
+1145|Supply Planner|26
+1146|Stores & Material Management - Other|26
+1147|Procurement & Supply Chain - Other|26
+1148|Engineering & Manufacturing|27
+1149|CFD Engineer|27
+1150|Chemical Research Scientist|27
+1151|Product Development Engineer|27
+1152|Product Development Manager|27
+1153|Head - Design & Development|28
+1154|Material Scientist|28
+1155|Process Engineer|29
+1156|Engineering & Manufacturing - Other|29
+1157|Design Engineer|30
+1158|Design Manager|30
+1159|Pharmaceutical & Biotechnology|31
+1160|Bio Technologist|31
+1161|Biologist|31
+1162|Clinical research Scientist|31
+1163|Formulation Scientist|31
+1164|Head - R & D|31
+1165|Manager - R & D|31
+1166|Medical Writer|31
+1167|Microbiologist|31
+1168|Molecular Biologist|31
+1169|Research Associate / Engineer|31
+1170|Research Scientist|31
+1171|Pharmaceutical & Biotechnology - Other|31
+1172|Research & Development - Other|31
+1173|Post Doctoral Researcher|31
+1174|Research & Development - Other|31
+1175|Assessment / Advisory|32
+1176|Risk Analyst|32
+1177|Risk Consultant|32
+1178|Assessment / Advisory - Other|32
+1179|Business|32
+1180|Chief Compliance Officer (CCO)|32
+1181|Chief Risk Officer (CRO)|32
+1182|Insurance Risk|32
+1183|Business - Other|32
+1184|Finance|32
+1185|Credit Risk|32
+1186|Financial Crime|32
+1187|Investment / Lending Risk|32
+1188|Market Risk|32
+1189|Risk Modeling|32
+1190|Treasury / Liquidity / Equity Trading|32
+1191|Valuation Risk|32
+1192|Finance - Other|32
+1193|Operations / Strategy|32
+1194|Competition Risk|32
+1195|Enterprise Risk|32
+1196|Operational Risk|32
+1197|Project / Program Risk|32
+1198|Quality Risk|32
+1199|Reputation Risk|32
+1200|Strategic Risk|32
+1201|Operations / Strategy - Other|32
+1202|Security / Fraud|32
+1203|Anti Money Laundering|32
+1204|ATM / Credit Card|32
+1205|Cyber Security / IT Risk|32
+1206|Fraud Analyst|32
+1207|Fraud Detection / Prevention|32
+1208|Transaction Risk|32
+1209|Security / Fraud - Other|32
+1210|Risk Management & Compliance - Other|32
+1211|Security Officer|33
+1212|Armed Security Guard|33
+1213|Border Patrol Agent|33
+1214|Ex-Serviceman Armed Security Guard|33
+1215|Ex-Serviceman Security Supervisor|33
+1216|Ex-Serviceman Unarmed Security Guard|33
+1217|Fire Guard|33
+1218|Personal Security Officer (PSO)|33
+1219|Reception Guard|33
+1220|Security Head|33
+1221|Security Marshal (Bouncer)|33
+1222|Security Supervisor|33
+1223|Special Jurisdiction Police Officer|33
+1224|Unarmed Security Guard|33
+1225|Security Officer - Other|33
+1226|Security Services - Other|33
+1227|CCTV Operator|33
+1228|Private Detective|33
+1229|Security Services - Other|33
+1230|Port & Maritime Operations|28
+1231|Dock Master|28
+1232|Dredge Master / Mate|28
+1233|Dredging Superintendent|28
+1234|Harbour Master|28
+1235|Marine / Maritime Pilot|28
+1236|Marine Engineer|28
+1237|RTG Crane Operator|28
+1238|Tug Master|28
+1239|Port & Maritime Operations - Other|28
+1240|Shipping Deck|28
+1241|Able Seaman (AB)|28
+1242|Bosun|28
+1243|Captain / Master Mariner|28
+1244|Chief Officer / Mate|28
+1245|Crane Operator|28
+1246|Deck Cadet|28
+1247|Deck Fitter / Welder|28
+1248|Environmental Officer|28
+1249|Marine Superintendent|28
+1250|Ordinary Seaman (OS)|28
+1251|Radio Officer|28
+1252|Second Officer / Mate|28
+1253|Security Officer|28
+1254|Ship Safety Officer|28
+1255|Third Officer / Mate|28
+1256|Shipping Deck - Other|28
+1257|Shipping Engineering & Technical|28
+1258|2nd Engineer|28
+1259|3rd Engineer|28
+1260|4th Engineer|28
+1261|5th Engineer / TME|28
+1262|Cargo Engineer|28
+1263|Chief Engineer|28
+1264|Chief ETO|28
+1265|Electrician|28
+1266|Engine Fitter / Welder|28
+1267|ETO / Electrical Engineer|28
+1268|Gas Engineer|28
+1269|Motorman|28
+1270|Oiler|28
+1271|Pumpman|28
+1272|Reefer Engineer|28
+1273|Refrigeration / HVAC Engineer|28
+1274|Wiper|28
+1275|Shipping Engineering & Technical - Other|28
+1276|Shipping & Maritime - Other|28
+1277|Chief Cook|28
+1278|Cook|28
+1279|Purser / First Purser|28
+1280|Steward|28
+1281|Shipping & Maritime - Other|28
+1282|Beauty & Personal Care|29
+1283|Beauty Advisor / Beautician|29
+1284|Hair Stylist / Hairdresser|29
+1285|Makeup Artist|29
+1286|Masseur / Masseuse|29
+1287|Nail Technician|29
+1288|Pedicurist And Manicurist|29
+1289|Salon / Health Club Manager|29
+1290|Spa Manager / Supervisor|29
+1291|Spa Therapist|29
+1292|Beauty & Personal Care - Other|29
+1293|Health & Fitness|29
+1294|Center Head|29
+1295|Dietician / Nutritionist|29
+1296|Fitness Trainer / Gym Instructor|29
+1297|Slimming Head / Manager|29
+1298|Yoga Instructor / Trainer|29
+1299|Health & Fitness - Other|29
+1300|Sports Science & Medicine|29
+1301|High Performance Analyst|29
+1302|Sports Biomechanist|29
+1303|Sports Masseur / Therapist|29
+1304|Sports Nutritionist|29
+1305|Sports Physician|29
+1306|Sports Psychologist|29
+1307|Strength & Conditioning|29
+1308|Video Analyst|29
+1309|Sports Science & Medicine - Other|29
+1310|Sports Staff and Management|29
+1311|Adventure Sports Guide|29
+1312|Kit Manager|29
+1313|Lifeguard|29
+1314|Mountaineering Instructor|29
+1315|Sports Administrator|29
+1316|Sports Agent|29
+1317|Sports Club Manager|29
+1318|Sports Coach|29
+1319|Sports Scout|29
+1320|Team Manager|29
+1321|Umpire / Referee|29
+1322|Sports Staff and Management - Other|29
+1323|Sports, Fitness & Personal Care - Other|29
+1324|Strategic Management|30
+1325|Corporate Development Analyst|30
+1326|Corporate Development Manager|30
+1327|Corporate Planning|30
+1328|Strategy Analyst|30
+1329|Strategy Manager|30
+1330|Strategic Management - Other|30
+1331|Top Management|30
+1332|Board Member|30
+1333|Business Head|30
+1334|CFO|30
+1335|Chairman|30
+1336|CHRO|30
+1337|CIO|30
+1338|CMO|30
+1339|COO|30
+1340|Country Head|30
+1341|CTO|30
+1342|MD / CEO|30
+1343|Top Management - Other|30
+1344|Strategic & Top Management - Other|30
+1345|Administration & Staff|31
+1346|Counselor|31
+1347|Curriculum Designer|31
+1348|Lab Assistant|31
+1349|Librarian|31
+1350|Principal|31
+1351|Proctor / Invigilator|31
+1352|Supervisor / Incharge|31
+1353|Transcriptionist|31
+1354|Translator|31
+1355|Vice Principal|31
+1356|Warden|31
+1357|Administration & Staff - Other|31
+1358|Corporate Training|31
+1359|Communication Trainer|31
+1360|Compliance Trainer|31
+1361|Employee Health & Safety Trainer|31
+1362|Head - Training & Development|31
+1363|Leadership Trainer|31
+1364|Process Trainer|31
+1365|Product / Service Trainer|31
+1366|Quality Trainer|31
+1367|Technical Trainer|31
+1368|Voice & Accent Trainer|31
+1369|Corporate Training - Other|31
+1370|Language Teacher|31
+1371|Arabic Teacher|31
+1372|Bengali Teacher|31
+1373|Chinese Teacher|31
+1374|English Teacher|31
+1375|French Teacher|31
+1376|German Teacher|31
+1377|Hindi Teacher|31
+1378|Italian Teacher|31
+1379|Japanese Teacher|31
+1380|Marathi Teacher|31
+1381|Punjabi Teacher|31
+1382|Russian Teacher|31
+1383|Sanskrit Teacher|31
+1384|Spanish Teacher|31
+1385|Tamil Teacher|31
+1386|Telugu Teacher|31
+1387|Urdu Teacher|31
+1388|Language Teacher - Other|31
+1389|Life Skills / ECA Teacher|31
+1390|Arts Teacher|31
+1391|Communication Skills Teacher|31
+1392|Dance Teacher|31
+1393|Drama / Theater Teacher|31
+1394|Home Science Teacher|31
+1395|Martial Arts Teacher|31
+1396|Music Teacher|31
+1397|Sports / Physical Education Teacher|31
+1398|Life Skills / ECA Teacher - Other|31
+1399|Preschool & Primary Education|31
+1400|Day Care Teacher / Incharge / Attendant|31
+1401|Nursery Teacher|31
+1402|Primary School Teacher|31
+1403|Preschool & Primary Education - Other|31
+1404|Subject / Specialization Teacher|31
+1405|Accountancy Teacher|31
+1406|Biology Teacher|31
+1407|Biotechnology Teacher|31
+1408|Business Studies Teacher|31
+1409|Chemistry Teacher|31
+1410|Commerce Teacher|31
+1411|Computers Teacher|31
+1412|Economics Teacher|31
+1413|Environmental Science Teacher|31
+1414|Finance Teacher|31
+1415|Geography Teacher|31
+1416|History Teacher|31
+1417|Informatics Practices Teacher|31
+1418|Mathematics Teacher|31
+1419|Physics Teacher|31
+1420|Political Science Teacher|31
+1421|Psychology Teacher|31
+1422|Robotics Teacher|31
+1423|Science Teacher|31
+1424|Social Studies Teacher|31
+1425|Sociology Teacher|31
+1426|Special Education Teacher|31
+1427|Subject / Specialization Teacher - Other|31
+1428|University Level Educator|31
+1429|Academic Coordinator|31
+1430|Assistant Professor / Lecturer|31
+1431|Associate Professor|31
+1432|Chairman / Chancellor|31
+1433|Dean / Director|31
+1434|Placement / Alumni Officer|31
+1435|Professor|31
+1436|Teaching Assistant|31
+1437|Vice - Chancellor|31
+1438|Visiting Faculty / Guest Faculty|31
+1439|University Level Educator - Other|31
+1440|Teaching & Training - Other|31

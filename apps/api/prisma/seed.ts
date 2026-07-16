@@ -135,7 +135,7 @@ async function seedDemoUsers() {
           contactNo: '1234',
           emailID: 'info@aajiveka.com',
           cityID: 3,
-          industryTypeID: 4,
+          industryTypeID: 51, // IT Services & Consulting
           companyDescr: 'test company aajiveka',
           companyWebsite: '',
           companyLogo: '',
