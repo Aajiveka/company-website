@@ -134,7 +134,7 @@ async function seedDemoUsers() {
           pIN: 122001,
           contactNo: '1234',
           emailID: 'info@aajiveka.com',
-          cityID: 3,
+          cityID: 212, // Gurugram, Haryana — matches the 122001 PIN above
           industryTypeID: 51, // IT Services & Consulting
           companyDescr: 'test company aajiveka',
           companyWebsite: '',
