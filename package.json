@@ -11,6 +11,7 @@
     "dev": "concurrently -n api,web,pay -c blue,green,magenta -k \"npm:dev:api\" \"npm:dev:web\" \"npm:dev:billdesk\"",
     "dev:web": "npm run dev --workspace apps/web",
     "dev:api": "npm run dev --workspace apps/api",
+    "predev:billdesk": "lsof -ti tcp:${STUB_PORT:-4999} | xargs kill -9 2>/dev/null || true",
     "dev:billdesk": "node tests/billdesk-stub.mjs",
     "build": "npm run build --workspace apps/web && npm run build --workspace apps/api",
     "lint": "npm run lint --workspaces --if-present",
