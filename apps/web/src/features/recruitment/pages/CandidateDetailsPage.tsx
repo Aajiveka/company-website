@@ -1,14 +1,71 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Briefcase, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
-import { Breadcrumbs, Button, Card, CardSkeleton } from '@/components/ui';
+import { isAxiosError } from 'axios';
+import { Badge, Breadcrumbs, Button, Card, CardSkeleton, Modal, Select, statusTone } from '@/components/ui';
 import { useToast } from '@/components/ui';
-import { useCandidateDetail } from '../recruitment.api';
+import {
+  useActiveJobs,
+  useAssignDocuments,
+  useAssignJob,
+  useCandidateDetail,
+  useDecideCandidate,
+  useDocumentTypes,
+} from '../recruitment.api';
 
 /** QC/Client — full candidate detail view (candidate-details.aspx). */
 export default function CandidateDetailsPage() {
   const { id = '' } = useParams();
   const { data, isLoading } = useCandidateDetail(id);
+  const decide = useDecideCandidate(id);
+  const assignJob = useAssignJob(id);
+  const { data: jobOptions } = useActiveJobs();
+  const assignDocs = useAssignDocuments(id);
+  const { data: documentTypes } = useDocumentTypes();
   const { notify } = useToast();
+
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState('');
+  const [docsOpen, setDocsOpen] = useState(false);
+  const [selectedDocTypes, setSelectedDocTypes] = useState<number[]>([]);
+
+  const act = (decision: 'Approved' | 'Rejected') =>
+    decide.mutate(decision, {
+      onSuccess: () => notify(`Candidate ${decision.toLowerCase()}.`, decision === 'Approved' ? 'success' : 'info'),
+      onError: (e) =>
+        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Something went wrong' : 'Something went wrong', 'error'),
+    });
+
+  const onAssign = () => {
+    if (!selectedJobId) return;
+    assignJob.mutate(Number(selectedJobId), {
+      onSuccess: () => {
+        notify('Candidate assigned to job.', 'success');
+        setAssignOpen(false);
+        setSelectedJobId('');
+      },
+      onError: (e) =>
+        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not assign this job' : 'Could not assign this job', 'error'),
+    });
+  };
+
+  const toggleDocType = (docTypeId: number) =>
+    setSelectedDocTypes((prev) =>
+      prev.includes(docTypeId) ? prev.filter((d) => d !== docTypeId) : [...prev, docTypeId],
+    );
+
+  const onAssignDocs = () => {
+    if (!selectedDocTypes.length) return;
+    assignDocs.mutate(selectedDocTypes, {
+      onSuccess: () => {
+        notify('Documents assigned to candidate.', 'success');
+        setDocsOpen(false);
+        setSelectedDocTypes([]);
+      },
+      onError: (e) =>
+        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not assign documents' : 'Could not assign documents', 'error'),
+    });
+  };
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -34,14 +91,27 @@ export default function CandidateDetailsPage() {
                   <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> {data.city}</span>
                   <span className="flex items-center gap-1.5"><Briefcase className="h-4 w-4" /> {data.totalExperience}</span>
                 </div>
+                <div className="mt-2 flex justify-center sm:justify-start">
+                  <Badge tone={statusTone(data.registrationStatus)}>{data.registrationStatus}</Badge>
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => notify('Candidate shortlisted.', 'success')}>
-                Shortlist
+              {data.registrationStatus === 'Pending' && (
+                <>
+                  <Button variant="outline" size="sm" disabled={decide.isPending} onClick={() => act('Approved')}>
+                    Approve CV
+                  </Button>
+                  <Button variant="danger" size="sm" disabled={decide.isPending} onClick={() => act('Rejected')}>
+                    Reject
+                  </Button>
+                </>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
+                Assign Job
               </Button>
-              <Button variant="danger" size="sm" onClick={() => notify('Candidate rejected.', 'info')}>
-                Reject
+              <Button variant="outline" size="sm" onClick={() => setDocsOpen(true)}>
+                Assign Documents
               </Button>
             </div>
           </Card>
@@ -83,6 +153,52 @@ export default function CandidateDetailsPage() {
           </div>
         </div>
       )}
+
+      <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Assign Job">
+        <div className="space-y-4">
+          <Select
+            label="Job opening"
+            placeholder="Select a job…"
+            options={(jobOptions ?? []).map((j) => ({ label: `${j.designation} — ${j.company}`, value: j.jobId }))}
+            value={selectedJobId}
+            onChange={(e) => setSelectedJobId(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setAssignOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" disabled={!selectedJobId || assignJob.isPending} onClick={onAssign}>
+              Assign
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={docsOpen} onClose={() => setDocsOpen(false)} title="Assign Required Documents">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {(documentTypes ?? []).map((d) => (
+              <label key={d.documentTypeId} className="flex items-center gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  checked={selectedDocTypes.includes(d.documentTypeId)}
+                  onChange={() => toggleDocType(d.documentTypeId)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30"
+                />
+                {d.name}
+              </label>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDocsOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" disabled={!selectedDocTypes.length || assignDocs.isPending} onClick={onAssignDocs}>
+              Assign
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

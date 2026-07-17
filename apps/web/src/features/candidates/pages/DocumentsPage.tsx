@@ -1,26 +1,35 @@
 import { useRef, useState } from 'react';
+import { isAxiosError } from 'axios';
 import { FileText, Upload } from 'lucide-react';
 import { Badge, Breadcrumbs, Card, statusTone, useToast } from '@/components/ui';
-import { useCandidateDocuments } from '../candidate.api';
+import { useCandidateDocuments, useUploadCandidateDocument } from '../candidate.api';
 
-/** Candidate — document upload & status (candidate-upload-doc.aspx). */
+/** Candidate — document upload & status (candidate-doc.aspx). */
 export default function DocumentsPage() {
   const { data, isLoading } = useCandidateDocuments();
+  const upload = useUploadCandidateDocument();
   const { notify } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [target, setTarget] = useState<number | null>(null);
 
-  const onPick = (docId: number) => {
-    setTarget(docId);
+  const onPick = (documentTypeId: number | null) => {
+    if (documentTypeId == null) return;
+    setTarget(documentTypeId);
     fileRef.current?.click();
   };
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      // Wire to POST /candidates/me/documents/:id (multipart) when available.
-      notify(`"${e.target.files[0].name}" uploaded for review.`, 'success');
-      setTarget(null);
-      e.target.value = '';
-    }
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || target == null) return;
+    upload.mutate(
+      { documentTypeId: target, file },
+      {
+        onSuccess: () => notify(`"${file.name}" uploaded for review.`, 'success'),
+        onError: (err) =>
+          notify(isAxiosError(err) ? err.response?.data?.message ?? 'Upload failed' : 'Upload failed', 'error'),
+        onSettled: () => setTarget(null),
+      },
+    );
   };
 
   return (
@@ -32,6 +41,10 @@ export default function DocumentsPage() {
 
       {isLoading ? (
         <Card>Loading documents…</Card>
+      ) : (data ?? []).length === 0 ? (
+        <Card className="text-center text-gray-500">
+          No documents have been requested yet. Your recruiter will let you know what to upload.
+        </Card>
       ) : (
         <div className="space-y-3">
           {(data ?? []).map((doc) => (
@@ -50,8 +63,9 @@ export default function DocumentsPage() {
               <div className="flex items-center gap-3">
                 <Badge tone={statusTone(doc.status)}>{doc.status}</Badge>
                 <button
-                  onClick={() => onPick(doc.documentId)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-primary hover:text-white"
+                  onClick={() => onPick(doc.documentTypeId)}
+                  disabled={upload.isPending && target === doc.documentTypeId}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-primary hover:text-white disabled:opacity-50"
                 >
                   <Upload className="h-4 w-4" />
                   {doc.status === 'Pending' ? 'Upload' : 'Re-upload'}
@@ -61,7 +75,6 @@ export default function DocumentsPage() {
           ))}
         </div>
       )}
-      {target !== null && <p className="mt-3 text-sm text-gray-500">Selecting file…</p>}
     </div>
   );
 }

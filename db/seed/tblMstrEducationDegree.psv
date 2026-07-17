@@ -1,0 +1,9 @@
+DegreeID|DegreeName|ShortForm|EducationTypeID
+1|Bachelor of Computer Applications|BCA|3
+2|Bachelor of Arts|BA|3
+4|Bachelor of Commerce|BCom|3
+5|Masters of Computer Applications|MCA|4
+6|Masters of Arts|MA|4
+7|Masters of Commerce|MCom|4
+8|10th|10th|1
+9|12th|12th|2

@@ -1,0 +1,19 @@
+# Local development only. `npm run dev` runs the API on the host, so it needs Postgres and
+# Redis reachable from the host — the base compose file keeps them on the internal network.
+#
+# This is NOT named docker-compose.override.yml on purpose: that name is merged automatically,
+# and deploy/DEPLOYMENT.md runs a plain `docker compose up -d --build` on the server, which
+# would then publish the database port in production. Pass this file explicitly:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis
+#
+# The host ports are deliberately not 5432/6379 — they would collide with any Postgres or
+# Redis already running locally. They match apps/api/.env.example.
+services:
+  postgres:
+    ports:
+      - '15432:5432'
+
+  redis:
+    ports:
+      - '16379:6379'

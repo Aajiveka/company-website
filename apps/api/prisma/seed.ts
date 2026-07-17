@@ -19,6 +19,7 @@ import argon2 from 'argon2';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createPrismaClient } from '../src/prisma/prisma.client';
+import { JOB_STATUS_ACTIVE } from '../src/shared/status';
 
 const prisma = createPrismaClient();
 const SEED_DIR = resolve(__dirname, '../../../db/seed');
@@ -38,9 +39,14 @@ const ORDER = [
   'tblMstrWorkMode',
   'tblMstrGender',
   'tblMstrEducationType',
+  // Same real rows the extraction dumped as tblMstrCourse.psv — tblMstrCourse and
+  // tblMstrEducationDegree are identically-shaped legacy duplicates, and
+  // tblSubscriberEducation.DegreeID is the one that actually FKs to MstrEducationDegree.
+  'tblMstrEducationDegree',
   'tblMstrDocumentType',
   'tblMstrDocuments',
   'tblMstrJobMappingStatus',
+  'tblMstrInterviewMode',
   'tblMstrState',
   'tblMstrCily',
 ];
@@ -111,8 +117,10 @@ const DEMO_USERS = [
   // The candidate gets a real subscriber profile, because a login on its own has no
   // candidate identity — tblSecUser.SubscriberID has to be set explicitly.
   { userName: 'anuj', roleId: 1, descr: 'anuj', email: '' },
-  { userName: 'qc1', roleId: 2, descr: 'Aajiveka Admin', email: 'admin@aajiveka.com' },
+  { userName: 'qc1', roleId: 2, descr: 'QC1 Reviewer', email: 'qc1@aajiveka.com' },
+  { userName: 'qc2', roleId: 3, descr: 'QC2 Reviewer', email: 'qc2@aajiveka.com' },
   { userName: 'anuj@aajiveka.com', roleId: 4, descr: 'anuj garg', email: 'anuj@aajiveka.com' },
+  { userName: 'admin', roleId: 5, descr: 'Aajiveka Admin', email: 'admin@aajiveka.com' },
 ];
 
 async function seedDemoUsers() {
@@ -127,8 +135,8 @@ async function seedDemoUsers() {
           pIN: 122001,
           contactNo: '1234',
           emailID: 'info@aajiveka.com',
-          cityID: 3,
-          industryTypeID: 4,
+          cityID: 212, // Gurugram, Haryana — matches the 122001 PIN above
+          industryTypeID: 51, // IT Services & Consulting
           companyDescr: 'test company aajiveka',
           companyWebsite: '',
           companyLogo: '',
@@ -246,6 +254,39 @@ async function seedPlans() {
   console.log(`  subscription plans          ${PLANS.length * MONTHS.length} rows`);
 }
 
+/**
+ * One live job for the demo company. Migrations create the schema, not rows, so on a fresh
+ * database there are no jobs at all and the public detail page has nothing to show — the e2e
+ * suite drives /jobs/1 and got a 404. The FK ids are real rows from db/seed/, and the city and
+ * industry match the demo client so the posting is not self-contradictory.
+ */
+async function seedDemoJob() {
+  if (await prisma.clientJobs.findFirst({ select: { jobID: true } })) return;
+
+  const client = await prisma.clientMstr.findFirst({ select: { clientID: true } });
+  if (!client) return;
+
+  await prisma.clientJobs.create({
+    data: {
+      clientID: client.clientID,
+      designationID: 1, // Software Developer
+      employeeTypeID: 1, // Full Time
+      workModeID: 1, // Work From Home
+      jobCityID: 212, // Gurugram — the demo client's city
+      industryTypeID: 51, // IT Services & Consulting — the demo client's industry
+      jobDescr: 'Build and maintain the Aajiveka platform.',
+      jobCandidateProfile: 'Comfortable across the stack; two or more years of experience.',
+      minExp: 2,
+      minCTC: 600000,
+      maxCTC: 1200000,
+      statusID: JOB_STATUS_ACTIVE,
+      timestampIns: new Date(),
+      loginIDIns: 0,
+    },
+  });
+  console.log('  demo job                    1 row');
+}
+
 async function main() {
   console.log('seeding master data (real values from the restored backup)');
   await seedMasterData();
@@ -254,6 +295,7 @@ async function main() {
   if (process.env.SEED_DEMO_USERS === '1') {
     console.log('\nseeding demo users (SEED_DEMO_USERS=1 — never do this in production)');
     await seedDemoUsers();
+    await seedDemoJob();
   } else {
     console.log('\nskipping demo users (set SEED_DEMO_USERS=1 for dev/CI)');
   }

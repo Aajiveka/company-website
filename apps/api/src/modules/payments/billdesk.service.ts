@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { env } from '@/config/env';
 
@@ -123,16 +128,27 @@ export class BillDeskService {
       device: { init_channel: 'internet' },
     });
 
-    const res = await fetch(`${env.BILLDESK_BASE_URL}/payments/ve1_2/orders/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/jose',
-        Accept: 'application/jose',
-        'BD-Traceid': traceId,
-        'BD-Timestamp': timestamp,
-      },
-      body: jws,
-    });
+    // A refused/timed-out connection makes fetch REJECT (TypeError: fetch failed) before any
+    // status exists — the !res.ok guard below only covers responses. Without this catch that
+    // rejection becomes a raw 500; translate it into a clean 503 the caller can show.
+    let res: Response;
+    try {
+      res = await fetch(`${env.BILLDESK_BASE_URL}/payments/ve1_2/orders/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/jose',
+          Accept: 'application/jose',
+          'BD-Traceid': traceId,
+          'BD-Timestamp': timestamp,
+        },
+        body: jws,
+      });
+    } catch (err) {
+      this.logger.error(`BillDesk create-order unreachable at ${env.BILLDESK_BASE_URL}: ${String(err)}`);
+      throw new ServiceUnavailableException(
+        'The payment gateway is not responding. Please try again shortly.',
+      );
+    }
 
     const text = await res.text();
     if (!res.ok) {

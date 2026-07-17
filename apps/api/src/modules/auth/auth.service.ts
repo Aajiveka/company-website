@@ -25,6 +25,15 @@ const NODE_TYPE_SUBSCRIBER = 100;
 /** tblMstrStatus 1 = "Account created" — the first step of the candidate journey. */
 const STATUS_ACCOUNT_CREATED = 1;
 
+/** The tblSecUser columns login needs — shared so the username and email lookups return the same shape. */
+const SECUSER_LOGIN_SELECT = {
+  userID: true,
+  userName: true,
+  password: true,
+  nodeID: true,
+  subscriberID: true,
+} as const;
+
 export interface AuthUser {
   userId: number;
   userName: string;
@@ -61,11 +70,18 @@ export class AuthService {
    * every one with Argon2id, so this verifies against the hash instead.
    */
   async login(userName: string, password: string, ipAddress?: string, browser?: string) {
-    const user = await this.db.secUser.findFirst({
+    const identifier = userName.trim();
+    // The login form is "Username or Email". For a candidate, UserName is the mobile and the
+    // email lives on tblSubscriberCVDetails, so a direct UserName match never finds an email.
+    // Try UserName first, then fall back to resolving the account by email.
+    let user = await this.db.secUser.findFirst({
       // Active is char('1'/'0') in the legacy schema, not a bit.
-      where: { userName, active: '1' },
-      select: { userID: true, userName: true, password: true, nodeID: true, subscriberID: true },
+      where: { userName: identifier, active: '1' },
+      select: SECUSER_LOGIN_SELECT,
     });
+    if (!user && identifier.includes('@')) {
+      user = await this.userByEmail(identifier);
+    }
 
     // Always run a verify, even when the user does not exist, so a missing account and a
     // wrong password take the same time and cannot be told apart by timing.
@@ -94,6 +110,43 @@ export class AuthService {
     await this.audit.recordLogin(authUser.userId, tokens.jti, ipAddress, browser);
     await this.audit.record({ userId: authUser.userId, action: 'auth.login', ipAddress });
     return { user: authUser, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken };
+  }
+
+  /**
+   * Resolve a login from an email address. UserName is the mobile for candidates, so an email
+   * only matches through the profile tables — and NodeID is polymorphic (see identityFor), so
+   * there are two paths: a subscriber's email is on tblSubscriberCVDetails, everyone else's is
+   * on tblMstrPerson. EmailID is unique in neither table, so this prefers an active account and
+   * returns the first match. Case-insensitive, because email is.
+   */
+  private async userByEmail(email: string) {
+    // Subscriber path: email -> CV details -> SubscriberID -> tblSecUser.SubscriberID (unique).
+    const cv = await this.db.subscriberCVDetails.findFirst({
+      where: { emailID: { equals: email, mode: 'insensitive' } },
+      select: { subscriberID: true },
+    });
+    if (cv?.subscriberID != null) {
+      const user = await this.db.secUser.findFirst({
+        where: { subscriberID: cv.subscriberID, active: '1' },
+        select: SECUSER_LOGIN_SELECT,
+      });
+      if (user) return user;
+    }
+
+    // Everyone else: email -> person node -> tblSecUser.NodeID. Exclude subscriber logins,
+    // whose NodeID is a SubscriberID that can numerically collide with a PersonNodeID.
+    const person = await this.db.mstrPerson.findFirst({
+      where: { emailID: { equals: email, mode: 'insensitive' } },
+      select: { personNodeID: true },
+    });
+    if (person?.personNodeID != null) {
+      return this.db.secUser.findFirst({
+        where: { nodeID: person.personNodeID, nodeType: { not: NODE_TYPE_SUBSCRIBER }, active: '1' },
+        select: SECUSER_LOGIN_SELECT,
+      });
+    }
+
+    return null;
   }
 
   /**

@@ -10,7 +10,14 @@ coverage/
 
 # Reference material (not part of the shipped app)
 reference/
-storage/
+
+# Uploaded files (STORAGE_LOCAL_ROOT), created at runtime. Anchored: an unanchored `storage/`
+# matches a directory of that name at any depth, so it also swallowed the module source at
+# apps/api/src/modules/storage/ — which then never reached the repo, and every clean checkout
+# failed to compile while this machine was fine.
+/storage/
+/apps/api/storage/
+
 *.tsbuildinfo
 
 # e2e screenshots (tests/e2e.mjs writes these; set E2E_SHOT_DIR to relocate)

@@ -25,6 +25,7 @@ export const queryKeys = {
   jobs: {
     filters: ['jobs', 'filters'] as const,
     search: (params?: unknown) => ['jobs', 'search', params] as const,
+    detail: (id: string | number) => ['jobs', 'detail', id] as const,
   },
   payments: {
     plans: ['payments', 'plans'] as const,
