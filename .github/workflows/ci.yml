@@ -62,6 +62,13 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # Same reason as the static job: the client is generated code, and `migrate deploy`
+      # does not emit it — it only applies migrations. Without this the build fails with
+      # "@prisma/client has no exported member 'PrismaClient'" and a cascade of implicit-any
+      # errors from the untyped rows and transaction callbacks.
+      - run: npx prisma generate
+        working-directory: apps/api
+
       - name: Apply migrations
         run: npx prisma migrate deploy
         working-directory: apps/api
