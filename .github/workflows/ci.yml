@@ -62,9 +62,25 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # Same reason as the static job: the client is generated code, and `migrate deploy`
+      # does not emit it — it only applies migrations. Without this the build fails with
+      # "@prisma/client has no exported member 'PrismaClient'" and a cascade of implicit-any
+      # errors from the untyped rows and transaction callbacks.
+      - run: npx prisma generate
+        working-directory: apps/api
+
       - name: Apply migrations
         run: npx prisma migrate deploy
         working-directory: apps/api
+
+      # migrate deploy creates the schema, not the rows. tests/e2e.mjs logs in as anuj,
+      # anuj@aajiveka.com and qc1, which exist only under SEED_DEMO_USERS=1 — seed.ts says
+      # as much: "They exist so CI (and a local dev) can log in".
+      - name: Seed master data and demo users
+        run: npm run db:seed
+        working-directory: apps/api
+        env:
+          SEED_DEMO_USERS: '1'
 
       - name: Build
         run: npm run build
@@ -72,10 +88,14 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      # vite preview has to run from apps/web. At the repo root there is no vite.config.ts and
+      # no dist/, so it came up serving 404 — the port opened, wait-on waited for a 2xx that
+      # never arrived, and the job died at the 60s timeout. The workspace script picks up
+      # apps/web/vite.config.ts, which sets preview.port 5173 and the /api proxy the suite needs.
       - name: Start API and web
         run: |
           node apps/api/dist/main.js &
-          npx vite preview --host --port 5173 &
+          npm run preview --workspace apps/web &
           npx wait-on -t 60000 http://localhost:4000/api/health http://localhost:5173/
         working-directory: .
         env:

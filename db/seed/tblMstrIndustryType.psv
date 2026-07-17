@@ -1,5 +1,82 @@
 IndustryTypeID|IndustryType
-1|Banking
-2|Retail
-3|Real Estate
-4|IT
+1|Accounting / Auditing
+2|Advertising & Marketing
+3|Agriculture / Forestry / Fishing
+4|Analytics / KPO / Research
+5|Animation & VFX
+6|Architecture / Interior Design
+7|Auto Components
+8|Automobile
+9|Aviation
+10|Banking
+11|Beauty & Personal Care
+12|Beverage
+13|Biotechnology
+14|BPO / Call Centre
+15|Building Material
+16|Chemicals
+17|Clinical Research / Contract Research
+18|Consumer Electronics & Appliances
+19|Content Development / Language
+20|Courier / Logistics
+21|Defence & Aerospace
+22|Design
+23|E-Learning / EdTech
+24|Education / Training
+25|Electrical Equipment
+26|Electronic Components / Semiconductors
+27|Electronics Manufacturing
+28|Emerging Technologies
+29|Engineering & Construction
+30|Events / Live Entertainment
+31|Facility Management Services
+32|Fertilizers / Pesticides / Agro chemicals
+33|Film / Music / Entertainment
+34|Financial Services
+35|FinTech / Payments
+36|Fitness & Wellness
+37|FMCG
+38|Food Processing
+39|Furniture & Furnishing
+40|Gaming
+41|Gems & Jewellery
+42|Government / Public Administration
+43|Hardware & Networking
+44|Hotels & Restaurants
+45|Import & Export
+46|Industrial Automation
+47|Industrial Equipment / Machinery
+48|Insurance
+49|Internet
+50|Investment Banking / Venture Capital / Private Equity
+51|IT Services & Consulting
+52|Law Enforcement / Security Services
+53|Leather
+54|Legal
+55|Management Consulting
+56|Medical Devices & Equipment
+57|Medical Services / Hospital
+58|Metals & Mining
+59|Miscellaneous
+60|NBFC
+61|NGO / Social Services / Industry Associations
+62|Oil & Gas
+63|Packaging & Containers
+64|Petrochemical / Plastics / Rubber
+65|Pharmaceutical & Life Sciences
+66|Ports & Shipping
+67|Power
+68|Printing & Publishing
+69|Pulp & Paper
+70|Railways
+71|Real Estate
+72|Recruitment / Staffing
+73|Retail
+74|Software Product
+75|Sports / Leisure & Recreation
+76|Telecom / ISP
+77|Textile & Apparel
+78|Travel & Tourism
+79|TV / Radio
+80|Urban Transport
+81|Water Treatment / Waste Management

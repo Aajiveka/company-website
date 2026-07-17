@@ -31,11 +31,20 @@ legacy data migration.
 
 ```bash
 npm install
+
+# The API runs on the host, so Postgres and Redis have to be reachable from it. The base
+# compose file keeps them on the internal network; this overlay publishes 15432 and 16379.
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis
+
 npm run dev              # api on :4000 + web on :5173 (proxied), together
 
 npm run typecheck && npm run lint
 node tests/e2e.mjs       # every page, all three roles, against a REAL api + database
 ```
+
+`apps/api/.env` must use the same `POSTGRES_PASSWORD` as the root `.env` — the containers are
+built from the latter, and a mismatch surfaces as a 500 on login (Prisma `P1000`), not as a
+connection error.
 
 `npm run dev` starts both halves; use `npm run dev:api` or `npm run dev:web` to run either
 alone.

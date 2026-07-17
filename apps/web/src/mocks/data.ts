@@ -71,19 +71,26 @@ export const CANDIDATE_PROFILE: CandidateProfile = {
 
 export const CV_MASTERS = {
   cities: [
-    { id: 1, label: 'Pune' },
-    { id: 2, label: 'Bengaluru' },
-    { id: 3, label: 'Mumbai' },
-    { id: 4, label: 'Hyderabad' },
+    { id: 413, label: 'Pune' },
+    { id: 287, label: 'Bangalore Urban' },
+    { id: 404, label: 'Mumbai City' },
+    { id: 616, label: 'Hyderabad' },
   ],
   subFunctions: [
-    { id: 1, label: 'Software Development' },
-    { id: 2, label: 'Data Analysis' },
-    { id: 3, label: 'Product Management' },
+    { id: 1, label: 'Any Roles' },
+    { id: 2, label: 'Banking Operations' },
+    { id: 3, label: 'Acquisition Manager' },
+    { id: 114, label: 'After Sales Service & Repair' },
+    { id: 175, label: 'Accounting & Taxation' },
+    { id: 275, label: 'System Analyst' },
+    { id: 338, label: 'Brand Management' },
   ],
   industries: [
-    { id: 1, label: 'Information Technology' },
-    { id: 2, label: 'Banking' },
+    { id: 1, label: 'Accounting / Auditing' },
+    { id: 10, label: 'Banking' },
+    { id: 51, label: 'IT Services & Consulting' },
+    { id: 73, label: 'Retail' },
+    { id: 71, label: 'Real Estate' },
   ],
   skills: [
     { id: 1, label: 'React' },
