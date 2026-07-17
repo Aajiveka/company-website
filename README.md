@@ -22,7 +22,7 @@ The app is on **http://localhost:8080**; the API docs are at **/api/docs**. Migr
 on start, and nginx proxies `/api` to the API container — the API is never exposed directly.
 
 Demo logins (**dev/CI only** — the password equals the username): `anuj` (candidate), `qc1`
-(QC), `anuj@aajiveka.com` (employer).
+(QC1), `qc2` (QC2), `anuj@aajiveka.com` (employer), `admin` (admin).
 
 See **[deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md)** for secrets, storage, payments and the
 legacy data migration.
