@@ -15,6 +15,9 @@ services:
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER:-aajiveka}:${POSTGRES_PASSWORD}@${RDS_HOST:?set RDS_HOST in .env}:5432/${POSTGRES_DB:-aajiveka}?schema=public&sslmode=require&uselibpqcompat=true"
       STORAGE_DRIVER: s3
+      SMS_DRIVER: sns
+      EMAIL_DRIVER: ses
+      SES_FROM_EMAIL: ${SES_FROM_EMAIL:-noreply@ajiveka.co.in}
     volumes: []
 
   web:

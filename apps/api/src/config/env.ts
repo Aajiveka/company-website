@@ -46,7 +46,20 @@ const schema = z.object({
   BILLDESK_MERCHANT_ID: z.string().optional(),
   BILLDESK_SECRET_KEY: z.string().optional(),
 
+  // Notification drivers. 'log' writes to stdout (dev default); the real drivers need credentials.
+  SMS_DRIVER: z.enum(['twofactor', 'sns', 'log']).default('log'),
+  EMAIL_DRIVER: z.enum(['smtp', 'ses', 'log']).default('log'),
+
+  // AWS SNS (SMS_DRIVER=sns)
+  SNS_SENDER_ID: z.string().optional(),
+
+  // AWS SES (EMAIL_DRIVER=ses)
+  SES_FROM_EMAIL: z.string().optional(),
+
+  // 2Factor.in (SMS_DRIVER=twofactor)
   TWOFACTOR_API_KEY: z.string().optional(),
+
+  // SMTP (EMAIL_DRIVER=smtp)
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
