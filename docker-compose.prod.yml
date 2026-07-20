@@ -1,0 +1,22 @@
+# Production override — uses RDS instead of Docker postgres, S3 instead of local storage.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  postgres:
+    image: busybox:latest
+    command: ['sh', '-c', 'sleep infinity']
+    healthcheck:
+      test: ['CMD-SHELL', 'true']
+      interval: 2s
+      retries: 1
+    restart: 'no'
+    volumes: []
+
+  api:
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-aajiveka}:${POSTGRES_PASSWORD}@${RDS_HOST:?set RDS_HOST in .env}:5432/${POSTGRES_DB:-aajiveka}?schema=public&sslmode=require&uselibpqcompat=true"
+      STORAGE_DRIVER: s3
+    volumes: []
+
+  web:
+    ports:
+      - '${WEB_PORT:-80}:80'
