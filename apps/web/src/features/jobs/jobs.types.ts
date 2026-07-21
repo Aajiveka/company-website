@@ -39,5 +39,7 @@ export interface JobsPage {
 export interface JobFilters {
   designations: string[];
   industries: string[];
+  states: string[];
   locations: string[];
+  cityByState: Record<string, string[]>;
 }

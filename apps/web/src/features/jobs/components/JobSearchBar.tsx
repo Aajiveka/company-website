@@ -23,6 +23,24 @@ export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: 
   const [designation, setDesignation] = useState(initialDesignation);
   const [location, setLocation] = useState(initialLocation);
 
+  // Derive initial state from initialLocation
+  const deriveState = () => {
+    if (!initialLocation || !data?.cityByState) return '';
+    for (const [state, cities] of Object.entries(data.cityByState)) {
+      if (cities.includes(initialLocation)) return state;
+    }
+    return '';
+  };
+  const [state, setState] = useState('');
+
+  // Set initial state when data loads
+  if (data && !state && initialLocation) {
+    const s = deriveState();
+    if (s) setState(s);
+  }
+
+  const filteredCities = state && data?.cityByState ? data.cityByState[state] ?? [] : [];
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
@@ -53,16 +71,37 @@ export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: 
         </select>
       </div>
 
+      <div className="flex flex-1 items-center gap-2 border-gray-200 xl:border-r xl:pr-3">
+        <MapPin className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <select
+          aria-label="State"
+          className="h-11 w-full bg-transparent text-sm text-gray-700 outline-none"
+          value={state}
+          onChange={(e) => {
+            setState(e.target.value);
+            setLocation('');
+          }}
+        >
+          <option value="">State</option>
+          {data?.states.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="flex flex-1 items-center gap-2">
         <MapPin className="h-5 w-5 shrink-0 text-primary" aria-hidden />
         <select
-          aria-label="Location"
+          aria-label="District / City"
           className="h-11 w-full bg-transparent text-sm text-gray-700 outline-none"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
+          disabled={!state}
         >
-          <option value="">Location</option>
-          {data?.locations.map((l) => (
+          <option value="">{state ? 'District / City' : 'Select state first'}</option>
+          {filteredCities.map((l) => (
             <option key={l} value={l}>
               {l}
             </option>

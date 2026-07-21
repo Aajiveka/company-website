@@ -45,19 +45,24 @@ export class JobsService {
    * that is what this returns.
    */
   async filters() {
-    const [designations, industries, cities] = await Promise.all([
+    const [designations, industries, states, cities] = await Promise.all([
       this.db.mstrDesignation.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
       this.db.mstrIndustryType.findMany({
         select: { industryType: true },
         orderBy: { industryType: 'asc' },
       }),
-      this.db.mstrCily.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
+      this.db.mstrState.findMany({ select: { stateID: true, descr: true }, orderBy: { descr: 'asc' } }),
+      this.db.mstrCily.findMany({ select: { descr: true, stateID: true }, orderBy: { descr: 'asc' } }),
     ]);
     const clean = (xs: (string | null)[]) => xs.filter((d): d is string => !!d?.trim());
     return {
       designations: clean(designations.map((d) => d.descr)),
       industries: clean(industries.map((i) => i.industryType)),
+      states: clean(states.map((s) => s.descr)),
       locations: clean(cities.map((c) => c.descr)),
+      cityByState: Object.fromEntries(
+        states.map((s) => [s.descr ?? '', clean(cities.filter((c) => c.stateID === s.stateID).map((c) => c.descr))]),
+      ),
     };
   }
 

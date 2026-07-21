@@ -31,9 +31,11 @@ import {
   INTERVIEW_MODES,
   INTERVIEWS,
   JOB_ALERTS,
+  JOB_CITY_BY_STATE,
   JOB_DESIGNATIONS,
   JOB_INDUSTRIES,
   JOB_LOCATIONS,
+  JOB_STATES,
   PUBLIC_JOBS,
   QC1_STATS,
   makeSession,
@@ -229,7 +231,9 @@ export const handlers = [
     HttpResponse.json({
       designations: JOB_DESIGNATIONS,
       industries: JOB_INDUSTRIES,
+      states: JOB_STATES,
       locations: JOB_LOCATIONS,
+      cityByState: JOB_CITY_BY_STATE,
     }),
   ),
 
