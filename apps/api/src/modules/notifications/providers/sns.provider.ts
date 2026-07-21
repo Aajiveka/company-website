@@ -21,14 +21,24 @@ export class SnsSmsProvider implements SmsProvider {
             DataType: 'String',
             StringValue: 'Transactional',
           },
-          ...(env.SNS_SENDER_ID
-            ? {
-                'AWS.SNS.SMS.SenderID': {
-                  DataType: 'String',
-                  StringValue: env.SNS_SENDER_ID,
-                },
-              }
-            : {}),
+          ...(env.SNS_SENDER_ID && {
+            'AWS.SNS.SMS.SenderID': {
+              DataType: 'String',
+              StringValue: env.SNS_SENDER_ID,
+            },
+          }),
+          ...(env.SNS_DLT_ENTITY_ID && {
+            'AWS.MM.SMS.EntityId': {
+              DataType: 'String',
+              StringValue: env.SNS_DLT_ENTITY_ID,
+            },
+          }),
+          ...(env.SNS_DLT_TEMPLATE_ID && {
+            'AWS.MM.SMS.TemplateId': {
+              DataType: 'String',
+              StringValue: env.SNS_DLT_TEMPLATE_ID,
+            },
+          }),
         },
       }),
     );

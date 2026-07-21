@@ -52,6 +52,8 @@ const schema = z.object({
 
   // AWS SNS (SMS_DRIVER=sns)
   SNS_SENDER_ID: z.string().optional(),
+  SNS_DLT_ENTITY_ID: z.string().optional(),
+  SNS_DLT_TEMPLATE_ID: z.string().optional(),
 
   // AWS SES (EMAIL_DRIVER=ses)
   SES_FROM_EMAIL: z.string().optional(),

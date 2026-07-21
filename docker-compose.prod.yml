@@ -18,6 +18,9 @@ services:
       SMS_DRIVER: sns
       EMAIL_DRIVER: ses
       SES_FROM_EMAIL: ${SES_FROM_EMAIL:-noreply@ajiveka.co.in}
+      SNS_SENDER_ID: ${SNS_SENDER_ID:-}
+      SNS_DLT_ENTITY_ID: ${SNS_DLT_ENTITY_ID:-}
+      SNS_DLT_TEMPLATE_ID: ${SNS_DLT_TEMPLATE_ID:-}
     volumes: []
 
   web:
