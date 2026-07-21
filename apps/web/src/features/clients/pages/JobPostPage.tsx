@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,13 +32,23 @@ export default function JobPostPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<Values>({ resolver: zodResolver(schema) });
 
   const job = isEdit ? jobs?.find((j) => String(j.jobId) === id) : undefined;
 
+  // Derive stateId from existing cityId for edit mode
+  const [selectedStateId, setSelectedStateId] = useState<number | ''>('');
+  const filteredCities = useMemo(
+    () => (selectedStateId ? (masters?.cities ?? []).filter((c) => c.stateId === selectedStateId) : []),
+    [masters?.cities, selectedStateId],
+  );
+
   useEffect(() => {
-    if (job) {
+    if (job && masters) {
+      const city = masters.cities.find((c) => c.id === job.cityId);
+      if (city) setSelectedStateId(city.stateId);
       reset({
         designationId: job.designationId,
         cityId: job.cityId,
@@ -50,7 +60,7 @@ export default function JobPostPage() {
         description: job.description,
       });
     }
-  }, [job, reset]);
+  }, [job, masters, reset]);
 
   const onSubmit = (values: Values) => {
     const mutation = isEdit ? update : post;
@@ -80,10 +90,21 @@ export default function JobPostPage() {
               {...register('designationId')}
             />
             <Select
-              label="Location"
+              label="State"
               placeholder="Select…"
-              options={opts(masters?.cities)}
+              options={opts(masters?.states)}
+              value={selectedStateId}
+              onChange={(e) => {
+                setSelectedStateId(Number(e.target.value) || '');
+                setValue('cityId', 0);
+              }}
+            />
+            <Select
+              label="District / City"
+              placeholder={selectedStateId ? 'Select…' : 'Select state first'}
+              options={opts(filteredCities)}
               error={errors.cityId?.message}
+              disabled={!selectedStateId}
               {...register('cityId')}
             />
             <Select

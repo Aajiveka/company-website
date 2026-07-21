@@ -67,8 +67,13 @@ export interface CvMasterOption {
   label: string;
 }
 
+export interface CvCityOption extends CvMasterOption {
+  stateId: number;
+}
+
 export interface CvMasters {
-  cities: CvMasterOption[];
+  states: CvMasterOption[];
+  cities: CvCityOption[];
   subFunctions: CvMasterOption[];
   industries: CvMasterOption[];
   skills: CvMasterOption[];

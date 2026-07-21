@@ -187,8 +187,9 @@ export class ClientsService {
 
   /** id-backed lookup lists for the job post/edit form (fixes free-text fields that never matched CreateJobDto's ints). */
   async masters() {
-    const [designations, cities, workModes, employmentTypes, industryTypes, skills] = await Promise.all([
+    const [designations, states, cities, workModes, employmentTypes, industryTypes, skills] = await Promise.all([
       this.db.mstrDesignation.findMany({ orderBy: { descr: 'asc' } }),
+      this.db.mstrState.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrCily.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrWorkMode.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrEmpType.findMany({ orderBy: { descr: 'asc' } }),
@@ -198,7 +199,8 @@ export class ClientsService {
     const opt = (id: number, label: string | null) => ({ id, label: label ?? '' });
     return {
       designations: designations.map((d) => opt(d.designationID, d.descr)),
-      cities: cities.map((c) => opt(c.cityID, c.descr)),
+      states: states.map((s) => opt(s.stateID, s.descr)),
+      cities: cities.map((c) => ({ id: c.cityID, label: c.descr ?? '', stateId: c.stateID })),
       workModes: workModes.map((w) => opt(w.workModeID, w.descr)),
       employmentTypes: employmentTypes.map((e) => opt(e.employeeTypeID, e.descr)),
       industryTypes: industryTypes.map((i) => opt(i.industryTypeID, i.industryType)),

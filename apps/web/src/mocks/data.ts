@@ -213,11 +213,15 @@ export const COMPANY_MASTERS: CompanyMasters = {
     { id: 3, label: 'QA Analyst' },
     { id: 4, label: 'Product Manager' },
   ],
+  states: [
+    { id: 16, label: 'Karnataka' },
+    { id: 21, label: 'Maharashtra' },
+  ],
   cities: [
-    { id: 1, label: 'Bengaluru' },
-    { id: 2, label: 'Pune' },
-    { id: 3, label: 'Mumbai' },
-    { id: 4, label: 'Remote' },
+    { id: 1, label: 'Bengaluru', stateId: 16 },
+    { id: 2, label: 'Pune', stateId: 21 },
+    { id: 3, label: 'Mumbai', stateId: 21 },
+    { id: 4, label: 'Remote', stateId: 0 },
   ],
   workModes: [
     { id: 1, label: 'On-site' },
