@@ -41,9 +41,14 @@ export interface MasterOption {
   label: string;
 }
 
+export interface CityOption extends MasterOption {
+  stateId: number;
+}
+
 export interface CompanyMasters {
   designations: MasterOption[];
-  cities: MasterOption[];
+  states: MasterOption[];
+  cities: CityOption[];
   workModes: MasterOption[];
   employmentTypes: MasterOption[];
   industryTypes: MasterOption[];

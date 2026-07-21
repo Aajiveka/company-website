@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -56,10 +56,18 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
   // must NOT be kept in sync with `data` reactively, or saving any OTHER section on this page
   // (which refetches the same shared cv-edit query) would reset whatever the user is mid-typing
   // here back to the last-saved server value.
-  const { register, handleSubmit, formState: { errors } } = useForm<PersonalValues>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<PersonalValues>({
     resolver: zodResolver(personalSchema),
     defaultValues: { ...data, email: data.email ?? '', cityId: data.cityId ?? undefined },
   });
+
+  // Cascading state → city
+  const initState = data.cityId ? masters?.cities.find((c) => c.id === data.cityId)?.stateId ?? '' : '';
+  const [selectedStateId, setSelectedStateId] = useState<number | ''>(initState);
+  const filteredCities = useMemo(
+    () => (selectedStateId ? (masters?.cities ?? []).filter((c) => c.stateId === selectedStateId) : []),
+    [masters?.cities, selectedStateId],
+  );
 
   const onSubmit = (values: PersonalValues) =>
     update.mutate(
@@ -90,7 +98,23 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
             error={errors.gender?.message}
             {...register('gender')}
           />
-          <Select label="City" placeholder="Select…" options={opts(masters?.cities)} {...register('cityId')} />
+          <Select
+            label="State"
+            placeholder="Select…"
+            options={opts(masters?.states)}
+            value={selectedStateId}
+            onChange={(e) => {
+              setSelectedStateId(Number(e.target.value) || '');
+              setValue('cityId', 0);
+            }}
+          />
+          <Select
+            label="District / City"
+            placeholder={selectedStateId ? 'Select…' : 'Select state first'}
+            options={opts(filteredCities)}
+            disabled={!selectedStateId}
+            {...register('cityId')}
+          />
         </div>
         <Input label="Address" error={errors.address?.message} {...register('address')} />
         <div className="flex justify-end">
@@ -127,7 +151,7 @@ function ProfessionalSection({
   const onError = useErrorNotify();
   // Seeded once from `data` at mount — see the comment in PersonalSection for why this must
   // not reactively resync when a sibling section's save refetches the shared cv-edit query.
-  const { register, handleSubmit, formState: { errors } } = useForm<ProfessionalValues>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfessionalValues>({
     resolver: zodResolver(professionalSchema),
     defaultValues: {
       subFunctionId: data.subFunctionId ?? undefined,
@@ -142,6 +166,21 @@ function ProfessionalSection({
   });
   const [preferredCityIds, setPreferredCityIds] = useState<number[]>(data.preferredCityIds);
   const [tagsText, setTagsText] = useState(data.tagNames.join(', '));
+
+  // Cascading state → city for current city
+  const initCurrentState = data.currentCityId ? masters?.cities.find((c) => c.id === data.currentCityId)?.stateId ?? '' : '';
+  const [currentStateId, setCurrentStateId] = useState<number | ''>(initCurrentState);
+  const filteredCurrentCities = useMemo(
+    () => (currentStateId ? (masters?.cities ?? []).filter((c) => c.stateId === currentStateId) : []),
+    [masters?.cities, currentStateId],
+  );
+
+  // State filter for preferred locations
+  const [prefStateFilter, setPrefStateFilter] = useState<number | ''>('');
+  const filteredPrefCities = useMemo(
+    () => (prefStateFilter ? (masters?.cities ?? []).filter((c) => c.stateId === prefStateFilter) : (masters?.cities ?? [])),
+    [masters?.cities, prefStateFilter],
+  );
 
   const toggleCity = (id: number) =>
     setPreferredCityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
@@ -173,7 +212,23 @@ function ProfessionalSection({
           <Select label="Primary Skill" placeholder="Select…" options={opts(masters?.skills)} {...register('skillId')} />
           <Input label="Total Experience (yrs)" type="number" error={errors.totalExp?.message} {...register('totalExp')} />
           <Input label="Current CTC (₹)" type="number" error={errors.currentCtc?.message} {...register('currentCtc')} />
-          <Select label="Current City" placeholder="Select…" options={opts(masters?.cities)} {...register('currentCityId')} />
+          <Select
+            label="Current State"
+            placeholder="Select…"
+            options={opts(masters?.states)}
+            value={currentStateId}
+            onChange={(e) => {
+              setCurrentStateId(Number(e.target.value) || '');
+              setValue('currentCityId', 0);
+            }}
+          />
+          <Select
+            label="Current District / City"
+            placeholder={currentStateId ? 'Select…' : 'Select state first'}
+            options={opts(filteredCurrentCities)}
+            disabled={!currentStateId}
+            {...register('currentCityId')}
+          />
           <Input label="Notice Period (days)" type="number" error={errors.noticePeriod?.message} {...register('noticePeriod')} />
         </div>
         <label className="flex items-center gap-2 text-sm text-navy">
@@ -182,8 +237,14 @@ function ProfessionalSection({
         </label>
         <div>
           <p className="mb-1.5 text-sm font-medium text-navy">Preferred Locations</p>
-          <div className="flex flex-wrap gap-3">
-            {(masters?.cities ?? []).map((c) => (
+          <Select
+            placeholder="All states"
+            options={opts(masters?.states)}
+            value={prefStateFilter}
+            onChange={(e) => setPrefStateFilter(Number(e.target.value) || '')}
+          />
+          <div className="mt-2 flex flex-wrap gap-3">
+            {filteredPrefCities.map((c) => (
               <label key={c.id} className="flex items-center gap-1.5 text-sm text-gray-600">
                 <input
                   type="checkbox"

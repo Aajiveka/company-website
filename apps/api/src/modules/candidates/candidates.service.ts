@@ -114,7 +114,8 @@ export class CandidatesService {
 
   /** id-backed lookup lists for the CV editor — every axis on tblSubscriberCVDetails is an FK, not free text. */
   async cvMasters() {
-    const [cities, subFunctions, industries, skills, courseTypes, degrees, designations, empTypes] = await Promise.all([
+    const [states, cities, subFunctions, industries, skills, courseTypes, degrees, designations, empTypes] = await Promise.all([
+      this.db.mstrState.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrCily.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrSubFunctions.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrIndustryType.findMany({ orderBy: { industryType: 'asc' } }),
@@ -126,7 +127,8 @@ export class CandidatesService {
     ]);
     const opt = (id: number, label: string | null) => ({ id, label: label ?? '' });
     return {
-      cities: cities.map((c) => opt(c.cityID, c.descr)),
+      states: states.map((s) => opt(s.stateID, s.descr)),
+      cities: cities.map((c) => ({ id: c.cityID, label: c.descr ?? '', stateId: c.stateID })),
       subFunctions: subFunctions.map((s) => opt(s.subFunctionID, s.descr)),
       industries: industries.map((i) => opt(i.industryTypeID, i.industryType)),
       skills: skills.map((s) => opt(s.skillID, s.descr)),
