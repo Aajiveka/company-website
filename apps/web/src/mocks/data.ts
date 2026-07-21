@@ -288,6 +288,15 @@ export const JOB_LOCATIONS = [
   'Sonipat',
 ];
 
+export const JOB_STATES = ['Delhi', 'Haryana', 'Punjab', 'Uttar Pradesh'];
+
+export const JOB_CITY_BY_STATE: Record<string, string[]> = {
+  Delhi: ['Delhi'],
+  Haryana: ['Faridabad', 'Gurgaon', 'Sonipat'],
+  Punjab: ['Amritsar'],
+  'Uttar Pradesh': ['Arga', 'Noida'],
+};
+
 const COMPANIES = ['aajiveka', 'Globex Corp', 'Initech Solutions'];
 const WORK_MODES = ['Work From Home', 'Work From Office', 'Hybrid'];
 const EMPLOYMENT_TYPES = ['Full Time', 'Part Time'];
