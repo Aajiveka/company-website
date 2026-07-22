@@ -6,6 +6,8 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { Loader } from '@/components/ui';
 import { Role } from '@/types/roles';
 
+const ErrorPage = lazy(() => import('@/features/misc/ErrorPage'));
+
 // Route-level code splitting — each page is its own chunk.
 const HomePage = lazy(() => import('@/features/home/HomePage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
@@ -53,6 +55,7 @@ const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>
 export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
+    errorElement: withSuspense(<ErrorPage />),
     children: [
       { path: '/', element: withSuspense(<HomePage />) },
       { path: '/login', element: withSuspense(<LoginPage />) },
@@ -77,6 +80,7 @@ export const router = createBrowserRouter([
   },
   {
     element: <ProtectedRoute />,
+    errorElement: withSuspense(<ErrorPage />),
     children: [
       {
         element: <DashboardLayout />,
@@ -120,5 +124,5 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  { path: '*', element: withSuspense(<NotFoundPage />) },
+  { path: '*', element: withSuspense(<NotFoundPage />), errorElement: withSuspense(<ErrorPage />) },
 ]);
