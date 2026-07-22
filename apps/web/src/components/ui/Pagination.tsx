@@ -34,7 +34,8 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
         <button
           key={p}
           onClick={() => onChange(p)}
-          aria-current={p === page}
+          aria-current={p === page ? 'page' : undefined}
+          aria-label={`Page ${p}`}
           className={cn(
             btn,
             p === page ? 'border-primary bg-primary text-white' : 'border-gray-200 hover:bg-gray-50',

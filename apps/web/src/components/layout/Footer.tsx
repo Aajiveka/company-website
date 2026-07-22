@@ -52,9 +52,11 @@ export function Footer() {
             </ul>
           </div>
 
-          <FooterColumn links={columnA} />
-          <FooterColumn links={columnB} />
-          <FooterColumn links={columnC} />
+          <nav aria-label="Footer navigation" className="contents">
+            <FooterColumn links={columnA} />
+            <FooterColumn links={columnB} />
+            <FooterColumn links={columnC} />
+          </nav>
         </div>
         <div className="mt-10 border-t border-white/15 pt-6 text-center text-sm text-white/80">
           © {new Date().getFullYear()} Aajiveka. All rights reserved.

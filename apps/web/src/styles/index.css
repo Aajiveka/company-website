@@ -61,6 +61,11 @@
   body {
     @apply font-sans text-[#121212] antialiased;
   }
+  /* Global focus-visible ring for interactive elements that lack component-level focus styles */
+  a:focus-visible,
+  summary:focus-visible {
+    @apply rounded outline-2 outline-offset-2 outline-primary/40;
+  }
   h1,
   h2,
   h3,
@@ -88,6 +93,7 @@
   /* Public "pill" primary button (search / know-more) */
   .btn-pill {
     @apply rounded-full bg-primary-light px-4 py-2 font-medium text-white transition
-      hover:bg-primary disabled:opacity-60 sm:px-6 sm:py-2.5;
+      hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2
+      disabled:opacity-60 sm:px-6 sm:py-2.5;
   }
 }

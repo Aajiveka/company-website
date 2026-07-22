@@ -15,6 +15,12 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-brand-soft/40">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       {/* Topbar */}
       <header className="fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 md:h-16 lg:pl-64">
         <div className="flex items-center gap-3">
@@ -52,7 +58,7 @@ export function DashboardLayout() {
         />
       )}
 
-      <main className="px-4 pb-10 pt-[4.5rem] md:pt-20 lg:pl-[17rem] lg:pr-6">
+      <main id="main-content" className="px-4 pb-10 pt-[4.5rem] md:pt-20 lg:pl-[17rem] lg:pr-6">
         <Outlet />
       </main>
     </div>

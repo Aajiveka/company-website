@@ -26,7 +26,7 @@ export function Table<T>({
 }: TableProps<T>) {
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="w-full min-w-[640px] text-left text-sm" aria-busy={isLoading}>
         <thead className="border-b border-gray-200 bg-brand-soft text-navy">
           <tr>
             {columns.map((c) => (

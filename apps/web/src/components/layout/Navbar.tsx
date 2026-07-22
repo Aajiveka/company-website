@@ -52,7 +52,7 @@ export function Navbar() {
         </div>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-2 md:flex md:gap-3">
+        <nav aria-label="Main navigation" className="hidden items-center gap-2 md:flex md:gap-3">
           {NAV_LINKS.map((link) => (
             <Link key={link.to} to={link.to}>
               <Button variant="accent" size="sm">
@@ -75,7 +75,7 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {menuOpen && (
-        <nav className="border-t border-white/15 bg-primary px-3 pb-4 pt-2 md:hidden">
+        <nav aria-label="Main navigation" className="border-t border-white/15 bg-primary px-3 pb-4 pt-2 md:hidden">
           <div className="flex flex-col gap-2">
             {NAV_LINKS.map((link) => (
               <Link
