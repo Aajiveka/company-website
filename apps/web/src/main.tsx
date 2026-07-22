@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { AppProviders } from './app/providers';
+import { PwaReloadPrompt } from './components/PwaReloadPrompt';
 import { router } from './routes/router';
 import { env } from './lib/env';
 import './styles/index.css';
@@ -17,6 +18,7 @@ async function bootstrap() {
     <React.StrictMode>
       <AppProviders>
         <RouterProvider router={router} />
+        <PwaReloadPrompt />
       </AppProviders>
     </React.StrictMode>,
   );
