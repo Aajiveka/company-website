@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Plus, Trash2 } from 'lucide-react';
 import { Breadcrumbs, Button, Card, CardSkeleton, Input, Select, useToast } from '@/components/ui';
 import {
@@ -32,7 +32,7 @@ const opts = (list?: CvMasterOption[]) => (list ?? []).map((o) => ({ label: o.la
 function useErrorNotify() {
   const { notify } = useToast();
   return (fallback: string) => (e: unknown) =>
-    notify(isAxiosError(e) ? e.response?.data?.message ?? fallback : fallback, 'error');
+    notify(getErrorMessage(e, fallback), 'error');
 }
 
 /* ------------------------------- Personal -------------------------------- */

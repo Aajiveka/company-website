@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Check, X } from 'lucide-react';
 import { Badge, Breadcrumbs, Button, Input, Modal, Select, Table, useToast, type Column } from '@/components/ui';
 import {
@@ -49,7 +49,7 @@ export default function InterviewsPage() {
         reset();
       },
       onError: (e) =>
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not schedule this interview' : 'Could not schedule this interview', 'error'),
+        notify(getErrorMessage(e, 'Could not schedule this interview'), 'error'),
     });
 
   const act = (interviewStatusId: number, status: 'Completed' | 'Cancelled') =>

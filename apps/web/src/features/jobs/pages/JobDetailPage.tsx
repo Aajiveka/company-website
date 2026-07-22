@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { Breadcrumbs, Button, Card, CardSkeleton, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
@@ -32,10 +32,7 @@ export default function JobDetailPage() {
         notify('Application submitted.', 'success');
       },
       onError: (e) =>
-        notify(
-          isAxiosError(e) ? e.response?.data?.message ?? 'Could not submit your application' : 'Could not submit your application',
-          'error',
-        ),
+        notify(getErrorMessage(e, 'Could not submit your application'), 'error'),
     });
   };
 

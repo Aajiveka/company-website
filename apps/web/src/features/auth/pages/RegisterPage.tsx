@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Button, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
@@ -12,8 +12,6 @@ import { registerSchema, type RegisterValues } from '../auth.types';
 import { ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
 
-const apiMessage = (err: unknown, fallback: string) =>
-  isAxiosError(err) ? ((err.response?.data as { message?: string })?.message ?? fallback) : fallback;
 
 /**
  * Candidate registration — full form (Full Name, Email, Mobile, Password) with OTP verification.
@@ -47,7 +45,7 @@ export default function RegisterPage() {
         notify('OTP sent to your mobile number.', 'success');
       }
     },
-    onError: (err) => notify(apiMessage(err, 'Registration failed'), 'error'),
+    onError: (err) => notify(getErrorMessage(err, 'Registration failed'), 'error'),
   });
 
   const otpMutation = useMutation({
@@ -57,7 +55,7 @@ export default function RegisterPage() {
       notify('Account created!', 'success');
       navigate(ROLE_HOME[session.user.roleId], { replace: true });
     },
-    onError: (err) => notify(apiMessage(err, 'Invalid OTP. Please try again.'), 'error'),
+    onError: (err) => notify(getErrorMessage(err, 'Invalid OTP. Please try again.'), 'error'),
   });
 
   return (

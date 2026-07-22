@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Button, useToast } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth.store';
 import { LAST_ORDER_REF_KEY, useCreateOrder } from '../payments.api';
@@ -9,12 +9,6 @@ interface SubscribeButtonProps {
   highlighted?: boolean;
 }
 
-function errorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    return (err.response?.data as { message?: string })?.message ?? 'Could not start the payment.';
-  }
-  return 'Could not start the payment.';
-}
 
 /**
  * The plan-card CTA. Starts a real payment: creates an order and hands the
@@ -40,7 +34,7 @@ export function SubscribeButton({ planId, highlighted }: SubscribeButtonProps) {
         localStorage.setItem(LAST_ORDER_REF_KEY, orderRef);
         window.location.assign(redirectUrl);
       },
-      onError: (err) => notify(errorMessage(err), 'error'),
+      onError: (err) => notify(getErrorMessage(err, 'Could not start the payment.'), 'error'),
     });
   };
 

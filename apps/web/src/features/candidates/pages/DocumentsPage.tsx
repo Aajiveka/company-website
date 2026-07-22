@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { FileText, Upload } from 'lucide-react';
 import { Badge, Breadcrumbs, Card, statusTone, useToast } from '@/components/ui';
 import { useCandidateDocuments, useUploadCandidateDocument } from '../candidate.api';
@@ -26,7 +26,7 @@ export default function DocumentsPage() {
       {
         onSuccess: () => notify(`"${file.name}" uploaded for review.`, 'success'),
         onError: (err) =>
-          notify(isAxiosError(err) ? err.response?.data?.message ?? 'Upload failed' : 'Upload failed', 'error'),
+          notify(getErrorMessage(err, 'Upload failed'), 'error'),
         onSettled: () => setTarget(null),
       },
     );

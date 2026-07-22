@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Badge, Breadcrumbs, statusTone, Table, useToast, type Column } from '@/components/ui';
 import { useApplicants, useDecideApplicant, type ApplicantRow } from '../client.api';
 
@@ -16,7 +16,7 @@ export default function ApplicantsPage() {
       {
         onSuccess: () => notify(`Applicant ${decision.toLowerCase()}.`, decision === 'Shortlisted' ? 'success' : 'info'),
         onError: (e) =>
-          notify(isAxiosError(e) ? e.response?.data?.message ?? 'Something went wrong' : 'Something went wrong', 'error'),
+          notify(getErrorMessage(e, 'Something went wrong'), 'error'),
       },
     );
 

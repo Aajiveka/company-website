@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Button, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
@@ -33,10 +33,7 @@ export default function LoginPage() {
       navigate(from ?? ROLE_HOME[session.user.roleId], { replace: true });
     },
     onError: (err) => {
-      const msg = isAxiosError(err)
-        ? (err.response?.data as { message?: string })?.message ?? 'Invalid username or password'
-        : 'Something went wrong';
-      notify(msg, 'error');
+      notify(getErrorMessage(err, 'Invalid username or password'), 'error');
     },
   });
 

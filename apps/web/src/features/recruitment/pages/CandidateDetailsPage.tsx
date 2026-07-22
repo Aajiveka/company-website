@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Briefcase, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Badge, Breadcrumbs, Button, Card, CardSkeleton, Modal, Select, statusTone } from '@/components/ui';
 import { useToast } from '@/components/ui';
 import {
@@ -33,7 +33,7 @@ export default function CandidateDetailsPage() {
     decide.mutate(decision, {
       onSuccess: () => notify(`Candidate ${decision.toLowerCase()}.`, decision === 'Approved' ? 'success' : 'info'),
       onError: (e) =>
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Something went wrong' : 'Something went wrong', 'error'),
+        notify(getErrorMessage(e, 'Something went wrong'), 'error'),
     });
 
   const onAssign = () => {
@@ -45,7 +45,7 @@ export default function CandidateDetailsPage() {
         setSelectedJobId('');
       },
       onError: (e) =>
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not assign this job' : 'Could not assign this job', 'error'),
+        notify(getErrorMessage(e, 'Could not assign this job'), 'error'),
     });
   };
 
@@ -63,7 +63,7 @@ export default function CandidateDetailsPage() {
         setSelectedDocTypes([]);
       },
       onError: (e) =>
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not assign documents' : 'Could not assign documents', 'error'),
+        notify(getErrorMessage(e, 'Could not assign documents'), 'error'),
     });
   };
 

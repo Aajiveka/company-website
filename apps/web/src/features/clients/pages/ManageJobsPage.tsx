@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, Plus, XCircle } from 'lucide-react';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Badge, Breadcrumbs, Button, Modal, statusTone, Table, useToast, type Column } from '@/components/ui';
 import { useCompanyJobs, useDeactivateJob } from '../client.api';
 import type { JobListing } from '../client.types';
@@ -23,7 +23,7 @@ export default function ManageJobsPage() {
         setConfirmJob(null);
       },
       onError: (e) => {
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not close this job' : 'Could not close this job', 'error');
+        notify(getErrorMessage(e, 'Could not close this job'), 'error');
         setConfirmJob(null);
       },
     });

@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { isAxiosError } from 'axios';
+import { getErrorMessage } from '@/lib/axios';
 import { Breadcrumbs, Button, Card, Input, useToast } from '@/components/ui';
 import { useChangePassword } from '../candidate.api';
 
@@ -34,10 +34,7 @@ export default function ChangePasswordPage() {
           reset();
         },
         onError: (err) =>
-          notify(
-            isAxiosError(err) ? ((err.response?.data as { message?: string })?.message ?? 'Failed') : 'Failed',
-            'error',
-          ),
+          notify(getErrorMessage(err, 'Failed'), 'error'),
       },
     );
 
