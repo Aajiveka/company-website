@@ -46,14 +46,14 @@ export default function AboutPage() {
               of millions by connecting them to their dream jobs.
             </p>
           </div>
-          <img src="/image/mission.jpg" alt="Our mission" className="w-full rounded-lg" loading="lazy" />
+          <img src="/image/mission.jpg" alt="Our mission" className="w-full rounded-lg" loading="lazy" decoding="async" />
         </div>
       </section>
 
       {/* Vision */}
       <section className="pb-8">
         <div className="container grid items-center gap-8 md:grid-cols-2">
-          <img src="/image/vision.png" alt="Our vision" className="w-full rounded-lg md:order-1" loading="lazy" />
+          <img src="/image/vision.png" alt="Our vision" className="w-full rounded-lg md:order-1" loading="lazy" decoding="async" />
           <div className="md:order-2 md:pl-10">
             <h2>Our Vision</h2>
             <p className="mt-4 text-gray-600">
@@ -80,7 +80,7 @@ export default function AboutPage() {
               <Value title="Customer-centricity" text="We put our users at the center of everything we do, striving to exceed their expectations." />
               <Value title="Collaboration" text="We build long-term relationships, working collaboratively with users, partners and employees." />
             </div>
-            <img src="/image/value.png" alt="Our values" className="w-full" loading="lazy" />
+            <img src="/image/value.png" alt="Our values" className="w-full" loading="lazy" decoding="async" />
             <div className="space-y-5">
               <Value title="Innovation" text="We continuously explore new technologies to improve our platform's functionality and experience." />
               <Value title="Transparency" text="We prioritize transparency and honesty in all our dealings with users and stakeholders." />
@@ -96,7 +96,7 @@ export default function AboutPage() {
           <div className="space-y-4">
             {CHOOSE.map((c) => (
               <div key={c.icon} className="flex items-start gap-4 rounded-xl bg-white p-5 shadow-card">
-                <img src={c.icon} alt="" className="h-12 w-12 flex-shrink-0" loading="lazy" />
+                <img src={c.icon} alt="" className="h-12 w-12 flex-shrink-0" loading="lazy" decoding="async" />
                 <p className="text-sm text-gray-600">{c.text}</p>
               </div>
             ))}
@@ -128,7 +128,7 @@ export default function AboutPage() {
             {INDUSTRY.map((c) => (
               <div key={c.title} className="rounded-xl bg-white/5 p-6">
                 <div className="mb-2 flex items-center gap-3">
-                  <img src={c.icon} alt="" className="h-8 w-8" loading="lazy" />
+                  <img src={c.icon} alt="" className="h-8 w-8" loading="lazy" decoding="async" />
                   <h6 className="font-heading text-lg font-semibold">{c.title}</h6>
                 </div>
                 <p className="text-sm text-white/80">{c.text}</p>

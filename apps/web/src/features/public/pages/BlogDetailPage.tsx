@@ -44,7 +44,7 @@ export default function BlogDetailPage() {
             <UserRound className="h-4 w-4" /> {post.author}
           </span>
         </div>
-        <img src={post.image} alt={post.title} className="mt-6 w-full rounded-2xl" />
+        <img src={post.image} alt={post.title} className="mt-6 w-full rounded-2xl" loading="lazy" decoding="async" />
         <div className="mt-8 space-y-4 text-gray-700">
           {post.body.map((p, i) => (
             <p key={i}>{p}</p>
@@ -57,7 +57,7 @@ export default function BlogDetailPage() {
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {related.map((r) => (
               <Link key={r.slug} to={`/blogs/${r.slug}`} className="group">
-                <img src={r.image} alt={r.title} className="h-28 w-full rounded-lg object-cover" loading="lazy" />
+                <img src={r.image} alt={r.title} className="h-28 w-full rounded-lg object-cover" loading="lazy" decoding="async" />
                 <h3 className="mt-2 text-sm font-medium text-navy group-hover:text-primary">{r.title}</h3>
               </Link>
             ))}

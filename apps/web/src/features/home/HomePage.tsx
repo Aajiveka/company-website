@@ -18,6 +18,8 @@ export default function HomePage() {
           src="/image/slider_laptop.png"
           alt=""
           aria-hidden="true"
+          loading="lazy"
+          decoding="async"
           className="pointer-events-none absolute bottom-0 right-[4%] z-0 hidden w-[38%] max-w-[519px] object-contain md:block lg:right-[8%]"
         />
         <div className="container relative z-10">
@@ -60,7 +62,7 @@ export default function HomePage() {
                 portals in India, having helped thousands of job seekers find their dream jobs.
               </p>
             </div>
-            <img src="/image/story.jpg" alt="Our story" className="w-full rounded-lg" loading="lazy" />
+            <img src="/image/story.jpg" alt="Our story" className="w-full rounded-lg" loading="lazy" decoding="async" />
           </div>
           <div className="mt-6 text-center">
             <h3 className="font-heading text-2xl font-semibold text-primary">
@@ -93,6 +95,7 @@ export default function HomePage() {
                 alt=""
                 className="w-full"
                 loading="lazy"
+                decoding="async"
               />
             ))}
           </div>
@@ -123,7 +126,7 @@ export default function HomePage() {
                 key={s.title}
                 className="rounded-xl bg-white p-6 shadow-[0px_4px_40px_rgba(43,89,255,0.08)] transition hover:-translate-y-1"
               >
-                <img src={s.icon} alt="" className="mx-auto h-16" loading="lazy" />
+                <img src={s.icon} alt="" className="mx-auto h-16" loading="lazy" decoding="async" />
                 <h5 className="mb-2 mt-3 font-heading text-lg font-semibold text-navy">{s.title}</h5>
                 <p className="text-center text-sm text-gray-600">{s.text}</p>
               </article>
