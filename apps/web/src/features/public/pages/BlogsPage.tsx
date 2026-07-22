@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Search } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { BLOG_POSTS } from '../blogs.data';
 
@@ -11,6 +12,11 @@ export default function BlogsPage() {
 
   return (
     <>
+      <Seo
+        title="Blog"
+        description="Read career tips, industry insights, and job market trends on the Aajiveka blog. Stay informed and advance your career."
+        path="/blogs"
+      />
       <PageBanner variant="blog" title="Our Blogs">
         <div className="mx-auto mt-6 flex max-w-full gap-2 sm:max-w-lg">
           <div className="relative flex-1">

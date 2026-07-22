@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { Button, Input, useToast } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
 import { loginSchema, type LoginValues } from '../auth.types';
@@ -40,6 +41,8 @@ export default function LoginPage() {
   });
 
   return (
+    <>
+    <Seo title="Login" description="Log in to your Aajiveka account to manage jobs, applications, and your career profile." path="/login" noIndex />
     <AuthShell
       title="Login to your account"
       subtitle="Candidates, Employers & Admins"
@@ -76,5 +79,6 @@ export default function LoginPage() {
         </Button>
       </form>
     </AuthShell>
+    </>
   );
 }

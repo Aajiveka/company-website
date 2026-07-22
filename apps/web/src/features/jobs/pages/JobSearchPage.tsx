@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { Card, CardSkeleton, Pagination } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { PageBanner } from '@/features/public/components/PageBanner';
 import { JobSearchBar } from '../components/JobSearchBar';
 import { usePublicJobs } from '../jobs.api';
@@ -66,6 +67,11 @@ export default function JobSearchPage() {
 
   return (
     <>
+      <Seo
+        title="Find Jobs"
+        description="Browse thousands of job openings across India. Filter by location, industry, and experience to find your perfect role on Aajiveka."
+        path="/jobs"
+      />
       <PageBanner variant="jobs" title="Find your next role">
         <div className="mx-auto mt-8 max-w-3xl">
           {/* Remount on param change so the dropdowns reflect the URL after a back/forward. */}

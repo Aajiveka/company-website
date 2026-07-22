@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { DevicesSection } from '../components/DevicesSection';
 
@@ -13,6 +14,11 @@ const OPENINGS = [
 export default function CareerPage() {
   return (
     <>
+      <Seo
+        title="Careers"
+        description="Join the Aajiveka team. Explore open positions and help us empower India's workforce through technology."
+        path="/careers"
+      />
       <PageBanner variant="blog" title="Career with AAJIVEKA" subtitle="Join us in empowering India's workforce through technology." />
 
       <section className="py-12 md:py-20">

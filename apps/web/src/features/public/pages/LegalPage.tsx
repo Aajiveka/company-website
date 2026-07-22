@@ -1,3 +1,5 @@
+import { Seo } from '@/components/Seo';
+
 interface Section {
   heading: string;
   body: (string | { bullets: string[] })[];
@@ -203,6 +205,15 @@ export default function LegalPage({ variant }: { variant: 'privacy' | 'terms' })
 
   return (
     <section className="pt-28 pb-16">
+      <Seo
+        title={isPrivacy ? 'Privacy Policy' : 'Terms and Conditions'}
+        description={
+          isPrivacy
+            ? 'Read the Aajiveka privacy policy. Learn how we collect, use, and protect your personal information.'
+            : 'Read the Aajiveka terms and conditions governing the use of our job portal and recruitment platform.'
+        }
+        path={isPrivacy ? '/privacy-policy' : '/terms'}
+      />
       <div className="container max-w-3xl">
         <h1 className="font-heading text-3xl font-bold text-navy">
           {isPrivacy ? 'Privacy Policy' : 'Terms and Conditions'}

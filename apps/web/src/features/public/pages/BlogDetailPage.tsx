@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { BLOG_POSTS, getPost } from '../blogs.data';
 
 export default function BlogDetailPage() {
@@ -24,6 +25,12 @@ export default function BlogDetailPage() {
 
   return (
     <article className="pt-28 pb-16">
+      <Seo
+        title={post.title}
+        description={post.excerpt}
+        path={`/blogs/${post.slug}`}
+        ogType="article"
+      />
       <div className="container max-w-3xl">
         <Link to="/blogs" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
           <ArrowLeft className="h-4 w-4" /> Back to blog

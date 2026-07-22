@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Alert, Button, Input } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { authApi } from '../auth.api';
 import { forgotSchema, type ForgotValues } from '../auth.types';
 import { AuthShell } from '../components/AuthShell';
@@ -17,6 +18,8 @@ export default function ForgotPasswordPage() {
   const mutation = useMutation({ mutationFn: authApi.forgotPassword });
 
   return (
+    <>
+    <Seo title="Forgot Password" path="/forgot-password" noIndex />
     <AuthShell
       title="Forgot password"
       subtitle="We'll email you a reset link"
@@ -43,5 +46,6 @@ export default function ForgotPasswordPage() {
         </form>
       )}
     </AuthShell>
+    </>
   );
 }

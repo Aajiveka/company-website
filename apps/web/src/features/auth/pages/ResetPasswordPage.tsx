@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Input, useToast } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { authApi } from '../auth.api';
 import { resetSchema, type ResetValues } from '../auth.types';
 import { AuthShell } from '../components/AuthShell';
@@ -33,6 +34,8 @@ export default function ResetPasswordPage() {
   });
 
   return (
+    <>
+    <Seo title="Reset Password" path="/reset-password" noIndex />
     <AuthShell
       title="Reset password"
       footer={
@@ -60,5 +63,6 @@ export default function ResetPasswordPage() {
         </Button>
       </form>
     </AuthShell>
+    </>
   );
 }

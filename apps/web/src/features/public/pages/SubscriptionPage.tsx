@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { PricingPlans } from '../components/PricingPlans';
 import { DevicesSection } from '../components/DevicesSection';
@@ -14,6 +15,11 @@ const BENEFITS = [
 export default function SubscriptionPage() {
   return (
     <>
+      <Seo
+        title="Subscription"
+        description="Subscribe to Aajiveka for priority profile visibility, AI resume building, unlimited job applications, and personalised career guidance."
+        path="/subscription"
+      />
       <PageBanner variant="subscription" title="Subscription Benefits" subtitle="We have exclusive plans in our pricing" />
 
       <section className="py-12">

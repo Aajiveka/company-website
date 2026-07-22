@@ -1,4 +1,5 @@
 import { FileText, Sparkles, Target } from 'lucide-react';
+import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { PricingPlans } from '../components/PricingPlans';
 import { DevicesSection } from '../components/DevicesSection';
@@ -12,6 +13,11 @@ const FEATURES = [
 export default function ResumePage() {
   return (
     <>
+      <Seo
+        title="Resume Builder"
+        description="Build a professional, ATS-optimised resume for free with Aajiveka's AI-powered resume builder. Choose from modern templates and land more interviews."
+        path="/resume"
+      />
       <PageBanner
         variant="subscription"
         title="Aajiveka - The Ultimate Solution for Crafting a Winning Resume"
