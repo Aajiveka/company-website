@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { AppProviders } from './app/providers';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { PwaReloadPrompt } from './components/PwaReloadPrompt';
 import { router } from './routes/router';
 import { env } from './lib/env';
 import './styles/index.css';
@@ -19,6 +20,7 @@ async function bootstrap() {
       <ErrorBoundary>
         <AppProviders>
           <RouterProvider router={router} />
+          <PwaReloadPrompt />
         </AppProviders>
       </ErrorBoundary>
     </React.StrictMode>,
