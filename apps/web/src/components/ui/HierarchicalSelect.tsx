@@ -106,7 +106,7 @@ export function HierarchicalSelect({
           ref={panelRef}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute left-0 top-full z-50 mt-1 max-h-72 w-full min-w-56 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+          className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg sm:max-h-72"
         >
           {groupKeys.length === 0 && (
             <div className="px-3 py-2 text-sm text-gray-400">No options</div>
@@ -120,7 +120,7 @@ export function HierarchicalSelect({
                   type="button"
                   role="option"
                   aria-selected={false}
-                  className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
+                  className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
                   onClick={() => toggleGroup(group)}
                 >
                   {isExpanded ? (
@@ -137,7 +137,7 @@ export function HierarchicalSelect({
                       type="button"
                       role="option"
                       aria-selected={value === city}
-                      className={`w-full cursor-pointer py-1.5 pl-9 pr-3 text-left text-sm hover:bg-primary/5 hover:text-primary ${
+                      className={`w-full cursor-pointer py-2.5 pl-9 pr-3 text-left text-sm hover:bg-primary/5 hover:text-primary ${
                         value === city ? 'bg-primary/10 font-medium text-primary' : 'text-gray-600'
                       }`}
                       onClick={() => selectLeaf(city, group)}

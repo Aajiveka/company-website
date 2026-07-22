@@ -26,9 +26,9 @@ export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: 
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-3 rounded-2xl bg-white/95 p-3 text-left shadow-lg xl:flex-row xl:items-center"
+      className="flex flex-col gap-3 rounded-2xl bg-white/95 p-3 text-left shadow-lg lg:flex-row lg:items-center"
     >
-      <div className="flex flex-1 items-center gap-2 border-gray-200 xl:border-r xl:pr-3">
+      <div className="flex flex-1 items-center gap-2 border-gray-200 lg:border-r lg:pr-3">
         <Search className="h-5 w-5 shrink-0 text-primary" aria-hidden />
         <select
           aria-label="Role"
@@ -57,7 +57,7 @@ export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: 
         />
       </div>
 
-      <Button type="submit" className="w-full xl:w-auto">
+      <Button type="submit" className="w-full lg:w-auto">
         Search my job
       </Button>
     </form>

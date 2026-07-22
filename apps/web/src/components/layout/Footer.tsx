@@ -29,11 +29,11 @@ const columnC = [
 /** Public footer — mirrors the FrontMaster.Master footer (bg #035A86). */
 export function Footer() {
   return (
-    <footer className="bg-primary-light py-14 text-white">
+    <footer className="bg-primary-light py-10 text-white md:py-14">
       <div className="container">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <img src="/image/logo.svg" alt="Aajiveka" className="w-32" />
+            <img src="/image/logo.svg" alt="Aajiveka" className="w-24 sm:w-32" />
             <h6 className="mt-4 font-normal">Follow us on :</h6>
             <ul className="mt-2 flex gap-3">
               {socials.map(({ href, Icon, label }) => (
@@ -43,7 +43,7 @@ export function Footer() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={label}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
                   >
                     <Icon className="h-4 w-4" />
                   </a>

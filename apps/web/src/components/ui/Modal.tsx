@@ -26,13 +26,13 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         <Dialog.Content
           className={cn(
             'fixed left-1/2 top-1/2 z-[1001] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2',
-            'rounded-2xl bg-white p-6 shadow-xl outline-none',
+            'rounded-2xl bg-white p-4 shadow-xl outline-none sm:p-6',
             className,
           )}
         >
           <div className="mb-4 flex items-center justify-between">
             {title ? (
-              <Dialog.Title className="text-xl font-semibold text-navy">{title}</Dialog.Title>
+              <Dialog.Title className="text-lg font-semibold text-navy sm:text-xl">{title}</Dialog.Title>
             ) : (
               // Radix requires a title for screen readers even where the design shows none.
               <Dialog.Title className="sr-only">Dialog</Dialog.Title>

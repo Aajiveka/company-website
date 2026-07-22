@@ -122,7 +122,7 @@ export default function JobPostPage() {
               {...register('employmentTypeId')}
             />
             <Input label="Minimum Experience (yrs)" type="number" error={errors.minExp?.message} {...register('minExp')} />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Input label="Min CTC (₹)" type="number" error={errors.minCtc?.message} {...register('minCtc')} />
               <Input label="Max CTC (₹)" type="number" error={errors.maxCtc?.message} {...register('maxCtc')} />
             </div>

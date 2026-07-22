@@ -11,7 +11,7 @@ export default function HomePage() {
   return (
     <>
       {/* -------------------------------- Hero -------------------------------- */}
-      <section className="hero-banner relative flex h-[745px] items-center overflow-hidden">
+      <section className="hero-banner relative flex min-h-[28rem] items-center overflow-hidden md:h-[600px] lg:h-[745px]">
         <img
           src="/image/slider_laptop.png"
           alt=""
@@ -19,8 +19,8 @@ export default function HomePage() {
           className="pointer-events-none absolute bottom-0 right-[4%] z-0 hidden w-[38%] max-w-[519px] object-contain md:block lg:right-[8%]"
         />
         <div className="container relative z-10">
-          <div className="max-w-3xl text-white md:max-w-[52%]">
-            <h1 className="mb-6 font-heading text-4xl font-bold leading-tight md:text-5xl">
+          <div className="max-w-full text-white sm:max-w-3xl md:max-w-[52%]">
+            <h1 className="mb-6 font-heading text-3xl font-bold leading-tight md:text-4xl lg:text-5xl">
               Unlock your Potential with Aajiveka - Your Ultimate Career Partner
             </h1>
             <JobSearchBar />
@@ -29,7 +29,7 @@ export default function HomePage() {
       </section>
 
       {/* ------------------------------- About -------------------------------- */}
-      <section className="py-12 md:py-20">
+      <section className="py-8 md:py-12 lg:py-20">
         <div className="container text-center">
           <h2>About Aajevika</h2>
           <p className="mx-auto mt-4 max-w-3xl text-gray-600">
@@ -69,7 +69,7 @@ export default function HomePage() {
       </section>
 
       {/* --------------------------- Our Philosophy --------------------------- */}
-      <section className="my-12 bg-accent py-16 md:my-20">
+      <section className="my-8 bg-accent py-10 md:my-12 md:py-16 lg:my-20">
         <div className="container">
           <h2>Our Philosophy</h2>
           <div className="mt-4 max-w-4xl space-y-3 text-navy/80">
@@ -83,7 +83,7 @@ export default function HomePage() {
               and documents to seamlessly start applying to the best suitable jobs.
             </p>
           </div>
-          <div className="my-8 grid grid-cols-2 gap-4 md:my-12 lg:grid-cols-4">
+          <div className="my-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:my-12 lg:grid-cols-4">
             {[1, 2, 3, 4].map((n) => (
               <img
                 key={n}
@@ -115,7 +115,7 @@ export default function HomePage() {
           <p className="mt-4 text-gray-600">
             We offer a wide range of services to both job seekers and employers, including:
           </p>
-          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {SERVICES.map((s) => (
               <article
                 key={s.title}

@@ -96,7 +96,7 @@ export default function CandidateDetailsPage() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {data.registrationStatus === 'Pending' && (
                 <>
                   <Button variant="outline" size="sm" disabled={decide.isPending} onClick={() => act('Approved')}>

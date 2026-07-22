@@ -17,7 +17,7 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
     pages.push(p);
   }
 
-  const btn = 'flex h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-sm transition';
+  const btn = 'flex h-10 min-w-10 items-center justify-center rounded-lg border px-2 text-sm transition sm:h-9 sm:min-w-9';
 
   return (
     <nav className="flex items-center gap-1" aria-label="Pagination">

@@ -24,17 +24,17 @@ export function Navbar() {
         scrolled ? 'bg-primary shadow-md' : 'bg-transparent',
       )}
     >
-      <div className="container flex items-center justify-between px-0 py-3">
+      <div className="container flex items-center justify-between px-3 py-3 sm:px-4">
         <div className="flex items-center gap-3">
           <Link to="/" className="shrink-0">
-            <img src="/image/logo.svg" alt="Aajiveka" className="h-16 w-auto" />
+            <img src="/image/logo.svg" alt="Aajiveka" className="h-12 w-auto sm:h-16" />
           </Link>
           <span className="hidden font-bold text-white md:inline">
             Toll Free No: <span className="font-normal">18003093346</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
           <Link to="/">
             <Button variant="accent" size="sm">
               Home
@@ -50,7 +50,7 @@ export function Navbar() {
               Register Now
             </Button>
           </Link>
-          <Link to="/login">
+          <Link to="/login" className="hidden md:block">
             <Button variant="accent" size="sm">
               Employer Login
             </Button>

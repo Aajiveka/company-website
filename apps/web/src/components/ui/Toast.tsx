@@ -46,7 +46,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed right-4 top-4 z-[1100] flex w-80 max-w-[90vw] flex-col gap-2">
+      <div className="fixed right-2 top-2 z-[1100] flex w-72 max-w-[90vw] flex-col gap-2 sm:right-4 sm:top-4 sm:w-80">
         {toasts.map(({ id, kind, message }) => {
           const Icon = icons[kind];
           return (

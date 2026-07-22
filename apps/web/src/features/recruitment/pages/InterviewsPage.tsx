@@ -97,7 +97,7 @@ export default function InterviewsPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <Breadcrumbs items={[{ label: 'Recruitment', to: '/recruitment/candidates' }, { label: 'Interviews' }]} />
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-bold text-navy">Interviews</h1>
         <Button size="sm" onClick={() => setOpen(true)}>
           Schedule Interview

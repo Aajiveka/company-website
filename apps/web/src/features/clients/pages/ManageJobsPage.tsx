@@ -64,7 +64,7 @@ export default function ManageJobsPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <Breadcrumbs items={[{ label: 'Dashboard', to: '/company/profile' }, { label: 'Manage Jobs' }]} />
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-bold text-navy">Manage Jobs</h1>
         <Link to="/company/post-job">
           <Button size="sm">

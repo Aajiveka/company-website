@@ -94,7 +94,7 @@ export function PricingPlans() {
             key={t.id}
             onClick={() => setTierId(t.id)}
             className={cn(
-              'flex-1 rounded-full px-4 py-2.5 text-sm font-medium transition',
+              'flex-1 rounded-full px-2 py-2 text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm',
               t.id === activeId ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50',
             )}
           >
@@ -109,7 +109,7 @@ export function PricingPlans() {
           <div
             key={plan.key}
             className={cn(
-              'flex flex-col rounded-2xl border p-6 shadow-card transition hover:-translate-y-1',
+              'flex flex-col rounded-2xl border p-4 shadow-card transition hover:-translate-y-1 sm:p-6',
               plan.highlighted ? 'border-primary bg-primary text-white' : 'border-gray-100 bg-white',
             )}
           >
@@ -117,7 +117,7 @@ export function PricingPlans() {
               {plan.duration}
             </h3>
             <div className="mt-3">
-              <span className="font-heading text-4xl font-bold">₹{plan.price}</span>
+              <span className="font-heading text-3xl font-bold sm:text-4xl">₹{plan.price}</span>
               {plan.perMonth && (
                 <span className={cn('ml-1 text-sm', plan.highlighted ? 'text-white/80' : 'text-gray-500')}>
                   Per Month

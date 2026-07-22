@@ -30,7 +30,7 @@ export function Table<T>({
         <thead className="border-b border-gray-200 bg-brand-soft text-navy">
           <tr>
             {columns.map((c) => (
-              <th key={c.key} className={cn('px-4 py-3 font-semibold', c.className)}>
+              <th key={c.key} className={cn('px-3 py-2.5 font-semibold sm:px-4 sm:py-3', c.className)}>
                 {c.header}
               </th>
             ))}
@@ -41,7 +41,7 @@ export function Table<T>({
             Array.from({ length: 5 }).map((_, i) => (
               <tr key={i} className="border-b border-gray-100">
                 {columns.map((c) => (
-                  <td key={c.key} className="px-4 py-3">
+                  <td key={c.key} className="px-3 py-2.5 sm:px-4 sm:py-3">
                     <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
                   </td>
                 ))}
@@ -57,7 +57,7 @@ export function Table<T>({
             data.map((row) => (
               <tr key={rowKey(row)} className="border-b border-gray-100 transition hover:bg-gray-50">
                 {columns.map((c) => (
-                  <td key={c.key} className={cn('px-4 py-3', c.className)}>
+                  <td key={c.key} className={cn('px-3 py-2.5 sm:px-4 sm:py-3', c.className)}>
                     {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? '')}
                   </td>
                 ))}

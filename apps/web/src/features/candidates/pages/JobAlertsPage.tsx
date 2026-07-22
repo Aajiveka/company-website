@@ -39,7 +39,7 @@ export default function JobAlertsPage() {
       <h1 className="mb-4 font-heading text-2xl font-bold text-navy">Job Alerts</h1>
 
       <Card className="mb-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-4 sm:items-end" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2 sm:items-end lg:grid-cols-4" noValidate>
           <Input label="Keyword" placeholder="e.g. React Developer" error={errors.keyword?.message} {...register('keyword')} />
           <Input label="Location" placeholder="e.g. Pune" error={errors.location?.message} {...register('location')} />
           <Select
@@ -61,7 +61,7 @@ export default function JobAlertsPage() {
           <Card>Loading alerts…</Card>
         ) : (
           (alerts ?? []).map((a) => (
-            <Card key={a.alertId} className="flex items-center justify-between">
+            <Card key={a.alertId} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-soft text-primary">
                   <Bell className="h-5 w-5" />
