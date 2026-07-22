@@ -6,6 +6,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { PwaReloadPrompt } from './components/PwaReloadPrompt';
 import { router } from './routes/router';
 import { env } from './lib/env';
+import './lib/theme'; // initialise dark mode class on <html>
 import './styles/index.css';
 
 async function bootstrap() {

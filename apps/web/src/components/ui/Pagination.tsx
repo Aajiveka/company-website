@@ -38,7 +38,7 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
           aria-label={`Page ${p}`}
           className={cn(
             btn,
-            p === page ? 'border-primary bg-primary text-white' : 'border-gray-200 hover:bg-gray-50',
+            p === page ? 'border-primary bg-primary text-white' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800',
           )}
         >
           {p}

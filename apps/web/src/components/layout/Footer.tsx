@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Linkedin, Twitter, Youtube } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const socials = [
   { href: 'https://www.facebook.com/profile.php?id=100092726993362', Icon: Facebook, label: 'Facebook' },
@@ -58,8 +59,9 @@ export function Footer() {
             <FooterColumn links={columnC} />
           </nav>
         </div>
-        <div className="mt-10 border-t border-white/15 pt-6 text-center text-sm text-white/80">
-          © {new Date().getFullYear()} Aajiveka. All rights reserved.
+        <div className="mt-10 flex flex-col items-center gap-3 border-t border-white/15 pt-6 text-sm text-white/80 sm:flex-row sm:justify-between">
+          <span>© {new Date().getFullYear()} Aajiveka. All rights reserved.</span>
+          <ThemeToggle />
         </div>
       </div>
     </footer>

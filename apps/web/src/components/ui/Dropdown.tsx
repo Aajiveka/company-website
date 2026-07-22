@@ -32,7 +32,7 @@ export function Dropdown({ trigger, items, align = 'right' }: DropdownProps) {
         <Menu.Content
           align={align === 'right' ? 'end' : 'start'}
           sideOffset={8}
-          className="z-50 min-w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+          className="z-50 min-w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900"
         >
           {items.map((item, i) => (
             <Menu.Item
@@ -40,8 +40,8 @@ export function Dropdown({ trigger, items, align = 'right' }: DropdownProps) {
               onSelect={item.onSelect}
               className={cn(
                 'flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm outline-none',
-                'data-[highlighted]:bg-gray-50',
-                item.danger ? 'text-danger' : 'text-gray-700',
+                'data-[highlighted]:bg-gray-50 dark:data-[highlighted]:bg-gray-800',
+                item.danger ? 'text-danger' : 'text-gray-700 dark:text-gray-300',
               )}
             >
               {item.icon}

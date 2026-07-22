@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Dark mode via .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ------------------------------------------------------------------ */
 /* Design tokens                                                       */
 /*                                                                     */
@@ -60,6 +63,7 @@
   }
   body {
     @apply font-sans text-[#121212] antialiased;
+    @apply dark:bg-gray-950 dark:text-gray-100;
   }
   /* Global focus-visible ring for interactive elements that lack component-level focus styles */
   a:focus-visible,
@@ -76,6 +80,7 @@
   }
   h2 {
     @apply text-2xl font-bold text-navy md:text-3xl lg:text-[40px];
+    @apply dark:text-gray-100;
   }
 }
 
