@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { Breadcrumbs, Button, Card, CardSkeleton, useToast } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { useAuth } from '@/features/auth/auth.store';
 import { Role } from '@/types/roles';
 import { useApplyToJob, useJob } from '../jobs.api';
@@ -40,6 +41,13 @@ export default function JobDetailPage() {
 
   return (
     <section className="py-12 md:py-16">
+      {job && (
+        <Seo
+          title={`${job.designation} at ${job.company}`}
+          description={`Apply for ${job.designation} at ${job.company}. ${job.city ? `Location: ${job.city}.` : ''} Find your next career opportunity on Aajiveka.`}
+          path={`/jobs/${id}`}
+        />
+      )}
       <div className="container max-w-3xl">
         <Breadcrumbs items={[{ label: 'Jobs', to: '/jobs' }, { label: 'Job Details' }]} />
 

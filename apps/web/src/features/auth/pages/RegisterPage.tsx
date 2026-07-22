@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { Button, Input, useToast } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
 import { registerSchema, type RegisterValues } from '../auth.types';
@@ -60,6 +61,8 @@ export default function RegisterPage() {
   });
 
   return (
+    <>
+    <Seo title="Register" description="Create your free Aajiveka account. Sign up as a candidate to search jobs, build your resume, and get matched with top employers." path="/register" noIndex />
     <AuthShell
       title={pending ? 'Verify your mobile' : 'Create your account'}
       subtitle={pending ? `Enter the 6-digit code sent to ${pending.mobile}` : 'Sign up as a candidate'}
@@ -125,5 +128,6 @@ export default function RegisterPage() {
         </form>
       )}
     </AuthShell>
+    </>
   );
 }

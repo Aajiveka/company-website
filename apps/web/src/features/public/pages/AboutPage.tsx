@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { ReviewSection } from '../components/ReviewSection';
 import { DevicesSection } from '../components/DevicesSection';
@@ -23,6 +24,11 @@ const INDUSTRY = [
 export default function AboutPage() {
   return (
     <>
+      <Seo
+        title="About Us"
+        description="Learn about Aajiveka — India's next-gen job portal empowering the workforce through technology, AI-powered resume building, and personalised career guidance."
+        path="/about"
+      />
       <PageBanner
         variant="about"
         title="Empowering India's workforce through technology: Aajiveka, where careers begin!"

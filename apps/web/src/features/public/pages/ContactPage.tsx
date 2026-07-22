@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Mail, MapPin } from 'lucide-react';
 import { Button, Input, useToast } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Enter your name'),
@@ -31,6 +32,11 @@ export default function ContactPage() {
 
   return (
     <section className="pt-28 pb-16">
+      <Seo
+        title="Contact Us"
+        description="Get in touch with Aajiveka. Reach out for support, partnership enquiries, or feedback. We're here to help you with your career and recruitment needs."
+        path="/contact"
+      />
       <div className="container">
         <div className="grid gap-10 lg:grid-cols-2">
           {/* Info */}

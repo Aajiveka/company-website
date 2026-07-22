@@ -1,4 +1,5 @@
 import { Quote } from 'lucide-react';
+import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { DevicesSection } from '../components/DevicesSection';
 
@@ -14,6 +15,11 @@ const TESTIMONIALS = [
 export default function TestimonialPage() {
   return (
     <>
+      <Seo
+        title="Testimonials"
+        description="Read success stories from Aajiveka users — candidates who found their dream jobs and employers who hired top talent through our platform."
+        path="/testimonials"
+      />
       <PageBanner
         variant="testimonial"
         title="Client Testimonials: Building Lasting Relationships, One Success Story at a Time"

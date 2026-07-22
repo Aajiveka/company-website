@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui';
+import { Seo } from '@/components/Seo';
 import { JobSearchBar } from '@/features/jobs/components/JobSearchBar';
 import { SERVICES } from './services.data';
 
@@ -10,6 +11,7 @@ import { SERVICES } from './services.data';
 export default function HomePage() {
   return (
     <>
+      <Seo title="Home" path="/" />
       {/* -------------------------------- Hero -------------------------------- */}
       <section className="hero-banner relative flex min-h-[28rem] items-center overflow-hidden md:h-[600px] lg:h-[745px]">
         <img
