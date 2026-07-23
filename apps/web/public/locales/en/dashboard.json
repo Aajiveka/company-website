@@ -51,7 +51,10 @@
     "uploaded": "Uploaded {{date}}",
     "notUploaded": "Not uploaded",
     "upload": "Upload",
-    "reUpload": "Re-upload"
+    "reUpload": "Re-upload",
+    "loading": "Loading documents\u2026",
+    "uploadSuccess": "\"{{name}}\" uploaded for review.",
+    "uploadFailed": "Upload failed"
   },
   "applicants": {
     "heading": "Applicants",
@@ -59,12 +62,21 @@
     "shortlist": "Shortlist",
     "reject": "Reject",
     "shortlisted": "Applicant shortlisted.",
-    "rejected": "Applicant rejected."
+    "rejected": "Applicant rejected.",
+    "somethingWrong": "Something went wrong"
   },
   "company": {
     "heading": "Company Profile",
     "postedJobs": "Posted Jobs",
-    "noJobs": "No jobs posted yet."
+    "noJobs": "No jobs posted yet.",
+    "website": "Website",
+    "designation": "Designation",
+    "location": "Location",
+    "workMode": "Work Mode",
+    "minExp": "Min Exp",
+    "ctc": "CTC",
+    "applicants": "Applicants",
+    "status": "Status"
   },
   "candidates": {
     "heading": "Candidates",

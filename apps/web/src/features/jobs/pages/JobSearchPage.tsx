@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardSkeleton, Pagination } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '@/features/public/components/PageBanner';
@@ -13,6 +14,7 @@ const PAGE_SIZE = 10;
 const lpa = (rupees: number) => (rupees / 100_000).toFixed(1).replace(/\.0$/, '');
 
 function JobCard({ job }: { job: PublicJob }) {
+  const { t } = useTranslation('jobs');
   return (
     <Link to={`/jobs/${job.jobId}`} className="block">
       <Card className="transition hover:shadow-md">
@@ -36,7 +38,7 @@ function JobCard({ job }: { job: PublicJob }) {
           </span>
           <span className="flex items-center gap-1.5">
             <Briefcase className="h-4 w-4 text-gray-400" aria-hidden />
-            {job.minExp === 0 ? 'Fresher' : `${job.minExp}+ yrs`} · {job.workMode} · {job.employmentType}
+            {job.minExp === 0 ? t('search.fresher') : `${job.minExp}+ ${t('search.yrs')}`} · {job.workMode} · {job.employmentType}
           </span>
           <span className="flex items-center gap-1.5">
             <IndianRupee className="h-4 w-4 text-gray-400" aria-hidden />
@@ -50,6 +52,7 @@ function JobCard({ job }: { job: PublicJob }) {
 
 /** Public job search results — driven entirely by the `function`/`location`/`page` query params. */
 export default function JobSearchPage() {
+  const { t } = useTranslation('jobs');
   const [searchParams, setSearchParams] = useSearchParams();
   const designation = searchParams.get('designation') ?? '';
   const location = searchParams.get('location') ?? '';
@@ -72,7 +75,7 @@ export default function JobSearchPage() {
         description="Browse thousands of job openings across India. Filter by location, industry, and experience to find your perfect role on Aajiveka."
         path="/jobs"
       />
-      <PageBanner variant="jobs" title="Find your next role">
+      <PageBanner variant="jobs" title={t('search.heading')}>
         <div className="mx-auto mt-8 max-w-3xl">
           {/* Remount on param change so the dropdowns reflect the URL after a back/forward. */}
           <JobSearchBar
@@ -86,8 +89,8 @@ export default function JobSearchPage() {
       <section className="py-12 md:py-16">
         <div className="container">
           <p className="mb-6 text-sm text-gray-500">
-            {isLoading ? 'Searching…' : `${data?.total ?? 0} job${data?.total === 1 ? '' : 's'} found`}
-            {designation && ` for ${designation}`}
+            {isLoading ? t('search.searching') : t('search.jobsFound', { count: data?.total ?? 0 })}
+            {designation && ` ${t('search.forDesignation', { designation })}`}
             {location && ` · ${location}`}
           </p>
 
@@ -110,9 +113,9 @@ export default function JobSearchPage() {
             </>
           ) : (
             <Card className="text-center">
-              <p className="text-navy">No jobs match your search.</p>
+              <p className="text-navy">{t('search.noMatch')}</p>
               <p className="mt-1 text-sm text-gray-500">
-                Try a different function or location.
+                {t('search.tryDifferent')}
               </p>
             </Card>
           )}

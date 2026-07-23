@@ -9,7 +9,9 @@
     "jobsFound_other": "{{count}} नौकरियाँ मिलीं",
     "forDesignation": "\"{{designation}}\" के लिए",
     "noMatch": "आपकी खोज से कोई नौकरी मेल नहीं खाती।",
-    "tryDifferent": "कोई अलग फंक्शन या स्थान आज़माएं।"
+    "tryDifferent": "कोई अलग फंक्शन या स्थान आज़माएं।",
+    "fresher": "फ्रेशर",
+    "yrs": "वर्ष"
   },
   "detail": {
     "breadcrumbJobs": "नौकरियाँ",

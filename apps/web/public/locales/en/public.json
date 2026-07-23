@@ -1,0 +1,138 @@
+{
+  "about": {
+    "bannerTitle": "Empowering India's workforce through technology: Aajiveka, where careers begin!",
+    "missionHeading": "Our Mission",
+    "missionText": "At Aajiveka, our mission is to revolutionize the job search industry in India by providing a tech-driven platform that empowers job seekers and employers alike. We strive to make the job search process faster, easier, and more efficient, while creating a positive impact on the lives of millions by connecting them to their dream jobs.",
+    "visionHeading": "Our Vision",
+    "visionText": "Our vision is to become India's leading job portal and to be recognized as a global leader in the job search industry. We use the latest technological innovations to create a seamless, intuitive job search experience, fostering a community of talented professionals who can network, learn and grow together.",
+    "valueHeading": "Our Value",
+    "valueSubtext": "We are committed to delivering the highest quality of service by upholding the following values:",
+    "customerCentricity": "Customer-centricity",
+    "customerCentricityText": "We put our users at the center of everything we do, striving to exceed their expectations.",
+    "collaboration": "Collaboration",
+    "collaborationText": "We build long-term relationships, working collaboratively with users, partners and employees.",
+    "innovation": "Innovation",
+    "innovationText": "We continuously explore new technologies to improve our platform's functionality and experience.",
+    "transparency": "Transparency",
+    "transparencyText": "We prioritize transparency and honesty in all our dealings with users and stakeholders.",
+    "diversity": "Diversity and Inclusivity",
+    "diversityText": "We create an inclusive platform promoting diversity, equity and accessibility for all.",
+    "whyChoose": "Why Choose Aajiveka?",
+    "whyChooseText": "Looking for the right job? Look no further — Aajiveka can be your trusted partner. Here are the key highlights that make Aajiveka an optimum choice for users:",
+    "choose1": "Our platform is designed to be user-friendly, with an intuitive interface that makes job search and recruitment a breeze.",
+    "choose2": "We offer a wide range of job listings across various industries and skill sets, providing job seekers with diverse opportunities.",
+    "choose3": "We prioritize the privacy and security of our users, with robust data encryption and secure servers to protect user data.",
+    "choose4": "Our platform uses advanced AI algorithms and data analytics to match job seekers with the right opportunities.",
+    "choose5": "We are committed to providing exceptional customer service, with a dedicated team available to assist with any queries.",
+    "industryHeading": "What Makes Us Best In The Recruitment Industry?",
+    "industryText": "At Aajiveka, we take pride in being at the forefront of the recruitment industry, providing cutting-edge solutions to both candidates and companies.",
+    "industry1": "Personalized AI Assistance",
+    "industry1Text": "We assign dedicated AI-powered assistants to candidates to help them create impressive resumes for free, showcasing their skills in the best possible way.",
+    "industry2": "Skill-Based Job Matching",
+    "industry2Text": "Our recruitment process matches the skills of candidates with job requirements, with filters to quickly narrow down the best-suited options.",
+    "industry3": "Easy to Get Started",
+    "industry3Text": "Getting started with Aajiveka is simple. Candidates can sign up and start applying for jobs right away by uploading a resume and documents.",
+    "industry4": "Privacy and Security",
+    "industry4Text": "We do not sell candidates' databases to corporates and big firms, and take all measures to keep information secure and confidential.",
+    "industry5": "Comprehensive Support",
+    "industry5Text": "Our AI-powered support team is available around the clock — guidance, career options, resume writing, feedback, courses and more."
+  },
+  "contact": {
+    "infoText": "Email us with any questions or inquiries, or call us. We would be happy to answer your questions and set up a meeting with you. Whenever you need us, we're here for you.",
+    "serviceHeading": "Aajiveka Service",
+    "email": "info@aajiveka.com",
+    "address": "956 2nd floor, Sector 45, Gurgaon, Haryana - 122002",
+    "formHeading": "Get in Touch",
+    "name": "Name",
+    "namePlaceholder": "Enter Your Name",
+    "subject": "Subject",
+    "subjectPlaceholder": "Enter Your Subject",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Enter Your Email",
+    "contactNumber": "Contact Number",
+    "contactPlaceholder": "Enter Contact number",
+    "feedback": "Feedback",
+    "feedbackPlaceholder": "Enter Your Feedback",
+    "successMessage": "Thank you! We will get back to you shortly.",
+    "nameError": "Enter your name",
+    "subjectError": "Enter a subject",
+    "emailError": "Enter a valid email",
+    "phoneError": "Enter a 10-digit number",
+    "feedbackError": "Please enter your message"
+  },
+  "blogs": {
+    "heading": "Our Blogs",
+    "searchPlaceholder": "Search articles…",
+    "noArticles": "No articles found.",
+    "articleNotFound": "Article not found",
+    "backToBlog": "Back to blog",
+    "relatedArticles": "Related Articles",
+    "startJobSearch": "Start your job search"
+  },
+  "pricing": {
+    "bannerTitle": "Get the Early Advantage in Your Job Search with Aajiveka",
+    "bannerSubtitle": "We have exclusive plans in our pricing"
+  },
+  "resume": {
+    "bannerTitle": "Aajiveka - The Ultimate Solution for Crafting a Winning Resume",
+    "aiBuilder": "AI-Powered Builder",
+    "aiBuilderText": "Generate a polished, professional resume in minutes with intelligent content suggestions.",
+    "atsOptimized": "ATS-Optimized",
+    "atsOptimizedText": "Templates engineered to pass Applicant Tracking Systems and reach real recruiters.",
+    "multipleTemplates": "Multiple Templates",
+    "multipleTemplatesText": "Choose from a range of modern, recruiter-approved designs tailored to your industry."
+  },
+  "subscription": {
+    "bannerTitle": "Subscription Benefits",
+    "whySubscribe": "Why subscribe to Aajiveka?",
+    "benefit1": "Get discovered by top employers with priority profile visibility",
+    "benefit2": "Build a standout resume with our AI-powered resume builder",
+    "benefit3": "Apply to unlimited jobs matched to your skills",
+    "benefit4": "Receive personalized job alerts and career guidance",
+    "benefit5": "Track every application from apply to interview"
+  },
+  "testimonial": {
+    "bannerTitle": "Client Testimonials: Building Lasting Relationships, One Success Story at a Time"
+  },
+  "career": {
+    "bannerTitle": "Career with AAJIVEKA",
+    "bannerSubtitle": "Join us in empowering India's workforce through technology.",
+    "currentOpenings": "Current Openings"
+  },
+  "reviews": {
+    "heading": "Review from our Customers"
+  },
+  "devices": {
+    "heading": "Aajiveka is available for all devices",
+    "appStore": "Download on the App Store",
+    "playStore": "Get it on Google Play",
+    "qrCode": "Scan QR code"
+  },
+  "manageJobs": {
+    "heading": "Manage Jobs",
+    "postJob": "Post a Job",
+    "noJobs": "No jobs posted yet.",
+    "closeTitle": "Close this job posting?",
+    "closeWarning": "{{designation}} in {{city}} will no longer accept applicants. This can't be undone from here.",
+    "closeButton": "Close Job",
+    "closedSuccess": "Job closed.",
+    "closeFailed": "Could not close this job"
+  },
+  "jobPost": {
+    "postTitle": "Post a Job",
+    "editTitle": "Edit Job",
+    "designation": "Designation",
+    "state": "State",
+    "districtCity": "District / City",
+    "workMode": "Work Mode",
+    "employmentType": "Employment Type",
+    "minExperience": "Minimum Experience (yrs)",
+    "minCtc": "Min CTC (₹)",
+    "maxCtc": "Max CTC (₹)",
+    "description": "Job Description",
+    "publishButton": "Publish Job",
+    "saveButton": "Save Changes",
+    "postSuccess": "Job posted successfully.",
+    "updateSuccess": "Job updated successfully."
+  }
+}

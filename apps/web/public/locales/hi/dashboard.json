@@ -51,7 +51,10 @@
     "uploaded": "{{date}} को अपलोड किया गया",
     "notUploaded": "अपलोड नहीं किया गया",
     "upload": "अपलोड",
-    "reUpload": "पुनः अपलोड"
+    "reUpload": "पुनः अपलोड",
+    "loading": "दस्तावेज़ लोड हो रहे हैं…",
+    "uploadSuccess": "\"{{name}}\" समीक्षा के लिए अपलोड किया गया।",
+    "uploadFailed": "अपलोड विफल"
   },
   "applicants": {
     "heading": "आवेदक",
@@ -59,12 +62,21 @@
     "shortlist": "शॉर्टलिस्ट",
     "reject": "अस्वीकार",
     "shortlisted": "आवेदक शॉर्टलिस्ट किया गया।",
-    "rejected": "आवेदक अस्वीकार किया गया।"
+    "rejected": "आवेदक अस्वीकार किया गया।",
+    "somethingWrong": "कुछ गलत हो गया"
   },
   "company": {
     "heading": "कंपनी प्रोफ़ाइल",
     "postedJobs": "पोस्ट की गई नौकरियाँ",
-    "noJobs": "अभी तक कोई नौकरी पोस्ट नहीं की गई।"
+    "noJobs": "अभी तक कोई नौकरी पोस्ट नहीं की गई।",
+    "website": "वेबसाइट",
+    "designation": "पदनाम",
+    "location": "स्थान",
+    "workMode": "कार्य मोड",
+    "minExp": "न्यूनतम अनुभव",
+    "ctc": "CTC",
+    "applicants": "आवेदक",
+    "status": "स्थिति"
   },
   "candidates": {
     "heading": "उम्मीदवार",

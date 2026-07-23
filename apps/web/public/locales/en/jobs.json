@@ -9,7 +9,9 @@
     "jobsFound_other": "{{count}} jobs found",
     "forDesignation": "for \"{{designation}}\"",
     "noMatch": "No jobs match your search.",
-    "tryDifferent": "Try a different function or location."
+    "tryDifferent": "Try a different function or location.",
+    "fresher": "Fresher",
+    "yrs": "yrs"
   },
   "detail": {
     "breadcrumbJobs": "Jobs",

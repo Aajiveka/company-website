@@ -1,27 +1,24 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { ReviewSection } from '../components/ReviewSection';
 import { DevicesSection } from '../components/DevicesSection';
 
-const CHOOSE = [
-  { icon: '/image/C1.svg', text: 'Our platform is designed to be user-friendly, with an intuitive interface that makes job search and recruitment a breeze.' },
-  { icon: '/image/C2.svg', text: 'We offer a wide range of job listings across various industries and skill sets, providing job seekers with diverse opportunities.' },
-  { icon: '/image/C3.svg', text: 'We prioritize the privacy and security of our users, with robust data encryption and secure servers to protect user data.' },
-  { icon: '/image/C4.svg', text: 'Our platform uses advanced AI algorithms and data analytics to match job seekers with the right opportunities.' },
-  { icon: '/image/C5.svg', text: 'We are committed to providing exceptional customer service, with a dedicated team available to assist with any queries.' },
-];
-
-const INDUSTRY = [
-  { icon: '/image/I1.svg', title: 'Personalized AI Assistance', text: 'We assign dedicated AI-powered assistants to candidates to help them create impressive resumes for free, showcasing their skills in the best possible way.' },
-  { icon: '/image/I2.svg', title: 'Skill-Based Job Matching', text: 'Our recruitment process matches the skills of candidates with job requirements, with filters to quickly narrow down the best-suited options.' },
-  { icon: '/image/I3.svg', title: 'Easy to Get Started', text: 'Getting started with Aajiveka is simple. Candidates can sign up and start applying for jobs right away by uploading a resume and documents.' },
-  { icon: '/image/I4.svg', title: 'Privacy and Security', text: 'We do not sell candidates’ databases to corporates and big firms, and take all measures to keep information secure and confidential.' },
-  { icon: '/image/I5.svg', title: 'Comprehensive Support', text: 'Our AI-powered support team is available around the clock — guidance, career options, resume writing, feedback, courses and more.' },
-];
+const CHOOSE_ICONS = ['/image/C1.svg', '/image/C2.svg', '/image/C3.svg', '/image/C4.svg', '/image/C5.svg'];
+const INDUSTRY_ICONS = ['/image/I1.svg', '/image/I2.svg', '/image/I3.svg', '/image/I4.svg', '/image/I5.svg'];
 
 export default function AboutPage() {
+  const { t } = useTranslation('public');
+
+  const CHOOSE = CHOOSE_ICONS.map((icon, i) => ({ icon, text: t(`about.choose${i + 1}`) }));
+  const INDUSTRY = INDUSTRY_ICONS.map((icon, i) => ({
+    icon,
+    title: t(`about.industry${i + 1}`),
+    text: t(`about.industry${i + 1}Text`),
+  }));
+
   return (
     <>
       <Seo
@@ -29,39 +26,26 @@ export default function AboutPage() {
         description="Learn about Aajiveka — India's next-gen job portal empowering the workforce through technology, AI-powered resume building, and personalised career guidance."
         path="/about"
       />
-      <PageBanner
-        variant="about"
-        title="Empowering India's workforce through technology: Aajiveka, where careers begin!"
-      />
+      <PageBanner variant="about" title={t('about.bannerTitle')} />
 
       {/* Mission */}
       <section className="py-12 md:py-20">
         <div className="container grid items-center gap-8 md:grid-cols-2">
           <div className="md:pr-10">
-            <h2>Our Mission</h2>
-            <p className="mt-4 text-gray-600">
-              At Aajiveka, our mission is to revolutionize the job search industry in India by providing a
-              tech-driven platform that empowers job seekers and employers alike. We strive to make the job
-              search process faster, easier, and more efficient, while creating a positive impact on the lives
-              of millions by connecting them to their dream jobs.
-            </p>
+            <h2>{t('about.missionHeading')}</h2>
+            <p className="mt-4 text-gray-600">{t('about.missionText')}</p>
           </div>
-          <img src="/image/mission.jpg" alt="Our mission" className="w-full rounded-lg" loading="lazy" />
+          <img src="/image/mission.jpg" alt={t('about.missionHeading')} className="w-full rounded-lg" loading="lazy" />
         </div>
       </section>
 
       {/* Vision */}
       <section className="pb-8">
         <div className="container grid items-center gap-8 md:grid-cols-2">
-          <img src="/image/vision.png" alt="Our vision" className="w-full rounded-lg md:order-1" loading="lazy" />
+          <img src="/image/vision.png" alt={t('about.visionHeading')} className="w-full rounded-lg md:order-1" loading="lazy" />
           <div className="md:order-2 md:pl-10">
-            <h2>Our Vision</h2>
-            <p className="mt-4 text-gray-600">
-              Our vision is to become India's leading job portal and to be recognized as a global leader in the
-              job search industry. We use the latest technological innovations to create a seamless, intuitive
-              job search experience, fostering a community of talented professionals who can network, learn and
-              grow together.
-            </p>
+            <h2>{t('about.visionHeading')}</h2>
+            <p className="mt-4 text-gray-600">{t('about.visionText')}</p>
           </div>
         </div>
       </section>
@@ -70,21 +54,19 @@ export default function AboutPage() {
       <section className="py-12 md:py-20">
         <div className="container">
           <div className="mb-8 text-center">
-            <h2>Our Value</h2>
-            <p className="mt-2 text-gray-600">
-              We are committed to delivering the highest quality of service by upholding the following values:
-            </p>
+            <h2>{t('about.valueHeading')}</h2>
+            <p className="mt-2 text-gray-600">{t('about.valueSubtext')}</p>
           </div>
           <div className="grid items-center gap-8 md:grid-cols-3">
             <div className="space-y-5">
-              <Value title="Customer-centricity" text="We put our users at the center of everything we do, striving to exceed their expectations." />
-              <Value title="Collaboration" text="We build long-term relationships, working collaboratively with users, partners and employees." />
+              <Value title={t('about.customerCentricity')} text={t('about.customerCentricityText')} />
+              <Value title={t('about.collaboration')} text={t('about.collaborationText')} />
             </div>
-            <img src="/image/value.png" alt="Our values" className="w-full" loading="lazy" />
+            <img src="/image/value.png" alt={t('about.valueHeading')} className="w-full" loading="lazy" />
             <div className="space-y-5">
-              <Value title="Innovation" text="We continuously explore new technologies to improve our platform's functionality and experience." />
-              <Value title="Transparency" text="We prioritize transparency and honesty in all our dealings with users and stakeholders." />
-              <Value title="Diversity and Inclusivity" text="We create an inclusive platform promoting diversity, equity and accessibility for all." />
+              <Value title={t('about.innovation')} text={t('about.innovationText')} />
+              <Value title={t('about.transparency')} text={t('about.transparencyText')} />
+              <Value title={t('about.diversity')} text={t('about.diversityText')} />
             </div>
           </div>
         </div>
@@ -102,13 +84,10 @@ export default function AboutPage() {
             ))}
           </div>
           <div className="lg:pl-8">
-            <h2>Why Choose Aajiveka?</h2>
-            <p className="mt-4 text-gray-600">
-              Looking for the right job? Look no further — Aajiveka can be your trusted partner. Here are the key
-              highlights that make Aajiveka an optimum choice for users:
-            </p>
+            <h2>{t('about.whyChoose')}</h2>
+            <p className="mt-4 text-gray-600">{t('about.whyChooseText')}</p>
             <Link to="/subscription">
-              <Button className="mt-6">Get Started</Button>
+              <Button className="mt-6">{t('actions.getStarted', { ns: 'common' })}</Button>
             </Link>
           </div>
         </div>
@@ -118,11 +97,8 @@ export default function AboutPage() {
       <section className="bg-navy py-14 text-white md:py-20">
         <div className="container">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-white">What Makes Us Best In The Recruitment Industry?</h2>
-            <p className="mt-4 text-white/80">
-              At Aajiveka, we take pride in being at the forefront of the recruitment industry, providing
-              cutting-edge solutions to both candidates and companies.
-            </p>
+            <h2 className="text-white">{t('about.industryHeading')}</h2>
+            <p className="mt-4 text-white/80">{t('about.industryText')}</p>
           </div>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             {INDUSTRY.map((c) => (

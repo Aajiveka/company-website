@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { BLOG_POSTS } from '../blogs.data';
 
 export default function BlogsPage() {
+  const { t } = useTranslation('public');
   const [query, setQuery] = useState('');
   const posts = BLOG_POSTS.filter((p) => p.title.toLowerCase().includes(query.toLowerCase()));
 
@@ -17,18 +19,18 @@ export default function BlogsPage() {
         description="Read career tips, industry insights, and job market trends on the Aajiveka blog. Stay informed and advance your career."
         path="/blogs"
       />
-      <PageBanner variant="blog" title="Our Blogs">
+      <PageBanner variant="blog" title={t('blogs.heading')}>
         <div className="mx-auto mt-6 flex max-w-full gap-2 sm:max-w-lg">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               className="pl-9"
-              placeholder="Search articles…"
+              placeholder={t('blogs.searchPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <Button>Search</Button>
+          <Button>{t('actions.search', { ns: 'common' })}</Button>
         </div>
       </PageBanner>
 
@@ -52,13 +54,13 @@ export default function BlogsPage() {
                     to={`/blogs/${post.slug}`}
                     className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:gap-2"
                   >
-                    Read More <ArrowRight className="h-4 w-4" />
+                    {t('actions.readMore', { ns: 'common' })} <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </article>
             ))}
           </div>
-          {posts.length === 0 && <p className="py-10 text-center text-gray-500">No articles found.</p>}
+          {posts.length === 0 && <p className="py-10 text-center text-gray-500">{t('blogs.noArticles')}</p>}
         </div>
       </section>
     </>

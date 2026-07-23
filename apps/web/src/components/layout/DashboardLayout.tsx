@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { LogOut, Menu as MenuIcon, UserCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/features/auth/auth.store';
 import { ROLE_LABEL } from '@/types/roles';
 import { Dropdown } from '@/components/ui';
@@ -8,6 +9,7 @@ import { Sidebar } from './Sidebar';
 
 /** Authenticated dashboard shell — topbar + role-gated sidebar + content. */
 export function DashboardLayout() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -21,7 +23,7 @@ export function DashboardLayout() {
           <button
             className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"
             onClick={() => setSidebarOpen((o) => !o)}
-            aria-label="Toggle menu"
+            aria-label={t('toggleMenu')}
           >
             <MenuIcon className="h-5 w-5" />
           </button>
@@ -37,7 +39,7 @@ export function DashboardLayout() {
               </span>
             </span>
           }
-          items={[{ label: 'Logout', onSelect: () => void logout(), icon: <LogOut className="h-4 w-4" />, danger: true }]}
+          items={[{ label: t('logout'), onSelect: () => void logout(), icon: <LogOut className="h-4 w-4" />, danger: true }]}
         />
       </header>
 

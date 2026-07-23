@@ -51,8 +51,32 @@
     "loading": "Loading…",
     "knowMore": "Know More",
     "getStarted": "Get Started",
-    "readMore": "Read More"
+    "readMore": "Read More",
+    "applyNow": "Apply Now",
+    "upload": "Upload",
+    "reUpload": "Re-upload"
   },
+  "dashboard": "Dashboard",
+  "recruitment": "Recruitment",
+  "labels": {
+    "designation": "Designation",
+    "location": "Location",
+    "workMode": "Work Mode",
+    "status": "Status",
+    "actions": "Actions",
+    "candidate": "Candidate",
+    "experience": "Experience",
+    "company": "Company",
+    "posted": "Posted",
+    "website": "Website",
+    "fresher": "Fresher",
+    "yrs": "yrs",
+    "perMonth": "Per Month",
+    "select": "Select\u2026",
+    "selectStateFirst": "Select state first"
+  },
+  "logout": "Logout",
+  "toggleMenu": "Toggle menu",
   "notFound": {
     "title": "404",
     "heading": "Page not found",

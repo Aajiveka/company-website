@@ -1,4 +1,5 @@
 import { Quote } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { DevicesSection } from '../components/DevicesSection';
@@ -13,6 +14,7 @@ const TESTIMONIALS = [
 ];
 
 export default function TestimonialPage() {
+  const { t } = useTranslation('public');
   return (
     <>
       <Seo
@@ -22,19 +24,19 @@ export default function TestimonialPage() {
       />
       <PageBanner
         variant="testimonial"
-        title="Client Testimonials: Building Lasting Relationships, One Success Story at a Time"
+        title={t('testimonial.bannerTitle')}
       />
 
       <section className="py-12 md:py-20">
         <div className="container">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
-              <figure key={t.name} className="flex flex-col rounded-2xl bg-white p-6 shadow-card">
+            {TESTIMONIALS.map((item) => (
+              <figure key={item.name} className="flex flex-col rounded-2xl bg-white p-6 shadow-card">
                 <Quote className="h-8 w-8 text-accent" />
-                <blockquote className="mt-3 flex-1 text-gray-600">{t.text}</blockquote>
+                <blockquote className="mt-3 flex-1 text-gray-600">{item.text}</blockquote>
                 <figcaption className="mt-5">
-                  <h5 className="font-heading font-semibold text-navy">{t.name}</h5>
-                  <p className="text-sm text-gray-500">{t.role}</p>
+                  <h5 className="font-heading font-semibold text-navy">{item.name}</h5>
+                  <p className="text-sm text-gray-500">{item.role}</p>
                 </figcaption>
               </figure>
             ))}

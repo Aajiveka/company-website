@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Button, Card, CardSkeleton, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '@/features/auth/auth.store';
@@ -12,6 +13,7 @@ const lpa = (rupees: number) => (rupees / 100_000).toFixed(1).replace(/\.0$/, ''
 
 /** Public — a single job listing, with an Apply CTA (job-details.aspx). */
 export default function JobDetailPage() {
+  const { t } = useTranslation('jobs');
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { data: job, isLoading } = useJob(id);
@@ -29,11 +31,11 @@ export default function JobDetailPage() {
     apply.mutate(undefined, {
       onSuccess: () => {
         setApplied(true);
-        notify('Application submitted.', 'success');
+        notify(t('detail.applicationSuccess'), 'success');
       },
       onError: (e) =>
         notify(
-          isAxiosError(e) ? e.response?.data?.message ?? 'Could not submit your application' : 'Could not submit your application',
+          isAxiosError(e) ? e.response?.data?.message ?? t('detail.applicationFailed') : t('detail.applicationFailed'),
           'error',
         ),
     });
@@ -49,7 +51,7 @@ export default function JobDetailPage() {
         />
       )}
       <div className="container max-w-3xl">
-        <Breadcrumbs items={[{ label: 'Jobs', to: '/jobs' }, { label: 'Job Details' }]} />
+        <Breadcrumbs items={[{ label: t('detail.breadcrumbJobs'), to: '/jobs' }, { label: t('detail.breadcrumbDetails') }]} />
 
         {isLoading || !job ? (
           <CardSkeleton />
@@ -71,7 +73,7 @@ export default function JobDetailPage() {
               <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-gray-400" /> {job.city}</span>
               <span className="flex items-center gap-1.5">
                 <Briefcase className="h-4 w-4 text-gray-400" />
-                {job.minExp === 0 ? 'Fresher' : `${job.minExp}+ yrs`} · {job.workMode} · {job.employmentType}
+                {job.minExp === 0 ? t('search.fresher') : `${job.minExp}+ ${t('search.yrs')}`} · {job.workMode} · {job.employmentType}
               </span>
               <span className="flex items-center gap-1.5">
                 <IndianRupee className="h-4 w-4 text-gray-400" /> {lpa(job.minCtc)}–{lpa(job.maxCtc)} LPA
@@ -80,12 +82,12 @@ export default function JobDetailPage() {
 
             <div className="mt-8">
               {applied ? (
-                <p className="text-sm font-medium text-green-700">You've applied to this job.</p>
+                <p className="text-sm font-medium text-green-700">{t('detail.alreadyApplied')}</p>
               ) : isAuthenticated && user?.roleId !== Role.Subscriber ? (
-                <p className="text-sm text-gray-500">Only candidate accounts can apply to jobs.</p>
+                <p className="text-sm text-gray-500">{t('detail.candidateOnly')}</p>
               ) : (
                 <Button onClick={onApply} disabled={apply.isPending}>
-                  {apply.isPending ? 'Applying…' : 'Apply Now'}
+                  {apply.isPending ? t('detail.applying') : t('detail.applyNow')}
                 </Button>
               )}
             </div>

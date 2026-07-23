@@ -51,8 +51,32 @@
     "loading": "लोड हो रहा है…",
     "knowMore": "और जानें",
     "getStarted": "शुरू करें",
-    "readMore": "और पढ़ें"
+    "readMore": "और पढ़ें",
+    "applyNow": "अभी आवेदन करें",
+    "upload": "अपलोड",
+    "reUpload": "पुनः अपलोड"
   },
+  "dashboard": "डैशबोर्ड",
+  "recruitment": "भर्ती",
+  "labels": {
+    "designation": "पदनाम",
+    "location": "स्थान",
+    "workMode": "कार्य मोड",
+    "status": "स्थिति",
+    "actions": "कार्रवाई",
+    "candidate": "उम्मीदवार",
+    "experience": "अनुभव",
+    "company": "कंपनी",
+    "posted": "पोस्ट किया",
+    "website": "वेबसाइट",
+    "fresher": "फ्रेशर",
+    "yrs": "वर्ष",
+    "perMonth": "प्रति माह",
+    "select": "चुनें…",
+    "selectStateFirst": "पहले राज्य चुनें"
+  },
+  "logout": "लॉगआउट",
+  "toggleMenu": "मेनू टॉगल करें",
   "notFound": {
     "title": "404",
     "heading": "पेज नहीं मिला",

@@ -1,19 +1,21 @@
 import { Award, Briefcase, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Card, CardSkeleton } from '@/components/ui';
 import { useCandidateProfile } from '../candidate.api';
 
 /** Candidate self-profile / CV view (candidate-profile.aspx). */
 export default function CandidateProfilePage() {
+  const { t } = useTranslation('dashboard');
   const { data, isLoading, isError } = useCandidateProfile();
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Breadcrumbs items={[{ label: 'Dashboard', to: '/candidate/profile' }, { label: 'My Profile' }]} />
+      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/candidate/profile' }, { label: t('profile.heading') }]} />
 
       {isLoading ? (
         <CardSkeleton />
       ) : isError || !data ? (
-        <Card>Unable to load your profile. Please try again.</Card>
+        <Card>{t('profile.loadError')}</Card>
       ) : (
         <div className="space-y-6">
           {/* Header card */}
@@ -46,7 +48,7 @@ export default function CandidateProfilePage() {
           {/* Skills */}
           <Card>
             <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-navy">
-              <Award className="h-5 w-5 text-primary" /> Skills
+              <Award className="h-5 w-5 text-primary" /> {t('profile.skills')}
             </h2>
             <div className="flex flex-wrap gap-2">
               {data.skills.map((s) => (
@@ -61,7 +63,7 @@ export default function CandidateProfilePage() {
             {/* Experience */}
             <Card>
               <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-navy">
-                <Briefcase className="h-5 w-5 text-primary" /> Experience
+                <Briefcase className="h-5 w-5 text-primary" /> {t('profile.experience')}
               </h2>
               <ul className="space-y-4">
                 {data.experience.map((e, i) => (
@@ -79,7 +81,7 @@ export default function CandidateProfilePage() {
             {/* Education */}
             <Card>
               <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-navy">
-                <GraduationCap className="h-5 w-5 text-primary" /> Education
+                <GraduationCap className="h-5 w-5 text-primary" /> {t('profile.education')}
               </h2>
               <ul className="space-y-4">
                 {data.education.map((e, i) => (

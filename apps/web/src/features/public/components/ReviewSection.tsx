@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 const REVIEWS = [
   {
     text: '"Aajiveka has been an invaluable resource for our finance company. Their job portal consistently delivers highly qualified candidates, saving us time and effort in the hiring process."',
@@ -21,10 +23,11 @@ const REVIEWS = [
 
 /** "Review from our Customers" section (reused on About). */
 export function ReviewSection() {
+  const { t } = useTranslation('public');
   return (
     <section className="py-12 md:py-20">
       <div className="container">
-        <h2 className="text-center">Review from our Customers</h2>
+        <h2 className="text-center">{t('reviews.heading')}</h2>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {REVIEWS.map((r) => (
             <div key={r.name}>

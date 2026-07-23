@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { Button, CardSkeleton } from '@/components/ui';
 import { usePlans } from '@/features/payments/payments.api';
@@ -65,6 +66,7 @@ const FALLBACK_TIERS: ViewTier[] = PRICING_TIERS.map((t) => ({
  * pricing matrix is kept only as a display fallback.
  */
 export function PricingPlans() {
+  const { t } = useTranslation('common');
   const { data: plans, isLoading } = usePlans();
   const [tierId, setTierId] = useState<string | null>(null);
 
@@ -120,7 +122,7 @@ export function PricingPlans() {
               <span className="font-heading text-3xl font-bold sm:text-4xl">₹{plan.price}</span>
               {plan.perMonth && (
                 <span className={cn('ml-1 text-sm', plan.highlighted ? 'text-white/80' : 'text-gray-500')}>
-                  Per Month
+                  {t('labels.perMonth')}
                 </span>
               )}
             </div>
@@ -137,7 +139,7 @@ export function PricingPlans() {
             ) : (
               <Link to="/register" className="mt-6">
                 <Button variant={plan.highlighted ? 'accent' : 'primary'} className="w-full">
-                  Get Started
+                  {t('actions.getStarted')}
                 </Button>
               </Link>
             )}
