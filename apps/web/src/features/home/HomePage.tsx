@@ -128,7 +128,7 @@ export default function HomePage() {
             {SERVICE_KEYS.map((key, i) => (
               <article
                 key={key}
-                className="rounded-xl bg-white p-6 shadow-[0px_4px_40px_rgba(43,89,255,0.08)] transition hover:-translate-y-1"
+                className="rounded-xl bg-white p-6 shadow-[0px_4px_40px_rgba(43,89,255,0.08)] transition hover:-translate-y-1 dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700"
               >
                 <img src={SERVICE_ICONS[i]} alt="" className="mx-auto h-16" loading="lazy" />
                 <h5 className="mb-2 mt-3 font-heading text-lg font-semibold text-navy">

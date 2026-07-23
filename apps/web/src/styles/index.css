@@ -1,6 +1,11 @@
 @import 'tailwindcss';
 
 /* ------------------------------------------------------------------ */
+/* Dark mode variant (class-based)                                     */
+/* ------------------------------------------------------------------ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------ */
 /* Design tokens                                                       */
 /*                                                                     */
 /* Tailwind v4 is CSS-first: these replace tailwind.config.ts. Values  */
@@ -29,6 +34,11 @@
   --color-brand: #1967d2;
   --color-brand-soft: #f0f5f7;
 
+  /* Dark-mode surface tokens */
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-inset: #f0f5f7;
+
   --font-sans: Inter, system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-heading: Jost, Inter, system-ui, sans-serif;
 
@@ -52,6 +62,18 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Dark mode — override semantic tokens so text-navy, bg-brand-soft   */
+/* etc. adapt automatically without per-element dark: overrides.       */
+/* ------------------------------------------------------------------ */
+.dark {
+  --color-navy: #e5e7eb;
+  --color-navy-deep: #f3f4f6;
+  --color-brand-soft: #1f2937;
+  --color-muted: #9ca3af;
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------------ */
 /* Base — mirrors the reference NewTheme typography/colors             */
 /* ------------------------------------------------------------------ */
 @layer base {
@@ -59,7 +81,7 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply font-sans text-[#121212] antialiased;
+    @apply font-sans text-[#121212] antialiased dark:bg-gray-900 dark:text-gray-100;
   }
   h1,
   h2,

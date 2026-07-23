@@ -17,12 +17,12 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
     pages.push(p);
   }
 
-  const btn = 'flex h-10 min-w-10 items-center justify-center rounded-lg border px-2 text-sm transition sm:h-9 sm:min-w-9';
+  const btn = 'flex h-10 min-w-10 items-center justify-center rounded-lg border px-2 text-sm transition sm:h-9 sm:min-w-9 dark:text-gray-200';
 
   return (
     <nav className="flex items-center gap-1" aria-label="Pagination">
       <button
-        className={cn(btn, 'border-gray-200 disabled:opacity-40')}
+        className={cn(btn, 'border-gray-200 disabled:opacity-40 dark:border-gray-600')}
         onClick={() => onChange(page - 1)}
         disabled={page <= 1}
         aria-label="Previous page"
@@ -37,7 +37,7 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
           aria-current={p === page}
           className={cn(
             btn,
-            p === page ? 'border-primary bg-primary text-white' : 'border-gray-200 hover:bg-gray-50',
+            p === page ? 'border-primary bg-primary text-white' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700',
           )}
         >
           {p}
@@ -45,7 +45,7 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
       ))}
       {pages[pages.length - 1] < pageCount && <span className="px-1 text-gray-400" aria-label="More pages">…</span>}
       <button
-        className={cn(btn, 'border-gray-200 disabled:opacity-40')}
+        className={cn(btn, 'border-gray-200 disabled:opacity-40 dark:border-gray-600')}
         onClick={() => onChange(page + 1)}
         disabled={page >= pageCount}
         aria-label="Next page"

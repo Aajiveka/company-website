@@ -30,7 +30,7 @@ export default function ResumePage() {
             {FEATURE_KEYS.map((key, i) => {
               const Icon = FEATURE_ICONS[i];
               return (
-                <div key={key} className="rounded-2xl bg-white p-6 text-center shadow-card">
+                <div key={key} className="rounded-2xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-6 text-center shadow-card">
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-primary">
                     <Icon className="h-7 w-7" />
                   </div>

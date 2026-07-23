@@ -90,14 +90,14 @@ export function PricingPlans() {
   return (
     <div className="container py-12">
       {/* Tier tabs */}
-      <div className="mx-auto mb-10 flex max-w-2xl flex-col gap-2 rounded-full bg-white p-1.5 shadow-card sm:flex-row">
+      <div className="mx-auto mb-10 flex max-w-2xl flex-col gap-2 rounded-full bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-1.5 shadow-card sm:flex-row">
         {tiers.map((t) => (
           <button
             key={t.id}
             onClick={() => setTierId(t.id)}
             className={cn(
               'flex-1 rounded-full px-2 py-2 text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm',
-              t.id === activeId ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50',
+              t.id === activeId ? 'bg-primary text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700',
             )}
           >
             {t.label}
@@ -112,7 +112,7 @@ export function PricingPlans() {
             key={plan.key}
             className={cn(
               'flex flex-col rounded-2xl border p-4 shadow-card transition hover:-translate-y-1 sm:p-6',
-              plan.highlighted ? 'border-primary bg-primary text-white' : 'border-gray-100 bg-white',
+              plan.highlighted ? 'border-primary bg-primary text-white' : 'border-gray-100 bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700',
             )}
           >
             <h3 className={cn('font-heading text-xl font-semibold', plan.highlighted ? 'text-white' : 'text-navy')}>
@@ -130,7 +130,7 @@ export function PricingPlans() {
               {PLAN_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <Check className={cn('mt-0.5 h-4 w-4 flex-shrink-0', plan.highlighted ? 'text-accent' : 'text-primary')} />
-                  <span className={plan.highlighted ? 'text-white/90' : 'text-gray-600'}>{f}</span>
+                  <span className={plan.highlighted ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}>{f}</span>
                 </li>
               ))}
             </ul>

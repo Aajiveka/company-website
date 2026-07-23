@@ -2,13 +2,13 @@ import { cn } from '@/lib/cn';
 
 /** Generic shimmer block for skeleton screens. */
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-md bg-gray-200', className)} />;
+  return <div className={cn('animate-pulse rounded-md bg-gray-200 dark:bg-gray-700', className)} />;
 }
 
 /** Card-shaped skeleton used while profile/company data loads. */
 export function CardSkeleton() {
   return (
-    <div className="space-y-4 rounded-xl bg-white p-6 shadow-card">
+    <div className="space-y-4 rounded-xl bg-white p-6 shadow-card dark:bg-gray-800">
       <Skeleton className="h-6 w-1/3" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />
@@ -22,7 +22,7 @@ export function ProfileSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header card */}
-      <div className="flex flex-col items-center gap-5 rounded-xl bg-white p-6 shadow-card sm:flex-row sm:items-start">
+      <div className="flex flex-col items-center gap-5 rounded-xl bg-white p-6 shadow-card dark:bg-gray-800 sm:flex-row sm:items-start">
         <Skeleton className="h-28 w-28 rounded-full" />
         <div className="flex-1 space-y-3 text-center sm:text-left">
           <Skeleton className="mx-auto h-7 w-48 sm:mx-0" />
@@ -35,7 +35,7 @@ export function ProfileSkeleton() {
         </div>
       </div>
       {/* Skills */}
-      <div className="rounded-xl bg-white p-6 shadow-card">
+      <div className="rounded-xl bg-white p-6 shadow-card dark:bg-gray-800">
         <Skeleton className="mb-3 h-6 w-24" />
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -46,10 +46,10 @@ export function ProfileSkeleton() {
       {/* Experience + Education grid */}
       <div className="grid gap-6 md:grid-cols-2">
         {[0, 1].map((i) => (
-          <div key={i} className="space-y-4 rounded-xl bg-white p-6 shadow-card">
+          <div key={i} className="space-y-4 rounded-xl bg-white p-6 shadow-card dark:bg-gray-800">
             <Skeleton className="h-6 w-28" />
             {Array.from({ length: 3 }).map((_, j) => (
-              <div key={j} className="space-y-1.5 border-l-2 border-gray-200 pl-3">
+              <div key={j} className="space-y-1.5 border-l-2 border-gray-200 dark:border-gray-600 pl-3">
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
                 <Skeleton className="h-3 w-1/4" />
@@ -65,7 +65,7 @@ export function ProfileSkeleton() {
 /** Company profile skeleton — logo + info + description. */
 export function CompanyProfileSkeleton() {
   return (
-    <div className="flex flex-col gap-5 rounded-xl bg-white p-6 shadow-card sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-5 rounded-xl bg-white p-6 shadow-card dark:bg-gray-800 sm:flex-row sm:items-center">
       <Skeleton className="h-20 w-20 rounded-lg" />
       <div className="flex-1 space-y-3">
         <Skeleton className="h-7 w-48" />
@@ -90,7 +90,7 @@ export function DocumentListSkeleton({ count = 4 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center justify-between rounded-xl bg-white p-4 shadow-card sm:p-6"
+          className="flex items-center justify-between rounded-xl bg-white p-4 shadow-card sm:p-6 dark:bg-gray-800"
         >
           <div className="flex items-center gap-3">
             <Skeleton className="h-10 w-10 rounded-lg" />
@@ -116,7 +116,7 @@ export function AlertListSkeleton({ count = 3 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center justify-between rounded-xl bg-white p-4 shadow-card sm:p-6"
+          className="flex items-center justify-between rounded-xl bg-white p-4 shadow-card sm:p-6 dark:bg-gray-800"
         >
           <div className="flex items-center gap-3">
             <Skeleton className="h-10 w-10 rounded-lg" />
@@ -140,7 +140,7 @@ export function CvManagerSkeleton() {
   return (
     <div className="space-y-6">
       {[0, 1].map((i) => (
-        <div key={i} className="space-y-4 rounded-xl bg-white p-6 shadow-card">
+        <div key={i} className="space-y-4 rounded-xl bg-white p-6 shadow-card dark:bg-gray-800">
           <Skeleton className="h-6 w-40" />
           <div className="grid gap-4 sm:grid-cols-2">
             {Array.from({ length: 6 }).map((_, j) => (
@@ -171,7 +171,7 @@ export function MembershipSkeleton() {
 /** Job search results skeleton — list of job cards. */
 export function JobCardSkeleton() {
   return (
-    <div className="space-y-3 rounded-xl bg-white p-5 shadow-card">
+    <div className="space-y-3 rounded-xl bg-white p-5 shadow-card dark:bg-gray-800">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <Skeleton className="h-5 w-48" />

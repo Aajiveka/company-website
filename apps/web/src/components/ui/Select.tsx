@@ -23,7 +23,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={selectId} className="mb-1.5 block text-sm font-medium text-navy">
+          <label htmlFor={selectId} className="mb-1.5 block text-sm font-medium text-navy dark:text-gray-200">
             {label}
             {props.required && <span className="ml-0.5 text-danger" aria-hidden>*</span>}
           </label>
@@ -35,9 +35,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              'h-11 w-full appearance-none rounded-lg border bg-white px-3.5 pr-9 text-sm outline-none transition',
+              'h-11 w-full appearance-none rounded-lg border bg-white px-3.5 pr-9 text-sm outline-none transition dark:bg-gray-800 dark:text-gray-100',
               'focus:ring-2 focus:ring-primary/30',
-              error ? 'border-danger' : 'border-gray-300 focus:border-primary',
+              error ? 'border-danger' : 'border-gray-300 focus:border-primary dark:border-gray-600',
               className,
             )}
             {...props}

@@ -26,7 +26,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         <Dialog.Content
           className={cn(
             'fixed left-1/2 top-1/2 z-[1001] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2',
-            'rounded-2xl bg-white p-4 shadow-xl outline-none sm:p-6',
+            'rounded-2xl bg-white p-4 shadow-xl outline-none sm:p-6 dark:bg-gray-800',
             className,
           )}
         >
@@ -38,7 +38,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
               <Dialog.Title className="sr-only">Dialog</Dialog.Title>
             )}
             <Dialog.Close
-              className="ml-auto rounded-full p-1 text-gray-400 outline-none transition hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="ml-auto rounded-full p-1 text-gray-400 outline-none transition hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               aria-label="Close"
             >
               <X className="h-5 w-5" />

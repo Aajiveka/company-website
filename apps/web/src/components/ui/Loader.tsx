@@ -6,7 +6,7 @@ export function Loader({ className, label }: { className?: string; label?: strin
   return (
     <div className={cn('flex flex-col items-center justify-center gap-2 py-16 text-primary', className)}>
       <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-      {label && <span className="text-sm text-gray-500">{label}</span>}
+      {label && <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>}
     </div>
   );
 }

@@ -31,7 +31,7 @@ export default function TestimonialPage() {
         <div className="container">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {TESTIMONIALS.map((item) => (
-              <figure key={item.name} className="flex flex-col rounded-2xl bg-white p-6 shadow-card">
+              <figure key={item.name} className="flex flex-col rounded-2xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-6 shadow-card">
                 <Quote className="h-8 w-8 text-accent" />
                 <blockquote className="mt-3 flex-1 text-gray-600">{item.text}</blockquote>
                 <figcaption className="mt-5">

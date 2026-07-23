@@ -20,7 +20,7 @@ export function PwaReloadPrompt() {
   if (!needRefresh) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[9999] mx-auto max-w-sm rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:left-auto">
+    <div className="fixed bottom-4 left-4 right-4 z-[9999] mx-auto max-w-sm rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:left-auto dark:border-gray-700 dark:bg-gray-800">
       <p className="text-sm font-medium text-navy">A new version is available.</p>
       <div className="mt-3 flex gap-2">
         <button

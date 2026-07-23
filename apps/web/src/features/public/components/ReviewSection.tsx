@@ -31,7 +31,7 @@ export function ReviewSection() {
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {REVIEWS.map((r) => (
             <div key={r.name}>
-              <div className="rounded-2xl bg-white p-4 shadow-card sm:p-6">
+              <div className="rounded-2xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-4 shadow-card sm:p-6">
                 <p className="text-gray-600">{r.text}</p>
                 <img src="/image/Stars.webp" alt="5 stars" className="mt-4 h-5" loading="lazy" />
               </div>

@@ -30,7 +30,7 @@ export default function CareerPage() {
             {OPENINGS.map((o) => (
               <div
                 key={o.role}
-                className="flex flex-col gap-3 rounded-xl bg-white p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <h5 className="font-heading text-lg font-semibold text-navy">{o.role}</h5>

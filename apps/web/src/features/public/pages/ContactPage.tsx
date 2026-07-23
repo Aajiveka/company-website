@@ -57,7 +57,7 @@ export default function ContactPage() {
           </div>
 
           {/* Form */}
-          <div className="rounded-2xl bg-white p-6 shadow-card md:p-8">
+          <div className="rounded-2xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-6 shadow-card md:p-8">
             <h2 className="mb-5">{t('contact.formHeading')}</h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <Input label={t('contact.name')} placeholder={t('contact.namePlaceholder')} error={errors.name?.message} {...register('name')} />

@@ -42,7 +42,7 @@ export function RouteErrorFallback() {
       <h1 className="mt-3 font-heading text-2xl font-bold text-navy">{title}</h1>
       <p className="mt-2 max-w-md text-gray-500">{message}</p>
       {import.meta.env.DEV && error instanceof Error && error.stack && (
-        <pre className="mx-auto mt-4 max-w-2xl overflow-auto rounded-lg bg-gray-100 p-4 text-left text-xs text-gray-700">
+        <pre className="mx-auto mt-4 max-w-2xl overflow-auto rounded-lg bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-4 text-left text-xs text-gray-700">
           {error.stack}
         </pre>
       )}
@@ -79,7 +79,7 @@ export function DashboardErrorFallback() {
       <h2 className="mt-4 font-heading text-xl font-bold text-navy">Something went wrong</h2>
       <p className="mt-2 max-w-md text-sm text-gray-500">{message}</p>
       {import.meta.env.DEV && error instanceof Error && error.stack && (
-        <pre className="mx-auto mt-4 max-w-xl overflow-auto rounded-lg bg-gray-100 p-3 text-left text-xs text-gray-700">
+        <pre className="mx-auto mt-4 max-w-xl overflow-auto rounded-lg bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-3 text-left text-xs text-gray-700">
           {error.stack}
         </pre>
       )}

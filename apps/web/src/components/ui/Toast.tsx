@@ -17,9 +17,9 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 const icons = { success: CheckCircle2, error: XCircle, info: Info };
 const colors = {
-  success: 'border-green-200 bg-white text-green-800',
-  error: 'border-red-200 bg-white text-red-800',
-  info: 'border-blue-200 bg-white text-blue-800',
+  success: 'border-green-200 bg-white text-green-800 dark:border-green-800 dark:bg-gray-800 dark:text-green-300',
+  error: 'border-red-200 bg-white text-red-800 dark:border-red-800 dark:bg-gray-800 dark:text-red-300',
+  info: 'border-blue-200 bg-white text-blue-800 dark:border-blue-800 dark:bg-gray-800 dark:text-blue-300',
 };
 
 let counter = 0;

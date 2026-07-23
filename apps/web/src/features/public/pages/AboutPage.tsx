@@ -77,7 +77,7 @@ export default function AboutPage() {
         <div className="container grid items-center gap-8 lg:grid-cols-2">
           <div className="space-y-4">
             {CHOOSE.map((c) => (
-              <div key={c.icon} className="flex items-start gap-4 rounded-xl bg-white p-5 shadow-card">
+              <div key={c.icon} className="flex items-start gap-4 rounded-xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-5 shadow-card">
                 <img src={c.icon} alt="" className="h-12 w-12 flex-shrink-0" loading="lazy" />
                 <p className="text-sm text-gray-600">{c.text}</p>
               </div>

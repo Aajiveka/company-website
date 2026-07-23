@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 /**
  * Public site header — mirrors FrontMaster.Master:
@@ -38,6 +39,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          <ThemeToggle />
           <LanguageSwitcher />
           <Link to="/">
             <Button variant="accent" size="sm">

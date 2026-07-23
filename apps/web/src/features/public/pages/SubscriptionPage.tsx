@@ -23,7 +23,7 @@ export default function SubscriptionPage() {
           <h2 className="text-center">{t('subscription.whySubscribe')}</h2>
           <ul className="mt-6 space-y-3">
             {BENEFIT_KEYS.map((key) => (
-              <li key={key} className="flex items-start gap-3 rounded-xl bg-white p-4 shadow-card">
+              <li key={key} className="flex items-start gap-3 rounded-xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-4 shadow-card">
                 <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
                 <span className="text-gray-700">{t(`subscription.${key}`)}</span>
               </li>

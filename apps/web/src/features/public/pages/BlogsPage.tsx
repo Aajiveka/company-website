@@ -38,7 +38,7 @@ export default function BlogsPage() {
         <div className="container">
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {posts.map((post) => (
-              <article key={post.slug} className="overflow-hidden rounded-2xl bg-white shadow-card">
+              <article key={post.slug} className="overflow-hidden rounded-2xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 shadow-card">
                 <Link to={`/blogs/${post.slug}`}>
                   <img src={post.image} alt={post.title} className="h-52 w-full object-cover" loading="lazy" />
                 </Link>

@@ -134,7 +134,7 @@ export function HierarchicalSelect({
         aria-label={ariaLabel}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="flex h-11 w-full items-center gap-2 bg-transparent text-sm text-gray-700 outline-none"
+        className="flex h-11 w-full items-center gap-2 bg-transparent text-sm text-gray-700 outline-none dark:text-gray-200"
         onClick={() => setIsOpen((o) => !o)}
         onKeyDown={onTriggerKeyDown}
       >
@@ -152,7 +152,7 @@ export function HierarchicalSelect({
           ref={panelRef}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg sm:max-h-72"
+          className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg sm:max-h-72 dark:border-gray-600 dark:bg-gray-800"
           onKeyDown={onPanelKeyDown}
         >
           {groupKeys.length === 0 && (
@@ -166,7 +166,7 @@ export function HierarchicalSelect({
                 <button
                   type="button"
                   aria-expanded={isExpanded}
-                  className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
+                  className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
                   onClick={() => toggleGroup(group)}
                 >
                   {isExpanded ? (
