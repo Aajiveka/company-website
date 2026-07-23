@@ -27,7 +27,7 @@ export function Navbar() {
         scrolled ? 'bg-primary shadow-md' : 'bg-transparent',
       )}
     >
-      <div className="container flex items-center justify-between px-3 py-3 sm:px-4">
+      <nav aria-label="Main" className="container flex items-center justify-between px-3 py-3 sm:px-4">
         <div className="flex items-center gap-3">
           <Link to="/" className="shrink-0">
             <img src="/image/logo.svg" alt="Aajiveka" className="h-12 w-auto sm:h-16" />
@@ -65,7 +65,7 @@ export function Navbar() {
             </Button>
           </Link>
         </div>
-      </div>
+      </nav>
     </header>
   );
 }

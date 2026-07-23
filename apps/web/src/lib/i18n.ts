@@ -3,6 +3,11 @@ import { initReactI18next } from 'react-i18next';
 import HttpBackend from 'i18next-http-backend';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
+// Sync <html lang> with the active language so screen readers use the right pronunciation.
+i18n.on('languageChanged', (lng) => {
+  document.documentElement.lang = lng;
+});
+
 i18n
   .use(HttpBackend)
   .use(LanguageDetector)

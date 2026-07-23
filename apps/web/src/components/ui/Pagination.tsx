@@ -29,7 +29,7 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
-      {pages[0] > 1 && <span className="px-1 text-gray-400">…</span>}
+      {pages[0] > 1 && <span className="px-1 text-gray-400" aria-label="More pages">…</span>}
       {pages.map((p) => (
         <button
           key={p}
@@ -43,7 +43,7 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
           {p}
         </button>
       ))}
-      {pages[pages.length - 1] < pageCount && <span className="px-1 text-gray-400">…</span>}
+      {pages[pages.length - 1] < pageCount && <span className="px-1 text-gray-400" aria-label="More pages">…</span>}
       <button
         className={cn(btn, 'border-gray-200 disabled:opacity-40')}
         onClick={() => onChange(page + 1)}

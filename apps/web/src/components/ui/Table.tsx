@@ -30,7 +30,7 @@ export function Table<T>({
         <thead className="border-b border-gray-200 bg-brand-soft text-navy">
           <tr>
             {columns.map((c) => (
-              <th key={c.key} className={cn('px-3 py-2.5 font-semibold sm:px-4 sm:py-3', c.className)}>
+              <th key={c.key} scope="col" className={cn('px-3 py-2.5 font-semibold sm:px-4 sm:py-3', c.className)}>
                 {c.header}
               </th>
             ))}

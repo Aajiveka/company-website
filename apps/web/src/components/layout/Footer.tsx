@@ -32,7 +32,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="bg-primary-light py-10 text-white md:py-14">
+    <footer aria-label="Site footer" className="bg-primary-light py-10 text-white md:py-14">
       <div className="container">
         <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-5">
           <div className="lg:col-span-2">

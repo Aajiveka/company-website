@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 export interface HierarchicalSelectProps {
@@ -24,6 +24,7 @@ export function HierarchicalSelect({
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Reverse-lookup: leaf → group
   const leafToGroup = useMemo(() => {
@@ -55,16 +56,6 @@ export function HierarchicalSelect({
     return () => document.removeEventListener('mousedown', handler);
   }, [isOpen]);
 
-  // Keyboard on trigger
-  const onTriggerKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      setIsOpen((o) => !o);
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-    }
-  };
-
   const toggleGroup = (group: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -77,13 +68,68 @@ export function HierarchicalSelect({
   const selectLeaf = (leaf: string, group: string) => {
     onChange(leaf, group);
     setIsOpen(false);
+    triggerRef.current?.focus();
   };
 
   const groupKeys = Object.keys(groups);
 
+  // Collect all visible focusable items for arrow key navigation
+  const getFocusableItems = useCallback((): HTMLElement[] => {
+    if (!panelRef.current) return [];
+    return Array.from(panelRef.current.querySelectorAll<HTMLElement>('button'));
+  }, []);
+
+  const onPanelKeyDown = (e: React.KeyboardEvent) => {
+    const items = getFocusableItems();
+    if (items.length === 0) return;
+    const current = document.activeElement as HTMLElement;
+    const idx = items.indexOf(current);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = idx < items.length - 1 ? idx + 1 : 0;
+      items[next].focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = idx > 0 ? idx - 1 : items.length - 1;
+      items[prev].focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      items[0].focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      items[items.length - 1].focus();
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    }
+  };
+
+  // Keyboard on trigger
+  const onTriggerKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsOpen((o) => !o);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setIsOpen(true);
+    }
+  };
+
+  // Focus first item when panel opens
+  useEffect(() => {
+    if (isOpen && panelRef.current) {
+      const first = panelRef.current.querySelector<HTMLElement>('button');
+      first?.focus();
+    }
+  }, [isOpen]);
+
   return (
     <div ref={containerRef} className="relative w-full">
       <button
+        ref={triggerRef}
         type="button"
         aria-label={ariaLabel}
         aria-expanded={isOpen}
@@ -107,6 +153,7 @@ export function HierarchicalSelect({
           role="listbox"
           aria-label={ariaLabel}
           className="absolute left-0 top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg sm:max-h-72"
+          onKeyDown={onPanelKeyDown}
         >
           {groupKeys.length === 0 && (
             <div className="px-3 py-2 text-sm text-gray-400">No options</div>
@@ -115,18 +162,17 @@ export function HierarchicalSelect({
             const isExpanded = expanded.has(group);
             const cities = groups[group];
             return (
-              <div key={group}>
+              <div key={group} role="group" aria-label={group}>
                 <button
                   type="button"
-                  role="option"
-                  aria-selected={false}
+                  aria-expanded={isExpanded}
                   className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50"
                   onClick={() => toggleGroup(group)}
                 >
                   {isExpanded ? (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
                   ) : (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
                   )}
                   {group}
                 </button>

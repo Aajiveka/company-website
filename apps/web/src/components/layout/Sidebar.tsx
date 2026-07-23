@@ -16,7 +16,7 @@ export function Sidebar({ role, open }: { role: RoleId; open: boolean }) {
         open ? 'translate-x-0' : '-translate-x-full',
       )}
     >
-      <nav className="flex flex-col gap-1 p-4">
+      <nav aria-label="Dashboard" className="flex flex-col gap-1 p-4">
         {items.map(({ i18nKey, to, icon: Icon }) => (
           <NavLink
             key={to}
