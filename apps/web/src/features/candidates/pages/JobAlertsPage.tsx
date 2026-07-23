@@ -3,19 +3,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Bell, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Badge, Breadcrumbs, Button, Card, Input, Select, useToast } from '@/components/ui';
 import { useCreateJobAlert, useJobAlerts } from '../candidate.api';
 
-const schema = z.object({
-  keyword: z.string().min(2, 'Enter a keyword'),
-  location: z.string().min(2, 'Enter a location'),
+const schema = (t: TFunction) => z.object({
+  keyword: z.string().min(2, t('validation.enterKeyword')),
+  location: z.string().min(2, t('validation.enterLocation')),
   frequency: z.enum(['Daily', 'Weekly']),
 });
-type Values = z.infer<typeof schema>;
+type Values = z.infer<ReturnType<typeof schema>>;
 
 /** Candidate — job alerts (candidate-dashboard-job-alerts.aspx). */
 export default function JobAlertsPage() {
   const { t } = useTranslation('jobs');
+  const { t: tCommon } = useTranslation('common');
   const { data: alerts, isLoading } = useJobAlerts();
   const create = useCreateJobAlert();
   const { notify } = useToast();
@@ -25,7 +27,7 @@ export default function JobAlertsPage() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { frequency: 'Daily' } });
+  } = useForm<Values>({ resolver: zodResolver(schema(tCommon)), defaultValues: { frequency: 'Daily' } });
 
   const onSubmit = (values: Values) =>
     create.mutate(values, {

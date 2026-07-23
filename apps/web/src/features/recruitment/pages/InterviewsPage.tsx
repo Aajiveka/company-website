@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { isAxiosError } from 'axios';
 import { Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Badge, Breadcrumbs, Button, Input, Modal, Select, Table, useToast, type Column } from '@/components/ui';
 import {
   useEligibleForInterview,
@@ -16,16 +18,17 @@ import type { InterviewRow } from '../recruitment.types';
 
 const modeTone = { 'In-person': 'purple', Telephonic: 'blue', Video: 'green' } as const;
 
-const scheduleSchema = z.object({
-  jobSubscriberMapId: z.coerce.number().min(1, 'Select a candidate'),
-  interviewModeId: z.coerce.number().min(1, 'Select a mode'),
-  interviewTime: z.string().min(1, 'Pick a date and time'),
+const scheduleSchema = (t: TFunction) => z.object({
+  jobSubscriberMapId: z.coerce.number().min(1, t('validation.selectCandidate')),
+  interviewModeId: z.coerce.number().min(1, t('validation.selectMode')),
+  interviewTime: z.string().min(1, t('validation.pickDateTime')),
   location: z.string().optional(),
 });
-type ScheduleValues = z.infer<typeof scheduleSchema>;
+type ScheduleValues = z.infer<ReturnType<typeof scheduleSchema>>;
 
 /** QC — interview schedule (Interviews.aspx / Interview-status.aspx). */
 export default function InterviewsPage() {
+  const { t: tCommon } = useTranslation('common');
   const { data, isLoading } = useInterviews();
   const { data: eligible } = useEligibleForInterview();
   const { data: modes } = useInterviewModes();
@@ -39,7 +42,7 @@ export default function InterviewsPage() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<ScheduleValues>({ resolver: zodResolver(scheduleSchema) });
+  } = useForm<ScheduleValues>({ resolver: zodResolver(scheduleSchema(tCommon)) });
 
   const onSchedule = (values: ScheduleValues) =>
     schedule.mutate(values, {

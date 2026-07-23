@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { authApi } from '../auth.api';
@@ -13,6 +14,8 @@ export default function ResetPasswordPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { notify } = useToast();
+  const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const token = params.get('token') ?? '';
 
   const {
@@ -20,46 +23,46 @@ export default function ResetPasswordPage() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<ResetValues>({ resolver: zodResolver(resetSchema), defaultValues: { token } });
+  } = useForm<ResetValues>({ resolver: zodResolver(resetSchema(tCommon)), defaultValues: { token } });
 
   useEffect(() => setValue('token', token), [token, setValue]);
 
   const mutation = useMutation({
     mutationFn: authApi.resetPassword,
     onSuccess: () => {
-      notify('Password updated. Please log in.', 'success');
+      notify(t('reset.success'), 'success');
       navigate('/login', { replace: true });
     },
-    onError: () => notify('Reset link is invalid or expired.', 'error'),
+    onError: () => notify(t('reset.error'), 'error'),
   });
 
   return (
     <>
     <Seo title="Reset Password" path="/reset-password" noIndex />
     <AuthShell
-      title="Reset password"
+      title={t('reset.title')}
       footer={
         <Link to="/login" className="font-medium text-primary hover:underline">
-          Back to login
+          {t('reset.backToLogin')}
         </Link>
       }
     >
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
         <input type="hidden" {...register('token')} />
         <Input
-          label="New Password"
+          label={t('reset.newPassword')}
           type="password"
           error={errors.newPassword?.message}
           {...register('newPassword')}
         />
         <Input
-          label="Confirm Password"
+          label={t('reset.confirmPassword')}
           type="password"
           error={errors.confirm?.message}
           {...register('confirm')}
         />
         <Button type="submit" className="w-full" isLoading={mutation.isPending}>
-          Update password
+          {t('reset.updateButton')}
         </Button>
       </form>
     </AuthShell>

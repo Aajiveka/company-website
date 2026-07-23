@@ -87,5 +87,30 @@
     "en": "English",
     "hi": "हिन्दी",
     "label": "Language"
+  },
+  "validation": {
+    "required": "This field is required",
+    "enterName": "Enter your name",
+    "enterFullName": "Enter your full name",
+    "validEmail": "Enter a valid email",
+    "validMobile": "Enter a valid mobile number",
+    "mobile10Digits": "Enter a 10-digit mobile number",
+    "min8Chars": "At least 8 characters",
+    "confirmPassword": "Please confirm your password",
+    "passwordsMismatch": "Passwords do not match",
+    "usernameRequired": "Username, email or mobile is required",
+    "passwordRequired": "Password is required",
+    "enterUsernameOrMobile": "Enter your username or registered mobile",
+    "otpCode": "Enter the 6-digit code",
+    "selectDesignation": "Select a designation",
+    "selectLocation": "Select a location",
+    "selectWorkMode": "Select a work mode",
+    "selectEmploymentType": "Select employment type",
+    "addDescription": "Add a job description",
+    "enterKeyword": "Enter a keyword",
+    "enterLocation": "Enter a location",
+    "selectCandidate": "Select a candidate",
+    "selectMode": "Select a mode",
+    "pickDateTime": "Pick a date and time"
   }
 }

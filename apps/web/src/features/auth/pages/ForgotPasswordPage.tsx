@@ -11,11 +11,12 @@ import { AuthShell } from '../components/AuthShell';
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ForgotValues>({ resolver: zodResolver(forgotSchema) });
+  } = useForm<ForgotValues>({ resolver: zodResolver(forgotSchema(tCommon)) });
 
   const mutation = useMutation({ mutationFn: authApi.forgotPassword });
 

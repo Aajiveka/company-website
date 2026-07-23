@@ -24,6 +24,7 @@ export default function RegisterPage() {
   const { setSession } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const [pending, setPending] = useState<RegisterValues | null>(null);
   const [code, setCode] = useState('');
 
@@ -31,7 +32,7 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema(tCommon)) });
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,

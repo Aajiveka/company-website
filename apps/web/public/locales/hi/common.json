@@ -87,5 +87,30 @@
     "en": "English",
     "hi": "हिन्दी",
     "label": "भाषा"
+  },
+  "validation": {
+    "required": "यह फ़ील्ड आवश्यक है",
+    "enterName": "अपना नाम दर्ज करें",
+    "enterFullName": "अपना पूरा नाम दर्ज करें",
+    "validEmail": "एक मान्य ईमेल दर्ज करें",
+    "validMobile": "एक मान्य मोबाइल नंबर दर्ज करें",
+    "mobile10Digits": "10 अंकों का मोबाइल नंबर दर्ज करें",
+    "min8Chars": "कम से कम 8 अक्षर",
+    "confirmPassword": "कृपया अपना पासवर्ड पुष्टि करें",
+    "passwordsMismatch": "पासवर्ड मेल नहीं खाते",
+    "usernameRequired": "उपयोगकर्ता नाम, ईमेल या मोबाइल आवश्यक है",
+    "passwordRequired": "पासवर्ड आवश्यक है",
+    "enterUsernameOrMobile": "अपना उपयोगकर्ता नाम या पंजीकृत मोबाइल दर्ज करें",
+    "otpCode": "6 अंकों का कोड दर्ज करें",
+    "selectDesignation": "पदनाम चुनें",
+    "selectLocation": "स्थान चुनें",
+    "selectWorkMode": "कार्य मोड चुनें",
+    "selectEmploymentType": "रोज़गार प्रकार चुनें",
+    "addDescription": "नौकरी विवरण जोड़ें",
+    "enterKeyword": "कीवर्ड दर्ज करें",
+    "enterLocation": "स्थान दर्ज करें",
+    "selectCandidate": "उम्मीदवार चुनें",
+    "selectMode": "मोड चुनें",
+    "pickDateTime": "तिथि और समय चुनें"
   }
 }

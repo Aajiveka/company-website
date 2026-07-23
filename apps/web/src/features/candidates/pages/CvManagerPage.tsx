@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { isAxiosError } from 'axios';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Breadcrumbs, Button, Card, CardSkeleton, Input, Select, useToast } from '@/components/ui';
 import {
   useCvEditProfile,
@@ -38,24 +39,25 @@ function useErrorNotify() {
 
 /* ------------------------------- Personal -------------------------------- */
 
-const personalSchema = z.object({
-  fullName: z.string().min(2, 'Enter your name'),
-  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
-  mobile: z.string().min(10, 'Enter a valid mobile number'),
+const personalSchema = (t: TFunction) => z.object({
+  fullName: z.string().min(2, t('validation.enterName')),
+  email: z.string().email(t('validation.validEmail')).optional().or(z.literal('')),
+  mobile: z.string().min(10, t('validation.validMobile')),
   dob: z.string().optional(),
   gender: z.enum(['M', 'F']),
   address: z.string().optional(),
   cityId: z.coerce.number().optional(),
 });
-type PersonalValues = z.infer<typeof personalSchema>;
+type PersonalValues = z.infer<ReturnType<typeof personalSchema>>;
 
 function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMasters }) {
   const { t } = useTranslation('dashboard');
+  const { t: tCommon } = useTranslation('common');
   const update = useUpdatePersonal();
   const { notify } = useToast();
   const onError = useErrorNotify();
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<PersonalValues>({
-    resolver: zodResolver(personalSchema),
+    resolver: zodResolver(personalSchema(tCommon)),
     defaultValues: { ...data, email: data.email ?? '', cityId: data.cityId ?? undefined },
   });
 

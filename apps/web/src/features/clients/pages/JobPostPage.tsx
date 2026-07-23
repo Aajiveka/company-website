@@ -4,24 +4,26 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Breadcrumbs, Button, Card, Input, Select, useToast } from '@/components/ui';
 import { useCompanyJobs, useCompanyMasters, usePostJob, useUpdateJob } from '../client.api';
 
-const schema = z.object({
-  designationId: z.coerce.number().min(1, 'Select a designation'),
-  cityId: z.coerce.number().min(1, 'Select a location'),
-  workModeId: z.coerce.number().min(1, 'Select a work mode'),
-  employmentTypeId: z.coerce.number().min(1, 'Select employment type'),
+const schema = (t: TFunction) => z.object({
+  designationId: z.coerce.number().min(1, t('validation.selectDesignation')),
+  cityId: z.coerce.number().min(1, t('validation.selectLocation')),
+  workModeId: z.coerce.number().min(1, t('validation.selectWorkMode')),
+  employmentTypeId: z.coerce.number().min(1, t('validation.selectEmploymentType')),
   minExp: z.coerce.number().min(0),
   minCtc: z.coerce.number().min(0),
   maxCtc: z.coerce.number().min(0),
-  description: z.string().min(10, 'Add a job description'),
+  description: z.string().min(10, t('validation.addDescription')),
 });
-type Values = z.infer<typeof schema>;
+type Values = z.infer<ReturnType<typeof schema>>;
 
 /** Client — post a new job, or edit an existing one (job-post.aspx). */
 export default function JobPostPage() {
   const { t } = useTranslation('public');
+  const { t: tCommon } = useTranslation('common');
   const { id } = useParams();
   const isEdit = !!id;
   const { notify } = useToast();
@@ -36,7 +38,7 @@ export default function JobPostPage() {
     reset,
     setValue,
     formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  } = useForm<Values>({ resolver: zodResolver(schema(tCommon)) });
 
   const job = isEdit ? jobs?.find((j) => String(j.jobId) === id) : undefined;
 

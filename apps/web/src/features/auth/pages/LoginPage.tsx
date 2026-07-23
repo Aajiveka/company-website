@@ -18,13 +18,14 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const from = (location.state as { from?: Location } | null)?.from?.pathname;
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginValues>({ resolver: zodResolver(loginSchema(tCommon)) });
 
   const mutation = useMutation({
     mutationFn: authApi.login,
