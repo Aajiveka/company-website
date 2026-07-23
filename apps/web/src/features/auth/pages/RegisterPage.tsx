@@ -8,7 +8,7 @@ import { Button, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
-import { registerSchema, type RegisterValues } from '../auth.types';
+import { registerSchema, verifyOtpSchema, type RegisterValues, type VerifyOtpValues } from '../auth.types';
 import { ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
 
@@ -24,7 +24,6 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   // Once set, the account details are captured and we're on the OTP step.
   const [pending, setPending] = useState<RegisterValues | null>(null);
-  const [code, setCode] = useState('');
 
   const {
     register,
@@ -32,14 +31,20 @@ export default function RegisterPage() {
     formState: { errors },
   } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) });
 
+  const otpForm = useForm<VerifyOtpValues>({ resolver: zodResolver(verifyOtpSchema) });
+
   const registerMutation = useMutation({
     mutationFn: authApi.register,
     onSuccess: (res, values) => {
       setPending(values);
+      otpForm.setValue('mobile', values.mobile);
+      otpForm.setValue('fullName', values.fullName);
+      otpForm.setValue('email', values.email);
+      otpForm.setValue('password', values.password);
       // In dev (no SMS gateway) the API returns the code — pre-fill it and show it so the
       // user can just click Verify. In production `devCode` is absent and this is a no-op.
       if (res.devCode) {
-        setCode(res.devCode);
+        otpForm.setValue('code', res.devCode);
         notify(`Dev OTP: ${res.devCode}`, 'info');
       } else {
         notify('OTP sent to your mobile number.', 'success');
@@ -75,16 +80,18 @@ export default function RegisterPage() {
     >
       {!pending ? (
         <form key="register-form" onSubmit={handleSubmit((v) => registerMutation.mutate(v))} className="space-y-4" noValidate>
-          <Input label="Full Name" error={errors.fullName?.message} {...register('fullName')} />
-          <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+          <Input label="Full Name" required autoComplete="name" error={errors.fullName?.message} {...register('fullName')} />
+          <Input label="Email" type="email" required autoComplete="email" error={errors.email?.message} {...register('email')} />
           <Input
             label="Mobile Number"
+            required
             inputMode="numeric"
+            autoComplete="tel"
             placeholder="10-digit mobile number"
             error={errors.mobile?.message}
             {...register('mobile')}
           />
-          <Input label="Password" type="password" error={errors.password?.message} {...register('password')} />
+          <Input label="Password" type="password" required autoComplete="new-password" error={errors.password?.message} {...register('password')} />
           <Button type="submit" className="w-full" isLoading={registerMutation.isPending}>
             Register
           </Button>
@@ -92,25 +99,19 @@ export default function RegisterPage() {
       ) : (
         <form
           key="otp-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            otpMutation.mutate({
-              mobile: pending.mobile,
-              code,
-              fullName: pending.fullName,
-              email: pending.email,
-              password: pending.password,
-            });
-          }}
+          onSubmit={otpForm.handleSubmit((v) => otpMutation.mutate(v))}
           className="space-y-4"
+          noValidate
         >
           <Input
             label="One-Time Password"
+            required
             inputMode="numeric"
             maxLength={6}
             placeholder="6-digit code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
+            autoComplete="one-time-code"
+            error={otpForm.formState.errors.code?.message}
+            {...otpForm.register('code')}
           />
           <Button type="submit" className="w-full" isLoading={otpMutation.isPending}>
             Verify &amp; Continue

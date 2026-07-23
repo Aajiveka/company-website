@@ -55,6 +55,7 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
         <Input
           label="Username or Email"
+          required
           autoComplete="username"
           error={errors.userName?.message}
           {...register('userName')}
@@ -62,6 +63,7 @@ export default function LoginPage() {
         <Input
           label="Password"
           type="password"
+          required
           autoComplete="current-password"
           error={errors.password?.message}
           {...register('password')}

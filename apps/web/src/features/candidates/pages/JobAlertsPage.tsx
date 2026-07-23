@@ -40,8 +40,8 @@ export default function JobAlertsPage() {
 
       <Card className="mb-6">
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2 sm:items-end lg:grid-cols-4" noValidate>
-          <Input label="Keyword" placeholder="e.g. React Developer" error={errors.keyword?.message} {...register('keyword')} />
-          <Input label="Location" placeholder="e.g. Pune" error={errors.location?.message} {...register('location')} />
+          <Input label="Keyword" required placeholder="e.g. React Developer" error={errors.keyword?.message} {...register('keyword')} />
+          <Input label="Location" required placeholder="e.g. Pune" error={errors.location?.message} {...register('location')} />
           <Select
             label="Frequency"
             options={[

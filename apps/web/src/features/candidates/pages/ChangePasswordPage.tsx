@@ -8,7 +8,12 @@ import { useChangePassword } from '../candidate.api';
 const schema = z
   .object({
     currentPassword: z.string().min(1, 'Enter your current password'),
-    newPassword: z.string().min(6, 'At least 6 characters'),
+    newPassword: z
+      .string()
+      .min(8, 'At least 8 characters')
+      .regex(/[A-Z]/, 'Include at least one uppercase letter')
+      .regex(/[a-z]/, 'Include at least one lowercase letter')
+      .regex(/\d/, 'Include at least one number'),
     confirm: z.string().min(1, 'Please confirm your password'),
   })
   .refine((v) => v.newPassword === v.confirm, { message: 'Passwords do not match', path: ['confirm'] });
@@ -44,9 +49,9 @@ export default function ChangePasswordPage() {
       <h1 className="mb-4 font-heading text-2xl font-bold text-navy">Change Password</h1>
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          <Input label="Current Password" type="password" error={errors.currentPassword?.message} {...register('currentPassword')} />
-          <Input label="New Password" type="password" error={errors.newPassword?.message} {...register('newPassword')} />
-          <Input label="Confirm New Password" type="password" error={errors.confirm?.message} {...register('confirm')} />
+          <Input label="Current Password" type="password" required autoComplete="current-password" error={errors.currentPassword?.message} {...register('currentPassword')} />
+          <Input label="New Password" type="password" required autoComplete="new-password" error={errors.newPassword?.message} {...register('newPassword')} />
+          <Input label="Confirm New Password" type="password" required autoComplete="new-password" error={errors.confirm?.message} {...register('confirm')} />
           <Button type="submit" isLoading={mutation.isPending}>
             Update Password
           </Button>

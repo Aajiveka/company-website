@@ -49,12 +49,16 @@ export default function ResetPasswordPage() {
         <Input
           label="New Password"
           type="password"
+          required
+          autoComplete="new-password"
           error={errors.newPassword?.message}
           {...register('newPassword')}
         />
         <Input
           label="Confirm Password"
           type="password"
+          required
+          autoComplete="new-password"
           error={errors.confirm?.message}
           {...register('confirm')}
         />

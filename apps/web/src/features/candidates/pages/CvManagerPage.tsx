@@ -38,12 +38,12 @@ function useErrorNotify() {
 /* ------------------------------- Personal -------------------------------- */
 
 const personalSchema = z.object({
-  fullName: z.string().min(2, 'Enter your name'),
-  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
-  mobile: z.string().min(10, 'Enter a valid mobile number'),
+  fullName: z.string().trim().min(2, 'Enter your name'),
+  email: z.string().trim().email('Enter a valid email').optional().or(z.literal('')),
+  mobile: z.string().regex(/^\d{10}$/, 'Enter a 10-digit mobile number'),
   dob: z.string().optional(),
   gender: z.enum(['M', 'F']),
-  address: z.string().optional(),
+  address: z.string().trim().optional(),
   cityId: z.coerce.number().optional(),
 });
 type PersonalValues = z.infer<typeof personalSchema>;
@@ -88,9 +88,9 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
       <h2 className="mb-4 text-lg font-semibold text-navy">Personal Details</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Full Name" error={errors.fullName?.message} {...register('fullName')} />
-          <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
-          <Input label="Mobile" error={errors.mobile?.message} {...register('mobile')} />
+          <Input label="Full Name" required autoComplete="name" error={errors.fullName?.message} {...register('fullName')} />
+          <Input label="Email" type="email" autoComplete="email" error={errors.email?.message} {...register('email')} />
+          <Input label="Mobile" required inputMode="numeric" autoComplete="tel" error={errors.mobile?.message} {...register('mobile')} />
           <Input label="Date of Birth" type="date" error={errors.dob?.message} {...register('dob')} />
           <Select
             label="Gender"

@@ -37,6 +37,8 @@ export default function ForgotPasswordPage() {
         <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
           <Input
             label="Username or registered mobile"
+            required
+            autoComplete="username"
             error={errors.userName?.message}
             {...register('userName')}
           />

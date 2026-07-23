@@ -2,15 +2,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Mail, MapPin } from 'lucide-react';
-import { Button, Input, useToast } from '@/components/ui';
+import { Button, Input, Textarea, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 
 const contactSchema = z.object({
-  name: z.string().min(2, 'Enter your name'),
-  subject: z.string().min(2, 'Enter a subject'),
-  email: z.string().email('Enter a valid email'),
+  name: z.string().trim().min(2, 'Enter your name'),
+  subject: z.string().trim().min(2, 'Enter a subject'),
+  email: z.string().trim().email('Enter a valid email'),
   phone: z.string().regex(/^\d{10}$/, 'Enter a 10-digit number'),
-  feedback: z.string().min(5, 'Please enter your message'),
+  feedback: z.string().trim().min(5, 'Please enter your message'),
 });
 type ContactValues = z.infer<typeof contactSchema>;
 
@@ -61,25 +61,20 @@ export default function ContactPage() {
           <div className="rounded-2xl bg-white p-6 shadow-card md:p-8">
             <h2 className="mb-5">Get in Touch</h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-              <Input label="Name" placeholder="Enter Your Name" error={errors.name?.message} {...register('name')} />
-              <Input label="Subject" placeholder="Enter Your Subject" error={errors.subject?.message} {...register('subject')} />
+              <Input label="Name" required placeholder="Enter Your Name" autoComplete="name" error={errors.name?.message} {...register('name')} />
+              <Input label="Subject" required placeholder="Enter Your Subject" error={errors.subject?.message} {...register('subject')} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Email" type="email" placeholder="Enter Your Email" error={errors.email?.message} {...register('email')} />
-                <Input label="Contact Number" inputMode="numeric" placeholder="Enter Contact number" error={errors.phone?.message} {...register('phone')} />
+                <Input label="Email" type="email" required placeholder="Enter Your Email" autoComplete="email" error={errors.email?.message} {...register('email')} />
+                <Input label="Contact Number" required inputMode="numeric" placeholder="Enter Contact number" autoComplete="tel" error={errors.phone?.message} {...register('phone')} />
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-navy" htmlFor="feedback">
-                  Feedback
-                </label>
-                <textarea
-                  id="feedback"
-                  rows={4}
-                  placeholder="Enter Your Feedback"
-                  className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-                  {...register('feedback')}
-                />
-                {errors.feedback && <p className="mt-1 text-xs text-danger">{errors.feedback.message}</p>}
-              </div>
+              <Textarea
+                label="Feedback"
+                required
+                rows={4}
+                placeholder="Enter Your Feedback"
+                error={errors.feedback?.message}
+                {...register('feedback')}
+              />
               <Button type="submit" isLoading={isSubmitting}>
                 Submit
               </Button>

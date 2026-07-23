@@ -33,4 +33,14 @@ describe('Input', () => {
     await userEvent.type(input, 'John');
     expect(input).toHaveValue('John');
   });
+
+  it('shows required asterisk when required', () => {
+    const { container } = render(<Input label="Email" required />);
+    expect(container.querySelector('.text-danger')).toHaveTextContent('*');
+  });
+
+  it('does not show asterisk by default', () => {
+    const { container } = render(<Input label="Email" />);
+    expect(container.querySelector('.text-danger')).toBeNull();
+  });
 });

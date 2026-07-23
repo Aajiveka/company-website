@@ -3,19 +3,24 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Breadcrumbs, Button, Card, Input, Select, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, Input, Select, Textarea, useToast } from '@/components/ui';
 import { useCompanyJobs, useCompanyMasters, usePostJob, useUpdateJob } from '../client.api';
 
-const schema = z.object({
-  designationId: z.coerce.number().min(1, 'Select a designation'),
-  cityId: z.coerce.number().min(1, 'Select a location'),
-  workModeId: z.coerce.number().min(1, 'Select a work mode'),
-  employmentTypeId: z.coerce.number().min(1, 'Select employment type'),
-  minExp: z.coerce.number().min(0),
-  minCtc: z.coerce.number().min(0),
-  maxCtc: z.coerce.number().min(0),
-  description: z.string().min(10, 'Add a job description'),
-});
+const schema = z
+  .object({
+    designationId: z.coerce.number().min(1, 'Select a designation'),
+    cityId: z.coerce.number().min(1, 'Select a location'),
+    workModeId: z.coerce.number().min(1, 'Select a work mode'),
+    employmentTypeId: z.coerce.number().min(1, 'Select employment type'),
+    minExp: z.coerce.number().min(0, 'Must be 0 or more'),
+    minCtc: z.coerce.number().min(0, 'Must be 0 or more'),
+    maxCtc: z.coerce.number().min(0, 'Must be 0 or more'),
+    description: z.string().trim().min(10, 'Add a job description (at least 10 characters)'),
+  })
+  .refine((v) => v.maxCtc >= v.minCtc, {
+    message: 'Max CTC must be greater than or equal to Min CTC',
+    path: ['maxCtc'],
+  });
 type Values = z.infer<typeof schema>;
 
 /** Client — post a new job, or edit an existing one (job-post.aspx). */
@@ -84,6 +89,7 @@ export default function JobPostPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Designation"
+              required
               placeholder="Select…"
               options={opts(masters?.designations)}
               error={errors.designationId?.message}
@@ -101,6 +107,7 @@ export default function JobPostPage() {
             />
             <Select
               label="District / City"
+              required
               placeholder={selectedStateId ? 'Select…' : 'Select state first'}
               options={opts(filteredCities)}
               error={errors.cityId?.message}
@@ -109,6 +116,7 @@ export default function JobPostPage() {
             />
             <Select
               label="Work Mode"
+              required
               placeholder="Select…"
               options={opts(masters?.workModes)}
               error={errors.workModeId?.message}
@@ -116,29 +124,25 @@ export default function JobPostPage() {
             />
             <Select
               label="Employment Type"
+              required
               placeholder="Select…"
               options={opts(masters?.employmentTypes)}
               error={errors.employmentTypeId?.message}
               {...register('employmentTypeId')}
             />
-            <Input label="Minimum Experience (yrs)" type="number" error={errors.minExp?.message} {...register('minExp')} />
+            <Input label="Minimum Experience (yrs)" required type="number" error={errors.minExp?.message} {...register('minExp')} />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input label="Min CTC (₹)" type="number" error={errors.minCtc?.message} {...register('minCtc')} />
-              <Input label="Max CTC (₹)" type="number" error={errors.maxCtc?.message} {...register('maxCtc')} />
+              <Input label="Min CTC (₹)" required type="number" error={errors.minCtc?.message} {...register('minCtc')} />
+              <Input label="Max CTC (₹)" required type="number" error={errors.maxCtc?.message} {...register('maxCtc')} />
             </div>
           </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-navy" htmlFor="jd">
-              Job Description
-            </label>
-            <textarea
-              id="jd"
-              rows={5}
-              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-              {...register('description')}
-            />
-            {errors.description && <p className="mt-1 text-xs text-danger">{errors.description.message}</p>}
-          </div>
+          <Textarea
+            label="Job Description"
+            required
+            rows={5}
+            error={errors.description?.message}
+            {...register('description')}
+          />
           <div className="flex justify-end">
             <Button type="submit" isLoading={post.isPending || update.isPending}>
               {isEdit ? 'Save Changes' : 'Publish Job'}

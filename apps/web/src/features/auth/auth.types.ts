@@ -17,22 +17,27 @@ export interface AuthSession {
 
 /** Login form schema (React Hook Form + Zod). */
 export const loginSchema = z.object({
-  userName: z.string().min(1, 'Username, email or mobile is required'),
+  userName: z.string().trim().min(1, 'Username, email or mobile is required'),
   password: z.string().min(1, 'Password is required'),
 });
 export type LoginValues = z.infer<typeof loginSchema>;
 
 // Backend forgot-password keys off the username (or registered mobile), not email.
 export const forgotSchema = z.object({
-  userName: z.string().min(1, 'Enter your username or registered mobile'),
+  userName: z.string().trim().min(1, 'Enter your username or registered mobile'),
 });
 export type ForgotValues = z.infer<typeof forgotSchema>;
 
-// Backend expects `{ token, newPassword }`, password ≥ 8 chars. `confirm` is client-side only.
+// Backend expects `{ token, newPassword }`, password >= 8 chars. `confirm` is client-side only.
 export const resetSchema = z
   .object({
     token: z.string().min(1),
-    newPassword: z.string().min(8, 'At least 8 characters'),
+    newPassword: z
+      .string()
+      .min(8, 'At least 8 characters')
+      .regex(/[A-Z]/, 'Include at least one uppercase letter')
+      .regex(/[a-z]/, 'Include at least one lowercase letter')
+      .regex(/\d/, 'Include at least one number'),
     confirm: z.string().min(1, 'Please confirm your password'),
   })
   .refine((v) => v.newPassword === v.confirm, {
@@ -45,10 +50,15 @@ export type ResetValues = z.infer<typeof resetSchema>;
 // OTP); the name/email/password are carried to /auth/verify-otp, which persists them when the
 // account is created.
 export const registerSchema = z.object({
-  fullName: z.string().min(2, 'Enter your full name'),
-  email: z.string().email('Enter a valid email'),
+  fullName: z.string().trim().min(2, 'Enter your full name'),
+  email: z.string().trim().email('Enter a valid email'),
   mobile: z.string().regex(/^\d{10}$/, 'Enter a 10-digit mobile number'),
-  password: z.string().min(8, 'At least 8 characters'),
+  password: z
+    .string()
+    .min(8, 'At least 8 characters')
+    .regex(/[A-Z]/, 'Include at least one uppercase letter')
+    .regex(/[a-z]/, 'Include at least one lowercase letter')
+    .regex(/\d/, 'Include at least one number'),
 });
 export type RegisterValues = z.infer<typeof registerSchema>;
 

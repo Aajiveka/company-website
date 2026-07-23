@@ -109,6 +109,7 @@ export default function InterviewsPage() {
         <form onSubmit={handleSubmit(onSchedule)} className="space-y-4" noValidate>
           <Select
             label="Candidate"
+            required
             placeholder="Select a mapped application…"
             options={(eligible ?? []).map((e) => ({
               label: `${e.candidate} — ${e.designation} (${e.company})`,
@@ -119,12 +120,13 @@ export default function InterviewsPage() {
           />
           <Select
             label="Mode"
+            required
             placeholder="Select…"
             options={(modes ?? []).map((m) => ({ label: m.label, value: m.id }))}
             error={errors.interviewModeId?.message}
             {...register('interviewModeId')}
           />
-          <Input label="Date & Time" type="datetime-local" error={errors.interviewTime?.message} {...register('interviewTime')} />
+          <Input label="Date & Time" required type="datetime-local" error={errors.interviewTime?.message} {...register('interviewTime')} />
           <Input label="Location (optional)" {...register('location')} />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>

@@ -10,13 +10,15 @@ export interface SelectOption {
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+  /** Show a red asterisk after the label. */
+  required?: boolean;
   options: SelectOption[];
   placeholder?: string;
 }
 
 /** Native select styled to match the reference dropdowns. */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, label, error, options, placeholder, id, ...props }, ref) => {
+  ({ className, label, error, required, options, placeholder, id, ...props }, ref) => {
     const autoId = useId();
     const selectId = id ?? autoId;
     const errorId = `${selectId}-error`;
@@ -25,6 +27,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label htmlFor={selectId} className="mb-1.5 block text-sm font-medium text-navy dark:text-gray-200">
             {label}
+            {required && <span className="ml-0.5 text-danger">*</span>}
           </label>
         )}
         <div className="relative">

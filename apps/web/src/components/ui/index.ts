@@ -2,6 +2,7 @@ export { Button } from './Button';
 export { buttonVariants } from './button-variants';
 export { Input } from './Input';
 export { Select } from './Select';
+export { Textarea } from './Textarea';
 export type { SelectOption } from './Select';
 export { Card, CardHeader, CardTitle } from './Card';
 export { Modal } from './Modal';
