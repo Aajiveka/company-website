@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getErrorMessage } from '@/lib/axios';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
-import { Breadcrumbs, Button, Card, CardSkeleton, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, JobDetailSkeleton, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '@/features/auth/auth.store';
 import { Role } from '@/types/roles';
@@ -49,7 +49,7 @@ export default function JobDetailPage() {
         <Breadcrumbs items={[{ label: 'Jobs', to: '/jobs' }, { label: 'Job Details' }]} />
 
         {isLoading || !job ? (
-          <CardSkeleton />
+          <JobDetailSkeleton />
         ) : (
           <Card>
             <div className="flex flex-wrap items-start justify-between gap-4">

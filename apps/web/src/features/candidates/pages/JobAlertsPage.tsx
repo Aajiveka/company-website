@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Bell, Trash2 } from 'lucide-react';
-import { Badge, Breadcrumbs, Button, Card, Input, Select, useToast } from '@/components/ui';
+import { Badge, Breadcrumbs, Button, Card, Input, ListSkeleton, Select, useToast } from '@/components/ui';
 import { useCreateJobAlert, useJobAlerts } from '../candidate.api';
 
 const schema = z.object({
@@ -58,7 +58,7 @@ export default function JobAlertsPage() {
 
       <div className="space-y-3">
         {isLoading ? (
-          <Card>Loading alerts…</Card>
+          <ListSkeleton count={3} />
         ) : (
           (alerts ?? []).map((a) => (
             <Card key={a.alertId} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -1,5 +1,5 @@
 import { Award, Briefcase, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
-import { Breadcrumbs, Card, CardSkeleton } from '@/components/ui';
+import { Breadcrumbs, Card, ProfileSkeleton } from '@/components/ui';
 import { useCandidateProfile } from '../candidate.api';
 
 /** Candidate self-profile / CV view (candidate-profile.aspx). */
@@ -11,7 +11,7 @@ export default function CandidateProfilePage() {
       <Breadcrumbs items={[{ label: 'Dashboard', to: '/candidate/profile' }, { label: 'My Profile' }]} />
 
       {isLoading ? (
-        <CardSkeleton />
+        <ProfileSkeleton />
       ) : isError || !data ? (
         <Card>Unable to load your profile. Please try again.</Card>
       ) : (

@@ -1,4 +1,4 @@
-import { Alert, Breadcrumbs, Loader } from '@/components/ui';
+import { Alert, Breadcrumbs, CardSkeleton } from '@/components/ui';
 import { PricingPlans } from '@/features/public/components/PricingPlans';
 import { useSubscription } from '../payments.api';
 
@@ -16,7 +16,7 @@ export default function MembershipPage() {
       <h1 className="mb-4 font-heading text-2xl font-bold text-navy">Membership</h1>
 
       {isLoading ? (
-        <Loader />
+        <CardSkeleton />
       ) : active ? (
         <Alert variant="success">
           Your <strong>{active.plan}</strong> membership is active until {formatDate(active.endsAt)}.

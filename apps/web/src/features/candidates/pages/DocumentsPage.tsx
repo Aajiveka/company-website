@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { getErrorMessage } from '@/lib/axios';
 import { FileText, Upload } from 'lucide-react';
-import { Badge, Breadcrumbs, Card, statusTone, useToast } from '@/components/ui';
+import { Badge, Breadcrumbs, Card, ListSkeleton, statusTone, useToast } from '@/components/ui';
 import { useCandidateDocuments, useUploadCandidateDocument } from '../candidate.api';
 
 /** Candidate — document upload & status (candidate-doc.aspx). */
@@ -40,7 +40,7 @@ export default function DocumentsPage() {
       <input ref={fileRef} type="file" className="hidden" onChange={onFile} aria-hidden />
 
       {isLoading ? (
-        <Card>Loading documents…</Card>
+        <ListSkeleton count={3} />
       ) : (data ?? []).length === 0 ? (
         <Card className="text-center text-gray-500">
           No documents have been requested yet. Your recruiter will let you know what to upload.

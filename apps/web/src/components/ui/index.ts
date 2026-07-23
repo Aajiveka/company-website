@@ -16,6 +16,6 @@ export { Pagination } from './Pagination';
 export { Breadcrumbs } from './Breadcrumbs';
 export type { Crumb } from './Breadcrumbs';
 export { Loader, FullPageLoader } from './Loader';
-export { Skeleton, CardSkeleton } from './Skeleton';
+export { Skeleton, CardSkeleton, ProfileSkeleton, JobDetailSkeleton, ListSkeleton, CompanyProfileSkeleton } from './Skeleton';
 export { Dropdown } from './Dropdown';
 export { HierarchicalSelect } from './HierarchicalSelect';
