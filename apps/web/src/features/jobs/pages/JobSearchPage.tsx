@@ -74,6 +74,14 @@ export default function JobSearchPage() {
         title="Find Jobs"
         description="Browse thousands of job openings across India. Filter by location, industry, and experience to find your perfect role on Aajiveka."
         path="/jobs"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aajiveka.com/' },
+            { '@type': 'ListItem', position: 2, name: 'Find Jobs', item: 'https://aajiveka.com/jobs' },
+          ],
+        }}
       />
       <PageBanner variant="jobs" title={t('search.heading')}>
         <div className="mx-auto mt-8 max-w-3xl">

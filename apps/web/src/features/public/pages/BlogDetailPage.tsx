@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui';
-import { Seo } from '@/components/Seo';
+import { Seo, SITE_URL } from '@/components/Seo';
 import { BLOG_POSTS, getPost } from '../blogs.data';
 
 export default function BlogDetailPage() {
@@ -32,6 +32,21 @@ export default function BlogDetailPage() {
         description={post.excerpt}
         path={`/blogs/${post.slug}`}
         ogType="article"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: post.title,
+          description: post.excerpt,
+          datePublished: post.date,
+          author: { '@type': 'Organization', name: post.author },
+          publisher: {
+            '@type': 'Organization',
+            name: 'Aajiveka',
+            logo: { '@type': 'ImageObject', url: `${SITE_URL}/image/logo.svg` },
+          },
+          image: `${SITE_URL}${post.image}`,
+          mainEntityOfPage: `${SITE_URL}/blogs/${post.slug}`,
+        }}
       />
       <div className="container max-w-3xl">
         <Link to="/blogs" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">

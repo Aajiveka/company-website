@@ -17,6 +17,7 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-brand-soft/40">
+      <meta name="robots" content="noindex,nofollow" />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[1200] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-white focus:outline-none"

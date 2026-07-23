@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /candidate/
+Disallow: /company/
+Disallow: /recruitment/
+Disallow: /payment/
 
 Sitemap: https://aajiveka.com/sitemap.xml

@@ -17,7 +17,37 @@ export default function HomePage() {
 
   return (
     <>
-      <Seo title="Home" path="/" />
+      <Seo
+        title="Home"
+        path="/"
+        jsonLd={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'Aajiveka',
+            url: 'https://aajiveka.com',
+            logo: 'https://aajiveka.com/image/logo.svg',
+            sameAs: [
+              'https://www.facebook.com/profile.php?id=100092726993362',
+              'https://twitter.com/aajiveka',
+              'https://www.linkedin.com/company/aajiveka/',
+              'https://www.youtube.com/@Aajiveka/about',
+              'https://www.instagram.com/aajiveka/',
+            ],
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Aajiveka',
+            url: 'https://aajiveka.com',
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: 'https://aajiveka.com/jobs?designation={search_term_string}',
+              'query-input': 'required name=search_term_string',
+            },
+          },
+        ]}
+      />
       {/* -------------------------------- Hero -------------------------------- */}
       <section className="hero-banner relative flex min-h-[28rem] items-center overflow-hidden md:h-[600px] lg:h-[745px]">
         <img

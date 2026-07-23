@@ -1,7 +1,7 @@
-const SITE_NAME = 'Aajiveka';
+export const SITE_NAME = 'Aajiveka';
 const DEFAULT_DESCRIPTION =
   "Aajiveka — India's next-gen job portal connecting talented professionals with top employers. Search jobs, build resumes, and advance your career.";
-const SITE_URL = 'https://aajiveka.com';
+export const SITE_URL = 'https://aajiveka.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/image/og-default.png`;
 
 export interface SeoProps {
@@ -11,6 +11,8 @@ export interface SeoProps {
   ogImage?: string;
   ogType?: 'website' | 'article';
   noIndex?: boolean;
+  /** JSON-LD structured data object(s) to embed in the page. */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 /**
@@ -24,6 +26,7 @@ export function Seo({
   ogImage = DEFAULT_OG_IMAGE,
   ogType = 'website',
   noIndex = false,
+  jsonLd,
 }: SeoProps) {
   const fullTitle = title === 'Home' ? `${SITE_NAME} | Your Ultimate Career Partner` : `${title} | ${SITE_NAME}`;
   const canonicalUrl = `${SITE_URL}${path}`;
@@ -49,6 +52,13 @@ export function Seo({
       <meta name="twitter:image" content={ogImage} />
 
       {noIndex && <meta name="robots" content="noindex,nofollow" />}
+
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(Array.isArray(jsonLd) ? jsonLd : jsonLd) }}
+        />
+      )}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { isAxiosError } from 'axios';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Button, Card, CardSkeleton, useToast } from '@/components/ui';
-import { Seo } from '@/components/Seo';
+import { Seo, SITE_URL } from '@/components/Seo';
 import { useAuth } from '@/features/auth/auth.store';
 import { Role } from '@/types/roles';
 import { useApplyToJob, useJob } from '../jobs.api';
@@ -48,6 +48,41 @@ export default function JobDetailPage() {
           title={`${job.designation} at ${job.company}`}
           description={`Apply for ${job.designation} at ${job.company}. ${job.city ? `Location: ${job.city}.` : ''} Find your next career opportunity on Aajiveka.`}
           path={`/jobs/${id}`}
+          jsonLd={{
+            '@context': 'https://schema.org',
+            '@type': 'JobPosting',
+            title: job.designation,
+            description: `${job.designation} at ${job.company}`,
+            datePosted: job.postedOn,
+            hiringOrganization: {
+              '@type': 'Organization',
+              name: job.company,
+            },
+            jobLocation: {
+              '@type': 'Place',
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: job.city,
+                addressCountry: 'IN',
+              },
+            },
+            baseSalary: {
+              '@type': 'MonetaryAmount',
+              currency: 'INR',
+              value: {
+                '@type': 'QuantitativeValue',
+                minValue: job.minCtc,
+                maxValue: job.maxCtc,
+                unitText: 'YEAR',
+              },
+            },
+            employmentType: job.employmentType?.toUpperCase().replace(/\s+/g, '_'),
+            experienceRequirements: {
+              '@type': 'OccupationalExperienceRequirements',
+              monthsOfExperience: job.minExp * 12,
+            },
+            url: `${SITE_URL}/jobs/${id}`,
+          }}
         />
       )}
       <div className="container max-w-3xl">
