@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { AppProviders } from './app/providers';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { RootFallback } from './components/RootFallback';
 import { PwaReloadPrompt } from './components/PwaReloadPrompt';
 import { router } from './routes/router';
 import { env } from './lib/env';
@@ -17,10 +19,12 @@ async function bootstrap() {
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-      <AppProviders>
-        <RouterProvider router={router} />
-        <PwaReloadPrompt />
-      </AppProviders>
+      <ErrorBoundary fallback={<RootFallback />}>
+        <AppProviders>
+          <RouterProvider router={router} />
+          <PwaReloadPrompt />
+        </AppProviders>
+      </ErrorBoundary>
     </React.StrictMode>,
   );
 }

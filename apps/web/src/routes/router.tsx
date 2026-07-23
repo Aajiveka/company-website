@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from './ProtectedRoute';
+import { RouteErrorFallback, DashboardErrorFallback } from '@/components/ErrorFallback';
 import { Loader } from '@/components/ui';
 import { Role } from '@/types/roles';
 
@@ -53,6 +54,7 @@ const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>
 export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
+    errorElement: <RouteErrorFallback />,
     children: [
       { path: '/', element: withSuspense(<HomePage />) },
       { path: '/login', element: withSuspense(<LoginPage />) },
@@ -80,6 +82,7 @@ export const router = createBrowserRouter([
     children: [
       {
         element: <DashboardLayout />,
+        errorElement: <DashboardErrorFallback />,
         children: [
           // Candidate
           {
