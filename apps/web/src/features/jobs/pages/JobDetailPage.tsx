@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Breadcrumbs, Button, Card, CardSkeleton, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, JobCardSkeleton, useToast } from '@/components/ui';
 import { Seo, SITE_URL } from '@/components/Seo';
 import { useAuth } from '@/features/auth/auth.store';
 import { Role } from '@/types/roles';
@@ -89,7 +89,7 @@ export default function JobDetailPage() {
         <Breadcrumbs items={[{ label: t('detail.breadcrumbJobs'), to: '/jobs' }, { label: t('detail.breadcrumbDetails') }]} />
 
         {isLoading || !job ? (
-          <CardSkeleton />
+          <JobCardSkeleton />
         ) : (
           <Card>
             <div className="flex flex-wrap items-start justify-between gap-4">

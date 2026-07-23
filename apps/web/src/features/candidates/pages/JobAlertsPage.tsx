@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Bell, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Badge, Breadcrumbs, Button, Card, Input, Select, useToast } from '@/components/ui';
+import { AlertListSkeleton, Badge, Breadcrumbs, Button, Card, Input, Select, useToast } from '@/components/ui';
 import { useCreateJobAlert, useJobAlerts } from '../candidate.api';
 
 const schema = (t: TFunction) => z.object({
@@ -62,7 +62,7 @@ export default function JobAlertsPage() {
 
       <div className="space-y-3">
         {isLoading ? (
-          <Card>{t('alerts.loading')}</Card>
+          <AlertListSkeleton />
         ) : (
           (alerts ?? []).map((a) => (
             <Card key={a.alertId} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

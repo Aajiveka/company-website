@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardSkeleton, Pagination } from '@/components/ui';
+import { Card, JobCardSkeleton, Pagination } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '@/features/public/components/PageBanner';
 import { JobSearchBar } from '../components/JobSearchBar';
@@ -104,9 +104,9 @@ export default function JobSearchPage() {
 
           {isLoading ? (
             <div className="space-y-4">
-              <CardSkeleton />
-              <CardSkeleton />
-              <CardSkeleton />
+              <JobCardSkeleton />
+              <JobCardSkeleton />
+              <JobCardSkeleton />
             </div>
           ) : data && data.rows.length > 0 ? (
             <>

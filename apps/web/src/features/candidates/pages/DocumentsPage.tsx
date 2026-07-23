@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { FileText, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Badge, Breadcrumbs, Card, statusTone, useToast } from '@/components/ui';
+import { Badge, Breadcrumbs, Card, DocumentListSkeleton, statusTone, useToast } from '@/components/ui';
 import { useCandidateDocuments, useUploadCandidateDocument } from '../candidate.api';
 
 /** Candidate — document upload & status (candidate-doc.aspx). */
@@ -42,7 +42,7 @@ export default function DocumentsPage() {
       <input ref={fileRef} type="file" className="hidden" onChange={onFile} aria-hidden />
 
       {isLoading ? (
-        <Card>{t('documents.loading')}</Card>
+        <DocumentListSkeleton />
       ) : (data ?? []).length === 0 ? (
         <Card className="text-center text-gray-500">
           {t('documents.noDocuments')} {t('documents.recruiterNote')}

@@ -6,7 +6,7 @@ import { isAxiosError } from 'axios';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Breadcrumbs, Button, Card, CardSkeleton, Input, Select, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, CvManagerSkeleton, Input, Select, useToast } from '@/components/ui';
 import {
   useCvEditProfile,
   useCvMasters,
@@ -564,7 +564,7 @@ export default function CvManagerPage() {
       <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{t('cv.heading')}</h1>
 
       {isLoading || !data ? (
-        <CardSkeleton />
+        <CvManagerSkeleton />
       ) : (
         <div className="space-y-6">
           <PersonalSection

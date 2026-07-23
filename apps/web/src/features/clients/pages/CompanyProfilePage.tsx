@@ -1,6 +1,6 @@
 import { Globe, Mail, MapPin, Phone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Breadcrumbs, Card, CardSkeleton, Table, type Column } from '@/components/ui';
+import { Breadcrumbs, Card, CompanyProfileSkeleton, Table, type Column } from '@/components/ui';
 import { useCompanyJobs, useCompanyProfile } from '../client.api';
 import type { JobListing } from '../client.types';
 
@@ -35,7 +35,7 @@ export default function CompanyProfilePage() {
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/company/profile' }, { label: t('company.heading') }]} />
 
       {isLoading || !company ? (
-        <CardSkeleton />
+        <CompanyProfileSkeleton />
       ) : (
         <Card className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-center">
           <img

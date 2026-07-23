@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Briefcase, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import { isAxiosError } from 'axios';
-import { Badge, Breadcrumbs, Button, Card, CardSkeleton, Modal, Select, statusTone } from '@/components/ui';
+import { Badge, Breadcrumbs, Button, Card, ProfileSkeleton, Modal, Select, statusTone } from '@/components/ui';
 import { useToast } from '@/components/ui';
 import {
   useActiveJobs,
@@ -72,7 +72,7 @@ export default function CandidateDetailsPage() {
       <Breadcrumbs items={[{ label: 'Candidates', to: '/recruitment/candidates' }, { label: 'Candidate Details' }]} />
 
       {isLoading || !data ? (
-        <CardSkeleton />
+        <ProfileSkeleton />
       ) : (
         <div className="space-y-6">
           <Card className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
