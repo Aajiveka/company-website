@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, HierarchicalSelect } from '@/components/ui';
 import { useJobFilters } from '../jobs.api';
 
@@ -12,6 +13,7 @@ export interface JobSearchBarProps {
 export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: JobSearchBarProps) {
   const navigate = useNavigate();
   const { data } = useJobFilters();
+  const { t } = useTranslation('jobs');
   const [designation, setDesignation] = useState(initialDesignation);
   const [location, setLocation] = useState(initialLocation);
 
@@ -36,7 +38,7 @@ export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: 
           value={designation}
           onChange={(e) => setDesignation(e.target.value)}
         >
-          <option value="">Role / keyword</option>
+          <option value="">{t('search.rolePlaceholder')}</option>
           {data?.designations.map((d) => (
             <option key={d} value={d}>
               {d}
@@ -50,7 +52,7 @@ export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: 
           groups={data?.cityByState ?? {}}
           value={location}
           onChange={(city) => setLocation(city)}
-          placeholder="Select Location"
+          placeholder={t('search.locationPlaceholder')}
           formatValue={(city, state) => `${city}, ${state}`}
           icon={<MapPin className="h-5 w-5 shrink-0 text-primary" aria-hidden />}
           aria-label="Location"
@@ -58,7 +60,7 @@ export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: 
       </div>
 
       <Button type="submit" className="w-full lg:w-auto">
-        Search my job
+        {t('search.searchButton')}
       </Button>
     </form>
   );

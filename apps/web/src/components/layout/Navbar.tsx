@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 /**
  * Public site header — mirrors FrontMaster.Master:
@@ -9,6 +11,7 @@ import { Button } from '@/components/ui';
  */
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY >= 100);
@@ -30,34 +33,35 @@ export function Navbar() {
             <img src="/image/logo.svg" alt="Aajiveka" className="h-12 w-auto sm:h-16" />
           </Link>
           <span className="hidden font-bold text-white md:inline">
-            Toll Free No: <span className="font-normal">18003093346</span>
+            {t('nav.tollFree')} <span className="font-normal">{t('nav.tollFreeNumber')}</span>
           </span>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+          <LanguageSwitcher />
           <Link to="/">
             <Button variant="accent" size="sm">
-              Home
+              {t('nav.home')}
             </Button>
           </Link>
           <Link to="/jobs">
             <Button variant="accent" size="sm">
-              Find Jobs
+              {t('nav.findJobs')}
             </Button>
           </Link>
           <Link to="/register" className="hidden sm:block">
             <Button variant="accent" size="sm">
-              Register Now
+              {t('nav.registerNow')}
             </Button>
           </Link>
           <Link to="/login" className="hidden md:block">
             <Button variant="accent" size="sm">
-              Employer Login
+              {t('nav.employerLogin')}
             </Button>
           </Link>
           <Link to="/pricing" className="hidden sm:block">
             <Button variant="accent" size="sm">
-              Subscribe Now
+              {t('nav.subscribeNow')}
             </Button>
           </Link>
         </div>

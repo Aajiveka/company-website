@@ -5,6 +5,7 @@ import { AppProviders } from './app/providers';
 import { PwaReloadPrompt } from './components/PwaReloadPrompt';
 import { router } from './routes/router';
 import { env } from './lib/env';
+import './lib/i18n';
 import './styles/index.css';
 
 async function bootstrap() {

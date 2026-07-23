@@ -1,0 +1,67 @@
+{
+  "nav": {
+    "home": "होम",
+    "findJobs": "नौकरी खोजें",
+    "registerNow": "रजिस्टर करें",
+    "employerLogin": "नियोक्ता लॉगिन",
+    "subscribeNow": "सब्सक्राइब करें",
+    "tollFree": "टोल फ्री नं:",
+    "tollFreeNumber": "18003093346"
+  },
+  "footer": {
+    "followUs": "हमें फ़ॉलो करें:",
+    "aboutUs": "हमारे बारे में",
+    "testimonial": "प्रशंसापत्र",
+    "pricing": "मूल्य निर्धारण",
+    "contactUs": "संपर्क करें",
+    "blog": "ब्लॉग",
+    "careerWithUs": "हमारे साथ करियर",
+    "services": "सेवाएँ",
+    "privacyPolicy": "गोपनीयता नीति",
+    "termsAndConditions": "नियम और शर्तें",
+    "subscriptionBenefits": "सदस्यता लाभ",
+    "copyright": "© {{year}} आजीवेका। सर्वाधिकार सुरक्षित।"
+  },
+  "sidebar": {
+    "myProfile": "मेरी प्रोफ़ाइल",
+    "cvManager": "सीवी प्रबंधक",
+    "appliedJobs": "आवेदित नौकरियाँ",
+    "jobAlerts": "नौकरी अलर्ट",
+    "documents": "दस्तावेज़",
+    "changePassword": "पासवर्ड बदलें",
+    "qcDashboard": "क्यूसी डैशबोर्ड",
+    "candidates": "उम्मीदवार",
+    "interviews": "साक्षात्कार",
+    "companyProfile": "कंपनी प्रोफ़ाइल",
+    "manageJobs": "नौकरियाँ प्रबंधित करें",
+    "postAJob": "नौकरी पोस्ट करें",
+    "applicants": "आवेदक",
+    "pricing": "मूल्य निर्धारण"
+  },
+  "actions": {
+    "search": "खोजें",
+    "submit": "जमा करें",
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "close": "बंद करें",
+    "back": "वापस",
+    "next": "आगे",
+    "loading": "लोड हो रहा है…",
+    "knowMore": "और जानें",
+    "getStarted": "शुरू करें",
+    "readMore": "और पढ़ें"
+  },
+  "notFound": {
+    "title": "404",
+    "heading": "पेज नहीं मिला",
+    "message": "आप जो पेज ढूंढ रहे हैं वह मौजूद नहीं है या स्थानांतरित हो गया है।",
+    "backHome": "होम पर वापस जाएं"
+  },
+  "language": {
+    "en": "English",
+    "hi": "हिन्दी",
+    "label": "भाषा"
+  }
+}

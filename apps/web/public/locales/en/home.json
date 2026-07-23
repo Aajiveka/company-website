@@ -1,0 +1,38 @@
+{
+  "hero": {
+    "title": "Unlock your Potential with Aajiveka - Your Ultimate Career Partner"
+  },
+  "about": {
+    "heading": "About Aajevika",
+    "text": "\"Aajiveka\", which ultimately means a basic necessity for any individual to sustain themselves and achieve financial stability. In this technology-driven era, Aajiveka is a next-gen leading job portal in India, connecting talented professionals with top-notch employers to help them achieve their career aspirations. Aajiveka's motive is to foster a win-win situation for both employers and job seekers and contribute to the overall economic growth of the country."
+  },
+  "story": {
+    "heading": "Our Story",
+    "text1": "Aajiveka was founded with a vision to revolutionize the recruitment industry in India by reaping the richness of innovative technologies. We bridge the gap between job seekers and employers with a user-friendly platform powered by AI and ML algorithms, combining manual and digital methods.",
+    "text2": "Rooted in the recruitment industry for years, we are one of the most trusted and reliable job portals in India, having helped thousands of job seekers find their dream jobs.",
+    "tagline": "Empowering Careers, Transforming Lives."
+  },
+  "philosophy": {
+    "heading": "Our Philosophy",
+    "text1": "At Aajiveka, we believe in creating an inclusive and diverse platform that fosters growth and development for all. We are committed to providing equal opportunities to all candidates, assessed on their unique skills and potential.",
+    "text2": "Candidates can begin by simply signing up: create an account, add a skill set, and upload a resume and documents to seamlessly start applying to the best suitable jobs.",
+    "text3": "We have a dedicated pool of career counselors and experts who deeply evaluate the skills of each candidate and help in writing a resume. We assign a dedicated AI career assistant to stand by your side, from creating a free resume to finding the right jobs.",
+    "text4": "We maintain transparency and integrity in all our dealings, take your privacy as the top priority, and never sell the database to corporates and big firms."
+  },
+  "service": {
+    "heading": "Our Service",
+    "subtext": "We offer a wide range of services to both job seekers and employers, including:",
+    "advancedSearch": "Advanced Job Search Engine",
+    "advancedSearchText": "Our platform offers a comprehensive job search feature that allows candidates to filter jobs based on their preferences and apply for the ones that match their skills and qualifications.",
+    "jobPosting": "Job Posting",
+    "jobPostingText": "We offer a user-friendly feature that enables employers to post job openings and attract top talent from our pool of candidates.",
+    "resumeBuilder": "Resume Builder",
+    "resumeBuilderText": "We provide an easy-to-use AI-powered resume builder tool that helps candidates create professional and compelling resumes that increase the chances of getting noticed by employers.",
+    "employerBranding": "Employer Branding",
+    "employerBrandingText": "We help companies build a strong employer brand by showcasing their culture, values, and work environment to attract the best talent.",
+    "resumeDatabase": "Resume Database",
+    "resumeDatabaseText": "Our extensive resume database allows employers to search for and shortlist candidates based on their skills, qualifications, and experience.",
+    "careerAdvice": "Career Advice",
+    "careerAdviceText": "By creating an account with Aajiveka, students can get the best career advice without any hassle. We have a 24/7 chatbot available on the portal that offers valuable career guidance."
+  }
+}

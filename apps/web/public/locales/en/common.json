@@ -1,0 +1,67 @@
+{
+  "nav": {
+    "home": "Home",
+    "findJobs": "Find Jobs",
+    "registerNow": "Register Now",
+    "employerLogin": "Employer Login",
+    "subscribeNow": "Subscribe Now",
+    "tollFree": "Toll Free No:",
+    "tollFreeNumber": "18003093346"
+  },
+  "footer": {
+    "followUs": "Follow us on :",
+    "aboutUs": "About Us",
+    "testimonial": "Testimonial",
+    "pricing": "Pricing",
+    "contactUs": "Contact Us",
+    "blog": "Blog",
+    "careerWithUs": "Career with us",
+    "services": "Services",
+    "privacyPolicy": "Privacy Policy",
+    "termsAndConditions": "Terms and Conditions",
+    "subscriptionBenefits": "Subscription Benefits",
+    "copyright": "© {{year}} Aajiveka. All rights reserved."
+  },
+  "sidebar": {
+    "myProfile": "My Profile",
+    "cvManager": "CV Manager",
+    "appliedJobs": "Applied Jobs",
+    "jobAlerts": "Job Alerts",
+    "documents": "Documents",
+    "changePassword": "Change Password",
+    "qcDashboard": "QC Dashboard",
+    "candidates": "Candidates",
+    "interviews": "Interviews",
+    "companyProfile": "Company Profile",
+    "manageJobs": "Manage Jobs",
+    "postAJob": "Post a Job",
+    "applicants": "Applicants",
+    "pricing": "Pricing"
+  },
+  "actions": {
+    "search": "Search",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading…",
+    "knowMore": "Know More",
+    "getStarted": "Get Started",
+    "readMore": "Read More"
+  },
+  "notFound": {
+    "title": "404",
+    "heading": "Page not found",
+    "message": "The page you are looking for doesn't exist or has moved.",
+    "backHome": "Back to home"
+  },
+  "language": {
+    "en": "English",
+    "hi": "हिन्दी",
+    "label": "Language"
+  }
+}

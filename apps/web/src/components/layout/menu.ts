@@ -14,47 +14,47 @@ import {
 import { Role, type RoleId } from '@/types/roles';
 
 export interface MenuItem {
-  label: string;
+  /** Translation key under the "common" namespace → sidebar.* */
+  i18nKey: string;
   to: string;
   icon: LucideIcon;
 }
 
 /**
- * Role-gated sidebar menus. In the reference these come from
- * `spMakeTreeMenu` / `tblSecMenuHierarchyRoles`; here they are declared
- * per role and can later be hydrated from the API's /menu endpoint.
+ * Role-gated sidebar menus. Labels are now i18n keys resolved at render time
+ * via `t(`sidebar.${item.i18nKey}`)`.
  */
 const MENUS: Record<RoleId, MenuItem[]> = {
   [Role.Subscriber]: [
-    { label: 'My Profile', to: '/candidate/profile', icon: LayoutDashboard },
-    { label: 'CV Manager', to: '/candidate/cv-manager', icon: FileText },
-    { label: 'Applied Jobs', to: '/candidate/applied-jobs', icon: Briefcase },
-    { label: 'Job Alerts', to: '/candidate/job-alerts', icon: Bell },
-    { label: 'Documents', to: '/candidate/documents', icon: Upload },
-    { label: 'Change Password', to: '/candidate/change-password', icon: KeyRound },
+    { i18nKey: 'myProfile', to: '/candidate/profile', icon: LayoutDashboard },
+    { i18nKey: 'cvManager', to: '/candidate/cv-manager', icon: FileText },
+    { i18nKey: 'appliedJobs', to: '/candidate/applied-jobs', icon: Briefcase },
+    { i18nKey: 'jobAlerts', to: '/candidate/job-alerts', icon: Bell },
+    { i18nKey: 'documents', to: '/candidate/documents', icon: Upload },
+    { i18nKey: 'changePassword', to: '/candidate/change-password', icon: KeyRound },
   ],
   [Role.QC1]: [
-    { label: 'QC Dashboard', to: '/recruitment/qc1', icon: LayoutDashboard },
-    { label: 'Candidates', to: '/recruitment/candidates', icon: Users },
-    { label: 'Documents', to: '/recruitment/documents', icon: FileCheck2 },
-    { label: 'Interviews', to: '/recruitment/interviews', icon: CalendarClock },
+    { i18nKey: 'qcDashboard', to: '/recruitment/qc1', icon: LayoutDashboard },
+    { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
+    { i18nKey: 'documents', to: '/recruitment/documents', icon: FileCheck2 },
+    { i18nKey: 'interviews', to: '/recruitment/interviews', icon: CalendarClock },
   ],
   [Role.QC2]: [
-    { label: 'Candidates', to: '/recruitment/candidates', icon: Users },
-    { label: 'Documents', to: '/recruitment/documents', icon: FileCheck2 },
+    { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
+    { i18nKey: 'documents', to: '/recruitment/documents', icon: FileCheck2 },
   ],
   [Role.Client]: [
-    { label: 'Company Profile', to: '/company/profile', icon: Building2 },
-    { label: 'Manage Jobs', to: '/company/jobs', icon: Briefcase },
-    { label: 'Post a Job', to: '/company/post-job', icon: FileText },
-    { label: 'Applicants', to: '/company/applicants', icon: Users },
+    { i18nKey: 'companyProfile', to: '/company/profile', icon: Building2 },
+    { i18nKey: 'manageJobs', to: '/company/jobs', icon: Briefcase },
+    { i18nKey: 'postAJob', to: '/company/post-job', icon: FileText },
+    { i18nKey: 'applicants', to: '/company/applicants', icon: Users },
   ],
   [Role.Admin]: [
-    { label: 'Company Profile', to: '/company/profile', icon: Building2 },
-    { label: 'Candidates', to: '/recruitment/candidates', icon: Users },
-    { label: 'Manage Jobs', to: '/company/jobs', icon: Briefcase },
+    { i18nKey: 'companyProfile', to: '/company/profile', icon: Building2 },
+    { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
+    { i18nKey: 'manageJobs', to: '/company/jobs', icon: Briefcase },
   ],
-  [Role.Subscription]: [{ label: 'Pricing', to: '/pricing', icon: FileText }],
+  [Role.Subscription]: [{ i18nKey: 'pricing', to: '/pricing', icon: FileText }],
 };
 
 export const getMenuForRole = (role: RoleId): MenuItem[] => MENUS[role] ?? [];

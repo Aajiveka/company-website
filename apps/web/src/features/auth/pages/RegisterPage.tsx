@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
@@ -17,14 +18,12 @@ const apiMessage = (err: unknown, fallback: string) =>
 
 /**
  * Candidate registration — full form (Full Name, Email, Mobile, Password) with OTP verification.
- * The backend register only takes the mobile (it texts an OTP); the rest of the form is held in
- * state and sent to verify-otp, which persists it when the account is created.
  */
 export default function RegisterPage() {
   const { notify } = useToast();
   const { setSession } = useAuth();
   const navigate = useNavigate();
-  // Once set, the account details are captured and we're on the OTP step.
+  const { t } = useTranslation('auth');
   const [pending, setPending] = useState<RegisterValues | null>(null);
   const [code, setCode] = useState('');
 
@@ -38,57 +37,55 @@ export default function RegisterPage() {
     mutationFn: authApi.register,
     onSuccess: (res, values) => {
       setPending(values);
-      // In dev (no SMS gateway) the API returns the code — pre-fill it and show it so the
-      // user can just click Verify. In production `devCode` is absent and this is a no-op.
       if (res.devCode) {
         setCode(res.devCode);
         notify(`Dev OTP: ${res.devCode}`, 'info');
       } else {
-        notify('OTP sent to your mobile number.', 'success');
+        notify(t('register.otpSent'), 'success');
       }
     },
-    onError: (err) => notify(apiMessage(err, 'Registration failed'), 'error'),
+    onError: (err) => notify(apiMessage(err, t('register.registrationFailed')), 'error'),
   });
 
   const otpMutation = useMutation({
     mutationFn: authApi.verifyOtp,
     onSuccess: (session) => {
       setSession(session);
-      notify('Account created!', 'success');
+      notify(t('register.accountCreated'), 'success');
       navigate(ROLE_HOME[session.user.roleId], { replace: true });
     },
-    onError: (err) => notify(apiMessage(err, 'Invalid OTP. Please try again.'), 'error'),
+    onError: (err) => notify(apiMessage(err, t('register.invalidOtp')), 'error'),
   });
 
   return (
     <>
     <Seo title="Register" description="Create your free Aajiveka account. Sign up as a candidate to search jobs, build your resume, and get matched with top employers." path="/register" noIndex />
     <AuthShell
-      title={pending ? 'Verify your mobile' : 'Create your account'}
-      subtitle={pending ? `Enter the 6-digit code sent to ${pending.mobile}` : 'Sign up as a candidate'}
+      title={pending ? t('register.otpTitle') : t('register.title')}
+      subtitle={pending ? t('register.otpSubtitle', { mobile: pending.mobile }) : t('register.subtitle')}
       footer={
         <>
-          Already registered?{' '}
+          {t('register.alreadyRegistered')}{' '}
           <Link to="/login" className="font-medium text-primary hover:underline">
-            Login
+            {t('register.loginLink')}
           </Link>
         </>
       }
     >
       {!pending ? (
         <form key="register-form" onSubmit={handleSubmit((v) => registerMutation.mutate(v))} className="space-y-4" noValidate>
-          <Input label="Full Name" error={errors.fullName?.message} {...register('fullName')} />
-          <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+          <Input label={t('register.fullName')} error={errors.fullName?.message} {...register('fullName')} />
+          <Input label={t('register.email')} type="email" error={errors.email?.message} {...register('email')} />
           <Input
-            label="Mobile Number"
+            label={t('register.mobileNumber')}
             inputMode="numeric"
-            placeholder="10-digit mobile number"
+            placeholder={t('register.mobilePlaceholder')}
             error={errors.mobile?.message}
             {...register('mobile')}
           />
-          <Input label="Password" type="password" error={errors.password?.message} {...register('password')} />
+          <Input label={t('register.password')} type="password" error={errors.password?.message} {...register('password')} />
           <Button type="submit" className="w-full" isLoading={registerMutation.isPending}>
-            Register
+            {t('register.registerButton')}
           </Button>
         </form>
       ) : (
@@ -107,15 +104,15 @@ export default function RegisterPage() {
           className="space-y-4"
         >
           <Input
-            label="One-Time Password"
+            label={t('register.otpLabel')}
             inputMode="numeric"
             maxLength={6}
-            placeholder="6-digit code"
+            placeholder={t('register.otpPlaceholder')}
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />
           <Button type="submit" className="w-full" isLoading={otpMutation.isPending}>
-            Verify &amp; Continue
+            {t('register.verifyButton')}
           </Button>
           <button
             type="button"
@@ -123,7 +120,7 @@ export default function RegisterPage() {
             className="block w-full text-center text-sm text-primary hover:underline"
             disabled={registerMutation.isPending}
           >
-            Resend code
+            {t('register.resendCode')}
           </button>
         </form>
       )}

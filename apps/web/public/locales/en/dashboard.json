@@ -1,0 +1,80 @@
+{
+  "profile": {
+    "heading": "My Profile",
+    "dashboard": "Dashboard",
+    "loadError": "Unable to load your profile. Please try again.",
+    "skills": "Skills",
+    "experience": "Experience",
+    "education": "Education"
+  },
+  "cv": {
+    "heading": "CV Manager",
+    "personalDetails": "Personal Details",
+    "fullName": "Full Name",
+    "email": "Email",
+    "mobile": "Mobile",
+    "dob": "Date of Birth",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "state": "State",
+    "districtCity": "District / City",
+    "address": "Address",
+    "professionalDetails": "Professional Details",
+    "designation": "Designation / Function",
+    "industry": "Industry",
+    "primarySkill": "Primary Skill",
+    "totalExperience": "Total Experience (yrs)",
+    "currentCtc": "Current CTC (₹)",
+    "currentState": "Current State",
+    "noticePeriod": "Notice Period (days)",
+    "readyToRelocate": "Ready to relocate",
+    "preferredLocations": "Preferred Locations",
+    "skillsCsv": "Skills (comma separated)",
+    "educationSection": "Education",
+    "employmentHistory": "Employment History",
+    "certificates": "Certificates",
+    "personalSaved": "Personal details saved.",
+    "professionalSaved": "Professional details saved.",
+    "educationSaved": "Education saved.",
+    "employmentRemoved": "Employment removed.",
+    "certificateSaved": "Certificate saved."
+  },
+  "appliedJobs": {
+    "heading": "Applied Jobs",
+    "noJobs": "You haven't applied to any jobs yet."
+  },
+  "documents": {
+    "heading": "My Documents",
+    "noDocuments": "No documents have been requested yet.",
+    "recruiterNote": "Your recruiter will let you know what to upload.",
+    "uploaded": "Uploaded {{date}}",
+    "notUploaded": "Not uploaded",
+    "upload": "Upload",
+    "reUpload": "Re-upload"
+  },
+  "applicants": {
+    "heading": "Applicants",
+    "noApplicants": "No applicants yet.",
+    "shortlist": "Shortlist",
+    "reject": "Reject",
+    "shortlisted": "Applicant shortlisted.",
+    "rejected": "Applicant rejected."
+  },
+  "company": {
+    "heading": "Company Profile",
+    "postedJobs": "Posted Jobs",
+    "noJobs": "No jobs posted yet."
+  },
+  "candidates": {
+    "heading": "Candidates",
+    "searchPlaceholder": "Search by name or designation…",
+    "allStatuses": "All statuses",
+    "count": "{{count}} candidates",
+    "noMatch": "No candidates match your filters.",
+    "applied": "Applied",
+    "shortlisted": "Shortlisted",
+    "interview": "Interview",
+    "rejected": "Rejected"
+  }
+}

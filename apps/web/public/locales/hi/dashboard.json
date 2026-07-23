@@ -1,0 +1,80 @@
+{
+  "profile": {
+    "heading": "मेरी प्रोफ़ाइल",
+    "dashboard": "डैशबोर्ड",
+    "loadError": "आपकी प्रोफ़ाइल लोड नहीं हो सकी। कृपया पुनः प्रयास करें।",
+    "skills": "कौशल",
+    "experience": "अनुभव",
+    "education": "शिक्षा"
+  },
+  "cv": {
+    "heading": "सीवी प्रबंधक",
+    "personalDetails": "व्यक्तिगत विवरण",
+    "fullName": "पूरा नाम",
+    "email": "ईमेल",
+    "mobile": "मोबाइल",
+    "dob": "जन्म तिथि",
+    "gender": "लिंग",
+    "male": "पुरुष",
+    "female": "महिला",
+    "state": "राज्य",
+    "districtCity": "जिला / शहर",
+    "address": "पता",
+    "professionalDetails": "पेशेवर विवरण",
+    "designation": "पदनाम / कार्य",
+    "industry": "उद्योग",
+    "primarySkill": "प्राथमिक कौशल",
+    "totalExperience": "कुल अनुभव (वर्ष)",
+    "currentCtc": "वर्तमान CTC (₹)",
+    "currentState": "वर्तमान राज्य",
+    "noticePeriod": "नोटिस अवधि (दिन)",
+    "readyToRelocate": "स्थानांतरित होने के लिए तैयार",
+    "preferredLocations": "पसंदीदा स्थान",
+    "skillsCsv": "कौशल (अल्पविराम से अलग)",
+    "educationSection": "शिक्षा",
+    "employmentHistory": "रोज़गार इतिहास",
+    "certificates": "प्रमाणपत्र",
+    "personalSaved": "व्यक्तिगत विवरण सहेजा गया।",
+    "professionalSaved": "पेशेवर विवरण सहेजा गया।",
+    "educationSaved": "शिक्षा सहेजी गई।",
+    "employmentRemoved": "रोज़गार हटाया गया।",
+    "certificateSaved": "प्रमाणपत्र सहेजा गया।"
+  },
+  "appliedJobs": {
+    "heading": "आवेदित नौकरियाँ",
+    "noJobs": "आपने अभी तक किसी नौकरी के लिए आवेदन नहीं किया है।"
+  },
+  "documents": {
+    "heading": "मेरे दस्तावेज़",
+    "noDocuments": "अभी तक कोई दस्तावेज़ का अनुरोध नहीं किया गया है।",
+    "recruiterNote": "आपका रिक्रूटर आपको बताएगा कि क्या अपलोड करना है।",
+    "uploaded": "{{date}} को अपलोड किया गया",
+    "notUploaded": "अपलोड नहीं किया गया",
+    "upload": "अपलोड",
+    "reUpload": "पुनः अपलोड"
+  },
+  "applicants": {
+    "heading": "आवेदक",
+    "noApplicants": "अभी तक कोई आवेदक नहीं।",
+    "shortlist": "शॉर्टलिस्ट",
+    "reject": "अस्वीकार",
+    "shortlisted": "आवेदक शॉर्टलिस्ट किया गया।",
+    "rejected": "आवेदक अस्वीकार किया गया।"
+  },
+  "company": {
+    "heading": "कंपनी प्रोफ़ाइल",
+    "postedJobs": "पोस्ट की गई नौकरियाँ",
+    "noJobs": "अभी तक कोई नौकरी पोस्ट नहीं की गई।"
+  },
+  "candidates": {
+    "heading": "उम्मीदवार",
+    "searchPlaceholder": "नाम या पदनाम से खोजें…",
+    "allStatuses": "सभी स्थिति",
+    "count": "{{count}} उम्मीदवार",
+    "noMatch": "आपके फ़िल्टर से कोई उम्मीदवार मेल नहीं खाता।",
+    "applied": "आवेदित",
+    "shortlisted": "शॉर्टलिस्ट",
+    "interview": "साक्षात्कार",
+    "rejected": "अस्वीकृत"
+  }
+}

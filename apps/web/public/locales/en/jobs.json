@@ -1,0 +1,65 @@
+{
+  "search": {
+    "heading": "Find your next role",
+    "rolePlaceholder": "Role / keyword",
+    "locationPlaceholder": "Select Location",
+    "searchButton": "Search my job",
+    "searching": "Searching…",
+    "jobsFound": "{{count}} job found",
+    "jobsFound_other": "{{count}} jobs found",
+    "forDesignation": "for \"{{designation}}\"",
+    "noMatch": "No jobs match your search.",
+    "tryDifferent": "Try a different function or location."
+  },
+  "detail": {
+    "breadcrumbJobs": "Jobs",
+    "breadcrumbDetails": "Job Details",
+    "applyNow": "Apply Now",
+    "applying": "Applying…",
+    "alreadyApplied": "You've applied to this job.",
+    "candidateOnly": "Only candidate accounts can apply to jobs.",
+    "applicationFailed": "Could not submit your application",
+    "applicationSuccess": "Application submitted."
+  },
+  "post": {
+    "postTitle": "Post a Job",
+    "editTitle": "Edit Job",
+    "designation": "Designation",
+    "state": "State",
+    "districtCity": "District / City",
+    "workMode": "Work Mode",
+    "employmentType": "Employment Type",
+    "minExperience": "Minimum Experience (yrs)",
+    "minCtc": "Min CTC (₹)",
+    "maxCtc": "Max CTC (₹)",
+    "description": "Job Description",
+    "publishButton": "Publish Job",
+    "saveButton": "Save Changes",
+    "postSuccess": "Job posted successfully.",
+    "updateSuccess": "Job updated successfully."
+  },
+  "manage": {
+    "heading": "Manage Jobs",
+    "postJob": "Post a Job",
+    "noJobs": "No jobs posted yet.",
+    "closeConfirm": "Close this job posting?",
+    "closeWarning": "{{title}} will no longer accept applicants.",
+    "closeNote": "This can't be undone from here.",
+    "closeButton": "Close Job",
+    "closedSuccess": "Job closed."
+  },
+  "alerts": {
+    "heading": "Job Alerts",
+    "keyword": "Keyword",
+    "keywordPlaceholder": "e.g. React Developer",
+    "location": "Location",
+    "locationPlaceholder": "e.g. Pune",
+    "frequency": "Frequency",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "createButton": "Create Alert",
+    "loading": "Loading alerts…",
+    "created": "Job alert created.",
+    "removed": "Alert removed."
+  }
+}

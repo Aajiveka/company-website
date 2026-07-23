@@ -1,0 +1,65 @@
+{
+  "search": {
+    "heading": "अपनी अगली भूमिका खोजें",
+    "rolePlaceholder": "भूमिका / कीवर्ड",
+    "locationPlaceholder": "स्थान चुनें",
+    "searchButton": "नौकरी खोजें",
+    "searching": "खोज रहा है…",
+    "jobsFound": "{{count}} नौकरी मिली",
+    "jobsFound_other": "{{count}} नौकरियाँ मिलीं",
+    "forDesignation": "\"{{designation}}\" के लिए",
+    "noMatch": "आपकी खोज से कोई नौकरी मेल नहीं खाती।",
+    "tryDifferent": "कोई अलग फंक्शन या स्थान आज़माएं।"
+  },
+  "detail": {
+    "breadcrumbJobs": "नौकरियाँ",
+    "breadcrumbDetails": "नौकरी विवरण",
+    "applyNow": "अभी आवेदन करें",
+    "applying": "आवेदन हो रहा है…",
+    "alreadyApplied": "आपने इस नौकरी के लिए आवेदन कर दिया है।",
+    "candidateOnly": "केवल उम्मीदवार अकाउंट ही नौकरियों के लिए आवेदन कर सकते हैं।",
+    "applicationFailed": "आपका आवेदन जमा नहीं हो सका",
+    "applicationSuccess": "आवेदन जमा हो गया।"
+  },
+  "post": {
+    "postTitle": "नौकरी पोस्ट करें",
+    "editTitle": "नौकरी संपादित करें",
+    "designation": "पदनाम",
+    "state": "राज्य",
+    "districtCity": "जिला / शहर",
+    "workMode": "कार्य मोड",
+    "employmentType": "रोज़गार प्रकार",
+    "minExperience": "न्यूनतम अनुभव (वर्ष)",
+    "minCtc": "न्यूनतम CTC (₹)",
+    "maxCtc": "अधिकतम CTC (₹)",
+    "description": "नौकरी विवरण",
+    "publishButton": "नौकरी प्रकाशित करें",
+    "saveButton": "परिवर्तन सहेजें",
+    "postSuccess": "नौकरी सफलतापूर्वक पोस्ट हो गई।",
+    "updateSuccess": "नौकरी सफलतापूर्वक अपडेट हो गई।"
+  },
+  "manage": {
+    "heading": "नौकरियाँ प्रबंधित करें",
+    "postJob": "नौकरी पोस्ट करें",
+    "noJobs": "अभी तक कोई नौकरी पोस्ट नहीं की गई।",
+    "closeConfirm": "इस नौकरी पोस्टिंग को बंद करें?",
+    "closeWarning": "{{title}} अब आवेदन स्वीकार नहीं करेगा।",
+    "closeNote": "यह यहाँ से पूर्ववत नहीं किया जा सकता।",
+    "closeButton": "नौकरी बंद करें",
+    "closedSuccess": "नौकरी बंद हो गई।"
+  },
+  "alerts": {
+    "heading": "नौकरी अलर्ट",
+    "keyword": "कीवर्ड",
+    "keywordPlaceholder": "जैसे React Developer",
+    "location": "स्थान",
+    "locationPlaceholder": "जैसे पुणे",
+    "frequency": "आवृत्ति",
+    "daily": "दैनिक",
+    "weekly": "साप्ताहिक",
+    "createButton": "अलर्ट बनाएं",
+    "loading": "अलर्ट लोड हो रहे हैं…",
+    "created": "नौकरी अलर्ट बनाया गया।",
+    "removed": "अलर्ट हटाया गया।"
+  }
+}

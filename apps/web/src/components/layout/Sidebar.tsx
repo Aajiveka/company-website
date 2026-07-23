@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { getMenuForRole } from './menu';
 import type { RoleId } from '@/types/roles';
@@ -6,6 +7,8 @@ import type { RoleId } from '@/types/roles';
 /** Role-gated dashboard sidebar. */
 export function Sidebar({ role, open }: { role: RoleId; open: boolean }) {
   const items = getMenuForRole(role);
+  const { t } = useTranslation();
+
   return (
     <aside
       className={cn(
@@ -14,7 +17,7 @@ export function Sidebar({ role, open }: { role: RoleId; open: boolean }) {
       )}
     >
       <nav className="flex flex-col gap-1 p-4">
-        {items.map(({ label, to, icon: Icon }) => (
+        {items.map(({ i18nKey, to, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -26,7 +29,7 @@ export function Sidebar({ role, open }: { role: RoleId; open: boolean }) {
             }
           >
             <Icon className="h-5 w-5" aria-hidden />
-            {label}
+            {t(`sidebar.${i18nKey}`)}
           </NavLink>
         ))}
       </nav>
