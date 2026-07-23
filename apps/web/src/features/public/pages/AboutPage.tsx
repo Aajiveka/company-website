@@ -35,14 +35,14 @@ export default function AboutPage() {
             <h2>{t('about.missionHeading')}</h2>
             <p className="mt-4 text-gray-600">{t('about.missionText')}</p>
           </div>
-          <img src="/image/mission.jpg" alt={t('about.missionHeading')} className="w-full rounded-lg" loading="lazy" />
+          <img src="/image/mission.webp" alt={t('about.missionHeading')} className="w-full rounded-lg" loading="lazy" />
         </div>
       </section>
 
       {/* Vision */}
       <section className="pb-8">
         <div className="container grid items-center gap-8 md:grid-cols-2">
-          <img src="/image/vision.png" alt={t('about.visionHeading')} className="w-full rounded-lg md:order-1" loading="lazy" />
+          <img src="/image/vision.webp" alt={t('about.visionHeading')} className="w-full rounded-lg md:order-1" loading="lazy" />
           <div className="md:order-2 md:pl-10">
             <h2>{t('about.visionHeading')}</h2>
             <p className="mt-4 text-gray-600">{t('about.visionText')}</p>
@@ -62,7 +62,7 @@ export default function AboutPage() {
               <Value title={t('about.customerCentricity')} text={t('about.customerCentricityText')} />
               <Value title={t('about.collaboration')} text={t('about.collaborationText')} />
             </div>
-            <img src="/image/value.png" alt={t('about.valueHeading')} className="w-full" loading="lazy" />
+            <img src="/image/value.webp" alt={t('about.valueHeading')} className="w-full" loading="lazy" />
             <div className="space-y-5">
               <Value title={t('about.innovation')} text={t('about.innovationText')} />
               <Value title={t('about.transparency')} text={t('about.transparencyText')} />

@@ -80,7 +80,7 @@
 @layer components {
   /* Public hero banner */
   .hero-banner {
-    background-image: url('/image/banner.jpg');
+    background-image: image-set(url('/image/banner.webp') type('image/webp'), url('/image/banner.jpg') type('image/jpeg'));
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;

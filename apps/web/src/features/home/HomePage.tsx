@@ -21,7 +21,7 @@ export default function HomePage() {
       {/* -------------------------------- Hero -------------------------------- */}
       <section className="hero-banner relative flex min-h-[28rem] items-center overflow-hidden md:h-[600px] lg:h-[745px]">
         <img
-          src="/image/slider_laptop.png"
+          src="/image/slider_laptop.webp"
           alt=""
           aria-hidden="true"
           className="pointer-events-none absolute bottom-0 right-[4%] z-0 hidden w-[38%] max-w-[519px] object-contain md:block lg:right-[8%]"
@@ -53,7 +53,7 @@ export default function HomePage() {
               <p className="mt-4 text-gray-600">{t('story.text1')}</p>
               <p className="mt-3 text-gray-600">{t('story.text2')}</p>
             </div>
-            <img src="/image/story.jpg" alt="Our story" className="w-full rounded-lg" loading="lazy" />
+            <img src="/image/story.webp" alt="Our story" className="w-full rounded-lg" loading="lazy" />
           </div>
           <div className="mt-6 text-center">
             <h3 className="font-heading text-2xl font-semibold text-primary">
@@ -75,7 +75,7 @@ export default function HomePage() {
             {[1, 2, 3, 4].map((n) => (
               <img
                 key={n}
-                src={`/image/philosophy${n}.png`}
+                src={`/image/philosophy${n}.webp`}
                 alt=""
                 className="w-full"
                 loading="lazy"

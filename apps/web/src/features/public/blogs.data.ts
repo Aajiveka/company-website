@@ -13,7 +13,7 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: 'write-an-effective-resume',
     title: 'How to Write An Effective Resume',
-    image: '/image/blog1.jpg',
+    image: '/image/blog1.webp',
     excerpt: 'A great resume opens doors. Learn how to structure yours to grab a recruiter’s attention in seconds.',
     date: 'June 12, 2026',
     author: 'Aajiveka Team',
@@ -26,7 +26,7 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: 'importance-of-soft-skills',
     title: 'The Importance of Soft Skills in the Workplace: What Employers Look For?',
-    image: '/image/blog2.jpg',
+    image: '/image/blog2.webp',
     excerpt: 'Technical ability gets you the interview — soft skills get you the job. Here’s what employers value most.',
     date: 'June 20, 2026',
     author: 'Aajiveka Team',
@@ -38,7 +38,7 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: 'ace-your-job-interview',
     title: 'How to Ace Your Job Interview: Common Questions and Best Answers',
-    image: '/image/blog3.jpg',
+    image: '/image/blog3.webp',
     excerpt: 'Preparation is the secret to interview confidence. Review the most common questions and how to answer them.',
     date: 'June 28, 2026',
     author: 'Aajiveka Team',
@@ -50,7 +50,7 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: 'top-industries-hiring',
     title: 'Top Industries Hiring in 2026',
-    image: '/image/blog4.jpg',
+    image: '/image/blog4.webp',
     excerpt: 'From technology to healthcare, discover which sectors are actively growing and hiring this year.',
     date: 'July 2, 2026',
     author: 'Aajiveka Team',
@@ -62,7 +62,7 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: 'optimize-resume-for-ats',
     title: 'Tips to Optimize Your Resume for Applicant Tracking Systems',
-    image: '/image/blog5.jpg',
+    image: '/image/blog5.webp',
     excerpt: 'Most resumes are screened by software before a human sees them. Learn how to get past the bots.',
     date: 'July 8, 2026',
     author: 'Aajiveka Team',

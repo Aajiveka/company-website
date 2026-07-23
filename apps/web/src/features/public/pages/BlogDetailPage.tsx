@@ -46,7 +46,7 @@ export default function BlogDetailPage() {
             <UserRound className="h-4 w-4" /> {post.author}
           </span>
         </div>
-        <img src={post.image} alt={post.title} className="mt-6 w-full rounded-2xl" />
+        <img src={post.image} alt={post.title} className="mt-6 w-full rounded-2xl" loading="lazy" />
         <div className="mt-8 space-y-4 text-gray-700">
           {post.body.map((p, i) => (
             <p key={i}>{p}</p>
