@@ -83,7 +83,9 @@
     "title": "404",
     "heading": "Page not found",
     "message": "The page you are looking for doesn't exist or has moved.",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "goBack": "Go back",
+    "browseJobs": "Or browse open jobs →"
   },
   "language": {
     "en": "English",
