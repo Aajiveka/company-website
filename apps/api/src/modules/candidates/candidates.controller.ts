@@ -138,6 +138,31 @@ export class CandidatesController {
     return this.candidates.createJobAlert(await this.candidates.subscriberIdFor(user.userId), dto);
   }
 
+  @Get('me/saved-jobs')
+  @ApiOperation({ summary: 'Saved / bookmarked jobs' })
+  async savedJobs(@CurrentUser() user: RequestUser) {
+    return this.candidates.savedJobs(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Get('me/saved-job-ids')
+  @ApiOperation({ summary: 'Just the job IDs the candidate has saved (for bookmark icons)' })
+  async savedJobIds(@CurrentUser() user: RequestUser) {
+    return this.candidates.savedJobIds(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Post('me/saved-jobs/:jobId')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Save / bookmark a job' })
+  async saveJob(@Param('jobId', ParseIntPipe) jobId: number, @CurrentUser() user: RequestUser) {
+    return this.candidates.saveJob(await this.candidates.subscriberIdFor(user.userId), jobId);
+  }
+
+  @Delete('me/saved-jobs/:jobId')
+  @ApiOperation({ summary: 'Remove a saved job bookmark' })
+  async unsaveJob(@Param('jobId', ParseIntPipe) jobId: number, @CurrentUser() user: RequestUser) {
+    return this.candidates.unsaveJob(await this.candidates.subscriberIdFor(user.userId), jobId);
+  }
+
   @Post('me/change-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Change password (verified against the Argon2 hash)' })

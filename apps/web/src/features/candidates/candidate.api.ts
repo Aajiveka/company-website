@@ -10,6 +10,7 @@ import type {
   CvPersonal,
   CvProfessional,
   JobAlert,
+  SavedJob,
 } from './candidate.types';
 
 const CV_EDIT_KEY = ['candidate', 'cv-edit'];
@@ -174,6 +175,46 @@ export function useCreateJobAlert() {
     mutationFn: (payload: Omit<JobAlert, 'alertId'>) =>
       api.post<JobAlert>('/candidates/me/job-alerts', payload).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['candidate', 'job-alerts'] }),
+  });
+}
+
+/** GET saved/bookmarked jobs. */
+export function useSavedJobs() {
+  return useQuery({
+    queryKey: ['candidate', 'saved-jobs'],
+    queryFn: () => api.get<SavedJob[]>('/candidates/me/saved-jobs').then((r) => r.data),
+  });
+}
+
+/** GET just the saved job IDs (for bookmark toggle icons). */
+export function useSavedJobIds() {
+  return useQuery({
+    queryKey: ['candidate', 'saved-job-ids'],
+    queryFn: () => api.get<number[]>('/candidates/me/saved-job-ids').then((r) => r.data),
+  });
+}
+
+/** Save / bookmark a job. */
+export function useSaveJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: number) => api.post(`/candidates/me/saved-jobs/${jobId}`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['candidate', 'saved-jobs'] });
+      qc.invalidateQueries({ queryKey: ['candidate', 'saved-job-ids'] });
+    },
+  });
+}
+
+/** Remove a saved job bookmark. */
+export function useUnsaveJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: number) => api.delete(`/candidates/me/saved-jobs/${jobId}`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['candidate', 'saved-jobs'] });
+      qc.invalidateQueries({ queryKey: ['candidate', 'saved-job-ids'] });
+    },
   });
 }
 

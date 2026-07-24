@@ -36,7 +36,8 @@
     "manageJobs": "नौकरियाँ प्रबंधित करें",
     "postAJob": "नौकरी पोस्ट करें",
     "applicants": "आवेदक",
-    "pricing": "मूल्य निर्धारण"
+    "pricing": "मूल्य निर्धारण",
+    "savedJobs": "सहेजी गई नौकरियाँ"
   },
   "actions": {
     "search": "खोजें",

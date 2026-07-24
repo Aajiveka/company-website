@@ -61,6 +61,22 @@ export interface JobAlert {
   frequency: 'Daily' | 'Weekly';
 }
 
+/** A job the candidate has bookmarked for later. */
+export interface SavedJob {
+  jobId: number;
+  designation: string;
+  company: string;
+  industry: string;
+  city: string;
+  workMode: string;
+  employmentType: string;
+  minExp: number;
+  minCtc: number;
+  maxCtc: number;
+  postedOn: string;
+  savedOn: string;
+}
+
 /** id-backed lookup lists for the CV editor. */
 export interface CvMasterOption {
   id: number;

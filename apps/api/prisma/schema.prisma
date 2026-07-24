@@ -119,6 +119,7 @@ model ClientJobs {
   JobSubscriberMapping         JobSubscriberMapping[]             @relation("JobSubscriberMappingToClientJobs")
   SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToClientJobs")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToClientJobs")
+  SavedJob                     SavedJob[]                         @relation("SavedJobToClientJobs")
   @@map("tblClientJobs")
 }
 
@@ -791,6 +792,7 @@ model SubscriberRegistration {
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToSubscriberRegistration")
   SubscriberTags               SubscriberTags[]                   @relation("SubscriberTagsToSubscriberRegistration")
   jobAlerts                    SubscriberJobAlert[]               @relation("SubscriberJobAlertToSubscriberRegistration")
+  SavedJob                     SavedJob[]                         @relation("SavedJobToSubscriberRegistration")
   SecUser                      SecUser?                           @relation("SecUserToSubscriberRegistration")
   PaymentOrder                 PaymentOrder[]                     @relation("PaymentOrderToSubscriberRegistration")
   Subscription                 Subscription[]                     @relation("SubscriptionToSubscriberRegistration")
@@ -854,6 +856,21 @@ model SubscriberJobAlert {
 
   @@index([subscriberID])
   @@map("tblSubscriberJobAlert")
+}
+
+/// Saved / bookmarked jobs — candidates can save jobs for later without applying.
+model SavedJob {
+  savedJobID                   BigInt                             @id @default(autoincrement()) @map("SavedJobID")
+  subscriberID                 BigInt                             @map("SubscriberID")
+  jobID                        BigInt                             @map("JobID")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+
+  subscriber                   SubscriberRegistration             @relation("SavedJobToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  job                          ClientJobs                         @relation("SavedJobToClientJobs", fields: [jobID], references: [jobID])
+
+  @@unique([subscriberID, jobID])
+  @@index([subscriberID])
+  @@map("tblSavedJob")
 }
 
 /// Password-reset tokens. tblForgotPassword EXISTS in the legacy DB but is useless — it is

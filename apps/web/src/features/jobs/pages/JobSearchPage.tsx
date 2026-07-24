@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Bookmark, Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, JobCardSkeleton, Pagination } from '@/components/ui';
 import { Seo } from '@/components/Seo';
+import { cn } from '@/lib/cn';
+import { useAuth } from '@/features/auth/auth.store';
+import { useSavedJobIds, useSaveJob, useUnsaveJob } from '@/features/candidates/candidate.api';
 import { PageBanner } from '@/features/public/components/PageBanner';
 import { JobSearchBar } from '../components/JobSearchBar';
 import { JobFiltersPanel, type FilterValues } from '../components/JobFilters';
@@ -15,7 +18,7 @@ const PAGE_SIZE = 10;
 /** CTC is stored in rupees; the listings show it in lakhs, like the reference site. */
 const lpa = (rupees: number) => (rupees / 100_000).toFixed(1).replace(/\.0$/, '');
 
-function JobCard({ job }: { job: PublicJob }) {
+function JobCard({ job, isSaved, onToggleSave }: { job: PublicJob; isSaved: boolean; onToggleSave: () => void }) {
   const { t } = useTranslation('jobs');
   return (
     <Link to={`/jobs/${job.jobId}`} className="block">
@@ -28,9 +31,21 @@ function JobCard({ job }: { job: PublicJob }) {
               {job.company}
             </p>
           </div>
-          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            {job.industry}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              {job.industry}
+            </span>
+            <button
+              onClick={(e) => { e.preventDefault(); onToggleSave(); }}
+              className={cn(
+                'rounded-lg p-1.5 transition',
+                isSaved ? 'text-primary' : 'text-gray-400 hover:text-primary',
+              )}
+              aria-label={isSaved ? 'Unsave job' : 'Save job'}
+            >
+              <Bookmark className={cn('h-4 w-4', isSaved && 'fill-current')} />
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
@@ -65,6 +80,11 @@ export default function JobSearchPage() {
   const { t } = useTranslation('jobs');
   const [searchParams, setSearchParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { data: savedIds } = useSavedJobIds();
+  const saveJob = useSaveJob();
+  const unsaveJob = useUnsaveJob();
 
   // Read all params from URL
   const designation = searchParams.get('designation') ?? '';
@@ -171,7 +191,16 @@ export default function JobSearchPage() {
             <>
               <div className="space-y-4">
                 {data.rows.map((job) => (
-                  <JobCard key={job.jobId} job={job} />
+                  <JobCard
+                    key={job.jobId}
+                    job={job}
+                    isSaved={savedIds?.includes(job.jobId) ?? false}
+                    onToggleSave={() => {
+                      if (!isAuthenticated) { navigate('/login?next=/jobs'); return; }
+                      if (savedIds?.includes(job.jobId)) unsaveJob.mutate(job.jobId);
+                      else saveJob.mutate(job.jobId);
+                    }}
+                  />
                 ))}
               </div>
               <div className="mt-8 flex justify-center">

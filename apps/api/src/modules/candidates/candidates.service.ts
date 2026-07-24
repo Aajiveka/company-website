@@ -523,6 +523,69 @@ export class CandidatesService {
     };
   }
 
+  /** Saved / bookmarked jobs. */
+  async savedJobs(subscriberId: number) {
+    const rows = await this.db.savedJob.findMany({
+      where: { subscriberID: subscriberId },
+      orderBy: { timestampIns: 'desc' },
+      include: {
+        job: {
+          include: {
+            client: { select: { clientName: true } },
+            jobCity: { select: { descr: true } },
+            designation: { select: { descr: true } },
+            industryType: { select: { industryType: true } },
+            workMode: { select: { descr: true } },
+            employeeType: { select: { descr: true } },
+          },
+        },
+      },
+    });
+
+    return rows.map((r) => ({
+      jobId: Number(r.jobID),
+      designation: r.job.designation?.descr ?? '',
+      company: r.job.client?.clientName ?? '',
+      industry: r.job.industryType?.industryType ?? '',
+      city: r.job.jobCity?.descr ?? '',
+      workMode: r.job.workMode?.descr ?? '',
+      employmentType: r.job.employeeType?.descr ?? '',
+      minExp: r.job.minExp ?? 0,
+      minCtc: r.job.minCTC,
+      maxCtc: r.job.maxCTC,
+      postedOn: r.job.timestampIns.toISOString(),
+      savedOn: r.timestampIns.toISOString().slice(0, 10),
+    }));
+  }
+
+  async saveJob(subscriberId: number, jobId: number) {
+    // Verify the job exists
+    const job = await this.db.clientJobs.findUnique({ where: { jobID: jobId }, select: { jobID: true } });
+    if (!job) throw new NotFoundException('Job not found');
+
+    await this.db.savedJob.upsert({
+      where: { subscriberID_jobID: { subscriberID: subscriberId, jobID: jobId } },
+      create: { subscriberID: subscriberId, jobID: jobId },
+      update: {},
+    });
+    return { ok: true };
+  }
+
+  async unsaveJob(subscriberId: number, jobId: number) {
+    await this.db.savedJob.deleteMany({
+      where: { subscriberID: subscriberId, jobID: jobId },
+    });
+    return { ok: true };
+  }
+
+  async savedJobIds(subscriberId: number): Promise<number[]> {
+    const rows = await this.db.savedJob.findMany({
+      where: { subscriberID: subscriberId },
+      select: { jobID: true },
+    });
+    return rows.map((r) => Number(r.jobID));
+  }
+
   /** Verifies the current password against the Argon2 hash before replacing it. */
   async changePassword(userId: number, currentPassword: string, newPassword: string) {
     const user = await this.db.secUser.findUnique({

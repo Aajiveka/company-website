@@ -64,6 +64,15 @@
     "heading": "Applied Jobs",
     "noJobs": "You haven't applied to any jobs yet."
   },
+  "savedJobs": {
+    "heading": "Saved Jobs",
+    "noJobs": "You haven't saved any jobs yet.",
+    "browseHint": "Browse jobs and tap the bookmark icon to save them for later.",
+    "remove": "Remove from saved",
+    "removed": "Job removed from saved.",
+    "savedOn": "Saved on {{date}}",
+    "viewDetails": "View details"
+  },
   "documents": {
     "heading": "My Documents",
     "noDocuments": "No documents have been requested yet.",

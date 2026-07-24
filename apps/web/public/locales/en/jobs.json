@@ -48,7 +48,9 @@
     "postedOn": "Posted on {{date}}",
     "shareJob": "Share this job",
     "copied": "Link copied!",
-    "similarJobs": "Browse similar jobs"
+    "similarJobs": "Browse similar jobs",
+    "saveJob": "Save job",
+    "saved": "Saved"
   },
   "post": {
     "postTitle": "Post a Job",

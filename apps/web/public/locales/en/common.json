@@ -36,7 +36,8 @@
     "manageJobs": "Manage Jobs",
     "postAJob": "Post a Job",
     "applicants": "Applicants",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "savedJobs": "Saved Jobs"
   },
   "actions": {
     "search": "Search",

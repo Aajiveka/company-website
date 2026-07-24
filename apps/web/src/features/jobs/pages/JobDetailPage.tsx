@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import {
+  Bookmark,
   Briefcase,
   Building2,
   Calendar,
@@ -15,7 +16,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Button, Card, JobCardSkeleton, useToast } from '@/components/ui';
 import { Seo, SITE_URL } from '@/components/Seo';
+import { cn } from '@/lib/cn';
 import { useAuth } from '@/features/auth/auth.store';
+import { useSavedJobIds, useSaveJob, useUnsaveJob } from '@/features/candidates/candidate.api';
 import { Role } from '@/types/roles';
 import { useApplyToJob, useJob } from '../jobs.api';
 
@@ -35,6 +38,23 @@ export default function JobDetailPage() {
   const { notify } = useToast();
 
   const [applied, setApplied] = useState(false);
+
+  const { data: savedIds } = useSavedJobIds();
+  const saveJob = useSaveJob();
+  const unsaveJob = useUnsaveJob();
+  const isSaved = savedIds?.includes(Number(id)) ?? false;
+
+  const onToggleSave = () => {
+    if (!isAuthenticated) {
+      navigate(`/login?next=/jobs/${id}`);
+      return;
+    }
+    if (isSaved) {
+      unsaveJob.mutate(Number(id));
+    } else {
+      saveJob.mutate(Number(id));
+    }
+  };
 
   const onApply = () => {
     if (!isAuthenticated) {
@@ -177,13 +197,26 @@ export default function JobDetailPage() {
                   <Calendar className="h-3.5 w-3.5" aria-hidden />
                   {t('detail.postedOn', { date: formatDate(job.postedOn, i18n.language) })}
                 </p>
-                <button
-                  onClick={onShare}
-                  className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                >
-                  <Share2 className="h-3.5 w-3.5" aria-hidden />
-                  {t('detail.shareJob')}
-                </button>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={onToggleSave}
+                    className={cn(
+                      'flex items-center gap-1.5 text-xs font-medium hover:underline',
+                      isSaved ? 'text-primary' : 'text-gray-500',
+                    )}
+                    disabled={saveJob.isPending || unsaveJob.isPending}
+                  >
+                    <Bookmark className={cn('h-3.5 w-3.5', isSaved && 'fill-current')} aria-hidden />
+                    {isSaved ? t('detail.saved') : t('detail.saveJob')}
+                  </button>
+                  <button
+                    onClick={onShare}
+                    className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                  >
+                    <Share2 className="h-3.5 w-3.5" aria-hidden />
+                    {t('detail.shareJob')}
+                  </button>
+                </div>
               </div>
             </Card>
 
