@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router-dom';
 import { AppProviders } from './app/providers';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RootFallback } from './components/RootFallback';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { PwaReloadPrompt } from './components/PwaReloadPrompt';
 import { router } from './routes/router';
 import { env } from './lib/env';
@@ -22,6 +23,7 @@ async function bootstrap() {
       <ErrorBoundary fallback={<RootFallback />}>
         <AppProviders>
           <RouterProvider router={router} />
+          <PwaInstallPrompt />
           <PwaReloadPrompt />
         </AppProviders>
       </ErrorBoundary>

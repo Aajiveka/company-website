@@ -42,7 +42,14 @@
   --font-sans: Inter, system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-heading: Jost, Inter, system-ui, sans-serif;
 
+  --animate-slide-up: slide-up 0.3s ease-out;
+
   --shadow-card: 0 6px 15px rgba(64, 79, 104, 0.05);
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(1rem); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /*

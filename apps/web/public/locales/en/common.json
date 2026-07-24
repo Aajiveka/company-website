@@ -87,6 +87,13 @@
     "goBack": "Go back",
     "browseJobs": "Or browse open jobs →"
   },
+  "pwa": {
+    "installTitle": "Install Aajiveka",
+    "installMessage": "Add to your home screen for faster access and offline support.",
+    "installButton": "Install",
+    "notNow": "Not now",
+    "dismiss": "Dismiss"
+  },
   "language": {
     "en": "English",
     "hi": "हिन्दी",

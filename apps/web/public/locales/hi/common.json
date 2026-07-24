@@ -87,6 +87,13 @@
     "goBack": "वापस जाएं",
     "browseJobs": "या नौकरियाँ ब्राउज़ करें →"
   },
+  "pwa": {
+    "installTitle": "Aajiveka इंस्टॉल करें",
+    "installMessage": "तेज़ एक्सेस और ऑफ़लाइन सपोर्ट के लिए होम स्क्रीन पर जोड़ें।",
+    "installButton": "इंस्टॉल करें",
+    "notNow": "अभी नहीं",
+    "dismiss": "बंद करें"
+  },
   "language": {
     "en": "English",
     "hi": "हिन्दी",
