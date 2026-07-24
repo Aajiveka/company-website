@@ -10,7 +10,7 @@ export default function PlaceholderPage({ title }: { title: string }) {
     <section className="flex min-h-[60vh] items-center justify-center px-4 pt-24">
       <div className="max-w-md text-center">
         <Construction className="mx-auto mb-4 h-12 w-12 text-accent" />
-        <h1 className="font-heading text-3xl font-bold text-navy">{title}</h1>
+        <h1 className="font-heading text-2xl font-bold text-navy sm:text-3xl">{title}</h1>
         <p className="mt-2 text-gray-500">
           This page is part of the next milestone and follows the same architecture as the completed pages.
         </p>

@@ -52,7 +52,7 @@ export default function BlogDetailPage() {
         <Link to="/blogs" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
           <ArrowLeft className="h-4 w-4" /> {t('blogs.backToBlog')}
         </Link>
-        <h1 className="mt-4 font-heading text-3xl font-bold leading-tight text-navy">{post.title}</h1>
+        <h1 className="mt-4 font-heading text-2xl font-bold leading-tight text-navy sm:text-3xl">{post.title}</h1>
         <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-500">
           <span className="flex items-center gap-1.5">
             <CalendarDays className="h-4 w-4" /> {post.date}

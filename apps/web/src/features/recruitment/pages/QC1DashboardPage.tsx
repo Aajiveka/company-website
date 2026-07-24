@@ -36,7 +36,7 @@ export default function QC1DashboardPage() {
               {isLoading || !data ? (
                 <Skeleton className="h-8 w-12" />
               ) : (
-                <p className="font-heading text-3xl font-bold text-navy">{data[key]}</p>
+                <p className="font-heading text-2xl font-bold text-navy sm:text-3xl">{data[key]}</p>
               )}
               <p className="text-sm text-gray-500">{label}</p>
             </div>

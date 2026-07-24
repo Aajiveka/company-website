@@ -83,7 +83,7 @@ export function DashboardErrorFallback() {
       : 'Something went wrong loading this page.';
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
+    <div className="flex flex-col items-center justify-center py-12 text-center sm:py-20">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-danger/10 dark:bg-danger/20">
         <AlertTriangle className="h-8 w-8 text-danger" />
       </div>

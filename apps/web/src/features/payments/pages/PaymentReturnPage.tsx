@@ -46,7 +46,7 @@ export default function PaymentReturnPage() {
   }, [status]);
 
   return (
-    <div className="container flex justify-center py-16">
+    <div className="container flex justify-center py-10 sm:py-16">
       <Card className="w-full max-w-md text-center">{renderBody()}</Card>
     </div>
   );

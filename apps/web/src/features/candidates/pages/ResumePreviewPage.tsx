@@ -41,7 +41,7 @@ export default function ResumePreviewPage() {
       >
         {/* Header */}
         <div className="border-b-2 border-primary pb-5">
-          <h1 className="text-3xl font-bold text-navy print:text-black">{data.fullName}</h1>
+          <h1 className="text-2xl font-bold text-navy sm:text-3xl print:text-black">{data.fullName}</h1>
           <p className="mt-1 text-lg text-primary">{data.designation}</p>
           <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600 print:text-gray-700 dark:text-gray-300">
             {data.email && <span>{'\u2709'} {data.email}</span>}
