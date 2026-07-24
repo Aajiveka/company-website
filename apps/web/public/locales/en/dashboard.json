@@ -139,5 +139,18 @@
     "shortlisted": "Shortlisted",
     "interview": "Interview",
     "rejected": "Rejected"
+  },
+  "notifications": {
+    "bell": "Notifications",
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet.",
+    "viewAll": "View all activity",
+    "shortlisted": "You've been shortlisted!",
+    "interview": "Interview update",
+    "selected": "Congratulations — you're selected!",
+    "rejected": "Application update",
+    "interviewScheduled": "Interview scheduled",
+    "verified": "Document verified"
   }
 }

@@ -29,10 +29,11 @@ export function useCandidateProfile() {
 }
 
 /** GET jobs the candidate has applied to (spSubscriberInterviews / mapping). */
-export function useAppliedJobs() {
+export function useAppliedJobs(enabled = true) {
   return useQuery({
     queryKey: ['candidate', 'applied-jobs'],
     queryFn: () => api.get<AppliedJob[]>('/candidates/me/applied-jobs').then((r) => r.data),
+    enabled,
   });
 }
 

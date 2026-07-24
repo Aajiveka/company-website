@@ -7,6 +7,7 @@ import { ROLE_LABEL } from '@/types/roles';
 import { Dropdown } from '@/components/ui';
 import { ThemeToggleDashboard } from '@/components/ThemeToggle';
 import { RouteAnnouncer } from '@/components/RouteAnnouncer';
+import { NotificationBell } from './NotificationBell';
 import { Sidebar } from './Sidebar';
 
 /** Authenticated dashboard shell — topbar + role-gated sidebar + content. */
@@ -49,6 +50,7 @@ export function DashboardLayout() {
           <img src="/image/logo.svg" alt="Aajiveka" className="h-9 w-auto lg:hidden" />
         </div>
         <div className="flex items-center gap-2">
+          <NotificationBell />
           <ThemeToggleDashboard />
           <Dropdown
             trigger={
