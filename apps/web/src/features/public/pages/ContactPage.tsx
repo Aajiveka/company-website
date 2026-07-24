@@ -43,13 +43,13 @@ export default function ContactPage() {
         <div className="grid gap-10 lg:grid-cols-2">
           {/* Info */}
           <div>
-            <h4 className="text-lg text-gray-600">{t('contact.infoText')}</h4>
+            <h4 className="text-lg text-gray-600 dark:text-gray-300">{t('contact.infoText')}</h4>
             <div className="mt-8 space-y-4">
               <h2 className="mb-3">{t('contact.serviceHeading')}</h2>
-              <p className="flex items-center gap-2 text-gray-700">
+              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
                 <Mail className="h-5 w-5 text-primary" /> {t('contact.email')}
               </p>
-              <p className="flex items-start gap-2 text-gray-700">
+              <p className="flex items-start gap-2 text-gray-700 dark:text-gray-200">
                 <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
                 {t('contact.address')}
               </p>
@@ -74,7 +74,7 @@ export default function ContactPage() {
                   id="feedback"
                   rows={4}
                   placeholder={t('contact.feedbackPlaceholder')}
-                  className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                  className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
                   {...register('feedback')}
                 />
                 {errors.feedback && <p className="mt-1 text-xs text-danger">{errors.feedback.message}</p>}

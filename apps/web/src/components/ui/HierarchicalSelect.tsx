@@ -139,7 +139,7 @@ export function HierarchicalSelect({
         onKeyDown={onTriggerKeyDown}
       >
         {icon}
-        <span className={`flex-1 truncate text-left ${value ? 'text-gray-700' : 'text-gray-400'}`}>
+        <span className={`flex-1 truncate text-left ${value ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}`}>
           {displayText}
         </span>
         <ChevronDown
@@ -156,7 +156,7 @@ export function HierarchicalSelect({
           onKeyDown={onPanelKeyDown}
         >
           {groupKeys.length === 0 && (
-            <div className="px-3 py-2 text-sm text-gray-400">No options</div>
+            <div className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">No options</div>
           )}
           {groupKeys.map((group) => {
             const isExpanded = expanded.has(group);
@@ -184,7 +184,7 @@ export function HierarchicalSelect({
                       role="option"
                       aria-selected={value === city}
                       className={`w-full cursor-pointer py-2.5 pl-9 pr-3 text-left text-sm hover:bg-primary/5 hover:text-primary ${
-                        value === city ? 'bg-primary/10 font-medium text-primary' : 'text-gray-600'
+                        value === city ? 'bg-primary/10 font-medium text-primary' : 'text-gray-600 dark:text-gray-400'
                       }`}
                       onClick={() => selectLeaf(city, group)}
                     >

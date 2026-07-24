@@ -27,13 +27,13 @@ export default function DocumentReviewPage() {
           <div className="flex gap-2">
             <button
               onClick={() => act(d.documentId, 'Verified')}
-              className="inline-flex items-center gap-1 rounded-lg bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-100"
+              className="inline-flex items-center gap-1 rounded-lg bg-green-50 dark:bg-green-900/20 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100"
             >
               <Check className="h-3.5 w-3.5" /> Verify
             </button>
             <button
               onClick={() => act(d.documentId, 'Rejected')}
-              className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+              className="inline-flex items-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100"
             >
               <X className="h-3.5 w-3.5" /> Reject
             </button>

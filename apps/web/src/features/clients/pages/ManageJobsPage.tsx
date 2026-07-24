@@ -53,7 +53,7 @@ export default function ManageJobsPage() {
           {j.status === 'Active' && (
             <button
               onClick={() => setConfirmJob(j)}
-              className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+              className="inline-flex items-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100"
             >
               <XCircle className="h-3.5 w-3.5" /> {t('common:actions.close')}
             </button>
@@ -78,7 +78,7 @@ export default function ManageJobsPage() {
 
       <Modal open={!!confirmJob} onClose={() => setConfirmJob(null)} title={t('manageJobs.closeTitle')}>
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             {t('manageJobs.closeWarning', { designation: confirmJob?.designation, city: confirmJob?.city })}
           </p>
           <div className="flex justify-end gap-2">

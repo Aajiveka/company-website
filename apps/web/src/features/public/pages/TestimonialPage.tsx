@@ -33,10 +33,10 @@ export default function TestimonialPage() {
             {TESTIMONIALS.map((item) => (
               <figure key={item.name} className="flex flex-col rounded-2xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-4 shadow-card sm:p-6">
                 <Quote className="h-8 w-8 text-accent" />
-                <blockquote className="mt-3 flex-1 text-gray-600">{item.text}</blockquote>
+                <blockquote className="mt-3 flex-1 text-gray-600 dark:text-gray-300">{item.text}</blockquote>
                 <figcaption className="mt-5">
                   <h5 className="font-heading font-semibold text-navy">{item.name}</h5>
-                  <p className="text-sm text-gray-500">{item.role}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{item.role}</p>
                 </figcaption>
               </figure>
             ))}

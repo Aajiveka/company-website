@@ -70,7 +70,7 @@ export default function HomePage() {
       <section className="py-8 md:py-12 lg:py-20">
         <div className="container text-center">
           <h2>{t('about.heading')}</h2>
-          <p className="mx-auto mt-4 max-w-3xl text-gray-600">{t('about.text')}</p>
+          <p className="mx-auto mt-4 max-w-3xl text-gray-600 dark:text-gray-300">{t('about.text')}</p>
         </div>
       </section>
 
@@ -80,8 +80,8 @@ export default function HomePage() {
           <div className="grid items-center gap-8 md:grid-cols-2">
             <div className="md:pr-10">
               <h2>{t('story.heading')}</h2>
-              <p className="mt-4 text-gray-600">{t('story.text1')}</p>
-              <p className="mt-3 text-gray-600">{t('story.text2')}</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">{t('story.text1')}</p>
+              <p className="mt-3 text-gray-600 dark:text-gray-300">{t('story.text2')}</p>
             </div>
             <img src="/image/story.webp" alt="Our story" className="w-full rounded-lg" loading="lazy" />
           </div>
@@ -123,7 +123,7 @@ export default function HomePage() {
       <section className="py-8 pb-16 text-center">
         <div className="container">
           <h2>{t('service.heading')}</h2>
-          <p className="mt-4 text-gray-600">{t('service.subtext')}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">{t('service.subtext')}</p>
           <div className="mt-8 grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {SERVICE_KEYS.map((key, i) => (
               <article
@@ -134,7 +134,7 @@ export default function HomePage() {
                 <h5 className="mb-2 mt-3 font-heading text-lg font-semibold text-navy">
                   {t(`service.${key}`)}
                 </h5>
-                <p className="text-center text-sm text-gray-600">{t(`service.${key}Text`)}</p>
+                <p className="text-center text-sm text-gray-600 dark:text-gray-300">{t(`service.${key}Text`)}</p>
               </article>
             ))}
           </div>

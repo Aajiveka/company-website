@@ -161,7 +161,7 @@ export default function JobDetailPage() {
                   )}
                   <div>
                     <h1 className="font-heading text-2xl font-bold text-navy">{job.designation}</h1>
-                    <p className="mt-1 flex items-center gap-1.5 text-gray-600">
+                    <p className="mt-1 flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
                       <Building2 className="h-4 w-4 text-primary" aria-hidden /> {job.company}
                     </p>
                   </div>

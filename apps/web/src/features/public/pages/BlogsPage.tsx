@@ -49,7 +49,7 @@ export default function BlogsPage() {
                       {post.title}
                     </h3>
                   </Link>
-                  <p className="mt-2 line-clamp-3 text-sm text-gray-600">{post.excerpt}</p>
+                  <p className="mt-2 line-clamp-3 text-sm text-gray-600 dark:text-gray-300">{post.excerpt}</p>
                   <Link
                     to={`/blogs/${post.slug}`}
                     className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:gap-2"
@@ -60,7 +60,7 @@ export default function BlogsPage() {
               </article>
             ))}
           </div>
-          {posts.length === 0 && <p className="py-10 text-center text-gray-500">{t('blogs.noArticles')}</p>}
+          {posts.length === 0 && <p className="py-10 text-center text-gray-500 dark:text-gray-400">{t('blogs.noArticles')}</p>}
         </div>
       </section>
     </>

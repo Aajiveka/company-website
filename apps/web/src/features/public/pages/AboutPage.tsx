@@ -33,7 +33,7 @@ export default function AboutPage() {
         <div className="container grid items-center gap-8 md:grid-cols-2">
           <div className="md:pr-10">
             <h2>{t('about.missionHeading')}</h2>
-            <p className="mt-4 text-gray-600">{t('about.missionText')}</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">{t('about.missionText')}</p>
           </div>
           <img src="/image/mission.webp" alt={t('about.missionHeading')} className="w-full rounded-lg" loading="lazy" />
         </div>
@@ -45,7 +45,7 @@ export default function AboutPage() {
           <img src="/image/vision.webp" alt={t('about.visionHeading')} className="w-full rounded-lg md:order-1" loading="lazy" />
           <div className="md:order-2 md:pl-10">
             <h2>{t('about.visionHeading')}</h2>
-            <p className="mt-4 text-gray-600">{t('about.visionText')}</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">{t('about.visionText')}</p>
           </div>
         </div>
       </section>
@@ -55,7 +55,7 @@ export default function AboutPage() {
         <div className="container">
           <div className="mb-8 text-center">
             <h2>{t('about.valueHeading')}</h2>
-            <p className="mt-2 text-gray-600">{t('about.valueSubtext')}</p>
+            <p className="mt-2 text-gray-600 dark:text-gray-300">{t('about.valueSubtext')}</p>
           </div>
           <div className="grid items-center gap-8 md:grid-cols-3">
             <div className="space-y-5">
@@ -79,13 +79,13 @@ export default function AboutPage() {
             {CHOOSE.map((c) => (
               <div key={c.icon} className="flex items-start gap-4 rounded-xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-4 shadow-card sm:p-5">
                 <img src={c.icon} alt="" className="h-12 w-12 flex-shrink-0" loading="lazy" />
-                <p className="text-sm text-gray-600">{c.text}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{c.text}</p>
               </div>
             ))}
           </div>
           <div className="lg:pl-8">
             <h2>{t('about.whyChoose')}</h2>
-            <p className="mt-4 text-gray-600">{t('about.whyChooseText')}</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">{t('about.whyChooseText')}</p>
             <Link to="/subscription">
               <Button className="mt-6">{t('actions.getStarted', { ns: 'common' })}</Button>
             </Link>
@@ -124,7 +124,7 @@ function Value({ title, text }: { title: string; text: string }) {
   return (
     <div>
       <h5 className="mb-1.5 font-heading text-lg font-semibold text-navy">{title}</h5>
-      <p className="text-sm text-gray-600">{text}</p>
+      <p className="text-sm text-gray-600 dark:text-gray-300">{text}</p>
     </div>
   );
 }

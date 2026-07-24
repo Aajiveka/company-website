@@ -31,7 +31,7 @@ export default function ResumePreviewPage() {
             {t('resume.printButton')}
           </Button>
         </div>
-        <p className="mt-2 text-sm text-gray-500">{t('resume.hint')}</p>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('resume.hint')}</p>
       </div>
 
       {/* Printable resume */}
@@ -43,7 +43,7 @@ export default function ResumePreviewPage() {
         <div className="border-b-2 border-primary pb-5">
           <h1 className="text-3xl font-bold text-navy print:text-black">{data.fullName}</h1>
           <p className="mt-1 text-lg text-primary">{data.designation}</p>
-          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600 print:text-gray-700">
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600 print:text-gray-700 dark:text-gray-300">
             {data.email && <span>{'\u2709'} {data.email}</span>}
             {data.mobile && <span>{'\u260E'} {data.mobile}</span>}
             {data.city && <span>{'\uD83D\uDCCD'} {data.city}</span>}
@@ -59,7 +59,7 @@ export default function ResumePreviewPage() {
             </h2>
             <div className="flex flex-wrap gap-2">
               {data.skills.map((s) => (
-                <span key={s} className="rounded bg-gray-100 px-2.5 py-0.5 text-sm text-gray-700 print:border print:border-gray-300 print:bg-transparent">
+                <span key={s} className="rounded bg-gray-100 px-2.5 py-0.5 text-sm text-gray-700 print:border print:border-gray-300 print:bg-transparent dark:bg-gray-700 dark:text-gray-300">
                   {s}
                 </span>
               ))}
@@ -75,10 +75,10 @@ export default function ResumePreviewPage() {
             </h2>
             <div className="space-y-4">
               {data.experience.map((e, i) => (
-                <div key={i} className="border-l-2 border-gray-200 pl-4 print:border-gray-400">
+                <div key={i} className="border-l-2 border-gray-200 pl-4 print:border-gray-400 dark:border-gray-700">
                   <p className="font-semibold text-navy print:text-black">{e.designation}</p>
-                  <p className="text-sm text-gray-600 print:text-gray-700">{e.company}</p>
-                  <p className="text-xs text-gray-400 print:text-gray-500">{e.from} — {e.to}</p>
+                  <p className="text-sm text-gray-600 print:text-gray-700 dark:text-gray-300">{e.company}</p>
+                  <p className="text-xs text-gray-400 print:text-gray-500 dark:text-gray-500">{e.from} — {e.to}</p>
                 </div>
               ))}
             </div>
@@ -93,10 +93,10 @@ export default function ResumePreviewPage() {
             </h2>
             <div className="space-y-3">
               {data.education.map((e, i) => (
-                <div key={i} className="border-l-2 border-gray-200 pl-4 print:border-gray-400">
+                <div key={i} className="border-l-2 border-gray-200 pl-4 print:border-gray-400 dark:border-gray-700">
                   <p className="font-semibold text-navy print:text-black">{e.degree}</p>
-                  {e.institute && <p className="text-sm text-gray-600 print:text-gray-700">{e.institute}</p>}
-                  {e.year && <p className="text-xs text-gray-400 print:text-gray-500">{e.year}</p>}
+                  {e.institute && <p className="text-sm text-gray-600 print:text-gray-700 dark:text-gray-300">{e.institute}</p>}
+                  {e.year && <p className="text-xs text-gray-400 print:text-gray-500 dark:text-gray-500">{e.year}</p>}
                 </div>
               ))}
             </div>
@@ -104,7 +104,7 @@ export default function ResumePreviewPage() {
         )}
 
         {/* Footer */}
-        <div className="mt-8 border-t border-gray-200 pt-3 text-center text-xs text-gray-400 print:border-gray-300 print:text-gray-500">
+        <div className="mt-8 border-t border-gray-200 pt-3 text-center text-xs text-gray-400 print:border-gray-300 print:text-gray-500 dark:border-gray-700 dark:text-gray-500">
           {t('resume.generatedBy')}
         </div>
       </div>

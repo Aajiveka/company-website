@@ -244,7 +244,7 @@ function ProfessionalSection({
           />
           <div className="mt-2 flex flex-wrap gap-3">
             {filteredPrefCities.map((c) => (
-              <label key={c.id} className="flex items-center gap-1.5 text-sm text-gray-600">
+              <label key={c.id} className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
                 <input
                   type="checkbox"
                   checked={preferredCityIds.includes(c.id)}
@@ -339,14 +339,14 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
             <button
               type="button"
               onClick={() => remove(row, i)}
-              className="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 text-red-700 hover:bg-red-100"
+              className="inline-flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 px-3 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/30"
               aria-label={t('common:actions.delete')}
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm text-gray-500">{t('cv.noEducation')}</p>}
+        {list.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">{t('cv.noEducation')}</p>}
       </div>
     </Card>
   );
@@ -417,7 +417,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
       </div>
       <div className="space-y-4">
         {list.map((row, i) => (
-          <div key={row.subscriberEmployerId || `new-${i}`} className="rounded-lg border border-gray-200 p-4">
+          <div key={row.subscriberEmployerId || `new-${i}`} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <Input placeholder={t('cv.employer')} value={row.employer} onChange={(e) => update(i, { employer: e.target.value })} />
               <Select
@@ -442,7 +442,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
               />
             </div>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <label className="flex items-center gap-1.5 text-sm text-gray-600">
+              <label className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
                 <input
                   type="checkbox"
                   checked={row.flgCurrent}
@@ -458,7 +458,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
                 <button
                   type="button"
                   onClick={() => remove(row, i)}
-                  className="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 text-red-700 hover:bg-red-100"
+                  className="inline-flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 px-3 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/30"
                   aria-label={t('common:actions.delete')}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -467,7 +467,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
             </div>
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm text-gray-500">{t('cv.noEmployment')}</p>}
+        {list.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">{t('cv.noEmployment')}</p>}
       </div>
     </Card>
   );
@@ -537,14 +537,14 @@ function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
             <button
               type="button"
               onClick={() => remove(row, i)}
-              className="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 text-red-700 hover:bg-red-100"
+              className="inline-flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 px-3 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/30"
               aria-label={t('common:actions.delete')}
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm text-gray-500">{t('cv.noCertificates')}</p>}
+        {list.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">{t('cv.noCertificates')}</p>}
       </div>
     </Card>
   );

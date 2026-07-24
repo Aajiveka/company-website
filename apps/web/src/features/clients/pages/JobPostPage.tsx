@@ -137,7 +137,7 @@ export default function JobPostPage() {
             <textarea
               id="jd"
               rows={5}
-              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
               {...register('description')}
             />
             {errors.description && <p className="mt-1 text-xs text-danger">{errors.description.message}</p>}

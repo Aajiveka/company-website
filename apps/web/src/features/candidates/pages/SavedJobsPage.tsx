@@ -43,7 +43,7 @@ export default function SavedJobsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <Link to={`/jobs/${job.jobId}`} className="flex-1">
                   <h3 className="font-heading text-lg font-semibold text-navy hover:text-primary">{job.designation}</h3>
-                  <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
                     <Building2 className="h-4 w-4 text-primary" aria-hidden />
                     {job.company}
                   </p>
@@ -63,7 +63,7 @@ export default function SavedJobsPage() {
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600">
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600 dark:text-gray-300">
                 <span className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-gray-400" aria-hidden />
                   {job.city}
@@ -79,7 +79,7 @@ export default function SavedJobsPage() {
               </div>
 
               <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-gray-700">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {t('savedJobs.savedOn', { date: job.savedOn })}
                 </p>
                 <Link

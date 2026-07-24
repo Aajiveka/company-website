@@ -100,7 +100,7 @@ function ApplicationCard({ job }: { job: AppliedJob }) {
           <Link to={`/jobs/${job.jobId}`} className="font-heading text-lg font-semibold text-navy hover:text-primary">
             {job.designation}
           </Link>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
             <Building2 className="h-4 w-4 text-primary" aria-hidden />
             {job.company}
           </p>
@@ -112,7 +112,7 @@ function ApplicationCard({ job }: { job: AppliedJob }) {
       </div>
 
       {/* Job details */}
-      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600">
+      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600 dark:text-gray-300">
         <span className="flex items-center gap-1.5">
           <MapPin className="h-4 w-4 text-gray-400" aria-hidden />
           {job.city}
@@ -173,7 +173,7 @@ function ApplicationCard({ job }: { job: AppliedJob }) {
                   </div>
                   <div className="pb-4">
                     <p className="text-sm font-medium text-navy">{entry.status}</p>
-                    <p className="text-xs text-gray-500">{formatDateTime(entry.timestamp)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(entry.timestamp)}</p>
                     {entry.comments && (
                       <p className="mt-1 text-xs text-gray-500 italic">"{entry.comments}"</p>
                     )}
@@ -187,7 +187,7 @@ function ApplicationCard({ job }: { job: AppliedJob }) {
 
       {/* Applied date */}
       <div className="mt-3 border-t border-gray-100 pt-3 dark:border-gray-700">
-        <p className="flex items-center gap-1.5 text-xs text-gray-500">
+        <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <Calendar className="h-3.5 w-3.5" aria-hidden />
           {t('tracking.appliedOn', { date: job.appliedOn })}
         </p>

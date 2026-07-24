@@ -26,7 +26,7 @@ function JobCard({ job, isSaved, onToggleSave }: { job: PublicJob; isSaved: bool
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="font-heading text-lg font-semibold text-navy">{job.designation}</h3>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
               <Building2 className="h-4 w-4 text-primary" aria-hidden />
               {job.company}
             </p>
@@ -48,7 +48,7 @@ function JobCard({ job, isSaved, onToggleSave }: { job: PublicJob; isSaved: bool
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-300">
           <span className="flex items-center gap-1.5">
             <MapPin className="h-4 w-4 text-gray-400" aria-hidden />
             {job.city}
