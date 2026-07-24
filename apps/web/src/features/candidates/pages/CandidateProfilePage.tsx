@@ -1,6 +1,7 @@
-import { Award, Briefcase, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
+import { Award, Briefcase, Download, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Breadcrumbs, Card, ProfileSkeleton } from '@/components/ui';
+import { Link } from 'react-router-dom';
+import { Breadcrumbs, Button, Card, ProfileSkeleton } from '@/components/ui';
 import { useCandidateProfile } from '../candidate.api';
 
 /** Candidate self-profile / CV view (candidate-profile.aspx). */
@@ -11,6 +12,16 @@ export default function CandidateProfilePage() {
   return (
     <div className="mx-auto max-w-5xl">
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/candidate/profile' }, { label: t('profile.heading') }]} />
+
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="font-heading text-2xl font-bold text-navy">{t('profile.heading')}</h1>
+        <Link to="/candidate/resume">
+          <Button variant="outline" size="sm">
+            <Download className="mr-1.5 h-4 w-4" />
+            {t('resume.downloadButton')}
+          </Button>
+        </Link>
+      </div>
 
       {isLoading ? (
         <ProfileSkeleton />

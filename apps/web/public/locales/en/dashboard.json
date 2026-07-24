@@ -118,6 +118,17 @@
     "applicants": "Applicants",
     "status": "Status"
   },
+  "resume": {
+    "heading": "Resume Preview",
+    "printButton": "Print / Save PDF",
+    "hint": "Use your browser's Print dialog to save as PDF. Tip: Select \"Save as PDF\" as the printer.",
+    "downloadButton": "Download Resume",
+    "skills": "Skills",
+    "experience": "Experience",
+    "education": "Education",
+    "yearsExp": "years experience",
+    "generatedBy": "Generated on Aajiveka \u2014 aajiveka.com"
+  },
   "candidates": {
     "heading": "Candidates",
     "searchPlaceholder": "Search by name or designation…",

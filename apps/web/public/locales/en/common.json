@@ -37,7 +37,8 @@
     "postAJob": "Post a Job",
     "applicants": "Applicants",
     "pricing": "Pricing",
-    "savedJobs": "Saved Jobs"
+    "savedJobs": "Saved Jobs",
+    "resumeExport": "Download Resume"
   },
   "actions": {
     "search": "Search",

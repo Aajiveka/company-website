@@ -113,3 +113,35 @@
       hover:bg-primary disabled:opacity-60 sm:px-6 sm:py-2.5;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Print styles — used by the Resume Preview page                      */
+/* ------------------------------------------------------------------ */
+@media print {
+  @page {
+    margin: 1cm 1.5cm;
+    size: A4;
+  }
+
+  /* Hide layout chrome when printing */
+  header, aside, nav, footer,
+  .print\:hidden,
+  a[href="#main-content"] { display: none !important; }
+
+  /* Reset main content area for clean print */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Force light background for print */
+  body, .min-h-screen {
+    background: white !important;
+  }
+
+  /* Ensure exact colors for resume elements */
+  .resume-print {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
