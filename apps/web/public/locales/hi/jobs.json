@@ -80,6 +80,16 @@
     "closeButton": "नौकरी बंद करें",
     "closedSuccess": "नौकरी बंद हो गई।"
   },
+  "infinite": {
+    "loadMore": "और नौकरियाँ लोड करें",
+    "loading": "और लोड हो रहा है…",
+    "endOfResults": "आपने सभी परिणाम देख लिए हैं"
+  },
+  "recommended": {
+    "heading": "आपके लिए अनुशंसित",
+    "noRecommendations": "नौकरी अनुशंसाएँ पाने के लिए अपनी प्रोफ़ाइल पूरी करें।",
+    "viewAll": "सभी अनुशंसित नौकरियाँ देखें →"
+  },
   "alerts": {
     "heading": "नौकरी अलर्ट",
     "keyword": "कीवर्ड",

@@ -96,6 +96,14 @@
     "uploadSuccess": "\"{{name}}\" uploaded for review.",
     "uploadFailed": "Upload failed"
   },
+  "bulk": {
+    "selectAll": "Select all",
+    "selected": "{{count}} selected",
+    "bulkShortlist": "Shortlist selected",
+    "bulkReject": "Reject selected",
+    "bulkSuccess": "{{count}} applicants updated.",
+    "bulkFailed": "Bulk action failed"
+  },
   "applicants": {
     "heading": "Applicants",
     "noApplicants": "No applicants yet.",

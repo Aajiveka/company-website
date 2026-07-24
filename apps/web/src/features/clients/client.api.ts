@@ -94,3 +94,18 @@ export function useDecideApplicant() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client', 'applicants'] }),
   });
 }
+
+/** Bulk shortlist or reject multiple applicants at once. */
+export function useBulkDecideApplicants() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { ids: number[]; decision: 'Shortlisted' | 'Rejected' }) => {
+      await Promise.all(
+        payload.ids.map((id) =>
+          api.post(`/clients/me/applicants/${id}/decision`, { decision: payload.decision }),
+        ),
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['client', 'applicants'] }),
+  });
+}

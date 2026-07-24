@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { queryKeys } from '@/lib/queryClient';
 import type { JobDetail, JobFilters, JobsPage, JobsQuery } from './jobs.types';
@@ -19,6 +19,29 @@ export function usePublicJobs(params: JobsQuery) {
     queryKey: queryKeys.jobs.search(params),
     queryFn: () => api.get<JobsPage>('/jobs', { params }).then((r) => r.data),
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Infinite-scroll variant of public job search. */
+export function useInfinitePublicJobs(params: Omit<JobsQuery, 'page'> & { pageSize: number }) {
+  return useInfiniteQuery({
+    queryKey: ['jobs', 'infinite', params],
+    queryFn: ({ pageParam = 1 }) =>
+      api.get<JobsPage>('/jobs', { params: { ...params, page: pageParam } }).then((r) => r.data),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      const totalPages = Math.ceil(lastPage.total / params.pageSize);
+      return lastPageParam < totalPages ? lastPageParam + 1 : undefined;
+    },
+  });
+}
+
+/** Recommended jobs for the logged-in candidate based on their profile. */
+export function useRecommendedJobs(enabled = true) {
+  return useQuery({
+    queryKey: ['jobs', 'recommended'],
+    queryFn: () => api.get<JobsPage>('/jobs/recommended').then((r) => r.data),
+    enabled,
   });
 }
 

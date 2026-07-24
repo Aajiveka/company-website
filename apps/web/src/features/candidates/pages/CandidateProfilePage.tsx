@@ -5,6 +5,7 @@ import { Breadcrumbs, Button, Card, ProfileSkeleton } from '@/components/ui';
 import { useCandidateProfile } from '../candidate.api';
 import { DashboardStats } from '../components/DashboardStats';
 import { ProfileCompletionMeter } from '../components/ProfileCompletionMeter';
+import { RecommendedJobs } from '@/features/jobs/components/RecommendedJobs';
 
 /** Candidate self-profile / CV view (candidate-profile.aspx). */
 export default function CandidateProfilePage() {
@@ -33,6 +34,7 @@ export default function CandidateProfilePage() {
         <div className="space-y-6">
           <DashboardStats />
           <ProfileCompletionMeter />
+          <RecommendedJobs />
 
           {/* Header card */}
           <Card className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">

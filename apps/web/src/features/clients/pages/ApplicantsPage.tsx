@@ -1,28 +1,85 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Badge, Breadcrumbs, statusTone, Table, useToast, type Column } from '@/components/ui';
-import { useApplicants, useDecideApplicant, type ApplicantRow } from '../client.api';
+import { Badge, Breadcrumbs, Button, statusTone, Table, useToast, type Column } from '@/components/ui';
+import { cn } from '@/lib/cn';
+import { useApplicants, useBulkDecideApplicants, useDecideApplicant, type ApplicantRow } from '../client.api';
 
-/** Client — applicants for the company's jobs (job-applicants.aspx). */
+/** Client — applicants for the company's jobs, with bulk actions. */
 export default function ApplicantsPage() {
   const { t } = useTranslation('dashboard');
   const { data, isLoading } = useApplicants();
   const decide = useDecideApplicant();
+  const bulkDecide = useBulkDecideApplicants();
   const { notify } = useToast();
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+
+  const actionableRows = (data ?? []).filter((r) => r.jobStatus === 'Applied' || r.jobStatus === 'Mapped');
+  const allSelected = actionableRows.length > 0 && actionableRows.every((r) => selected.has(r.jobSubscriberMapId));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(actionableRows.map((r) => r.jobSubscriberMapId)));
+    }
+  };
+
+  const toggleOne = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const act = (jobSubscriberMapId: number, decision: 'Shortlisted' | 'Rejected') =>
     decide.mutate(
       { jobSubscriberMapId, decision },
       {
-        onSuccess: () => notify(decision === 'Shortlisted' ? t('applicants.shortlisted') : t('applicants.rejected'), decision === 'Shortlisted' ? 'success' : 'info'),
+        onSuccess: () => {
+          notify(decision === 'Shortlisted' ? t('applicants.shortlisted') : t('applicants.rejected'), decision === 'Shortlisted' ? 'success' : 'info');
+          setSelected((prev) => { const next = new Set(prev); next.delete(jobSubscriberMapId); return next; });
+        },
         onError: (e) =>
           notify(isAxiosError(e) ? e.response?.data?.message ?? t('applicants.somethingWrong') : t('applicants.somethingWrong'), 'error'),
       },
     );
 
+  const bulkAct = (decision: 'Shortlisted' | 'Rejected') => {
+    const ids = [...selected];
+    if (!ids.length) return;
+    bulkDecide.mutate(
+      { ids, decision },
+      {
+        onSuccess: () => {
+          notify(t('bulk.bulkSuccess', { count: ids.length }), 'success');
+          setSelected(new Set());
+        },
+        onError: () => notify(t('bulk.bulkFailed'), 'error'),
+      },
+    );
+  };
+
   const columns: Column<ApplicantRow>[] = [
+    {
+      key: 'select',
+      header: '',
+      className: 'w-10',
+      render: (r) =>
+        r.jobStatus === 'Applied' || r.jobStatus === 'Mapped' ? (
+          <input
+            type="checkbox"
+            checked={selected.has(r.jobSubscriberMapId)}
+            onChange={() => toggleOne(r.jobSubscriberMapId)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30"
+            aria-label={`Select ${r.fullName}`}
+          />
+        ) : null,
+    },
     {
       key: 'fullName',
       header: t('common:labels.candidate'),
@@ -65,7 +122,48 @@ export default function ApplicantsPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/company/profile' }, { label: t('applicants.heading') }]} />
-      <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{t('applicants.heading')}</h1>
+
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-heading text-2xl font-bold text-navy">{t('applicants.heading')}</h1>
+
+        {/* Bulk action bar */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-navy">{t('bulk.selected', { count: selected.size })}</span>
+            <Button
+              size="sm"
+              onClick={() => bulkAct('Shortlisted')}
+              disabled={bulkDecide.isPending}
+            >
+              <Check className="mr-1 h-3.5 w-3.5" /> {t('bulk.bulkShortlist')}
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => bulkAct('Rejected')}
+              disabled={bulkDecide.isPending}
+            >
+              <X className="mr-1 h-3.5 w-3.5" /> {t('bulk.bulkReject')}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Select all toggle */}
+      {actionableRows.length > 0 && (
+        <div className="mb-2">
+          <label className={cn('flex items-center gap-2 text-sm', selected.size > 0 ? 'text-primary font-medium' : 'text-gray-500')}>
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30"
+            />
+            {t('bulk.selectAll')}
+          </label>
+        </div>
+      )}
+
       <Table columns={columns} data={data ?? []} rowKey={(r) => r.jobSubscriberMapId} isLoading={isLoading} emptyMessage={t('applicants.noApplicants')} />
     </div>
   );

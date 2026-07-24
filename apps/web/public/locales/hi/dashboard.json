@@ -96,6 +96,14 @@
     "uploadSuccess": "\"{{name}}\" समीक्षा के लिए अपलोड किया गया।",
     "uploadFailed": "अपलोड विफल"
   },
+  "bulk": {
+    "selectAll": "सभी चुनें",
+    "selected": "{{count}} चयनित",
+    "bulkShortlist": "चयनित शॉर्टलिस्ट करें",
+    "bulkReject": "चयनित अस्वीकार करें",
+    "bulkSuccess": "{{count}} आवेदक अपडेट किए गए।",
+    "bulkFailed": "बल्क कार्रवाई विफल"
+  },
   "applicants": {
     "heading": "आवेदक",
     "noApplicants": "अभी तक कोई आवेदक नहीं।",

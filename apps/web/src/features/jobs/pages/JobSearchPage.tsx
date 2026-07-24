@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Bookmark, Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Card, JobCardSkeleton, Pagination } from '@/components/ui';
+import { Card, JobCardSkeleton, Loader } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/features/auth/auth.store';
@@ -10,12 +10,11 @@ import { useSavedJobIds, useSaveJob, useUnsaveJob } from '@/features/candidates/
 import { PageBanner } from '@/features/public/components/PageBanner';
 import { JobSearchBar } from '../components/JobSearchBar';
 import { JobFiltersPanel, type FilterValues } from '../components/JobFilters';
-import { usePublicJobs } from '../jobs.api';
+import { useInfinitePublicJobs } from '../jobs.api';
 import type { PublicJob } from '../jobs.types';
 
 const PAGE_SIZE = 10;
 
-/** CTC is stored in rupees; the listings show it in lakhs, like the reference site. */
 const lpa = (rupees: number) => (rupees / 100_000).toFixed(1).replace(/\.0$/, '');
 
 function JobCard({ job, isSaved, onToggleSave }: { job: PublicJob; isSaved: boolean; onToggleSave: () => void }) {
@@ -75,7 +74,7 @@ const intParam = (params: URLSearchParams, key: string) => {
   return Number.isFinite(n) ? n : undefined;
 };
 
-/** Public job search results — driven entirely by query params. */
+/** Public job search results — infinite scroll, driven by query params. */
 export default function JobSearchPage() {
   const { t } = useTranslation('jobs');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -89,7 +88,6 @@ export default function JobSearchPage() {
   // Read all params from URL
   const designation = searchParams.get('designation') ?? '';
   const location = searchParams.get('location') ?? '';
-  const page = Number(searchParams.get('page') ?? '1');
   const workMode = searchParams.get('workMode') ?? '';
   const employmentType = searchParams.get('employmentType') ?? '';
   const industry = searchParams.get('industry') ?? '';
@@ -100,7 +98,13 @@ export default function JobSearchPage() {
 
   const filterValues: FilterValues = { workMode, employmentType, industry, minExp, maxExp, minCtc, sortBy };
 
-  const { data, isLoading } = usePublicJobs({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfinitePublicJobs({
     designation: designation || undefined,
     location: location || undefined,
     workMode: workMode || undefined,
@@ -110,10 +114,30 @@ export default function JobSearchPage() {
     maxExp,
     minCtc: minCtc || undefined,
     sortBy: sortBy !== 'newest' ? sortBy : undefined,
-    page,
     pageSize: PAGE_SIZE,
   });
-  const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
+
+  const allJobs = data?.pages.flatMap((p) => p.rows) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
+
+  // Intersection observer for infinite scroll
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const handleIntersect = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage],
+  );
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(handleIntersect, { rootMargin: '200px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [handleIntersect]);
 
   const updateParams = (updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams);
@@ -121,14 +145,9 @@ export default function JobSearchPage() {
       if (v) params.set(k, v);
       else params.delete(k);
     }
-    // Reset to page 1 when filters change
-    if (!('page' in updates)) params.set('page', '1');
+    // Remove page param — infinite scroll doesn't use it
+    params.delete('page');
     setSearchParams(params);
-  };
-
-  const goToPage = (next: number) => {
-    updateParams({ page: String(next) });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const onFiltersChange = (next: FilterValues) => {
@@ -160,7 +179,6 @@ export default function JobSearchPage() {
       />
       <PageBanner variant="jobs" title={t('search.heading')}>
         <div className="mx-auto mt-8 max-w-3xl">
-          {/* Remount on param change so the dropdowns reflect the URL after a back/forward. */}
           <JobSearchBar
             key={`${designation}|${location}`}
             initialDesignation={designation}
@@ -179,7 +197,7 @@ export default function JobSearchPage() {
           />
 
           <p className="mb-6 mt-4 text-sm text-gray-500" aria-live="polite" aria-atomic="true">
-            {isLoading ? t('search.searching') : t('search.jobsFound', { count: data?.total ?? 0 })}
+            {isLoading ? t('search.searching') : t('search.jobsFound', { count: total })}
             {designation && ` ${t('search.forDesignation', { designation })}`}
             {location && ` · ${location}`}
           </p>
@@ -190,10 +208,10 @@ export default function JobSearchPage() {
               <JobCardSkeleton />
               <JobCardSkeleton />
             </div>
-          ) : data && data.rows.length > 0 ? (
+          ) : allJobs.length > 0 ? (
             <>
               <div className="space-y-4">
-                {data.rows.map((job) => (
+                {allJobs.map((job) => (
                   <JobCard
                     key={job.jobId}
                     job={job}
@@ -206,8 +224,21 @@ export default function JobSearchPage() {
                   />
                 ))}
               </div>
-              <div className="mt-8 flex justify-center">
-                <Pagination page={page} pageCount={pageCount} onChange={goToPage} />
+
+              {/* Infinite scroll sentinel */}
+              <div ref={sentinelRef} className="mt-6 flex justify-center py-4">
+                {isFetchingNextPage ? (
+                  <Loader label={t('infinite.loading')} />
+                ) : hasNextPage ? (
+                  <button
+                    onClick={() => fetchNextPage()}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {t('infinite.loadMore')}
+                  </button>
+                ) : allJobs.length > PAGE_SIZE ? (
+                  <p className="text-sm text-gray-400">{t('infinite.endOfResults')}</p>
+                ) : null}
               </div>
             </>
           ) : (

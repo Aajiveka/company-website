@@ -80,6 +80,16 @@
     "closeButton": "Close Job",
     "closedSuccess": "Job closed."
   },
+  "infinite": {
+    "loadMore": "Load more jobs",
+    "loading": "Loading more…",
+    "endOfResults": "You've seen all results"
+  },
+  "recommended": {
+    "heading": "Recommended for You",
+    "noRecommendations": "Complete your profile to get job recommendations.",
+    "viewAll": "View all recommended jobs →"
+  },
   "alerts": {
     "heading": "Job Alerts",
     "keyword": "Keyword",
