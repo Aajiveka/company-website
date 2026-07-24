@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Card, CompanyProfileSkeleton } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { api } from '@/lib/axios';
+import { CompanyReviews } from '@/features/public/components/CompanyReviews';
 import type { CompanyProfile } from '../client.types';
 
 interface PublicCompanyData extends CompanyProfile {
@@ -146,6 +147,8 @@ export default function CompanyPublicPage() {
                 </div>
               )}
             </div>
+          {/* Reviews */}
+          <CompanyReviews clientId={id} />
           </div>
         )}
       </div>

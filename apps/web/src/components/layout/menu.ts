@@ -38,6 +38,7 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'resumeExport', to: '/candidate/resume', icon: FileDown },
     { i18nKey: 'jobAlerts', to: '/candidate/job-alerts', icon: Bell },
     { i18nKey: 'documents', to: '/candidate/documents', icon: Upload },
+    { i18nKey: 'notificationSettings', to: '/candidate/notifications', icon: Bell },
     { i18nKey: 'changePassword', to: '/candidate/change-password', icon: KeyRound },
   ],
   [Role.QC1]: [

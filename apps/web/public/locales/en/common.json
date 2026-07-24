@@ -39,7 +39,8 @@
     "pricing": "Pricing",
     "savedJobs": "Saved Jobs",
     "resumeExport": "Download Resume",
-    "adminDashboard": "Admin Dashboard"
+    "adminDashboard": "Admin Dashboard",
+    "notificationSettings": "Email Preferences"
   },
   "actions": {
     "search": "Search",

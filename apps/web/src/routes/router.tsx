@@ -53,6 +53,9 @@ const MembershipPage = lazy(() => import('@/features/payments/pages/MembershipPa
 const PublicProfilePage = lazy(() => import('@/features/candidates/pages/PublicProfilePage'));
 const CompanyPublicPage = lazy(() => import('@/features/clients/pages/CompanyPublicPage'));
 const AdminDashboardPage = lazy(() => import('@/features/admin/pages/AdminDashboardPage'));
+const OnboardingPage = lazy(() => import('@/features/candidates/pages/OnboardingPage'));
+const NotificationSettingsPage = lazy(() => import('@/features/candidates/pages/NotificationSettingsPage'));
+const SalaryInsightsPage = lazy(() => import('@/features/public/pages/SalaryInsightsPage'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -82,6 +85,7 @@ export const router = createBrowserRouter([
       { path: '/terms', element: withSuspense(<LegalPage variant="terms" />) },
       { path: '/subscription', element: withSuspense(<SubscriptionPage />) },
       { path: '/resume', element: withSuspense(<ResumePage />) },
+      { path: '/salary-insights', element: withSuspense(<SalaryInsightsPage />) },
       { path: '/payment/return', element: withSuspense(<PaymentReturnPage />) },
     ],
   },
@@ -106,6 +110,8 @@ export const router = createBrowserRouter([
               { path: '/candidate/documents', element: withSuspense(<DocumentsPage />) },
               { path: '/candidate/subscription', element: withSuspense(<MembershipPage />) },
               { path: '/candidate/change-password', element: withSuspense(<ChangePasswordPage />) },
+              { path: '/candidate/onboarding', element: withSuspense(<OnboardingPage />) },
+              { path: '/candidate/notifications', element: withSuspense(<NotificationSettingsPage />) },
             ],
           },
           // Client / Admin

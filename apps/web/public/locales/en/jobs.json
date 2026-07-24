@@ -109,6 +109,13 @@
     "clearAll": "Clear all",
     "removeJob": "Remove from comparison"
   },
+  "salary": {
+    "heading": "Salary Insights",
+    "disclaimer": "Salary data is anonymized and aggregated from job postings on Aajiveka. Individual salaries may vary.",
+    "byDesignation": "Average Salary by Designation",
+    "byCity": "Average Salary by City",
+    "noData": "Not enough data to show salary insights yet."
+  },
   "alerts": {
     "heading": "Job Alerts",
     "keyword": "Keyword",

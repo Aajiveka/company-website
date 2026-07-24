@@ -39,7 +39,8 @@
     "pricing": "मूल्य निर्धारण",
     "savedJobs": "\u0938\u0939\u0947\u091C\u0940 \u0917\u0908 \u0928\u094C\u0915\u0930\u093F\u092F\u093E\u0901",
     "resumeExport": "\u0930\u093F\u091C\u093C\u094D\u092F\u0942\u092E\u0947 \u0921\u093E\u0909\u0928\u0932\u094B\u0921",
-    "adminDashboard": "\u090F\u0921\u092E\u093F\u0928 \u0921\u0948\u0936\u092C\u094B\u0930\u094D\u0921"
+    "adminDashboard": "\u090F\u0921\u092E\u093F\u0928 \u0921\u0948\u0936\u092C\u094B\u0930\u094D\u0921",
+    "notificationSettings": "ईमेल प्राथमिकताएँ"
   },
   "actions": {
     "search": "खोजें",

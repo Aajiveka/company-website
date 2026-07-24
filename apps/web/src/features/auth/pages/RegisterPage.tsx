@@ -10,7 +10,7 @@ import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
 import { registerSchema, type RegisterValues } from '../auth.types';
-import { ROLE_HOME } from '@/types/roles';
+import { Role, ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
 
 const apiMessage = (err: unknown, fallback: string) =>
@@ -53,7 +53,9 @@ export default function RegisterPage() {
     onSuccess: (session) => {
       setSession(session);
       notify(t('register.accountCreated'), 'success');
-      navigate(ROLE_HOME[session.user.roleId], { replace: true });
+      // New candidates go to onboarding wizard; other roles go to their default dashboard
+      const home = session.user.roleId === Role.Subscriber ? '/candidate/onboarding' : ROLE_HOME[session.user.roleId];
+      navigate(home, { replace: true });
     },
     onError: (err) => notify(apiMessage(err, t('register.invalidOtp')), 'error'),
   });
