@@ -51,6 +51,24 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            urlPattern: /\/api\/jobs\/\d+$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'job-details-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 3 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/locales\/.+\.json$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'i18n-cache',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),

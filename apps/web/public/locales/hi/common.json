@@ -43,7 +43,15 @@
     "notificationSettings": "ईमेल प्राथमिकताएँ",
     "emailTemplates": "ईमेल टेम्पलेट",
     "userManagement": "उपयोगकर्ता प्रबंधन",
-    "jobModeration": "नौकरी मॉडरेशन"
+    "jobModeration": "नौकरी मॉडरेशन",
+    "resumeBuilder": "रिज़्यूमे बिल्डर",
+    "assessments": "कौशल मूल्यांकन",
+    "referrals": "रेफरल",
+    "messages": "संदेश",
+    "bulkImport": "बल्क आयात",
+    "pipeline": "पाइपलाइन बोर्ड",
+    "employerAnalytics": "एनालिटिक्स",
+    "blogCms": "ब्लॉग CMS"
   },
   "actions": {
     "search": "खोजें",

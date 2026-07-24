@@ -43,7 +43,15 @@
     "notificationSettings": "Email Preferences",
     "emailTemplates": "Email Templates",
     "userManagement": "User Management",
-    "jobModeration": "Job Moderation"
+    "jobModeration": "Job Moderation",
+    "resumeBuilder": "Resume Builder",
+    "assessments": "Skill Assessments",
+    "referrals": "Referrals",
+    "messages": "Messages",
+    "bulkImport": "Bulk Import",
+    "pipeline": "Pipeline Board",
+    "employerAnalytics": "Analytics",
+    "blogCms": "Blog CMS"
   },
   "actions": {
     "search": "Search",

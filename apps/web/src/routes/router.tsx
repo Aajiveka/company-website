@@ -59,6 +59,15 @@ const SalaryInsightsPage = lazy(() => import('@/features/public/pages/SalaryInsi
 const EmailTemplatesPage = lazy(() => import('@/features/clients/pages/EmailTemplatesPage'));
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/AdminUsersPage'));
 const AdminJobsPage = lazy(() => import('@/features/admin/pages/AdminJobsPage'));
+const ResumeBuilderPage = lazy(() => import('@/features/candidates/pages/ResumeBuilderPage'));
+const AssessmentsListPage = lazy(() => import('@/features/candidates/pages/AssessmentsListPage'));
+const SkillAssessmentPage = lazy(() => import('@/features/candidates/pages/SkillAssessmentPage'));
+const ReferralPage = lazy(() => import('@/features/candidates/pages/ReferralPage'));
+const BulkJobImportPage = lazy(() => import('@/features/clients/pages/BulkJobImportPage'));
+const PipelineBoardPage = lazy(() => import('@/features/clients/pages/PipelineBoardPage'));
+const EmployerAnalyticsPage = lazy(() => import('@/features/clients/pages/EmployerAnalyticsPage'));
+const BlogCmsPage = lazy(() => import('@/features/admin/pages/BlogCmsPage'));
+const MessagingPage = lazy(() => import('@/features/messaging/MessagingPage'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -115,6 +124,11 @@ export const router = createBrowserRouter([
               { path: '/candidate/change-password', element: withSuspense(<ChangePasswordPage />) },
               { path: '/candidate/onboarding', element: withSuspense(<OnboardingPage />) },
               { path: '/candidate/notifications', element: withSuspense(<NotificationSettingsPage />) },
+              { path: '/candidate/resume-builder', element: withSuspense(<ResumeBuilderPage />) },
+              { path: '/candidate/assessments', element: withSuspense(<AssessmentsListPage />) },
+              { path: '/candidate/assessments/:id', element: withSuspense(<SkillAssessmentPage />) },
+              { path: '/candidate/referrals', element: withSuspense(<ReferralPage />) },
+              { path: '/candidate/messages', element: withSuspense(<MessagingPage />) },
             ],
           },
           // Client / Admin
@@ -127,6 +141,10 @@ export const router = createBrowserRouter([
               { path: '/company/jobs/:id/edit', element: withSuspense(<JobPostPage />) },
               { path: '/company/applicants', element: withSuspense(<ApplicantsPage />) },
               { path: '/company/email-templates', element: withSuspense(<EmailTemplatesPage />) },
+              { path: '/company/bulk-import', element: withSuspense(<BulkJobImportPage />) },
+              { path: '/company/pipeline', element: withSuspense(<PipelineBoardPage />) },
+              { path: '/company/analytics', element: withSuspense(<EmployerAnalyticsPage />) },
+              { path: '/company/messages', element: withSuspense(<MessagingPage />) },
             ],
           },
           // Admin
@@ -136,6 +154,7 @@ export const router = createBrowserRouter([
               { path: '/admin', element: withSuspense(<AdminDashboardPage />) },
               { path: '/admin/users', element: withSuspense(<AdminUsersPage />) },
               { path: '/admin/jobs', element: withSuspense(<AdminJobsPage />) },
+              { path: '/admin/blog', element: withSuspense(<BlogCmsPage />) },
             ],
           },
           // QC / Recruitment
