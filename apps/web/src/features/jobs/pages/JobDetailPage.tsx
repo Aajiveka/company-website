@@ -103,6 +103,7 @@ export default function JobDetailPage() {
           title={`${job.designation} at ${job.company}`}
           description={`Apply for ${job.designation} at ${job.company}. ${job.city ? `Location: ${job.city}.` : ''} Find your next career opportunity on Aajiveka.`}
           path={`/jobs/${id}`}
+          ogImage={job.companyLogo || undefined}
           jsonLd={{
             '@context': 'https://schema.org',
             '@type': 'JobPosting',
