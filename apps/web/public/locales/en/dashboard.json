@@ -140,6 +140,15 @@
     "interview": "Interview",
     "rejected": "Rejected"
   },
+  "interviews": {
+    "heading": "My Interviews",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "upcomingSection": "Upcoming ({{count}})",
+    "pastSection": "Past ({{count}})",
+    "noInterviews": "No interviews scheduled yet.",
+    "noInterviewsHint": "When you're shortlisted for a job, your interviews will appear here."
+  },
   "employerStats": {
     "activePostings": "Active Postings",
     "totalApplicants": "Total Applicants",

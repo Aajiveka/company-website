@@ -140,6 +140,15 @@
     "interview": "साक्षात्कार",
     "rejected": "अस्वीकृत"
   },
+  "interviews": {
+    "heading": "मेरे साक्षात्कार",
+    "upcoming": "आगामी",
+    "past": "पिछले",
+    "upcomingSection": "आगामी ({{count}})",
+    "pastSection": "पिछले ({{count}})",
+    "noInterviews": "अभी तक कोई साक्षात्कार निर्धारित नहीं।",
+    "noInterviewsHint": "जब आप किसी नौकरी के लिए शॉर्टलिस्ट होंगे, तो आपके साक्षात्कार यहाँ दिखाई देंगे।"
+  },
   "employerStats": {
     "activePostings": "सक्रिय पोस्टिंग",
     "totalApplicants": "कुल आवेदक",

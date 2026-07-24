@@ -18,6 +18,7 @@ const CvManagerPage = lazy(() => import('@/features/candidates/pages/CvManagerPa
 const AppliedJobsPage = lazy(() => import('@/features/candidates/pages/AppliedJobsPage'));
 const SavedJobsPage = lazy(() => import('@/features/candidates/pages/SavedJobsPage'));
 const ResumePreviewPage = lazy(() => import('@/features/candidates/pages/ResumePreviewPage'));
+const CandidateInterviewsPage = lazy(() => import('@/features/candidates/pages/InterviewsPage'));
 const JobAlertsPage = lazy(() => import('@/features/candidates/pages/JobAlertsPage'));
 const DocumentsPage = lazy(() => import('@/features/candidates/pages/DocumentsPage'));
 const ChangePasswordPage = lazy(() => import('@/features/candidates/pages/ChangePasswordPage'));
@@ -93,6 +94,7 @@ export const router = createBrowserRouter([
               { path: '/candidate/profile', element: withSuspense(<CandidateProfilePage />) },
               { path: '/candidate/cv-manager', element: withSuspense(<CvManagerPage />) },
               { path: '/candidate/applied-jobs', element: withSuspense(<AppliedJobsPage />) },
+              { path: '/candidate/interviews', element: withSuspense(<CandidateInterviewsPage />) },
               { path: '/candidate/saved-jobs', element: withSuspense(<SavedJobsPage />) },
               { path: '/candidate/resume', element: withSuspense(<ResumePreviewPage />) },
               { path: '/candidate/job-alerts', element: withSuspense(<JobAlertsPage />) },
