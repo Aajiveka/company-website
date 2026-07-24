@@ -116,6 +116,28 @@
     "byCity": "शहर के अनुसार औसत वेतन",
     "noData": "वेतन अंतर्दृष्टि दिखाने के लिए पर्याप्त डेटा नहीं है।"
   },
+  "advancedSearch": {
+    "heading": "उन्नत खोज",
+    "keywords": "कीवर्ड",
+    "keywordsHint": "जोड़ने के लिए Enter दबाएं",
+    "excludeKeywords": "कीवर्ड बाहर करें",
+    "exactTitle": "सटीक नौकरी शीर्षक",
+    "exactTitlePlaceholder": "जैसे सीनियर React डेवलपर",
+    "companies": "कंपनियाँ",
+    "companiesHint": "जोड़ने के लिए Enter दबाएं",
+    "postedWithin": "पोस्ट की अवधि",
+    "last24h": "पिछले 24 घंटे",
+    "last7d": "पिछले 7 दिन",
+    "last30d": "पिछले 30 दिन",
+    "anyTime": "कोई भी समय",
+    "salaryRange": "वेतन सीमा (₹ LPA)",
+    "min": "न्यूनतम",
+    "max": "अधिकतम",
+    "experienceRange": "अनुभव (वर्ष)",
+    "applyFilters": "फ़िल्टर लागू करें",
+    "resetFilters": "रीसेट",
+    "advancedFilters": "उन्नत फ़िल्टर"
+  },
   "alerts": {
     "heading": "नौकरी अलर्ट",
     "keyword": "कीवर्ड",

@@ -51,7 +51,11 @@
     "bulkImport": "Bulk Import",
     "pipeline": "Pipeline Board",
     "employerAnalytics": "Analytics",
-    "blogCms": "Blog CMS"
+    "blogCms": "Blog CMS",
+    "savedSearches": "Saved Searches",
+    "reports": "Reports & Export",
+    "sourcing": "Candidate Sourcing",
+    "campaigns": "Email Campaigns"
   },
   "actions": {
     "search": "Search",

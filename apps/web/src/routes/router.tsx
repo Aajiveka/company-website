@@ -68,6 +68,10 @@ const PipelineBoardPage = lazy(() => import('@/features/clients/pages/PipelineBo
 const EmployerAnalyticsPage = lazy(() => import('@/features/clients/pages/EmployerAnalyticsPage'));
 const BlogCmsPage = lazy(() => import('@/features/admin/pages/BlogCmsPage'));
 const MessagingPage = lazy(() => import('@/features/messaging/MessagingPage'));
+const SavedSearchesPage = lazy(() => import('@/features/candidates/pages/SavedSearchesPage'));
+const ReportExportPage = lazy(() => import('@/features/clients/pages/ReportExportPage'));
+const CandidateSourcePage = lazy(() => import('@/features/clients/pages/CandidateSourcePage'));
+const EmailCampaignPage = lazy(() => import('@/features/clients/pages/EmailCampaignPage'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -129,6 +133,7 @@ export const router = createBrowserRouter([
               { path: '/candidate/assessments/:id', element: withSuspense(<SkillAssessmentPage />) },
               { path: '/candidate/referrals', element: withSuspense(<ReferralPage />) },
               { path: '/candidate/messages', element: withSuspense(<MessagingPage />) },
+              { path: '/candidate/saved-searches', element: withSuspense(<SavedSearchesPage />) },
             ],
           },
           // Client / Admin
@@ -145,6 +150,9 @@ export const router = createBrowserRouter([
               { path: '/company/pipeline', element: withSuspense(<PipelineBoardPage />) },
               { path: '/company/analytics', element: withSuspense(<EmployerAnalyticsPage />) },
               { path: '/company/messages', element: withSuspense(<MessagingPage />) },
+              { path: '/company/reports', element: withSuspense(<ReportExportPage />) },
+              { path: '/company/sourcing', element: withSuspense(<CandidateSourcePage />) },
+              { path: '/company/campaigns', element: withSuspense(<EmailCampaignPage />) },
             ],
           },
           // Admin

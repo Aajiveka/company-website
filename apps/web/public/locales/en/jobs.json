@@ -116,6 +116,28 @@
     "byCity": "Average Salary by City",
     "noData": "Not enough data to show salary insights yet."
   },
+  "advancedSearch": {
+    "heading": "Advanced Search",
+    "keywords": "Keywords",
+    "keywordsHint": "Press Enter to add",
+    "excludeKeywords": "Exclude Keywords",
+    "exactTitle": "Exact Job Title",
+    "exactTitlePlaceholder": "e.g. Senior React Developer",
+    "companies": "Companies",
+    "companiesHint": "Press Enter to add",
+    "postedWithin": "Posted Within",
+    "last24h": "Last 24 hours",
+    "last7d": "Last 7 days",
+    "last30d": "Last 30 days",
+    "anyTime": "Any time",
+    "salaryRange": "Salary Range (₹ LPA)",
+    "min": "Min",
+    "max": "Max",
+    "experienceRange": "Experience (years)",
+    "applyFilters": "Apply Filters",
+    "resetFilters": "Reset",
+    "advancedFilters": "Advanced Filters"
+  },
   "alerts": {
     "heading": "Job Alerts",
     "keyword": "Keyword",

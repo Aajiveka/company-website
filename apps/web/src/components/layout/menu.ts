@@ -15,12 +15,15 @@ import {
   KeyRound,
   LayoutDashboard,
   Mail,
+  Megaphone,
   MessageSquare,
   PenTool,
+  Search,
   ShieldCheck,
   Upload,
   UploadCloud,
   Users,
+  FileBarChart,
   type LucideIcon,
 } from 'lucide-react';
 import { Role, type RoleId } from '@/types/roles';
@@ -49,6 +52,7 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'resumeBuilder', to: '/candidate/resume-builder', icon: PenTool },
     { i18nKey: 'assessments', to: '/candidate/assessments', icon: ClipboardCheck },
     { i18nKey: 'referrals', to: '/candidate/referrals', icon: Gift },
+    { i18nKey: 'savedSearches', to: '/candidate/saved-searches', icon: Search },
     { i18nKey: 'messages', to: '/candidate/messages', icon: MessageSquare },
     { i18nKey: 'notificationSettings', to: '/candidate/notifications', icon: Bell },
     { i18nKey: 'changePassword', to: '/candidate/change-password', icon: KeyRound },
@@ -72,6 +76,9 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'bulkImport', to: '/company/bulk-import', icon: UploadCloud },
     { i18nKey: 'pipeline', to: '/company/pipeline', icon: KanbanSquare },
     { i18nKey: 'employerAnalytics', to: '/company/analytics', icon: BarChart3 },
+    { i18nKey: 'reports', to: '/company/reports', icon: FileBarChart },
+    { i18nKey: 'sourcing', to: '/company/sourcing', icon: Search },
+    { i18nKey: 'campaigns', to: '/company/campaigns', icon: Megaphone },
     { i18nKey: 'messages', to: '/company/messages', icon: MessageSquare },
   ],
   [Role.Admin]: [

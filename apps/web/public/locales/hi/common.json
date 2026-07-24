@@ -51,7 +51,11 @@
     "bulkImport": "बल्क आयात",
     "pipeline": "पाइपलाइन बोर्ड",
     "employerAnalytics": "एनालिटिक्स",
-    "blogCms": "ब्लॉग CMS"
+    "blogCms": "ब्लॉग CMS",
+    "savedSearches": "सहेजी गई खोजें",
+    "reports": "रिपोर्ट और निर्यात",
+    "sourcing": "उम्मीदवार सोर्सिंग",
+    "campaigns": "ईमेल अभियान"
   },
   "actions": {
     "search": "खोजें",
