@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -5,6 +6,7 @@ import { Card, JobCardSkeleton, Pagination } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '@/features/public/components/PageBanner';
 import { JobSearchBar } from '../components/JobSearchBar';
+import { JobFiltersPanel, type FilterValues } from '../components/JobFilters';
 import { usePublicJobs } from '../jobs.api';
 import type { PublicJob } from '../jobs.types';
 
@@ -50,22 +52,72 @@ function JobCard({ job }: { job: PublicJob }) {
   );
 }
 
-/** Public job search results — driven entirely by the `function`/`location`/`page` query params. */
+/** Parse a search param as an integer, returning undefined if missing/invalid. */
+const intParam = (params: URLSearchParams, key: string) => {
+  const v = params.get(key);
+  if (!v) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+/** Public job search results — driven entirely by query params. */
 export default function JobSearchPage() {
   const { t } = useTranslation('jobs');
   const [searchParams, setSearchParams] = useSearchParams();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Read all params from URL
   const designation = searchParams.get('designation') ?? '';
   const location = searchParams.get('location') ?? '';
   const page = Number(searchParams.get('page') ?? '1');
+  const workMode = searchParams.get('workMode') ?? '';
+  const employmentType = searchParams.get('employmentType') ?? '';
+  const minExp = intParam(searchParams, 'minExp');
+  const maxExp = intParam(searchParams, 'maxExp');
+  const minCtc = intParam(searchParams, 'minCtc') ?? 0;
+  const sortBy = (searchParams.get('sortBy') ?? 'newest') as FilterValues['sortBy'];
 
-  const { data, isLoading } = usePublicJobs({ designation, location, page, pageSize: PAGE_SIZE });
+  const filterValues: FilterValues = { workMode, employmentType, minExp, maxExp, minCtc, sortBy };
+
+  const { data, isLoading } = usePublicJobs({
+    designation: designation || undefined,
+    location: location || undefined,
+    workMode: workMode || undefined,
+    employmentType: employmentType || undefined,
+    minExp,
+    maxExp,
+    minCtc: minCtc || undefined,
+    sortBy: sortBy !== 'newest' ? sortBy : undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  });
   const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
 
-  const goToPage = (next: number) => {
+  const updateParams = (updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams);
-    params.set('page', String(next));
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) params.set(k, v);
+      else params.delete(k);
+    }
+    // Reset to page 1 when filters change
+    if (!('page' in updates)) params.set('page', '1');
     setSearchParams(params);
+  };
+
+  const goToPage = (next: number) => {
+    updateParams({ page: String(next) });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const onFiltersChange = (next: FilterValues) => {
+    updateParams({
+      workMode: next.workMode || undefined,
+      employmentType: next.employmentType || undefined,
+      minExp: next.minExp != null ? String(next.minExp) : undefined,
+      maxExp: next.maxExp != null ? String(next.maxExp) : undefined,
+      minCtc: next.minCtc > 0 ? String(next.minCtc) : undefined,
+      sortBy: next.sortBy !== 'newest' ? next.sortBy : undefined,
+    });
   };
 
   return (
@@ -96,7 +148,14 @@ export default function JobSearchPage() {
 
       <section className="py-12 md:py-16">
         <div className="container">
-          <p className="mb-6 text-sm text-gray-500">
+          <JobFiltersPanel
+            open={filtersOpen}
+            onToggle={() => setFiltersOpen((o) => !o)}
+            values={filterValues}
+            onChange={onFiltersChange}
+          />
+
+          <p className="mb-6 mt-4 text-sm text-gray-500">
             {isLoading ? t('search.searching') : t('search.jobsFound', { count: data?.total ?? 0 })}
             {designation && ` ${t('search.forDesignation', { designation })}`}
             {location && ` · ${location}`}

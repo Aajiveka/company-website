@@ -19,6 +19,18 @@ export interface JobsQuery {
   industry?: string;
   /** City. */
   location?: string;
+  /** Work mode filter (e.g. Remote, Hybrid, On-site). */
+  workMode?: string;
+  /** Employment type filter (e.g. Full Time, Part Time). */
+  employmentType?: string;
+  /** Minimum experience in years. */
+  minExp?: number;
+  /** Maximum experience in years. */
+  maxExp?: number;
+  /** Minimum CTC floor (rupees) — filters jobs whose maxCTC >= this value. */
+  minCtc?: number;
+  /** Sort order. */
+  sortBy?: 'newest' | 'salary_high' | 'salary_low';
   page: number;
   pageSize: number;
 }
@@ -42,4 +54,6 @@ export interface JobFilters {
   states: string[];
   locations: string[];
   cityByState: Record<string, string[]>;
+  workModes: string[];
+  employmentTypes: string[];
 }

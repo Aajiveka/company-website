@@ -45,7 +45,7 @@ export class JobsService {
    * that is what this returns.
    */
   async filters() {
-    const [designations, industries, states, cities] = await Promise.all([
+    const [designations, industries, states, cities, workModes, empTypes] = await Promise.all([
       this.db.mstrDesignation.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
       this.db.mstrIndustryType.findMany({
         select: { industryType: true },
@@ -53,6 +53,8 @@ export class JobsService {
       }),
       this.db.mstrState.findMany({ select: { stateID: true, descr: true }, orderBy: { descr: 'asc' } }),
       this.db.mstrCily.findMany({ select: { descr: true, stateID: true }, orderBy: { descr: 'asc' } }),
+      this.db.mstrWorkMode.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
+      this.db.mstrEmpType.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
     ]);
     const clean = (xs: (string | null)[]) => xs.filter((d): d is string => !!d?.trim());
     return {
@@ -63,6 +65,8 @@ export class JobsService {
       cityByState: Object.fromEntries(
         states.map((s) => [s.descr ?? '', clean(cities.filter((c) => c.stateID === s.stateID).map((c) => c.descr))]),
       ),
+      workModes: clean(workModes.map((w) => w.descr)),
+      employmentTypes: clean(empTypes.map((e) => e.descr)),
     };
   }
 
@@ -76,14 +80,32 @@ export class JobsService {
       ...(q.designation ? { designation: { descr: eq(q.designation) } } : {}),
       ...(q.industry ? { industryType: { industryType: eq(q.industry) } } : {}),
       ...(q.location ? { jobCity: { descr: eq(q.location) } } : {}),
+      ...(q.workMode ? { workMode: { descr: eq(q.workMode) } } : {}),
+      ...(q.employmentType ? { employeeType: { descr: eq(q.employmentType) } } : {}),
+      ...(q.minExp != null || q.maxExp != null
+        ? {
+            minExp: {
+              ...(q.minExp != null ? { gte: q.minExp } : {}),
+              ...(q.maxExp != null ? { lte: q.maxExp } : {}),
+            },
+          }
+        : {}),
+      ...(q.minCtc != null ? { maxCTC: { gte: q.minCtc } } : {}),
     };
+
+    const orderBy =
+      q.sortBy === 'salary_high'
+        ? { maxCTC: 'desc' as const }
+        : q.sortBy === 'salary_low'
+          ? { minCTC: 'asc' as const }
+          : { timestampIns: 'desc' as const };
 
     const [rows, total] = await Promise.all([
       this.db.clientJobs.findMany({
         where,
         skip: (q.page - 1) * q.pageSize,
         take: q.pageSize,
-        orderBy: { timestampIns: 'desc' },
+        orderBy,
         include: {
           client: { select: { clientName: true } },
           jobCity: { select: { descr: true } },

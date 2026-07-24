@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class JobSearchQueryDto {
@@ -17,6 +17,42 @@ export class JobSearchQueryDto {
   @IsOptional()
   @IsString()
   location?: string;
+
+  @ApiPropertyOptional({ description: 'Work mode (tblMstrWorkMode.Descr)' })
+  @IsOptional()
+  @IsString()
+  workMode?: string;
+
+  @ApiPropertyOptional({ description: 'Employment type (tblMstrEmpType.Descr)' })
+  @IsOptional()
+  @IsString()
+  employmentType?: string;
+
+  @ApiPropertyOptional({ description: 'Minimum experience (years)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  minExp?: number;
+
+  @ApiPropertyOptional({ description: 'Maximum experience (years)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  maxExp?: number;
+
+  @ApiPropertyOptional({ description: 'Minimum CTC floor (rupees)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  minCtc?: number;
+
+  @ApiPropertyOptional({ description: 'Sort order', enum: ['newest', 'salary_high', 'salary_low'] })
+  @IsOptional()
+  @IsIn(['newest', 'salary_high', 'salary_low'])
+  sortBy?: 'newest' | 'salary_high' | 'salary_low';
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()

@@ -11,7 +11,22 @@
     "noMatch": "आपकी खोज से कोई नौकरी मेल नहीं खाती।",
     "tryDifferent": "कोई अलग फंक्शन या स्थान आज़माएं।",
     "fresher": "फ्रेशर",
-    "yrs": "वर्ष"
+    "yrs": "वर्ष",
+    "filters": "फ़िल्टर",
+    "hideFilters": "फ़िल्टर छुपाएं",
+    "experience": "अनुभव",
+    "workMode": "कार्य मोड",
+    "employmentType": "रोज़गार प्रकार",
+    "salary": "न्यूनतम वेतन",
+    "salaryLpa": "{{value}} LPA",
+    "anyExperience": "कोई भी",
+    "sortBy": "क्रमित करें",
+    "sortNewest": "नवीनतम पहले",
+    "sortSalaryHigh": "वेतन: अधिक → कम",
+    "sortSalaryLow": "वेतन: कम → अधिक",
+    "clearFilters": "सब हटाएं",
+    "activeFilters": "{{count}} फ़िल्टर सक्रिय",
+    "activeFilters_other": "{{count}} फ़िल्टर सक्रिय"
   },
   "detail": {
     "breadcrumbJobs": "नौकरियाँ",
