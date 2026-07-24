@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Bell,
   Briefcase,
   Building2,
@@ -56,9 +57,11 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'applicants', to: '/company/applicants', icon: Users },
   ],
   [Role.Admin]: [
+    { i18nKey: 'adminDashboard', to: '/admin', icon: BarChart3 },
     { i18nKey: 'companyProfile', to: '/company/profile', icon: Building2 },
     { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
     { i18nKey: 'manageJobs', to: '/company/jobs', icon: Briefcase },
+    { i18nKey: 'applicants', to: '/company/applicants', icon: Users },
   ],
   [Role.Subscription]: [{ i18nKey: 'pricing', to: '/pricing', icon: FileText }],
 };

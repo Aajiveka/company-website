@@ -97,7 +97,7 @@ export function NotificationBell() {
     localStorage.setItem('notif_seen_at', String(now));
   }, []);
 
-  // Only fetch applied jobs for candidates
+  // Only fetch applied jobs for candidates — poll every 60s for updates
   const isCandidate = user?.roleId === Role.Subscriber;
   const { data: appliedJobs } = useAppliedJobs(isCandidate);
 

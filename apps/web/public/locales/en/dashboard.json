@@ -131,6 +131,7 @@
     "printButton": "Print / Save PDF",
     "hint": "Use your browser's Print dialog to save as PDF. Tip: Select \"Save as PDF\" as the printer.",
     "downloadButton": "Download Resume",
+    "downloadPdf": "Download PDF",
     "skills": "Skills",
     "experience": "Experience",
     "education": "Education",
@@ -177,6 +178,22 @@
     "education": "Education (at least one entry)",
     "employment": "Employment history (at least one entry)",
     "certificates": "Certificates (at least one)"
+  },
+  "publicCompany": {
+    "notAvailable": "This company profile is not available.",
+    "openPositions": "Open Positions",
+    "noOpenings": "No open positions at the moment."
+  },
+  "admin": {
+    "heading": "Admin Dashboard",
+    "totalCandidates": "Total Candidates",
+    "totalEmployers": "Total Employers",
+    "activeJobs": "Active Jobs",
+    "totalApplications": "Total Applications",
+    "topDesignations": "Top Designations",
+    "topCities": "Top Cities",
+    "recentSignups": "Recent Signups (Last 14 Days)",
+    "noData": "No data available yet."
   },
   "analytics": {
     "pipeline": "Applicant Pipeline",

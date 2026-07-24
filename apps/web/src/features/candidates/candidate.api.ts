@@ -34,6 +34,9 @@ export function useAppliedJobs(enabled = true) {
     queryKey: ['candidate', 'applied-jobs'],
     queryFn: () => api.get<AppliedJob[]>('/candidates/me/applied-jobs').then((r) => r.data),
     enabled,
+    // Poll every 60s for status updates (powers notification bell)
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
   });
 }
 

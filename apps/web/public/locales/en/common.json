@@ -38,7 +38,8 @@
     "applicants": "Applicants",
     "pricing": "Pricing",
     "savedJobs": "Saved Jobs",
-    "resumeExport": "Download Resume"
+    "resumeExport": "Download Resume",
+    "adminDashboard": "Admin Dashboard"
   },
   "actions": {
     "search": "Search",

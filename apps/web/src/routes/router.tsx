@@ -51,6 +51,8 @@ const PaymentReturnPage = lazy(() => import('@/features/payments/pages/PaymentRe
 const MembershipPage = lazy(() => import('@/features/payments/pages/MembershipPage'));
 
 const PublicProfilePage = lazy(() => import('@/features/candidates/pages/PublicProfilePage'));
+const CompanyPublicPage = lazy(() => import('@/features/clients/pages/CompanyPublicPage'));
+const AdminDashboardPage = lazy(() => import('@/features/admin/pages/AdminDashboardPage'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -68,6 +70,7 @@ export const router = createBrowserRouter([
       { path: '/jobs', element: withSuspense(<JobSearchPage />) },
       { path: '/jobs/:id', element: withSuspense(<JobDetailPage />) },
       { path: '/candidates/:id', element: withSuspense(<PublicProfilePage />) },
+      { path: '/companies/:id', element: withSuspense(<CompanyPublicPage />) },
       { path: '/pricing', element: withSuspense(<PricingPage />) },
       { path: '/about', element: withSuspense(<AboutPage />) },
       { path: '/contact', element: withSuspense(<ContactPage />) },
@@ -114,6 +117,13 @@ export const router = createBrowserRouter([
               { path: '/company/post-job', element: withSuspense(<JobPostPage />) },
               { path: '/company/jobs/:id/edit', element: withSuspense(<JobPostPage />) },
               { path: '/company/applicants', element: withSuspense(<ApplicantsPage />) },
+            ],
+          },
+          // Admin
+          {
+            element: <ProtectedRoute allow={[Role.Admin]} />,
+            children: [
+              { path: '/admin', element: withSuspense(<AdminDashboardPage />) },
             ],
           },
           // QC / Recruitment

@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Printer } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Download, Printer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Button, ProfileSkeleton } from '@/components/ui';
 import { useCandidateProfile } from '../candidate.api';
@@ -8,9 +8,52 @@ export default function ResumePreviewPage() {
   const { t } = useTranslation('dashboard');
   const { data, isLoading, isError } = useCandidateProfile();
   const printRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
 
   const onPrint = () => {
     window.print();
+  };
+
+  const onExportPdf = async () => {
+    if (!printRef.current || !data) return;
+    setExporting(true);
+    try {
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+
+      // Handle multi-page if content is taller than A4
+      const pageHeight = 297; // A4 height in mm
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`${data.fullName.replace(/\s+/g, '_')}_Resume.pdf`);
+    } catch {
+      // Fallback to print
+      window.print();
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (isLoading) return <div className="mx-auto max-w-4xl"><ProfileSkeleton /></div>;
@@ -26,10 +69,16 @@ export default function ResumePreviewPage() {
         ]} />
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="font-heading text-2xl font-bold text-navy">{t('resume.heading')}</h1>
-          <Button onClick={onPrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            {t('resume.printButton')}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={onExportPdf} disabled={exporting}>
+              <Download className="mr-2 h-4 w-4" />
+              {exporting ? t('common:actions.loading') : t('resume.downloadPdf')}
+            </Button>
+            <Button variant="outline" onClick={onPrint}>
+              <Printer className="mr-2 h-4 w-4" />
+              {t('resume.printButton')}
+            </Button>
+          </div>
         </div>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('resume.hint')}</p>
       </div>

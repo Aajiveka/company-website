@@ -131,6 +131,7 @@
     "printButton": "\u092A\u094D\u0930\u093F\u0902\u091F / PDF \u0938\u0939\u0947\u091C\u0947\u0902",
     "hint": "PDF \u0915\u0947 \u0930\u0942\u092A \u092E\u0947\u0902 \u0938\u0939\u0947\u091C\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F \u0905\u092A\u0928\u0947 \u092C\u094D\u0930\u093E\u0909\u091C\u093C\u0930 \u0915\u0947 \u092A\u094D\u0930\u093F\u0902\u091F \u0921\u093E\u092F\u0932\u0949\u0917 \u0915\u093E \u0909\u092A\u092F\u094B\u0917 \u0915\u0930\u0947\u0902\u0964 \u091F\u093F\u092A: \u092A\u094D\u0930\u093F\u0902\u091F\u0930 \u0915\u0947 \u0930\u0942\u092A \u092E\u0947\u0902 \"Save as PDF\" \u091A\u0941\u0928\u0947\u0902\u0964",
     "downloadButton": "\u0930\u093F\u091C\u093C\u094D\u092F\u0942\u092E\u0947 \u0921\u093E\u0909\u0928\u0932\u094B\u0921 \u0915\u0930\u0947\u0902",
+    "downloadPdf": "PDF \u0921\u093E\u0909\u0928\u0932\u094B\u0921",
     "skills": "\u0915\u094C\u0936\u0932",
     "experience": "\u0905\u0928\u0941\u092D\u0935",
     "education": "\u0936\u093F\u0915\u094D\u0937\u093E",
@@ -177,6 +178,22 @@
     "education": "शिक्षा (कम से कम एक प्रविष्टि)",
     "employment": "रोज़गार इतिहास (कम से कम एक प्रविष्टि)",
     "certificates": "प्रमाणपत्र (कम से कम एक)"
+  },
+  "publicCompany": {
+    "notAvailable": "यह कंपनी प्रोफ़ाइल उपलब्ध नहीं है।",
+    "openPositions": "खुली पोज़ीशन",
+    "noOpenings": "इस समय कोई खुली पोज़ीशन नहीं।"
+  },
+  "admin": {
+    "heading": "एडमिन डैशबोर्ड",
+    "totalCandidates": "कुल उम्मीदवार",
+    "totalEmployers": "कुल नियोक्ता",
+    "activeJobs": "सक्रिय नौकरियाँ",
+    "totalApplications": "कुल आवेदन",
+    "topDesignations": "शीर्ष पदनाम",
+    "topCities": "शीर्ष शहर",
+    "recentSignups": "हाल के साइनअप (पिछले 14 दिन)",
+    "noData": "अभी तक कोई डेटा उपलब्ध नहीं।"
   },
   "analytics": {
     "pipeline": "आवेदक पाइपलाइन",
