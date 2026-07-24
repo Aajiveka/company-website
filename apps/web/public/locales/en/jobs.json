@@ -36,7 +36,19 @@
     "alreadyApplied": "You've applied to this job.",
     "candidateOnly": "Only candidate accounts can apply to jobs.",
     "applicationFailed": "Could not submit your application",
-    "applicationSuccess": "Application submitted."
+    "applicationSuccess": "Application submitted.",
+    "description": "Job Description",
+    "requirements": "Candidate Requirements",
+    "skills": "Required Skills",
+    "education": "Education",
+    "experience": "Experience",
+    "expRange": "{{min}}–{{max}} years",
+    "expMin": "{{min}}+ years",
+    "salary": "Salary",
+    "postedOn": "Posted on {{date}}",
+    "shareJob": "Share this job",
+    "copied": "Link copied!",
+    "similarJobs": "Browse similar jobs"
   },
   "post": {
     "postTitle": "Post a Job",

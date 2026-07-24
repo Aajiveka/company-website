@@ -13,6 +13,16 @@ export interface PublicJob {
   postedOn: string;
 }
 
+/** Extended detail returned by GET /jobs/:id. */
+export interface JobDetail extends PublicJob {
+  description: string | null;
+  candidateProfile: string | null;
+  maxExp: number | null;
+  skills: string[];
+  educationTypes: string[];
+  companyLogo: string | null;
+}
+
 export interface JobsQuery {
   /** Role / designation — the hero's first dropdown. */
   designation?: string;

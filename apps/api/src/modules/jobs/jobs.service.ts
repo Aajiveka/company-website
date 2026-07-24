@@ -20,6 +20,16 @@ export interface PublicJob {
   postedOn: string;
 }
 
+/** Extended detail returned by the single-job endpoint. */
+export interface JobDetail extends PublicJob {
+  description: string | null;
+  candidateProfile: string | null;
+  maxExp: number | null;
+  skills: string[];
+  educationTypes: string[];
+  companyLogo: string | null;
+}
+
 @Injectable()
 export class JobsService {
   constructor(
@@ -139,16 +149,18 @@ export class JobsService {
   }
 
   /** A single public job listing, for the job-detail page. */
-  async byId(jobId: number): Promise<PublicJob> {
+  async byId(jobId: number): Promise<JobDetail> {
     const j = await this.db.clientJobs.findUnique({
       where: { jobID: jobId },
       include: {
-        client: { select: { clientName: true } },
+        client: { select: { clientName: true, companyLogo: true } },
         jobCity: { select: { descr: true } },
         designation: { select: { descr: true } },
         industryType: { select: { industryType: true } },
         employeeType: { select: { descr: true } },
         workMode: { select: { descr: true } },
+        ClientJobSkill: { include: { skill: { select: { descr: true } } } },
+        ClientJobs_EducationType: { include: { educationType: { select: { descr: true } } } },
       },
     });
     if (!j) throw new NotFoundException('Job not found');
@@ -161,9 +173,15 @@ export class JobsService {
       workMode: j.workMode?.descr ?? '',
       employmentType: j.employeeType?.descr ?? '',
       minExp: j.minExp ?? 0,
+      maxExp: j.maxEmp ?? null,
       minCtc: j.minCTC,
       maxCtc: j.maxCTC,
       postedOn: j.timestampIns.toISOString().slice(0, 10),
+      description: j.jobDescr ?? null,
+      candidateProfile: j.jobCandidateProfile ?? null,
+      skills: j.ClientJobSkill.map((s) => s.skill?.descr).filter((s): s is string => !!s),
+      educationTypes: j.ClientJobs_EducationType.map((e) => e.educationType?.descr).filter((e): e is string => !!e),
+      companyLogo: j.client?.companyLogo ?? null,
     };
   }
 

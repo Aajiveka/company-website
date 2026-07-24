@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { queryKeys } from '@/lib/queryClient';
-import type { JobFilters, JobsPage, JobsQuery, PublicJob } from './jobs.types';
+import type { JobDetail, JobFilters, JobsPage, JobsQuery } from './jobs.types';
 
 /** Master lists for the function/location dropdowns. */
 export function useJobFilters() {
@@ -22,11 +22,11 @@ export function usePublicJobs(params: JobsQuery) {
   });
 }
 
-/** A single public job listing. */
+/** A single public job listing (extended detail). */
 export function useJob(id: string | number) {
   return useQuery({
     queryKey: queryKeys.jobs.detail(id),
-    queryFn: () => api.get<PublicJob>(`/jobs/${id}`).then((r) => r.data),
+    queryFn: () => api.get<JobDetail>(`/jobs/${id}`).then((r) => r.data),
     enabled: id !== '',
   });
 }

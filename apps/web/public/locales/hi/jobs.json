@@ -36,7 +36,19 @@
     "alreadyApplied": "आपने इस नौकरी के लिए आवेदन कर दिया है।",
     "candidateOnly": "केवल उम्मीदवार अकाउंट ही नौकरियों के लिए आवेदन कर सकते हैं।",
     "applicationFailed": "आपका आवेदन जमा नहीं हो सका",
-    "applicationSuccess": "आवेदन जमा हो गया।"
+    "applicationSuccess": "आवेदन जमा हो गया।",
+    "description": "नौकरी विवरण",
+    "requirements": "उम्मीदवार आवश्यकताएं",
+    "skills": "आवश्यक कौशल",
+    "education": "शिक्षा",
+    "experience": "अनुभव",
+    "expRange": "{{min}}–{{max}} वर्ष",
+    "expMin": "{{min}}+ वर्ष",
+    "salary": "वेतन",
+    "postedOn": "{{date}} को पोस्ट किया गया",
+    "shareJob": "यह नौकरी साझा करें",
+    "copied": "लिंक कॉपी हो गया!",
+    "similarJobs": "समान नौकरियां देखें"
   },
   "post": {
     "postTitle": "नौकरी पोस्ट करें",
