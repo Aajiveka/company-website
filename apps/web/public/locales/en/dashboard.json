@@ -140,6 +140,12 @@
     "interview": "Interview",
     "rejected": "Rejected"
   },
+  "employerStats": {
+    "activePostings": "Active Postings",
+    "totalApplicants": "Total Applicants",
+    "shortlisted": "Shortlisted",
+    "interviewsScheduled": "Interviews"
+  },
   "stats": {
     "totalApplied": "Applications",
     "shortlisted": "Shortlisted",

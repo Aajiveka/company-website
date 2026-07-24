@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Card, CompanyProfileSkeleton, Table, type Column } from '@/components/ui';
 import { useCompanyJobs, useCompanyProfile } from '../client.api';
 import type { JobListing } from '../client.types';
+import { EmployerDashboardStats } from '../components/EmployerDashboardStats';
 
 const inr = (n: number) => `₹${(n / 100000).toFixed(1)}L`;
 
@@ -33,6 +34,8 @@ export default function CompanyProfilePage() {
   return (
     <div className="mx-auto max-w-6xl">
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/company/profile' }, { label: t('company.heading') }]} />
+
+      <EmployerDashboardStats />
 
       {isLoading || !company ? (
         <CompanyProfileSkeleton />
