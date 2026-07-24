@@ -15,7 +15,7 @@ export { Pagination } from './Pagination';
 export { Breadcrumbs } from './Breadcrumbs';
 export type { Crumb } from './Breadcrumbs';
 export { Loader, FullPageLoader } from './Loader';
-export { Skeleton, CardSkeleton, ProfileSkeleton, CompanyProfileSkeleton, DocumentListSkeleton, AlertListSkeleton, CvManagerSkeleton, MembershipSkeleton, JobCardSkeleton } from './Skeleton';
+export { Skeleton, CardSkeleton, ProfileSkeleton, CompanyProfileSkeleton, DocumentListSkeleton, AlertListSkeleton, CvManagerSkeleton, MembershipSkeleton, FormSkeleton, JobDetailSkeleton, JobCardSkeleton } from './Skeleton';
 export { Dropdown } from './Dropdown';
 export { HierarchicalSelect } from './HierarchicalSelect';
 export { Autocomplete } from './Autocomplete';

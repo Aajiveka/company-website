@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Breadcrumbs, Button, Card, Input, Select, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, FormSkeleton, Input, Select, useToast } from '@/components/ui';
 import { useCompanyJobs, useCompanyMasters, usePostJob, useUpdateJob } from '../client.api';
 
 const schema = (t: TFunction) => z.object({
@@ -82,6 +82,9 @@ export default function JobPostPage() {
     <div className="mx-auto max-w-3xl">
       <Breadcrumbs items={[{ label: t('manageJobs.heading'), to: '/company/jobs' }, { label: isEdit ? t('jobPost.editTitle') : t('jobPost.postTitle') }]} />
       <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{isEdit ? t('jobPost.editTitle') : t('jobPost.postTitle')}</h1>
+      {!masters ? (
+        <FormSkeleton fields={8} />
+      ) : (
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -149,6 +152,7 @@ export default function JobPostPage() {
           </div>
         </form>
       </Card>
+      )}
     </div>
   );
 }

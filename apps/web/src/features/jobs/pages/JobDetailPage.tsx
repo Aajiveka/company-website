@@ -14,7 +14,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Breadcrumbs, Button, Card, JobCardSkeleton, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, JobDetailSkeleton, useToast } from '@/components/ui';
 import { Seo, SITE_URL } from '@/components/Seo';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/features/auth/auth.store';
@@ -145,7 +145,7 @@ export default function JobDetailPage() {
         <Breadcrumbs items={[{ label: t('detail.breadcrumbJobs'), to: '/jobs' }, { label: t('detail.breadcrumbDetails') }]} />
 
         {isLoading || !job ? (
-          <JobCardSkeleton />
+          <JobDetailSkeleton />
         ) : (
           <div className="space-y-6">
             {/* Header card */}

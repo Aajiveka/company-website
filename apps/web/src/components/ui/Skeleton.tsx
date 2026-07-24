@@ -168,6 +168,79 @@ export function MembershipSkeleton() {
   );
 }
 
+/** Job detail page skeleton — header card + description + details grid. */
+export function JobDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header card */}
+      <div className="space-y-4 rounded-xl bg-white p-4 shadow-card sm:p-6 dark:bg-gray-800">
+        <div className="flex items-start gap-4">
+          <Skeleton className="hidden h-14 w-14 rounded-lg sm:block" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-7 w-64" />
+            <Skeleton className="h-4 w-36" />
+          </div>
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <Skeleton className="h-10 w-32 rounded-lg" />
+      </div>
+      {/* Description */}
+      <div className="space-y-3 rounded-xl bg-white p-4 shadow-card sm:p-6 dark:bg-gray-800">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+      {/* Skills + Education */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="space-y-3 rounded-xl bg-white p-4 shadow-card sm:p-6 dark:bg-gray-800">
+          <Skeleton className="h-6 w-32" />
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-7 w-20 rounded-full" />
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3 rounded-xl bg-white p-4 shadow-card sm:p-6 dark:bg-gray-800">
+          <Skeleton className="h-6 w-28" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Form skeleton — used for form pages while master data loads. */
+export function FormSkeleton({ fields = 6 }: { fields?: number }) {
+  return (
+    <div className="space-y-4 rounded-xl bg-white p-4 shadow-card sm:p-6 dark:bg-gray-800">
+      <Skeleton className="h-6 w-40" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        {Array.from({ length: fields }).map((_, i) => (
+          <div key={i} className="space-y-1.5">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+      <div className="space-y-1.5">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+      </div>
+      <div className="flex justify-end">
+        <Skeleton className="h-10 w-24 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
 /** Job search results skeleton — list of job cards. */
 export function JobCardSkeleton() {
   return (

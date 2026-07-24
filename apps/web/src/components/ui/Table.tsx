@@ -40,11 +40,14 @@ export function Table<T>({
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
-                {columns.map((c) => (
-                  <td key={c.key} className="px-3 py-2.5 sm:px-4 sm:py-3">
-                    <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-600" />
-                  </td>
-                ))}
+                {columns.map((c, ci) => {
+                  const widths = ['w-3/4', 'w-1/2', 'w-2/3', 'w-5/6', 'w-1/3'];
+                  return (
+                    <td key={c.key} className="px-3 py-2.5 sm:px-4 sm:py-3">
+                      <div className={`h-4 animate-pulse rounded bg-gray-200 dark:bg-gray-600 ${widths[(i + ci) % widths.length]}`} />
+                    </td>
+                  );
+                })}
               </tr>
             ))
           ) : data.length === 0 ? (
