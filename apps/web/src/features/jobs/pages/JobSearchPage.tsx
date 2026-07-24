@@ -155,7 +155,7 @@ export default function JobSearchPage() {
             onChange={onFiltersChange}
           />
 
-          <p className="mb-6 mt-4 text-sm text-gray-500">
+          <p className="mb-6 mt-4 text-sm text-gray-500" aria-live="polite" aria-atomic="true">
             {isLoading ? t('search.searching') : t('search.jobsFound', { count: data?.total ?? 0 })}
             {designation && ` ${t('search.forDesignation', { designation })}`}
             {location && ` · ${location}`}

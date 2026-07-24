@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import { RouteAnnouncer } from '@/components/RouteAnnouncer';
 
 /** Layout for the public marketing site (fixed transparent header + footer). */
 export function PublicLayout() {
@@ -12,6 +13,7 @@ export function PublicLayout() {
       >
         Skip to main content
       </a>
+      <RouteAnnouncer />
       <Navbar />
       <main id="main-content" className="flex-1">
         <Outlet />

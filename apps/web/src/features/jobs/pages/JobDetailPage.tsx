@@ -142,7 +142,7 @@ export default function JobDetailPage() {
                   <div>
                     <h1 className="font-heading text-2xl font-bold text-navy">{job.designation}</h1>
                     <p className="mt-1 flex items-center gap-1.5 text-gray-600">
-                      <Building2 className="h-4 w-4 text-primary" /> {job.company}
+                      <Building2 className="h-4 w-4 text-primary" aria-hidden /> {job.company}
                     </p>
                   </div>
                 </div>
@@ -154,19 +154,19 @@ export default function JobDetailPage() {
               {/* Key details grid */}
               <div className="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                 <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5 dark:bg-gray-700/50">
-                  <MapPin className="h-4 w-4 shrink-0 text-primary" />
+                  <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden />
                   <span>{job.city}</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5 dark:bg-gray-700/50">
-                  <Briefcase className="h-4 w-4 shrink-0 text-primary" />
+                  <Briefcase className="h-4 w-4 shrink-0 text-primary" aria-hidden />
                   <span>{expLabel}</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5 dark:bg-gray-700/50">
-                  <IndianRupee className="h-4 w-4 shrink-0 text-primary" />
+                  <IndianRupee className="h-4 w-4 shrink-0 text-primary" aria-hidden />
                   <span>{lpa(job.minCtc)}–{lpa(job.maxCtc)} LPA</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5 dark:bg-gray-700/50">
-                  <ClipboardCheck className="h-4 w-4 shrink-0 text-primary" />
+                  <ClipboardCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
                   <span>{job.workMode} · {job.employmentType}</span>
                 </div>
               </div>
@@ -174,14 +174,14 @@ export default function JobDetailPage() {
               {/* Posted date + share */}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4 dark:border-gray-700">
                 <p className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <Calendar className="h-3.5 w-3.5" />
+                  <Calendar className="h-3.5 w-3.5" aria-hidden />
                   {t('detail.postedOn', { date: formatDate(job.postedOn, i18n.language) })}
                 </p>
                 <button
                   onClick={onShare}
                   className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                 >
-                  <Share2 className="h-3.5 w-3.5" />
+                  <Share2 className="h-3.5 w-3.5" aria-hidden />
                   {t('detail.shareJob')}
                 </button>
               </div>
@@ -191,7 +191,7 @@ export default function JobDetailPage() {
             {job.description && (
               <Card>
                 <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-navy">
-                  <Briefcase className="h-5 w-5 text-primary" />
+                  <Briefcase className="h-5 w-5 text-primary" aria-hidden />
                   {t('detail.description')}
                 </h2>
                 <div className="prose prose-sm max-w-none text-gray-600 dark:text-gray-300">
@@ -206,7 +206,7 @@ export default function JobDetailPage() {
             {job.candidateProfile && (
               <Card>
                 <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-navy">
-                  <ClipboardCheck className="h-5 w-5 text-primary" />
+                  <ClipboardCheck className="h-5 w-5 text-primary" aria-hidden />
                   {t('detail.requirements')}
                 </h2>
                 <div className="prose prose-sm max-w-none text-gray-600 dark:text-gray-300">
@@ -223,7 +223,7 @@ export default function JobDetailPage() {
                 {job.skills.length > 0 && (
                   <Card>
                     <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-navy">
-                      <Link2 className="h-5 w-5 text-primary" />
+                      <Link2 className="h-5 w-5 text-primary" aria-hidden />
                       {t('detail.skills')}
                     </h2>
                     <div className="flex flex-wrap gap-2">
@@ -241,7 +241,7 @@ export default function JobDetailPage() {
                 {job.educationTypes.length > 0 && (
                   <Card>
                     <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-navy">
-                      <GraduationCap className="h-5 w-5 text-primary" />
+                      <GraduationCap className="h-5 w-5 text-primary" aria-hidden />
                       {t('detail.education')}
                     </h2>
                     <ul className="space-y-1.5">

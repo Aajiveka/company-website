@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { LogOut, Menu as MenuIcon, UserCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth/auth.store';
 import { ROLE_LABEL } from '@/types/roles';
 import { Dropdown } from '@/components/ui';
 import { ThemeToggleDashboard } from '@/components/ThemeToggle';
+import { RouteAnnouncer } from '@/components/RouteAnnouncer';
 import { Sidebar } from './Sidebar';
 
 /** Authenticated dashboard shell — topbar + role-gated sidebar + content. */
@@ -14,11 +15,21 @@ export function DashboardLayout() {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Close sidebar on Escape key
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && sidebarOpen) setSidebarOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [sidebarOpen]);
+
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-brand-soft/40 dark:bg-gray-900">
       <meta name="robots" content="noindex,nofollow" />
+      <RouteAnnouncer />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[1200] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-white focus:outline-none"
