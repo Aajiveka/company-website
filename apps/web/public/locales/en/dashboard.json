@@ -140,6 +140,15 @@
     "interview": "Interview",
     "rejected": "Rejected"
   },
+  "completion": {
+    "heading": "Profile Completion",
+    "hint": "Complete your profile to improve your chances with recruiters.",
+    "personal": "Personal details",
+    "professional": "Professional details",
+    "education": "Education (at least one entry)",
+    "employment": "Employment history (at least one entry)",
+    "certificates": "Certificates (at least one)"
+  },
   "notifications": {
     "bell": "Notifications",
     "title": "Notifications",

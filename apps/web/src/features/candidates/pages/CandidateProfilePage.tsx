@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Breadcrumbs, Button, Card, ProfileSkeleton } from '@/components/ui';
 import { useCandidateProfile } from '../candidate.api';
+import { ProfileCompletionMeter } from '../components/ProfileCompletionMeter';
 
 /** Candidate self-profile / CV view (candidate-profile.aspx). */
 export default function CandidateProfilePage() {
@@ -29,6 +30,8 @@ export default function CandidateProfilePage() {
         <Card>{t('profile.loadError')}</Card>
       ) : (
         <div className="space-y-6">
+          <ProfileCompletionMeter />
+
           {/* Header card */}
           <Card className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <img
