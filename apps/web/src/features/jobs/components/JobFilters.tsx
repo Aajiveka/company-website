@@ -17,6 +17,7 @@ const SALARY_STEPS = [0, 100_000, 200_000, 300_000, 500_000, 800_000, 1_200_000,
 export interface FilterValues {
   workMode: string;
   employmentType: string;
+  industry: string;
   minExp?: number;
   maxExp?: number;
   minCtc: number;
@@ -38,6 +39,7 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
     let n = 0;
     if (values.workMode) n++;
     if (values.employmentType) n++;
+    if (values.industry) n++;
     if (values.minExp != null || values.maxExp != null) n++;
     if (values.minCtc > 0) n++;
     if (values.sortBy !== 'newest') n++;
@@ -48,7 +50,7 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
     onChange({ ...values, [key]: val });
 
   const clearAll = () =>
-    onChange({ workMode: '', employmentType: '', minExp: undefined, maxExp: undefined, minCtc: 0, sortBy: 'newest' });
+    onChange({ workMode: '', employmentType: '', industry: '', minExp: undefined, maxExp: undefined, minCtc: 0, sortBy: 'newest' });
 
   const salaryIndex = SALARY_STEPS.indexOf(values.minCtc) >= 0 ? SALARY_STEPS.indexOf(values.minCtc) : 0;
   const lpa = (v: number) => (v / 100_000).toFixed(1).replace(/\.0$/, '');
@@ -94,7 +96,7 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
 
       {/* Collapsible panel */}
       {open && (
-        <div className="mt-4 grid gap-5 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="mt-4 grid gap-5 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 dark:border-gray-700 dark:bg-gray-800">
           {/* Experience */}
           <div>
             <h4 className="mb-2 text-sm font-semibold text-navy">{t('search.experience')}</h4>
@@ -154,6 +156,26 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
                   }`}
                 >
                   {type}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Industry */}
+          <div>
+            <h4 className="mb-2 text-sm font-semibold text-navy">{t('search.industry')}</h4>
+            <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
+              {(data?.industries ?? []).map((ind) => (
+                <button
+                  key={ind}
+                  onClick={() => set('industry', values.industry === ind ? '' : ind)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    values.industry === ind
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary dark:border-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  {ind}
                 </button>
               ))}
             </div>

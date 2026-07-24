@@ -17,6 +17,7 @@
     "experience": "अनुभव",
     "workMode": "कार्य मोड",
     "employmentType": "रोज़गार प्रकार",
+    "industry": "उद्योग",
     "salary": "न्यूनतम वेतन",
     "salaryLpa": "{{value}} LPA",
     "anyExperience": "कोई भी",

@@ -92,18 +92,20 @@ export default function JobSearchPage() {
   const page = Number(searchParams.get('page') ?? '1');
   const workMode = searchParams.get('workMode') ?? '';
   const employmentType = searchParams.get('employmentType') ?? '';
+  const industry = searchParams.get('industry') ?? '';
   const minExp = intParam(searchParams, 'minExp');
   const maxExp = intParam(searchParams, 'maxExp');
   const minCtc = intParam(searchParams, 'minCtc') ?? 0;
   const sortBy = (searchParams.get('sortBy') ?? 'newest') as FilterValues['sortBy'];
 
-  const filterValues: FilterValues = { workMode, employmentType, minExp, maxExp, minCtc, sortBy };
+  const filterValues: FilterValues = { workMode, employmentType, industry, minExp, maxExp, minCtc, sortBy };
 
   const { data, isLoading } = usePublicJobs({
     designation: designation || undefined,
     location: location || undefined,
     workMode: workMode || undefined,
     employmentType: employmentType || undefined,
+    industry: industry || undefined,
     minExp,
     maxExp,
     minCtc: minCtc || undefined,
@@ -133,6 +135,7 @@ export default function JobSearchPage() {
     updateParams({
       workMode: next.workMode || undefined,
       employmentType: next.employmentType || undefined,
+      industry: next.industry || undefined,
       minExp: next.minExp != null ? String(next.minExp) : undefined,
       maxExp: next.maxExp != null ? String(next.maxExp) : undefined,
       minCtc: next.minCtc > 0 ? String(next.minCtc) : undefined,

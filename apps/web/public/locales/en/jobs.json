@@ -17,6 +17,7 @@
     "experience": "Experience",
     "workMode": "Work Mode",
     "employmentType": "Employment Type",
+    "industry": "Industry",
     "salary": "Min Salary",
     "salaryLpa": "{{value}} LPA",
     "anyExperience": "Any",
