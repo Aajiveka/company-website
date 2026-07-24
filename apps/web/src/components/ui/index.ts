@@ -18,3 +18,4 @@ export { Loader, FullPageLoader } from './Loader';
 export { Skeleton, CardSkeleton, ProfileSkeleton, CompanyProfileSkeleton, DocumentListSkeleton, AlertListSkeleton, CvManagerSkeleton, MembershipSkeleton, JobCardSkeleton } from './Skeleton';
 export { Dropdown } from './Dropdown';
 export { HierarchicalSelect } from './HierarchicalSelect';
+export { Autocomplete } from './Autocomplete';

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, HierarchicalSelect } from '@/components/ui';
+import { Autocomplete, Button, HierarchicalSelect } from '@/components/ui';
 import { useJobFilters } from '../jobs.api';
 
 export interface JobSearchBarProps {
@@ -31,20 +31,14 @@ export function JobSearchBar({ initialDesignation = '', initialLocation = '' }: 
       className="flex flex-col gap-3 rounded-2xl bg-white/95 p-3 text-left shadow-lg lg:flex-row lg:items-center dark:bg-gray-800/95"
     >
       <div className="flex flex-1 items-center gap-2 border-gray-200 lg:border-r lg:pr-3">
-        <Search className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-        <select
-          aria-label="Role"
-          className="h-11 w-full bg-transparent text-sm text-gray-700 outline-none dark:text-gray-200"
+        <Autocomplete
+          options={data?.designations ?? []}
           value={designation}
-          onChange={(e) => setDesignation(e.target.value)}
-        >
-          <option value="">{t('search.rolePlaceholder')}</option>
-          {data?.designations.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
+          onChange={setDesignation}
+          placeholder={t('search.rolePlaceholder')}
+          icon={<Search className="h-5 w-5 shrink-0 text-primary" aria-hidden />}
+          aria-label="Role"
+        />
       </div>
 
       <div className="flex flex-1 items-center gap-2">
