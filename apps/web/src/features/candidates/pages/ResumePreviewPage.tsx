@@ -24,7 +24,7 @@ export default function ResumePreviewPage() {
           { label: t('common:dashboard'), to: '/candidate/profile' },
           { label: t('resume.heading') },
         ]} />
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="font-heading text-2xl font-bold text-navy">{t('resume.heading')}</h1>
           <Button onClick={onPrint}>
             <Printer className="mr-2 h-4 w-4" />
@@ -37,7 +37,7 @@ export default function ResumePreviewPage() {
       {/* Printable resume */}
       <div
         ref={printRef}
-        className="resume-print rounded-xl border border-gray-200 bg-white p-8 shadow-sm print:border-none print:p-0 print:shadow-none dark:border-gray-700 dark:bg-gray-800 print:dark:bg-white print:dark:text-black"
+        className="resume-print rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8 print:border-none print:p-0 print:shadow-none dark:border-gray-700 dark:bg-gray-800 print:dark:bg-white print:dark:text-black"
       >
         {/* Header */}
         <div className="border-b-2 border-primary pb-5">

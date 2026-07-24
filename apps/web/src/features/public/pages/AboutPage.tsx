@@ -77,7 +77,7 @@ export default function AboutPage() {
         <div className="container grid items-center gap-8 lg:grid-cols-2">
           <div className="space-y-4">
             {CHOOSE.map((c) => (
-              <div key={c.icon} className="flex items-start gap-4 rounded-xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-5 shadow-card">
+              <div key={c.icon} className="flex items-start gap-4 rounded-xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-4 shadow-card sm:p-5">
                 <img src={c.icon} alt="" className="h-12 w-12 flex-shrink-0" loading="lazy" />
                 <p className="text-sm text-gray-600">{c.text}</p>
               </div>
@@ -94,7 +94,7 @@ export default function AboutPage() {
       </section>
 
       {/* Industry */}
-      <section className="bg-navy py-14 text-white md:py-20">
+      <section className="bg-navy py-10 text-white md:py-20">
         <div className="container">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-white">{t('about.industryHeading')}</h2>
@@ -102,7 +102,7 @@ export default function AboutPage() {
           </div>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             {INDUSTRY.map((c) => (
-              <div key={c.title} className="rounded-xl bg-white/5 p-6">
+              <div key={c.title} className="rounded-xl bg-white/5 p-4 sm:p-6">
                 <div className="mb-2 flex items-center gap-3">
                   <img src={c.icon} alt="" className="h-8 w-8" loading="lazy" />
                   <h6 className="font-heading text-lg font-semibold">{c.title}</h6>

@@ -441,7 +441,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
                 onChange={(e) => update(i, { releavingDate: e.target.value })}
               />
             </div>
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <label className="flex items-center gap-1.5 text-sm text-gray-600">
                 <input
                   type="checkbox"

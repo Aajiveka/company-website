@@ -42,7 +42,7 @@ export default function BlogsPage() {
                 <Link to={`/blogs/${post.slug}`}>
                   <img src={post.image} alt={post.title} className="h-52 w-full object-cover" loading="lazy" />
                 </Link>
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <p className="text-xs text-gray-400">{post.date}</p>
                   <Link to={`/blogs/${post.slug}`}>
                     <h3 className="mt-2 font-heading text-lg font-semibold text-navy hover:text-primary">

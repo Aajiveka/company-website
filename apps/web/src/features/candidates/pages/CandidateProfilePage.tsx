@@ -13,7 +13,7 @@ export default function CandidateProfilePage() {
     <div className="mx-auto max-w-5xl">
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/candidate/profile' }, { label: t('profile.heading') }]} />
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-bold text-navy">{t('profile.heading')}</h1>
         <Link to="/candidate/resume">
           <Button variant="outline" size="sm">

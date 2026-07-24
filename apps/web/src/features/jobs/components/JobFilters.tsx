@@ -56,7 +56,7 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
   return (
     <div className="mt-6">
       {/* Toggle bar */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={onToggle}
           className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-navy transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
