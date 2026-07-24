@@ -64,6 +64,17 @@
     "heading": "Applied Jobs",
     "noJobs": "You haven't applied to any jobs yet."
   },
+  "tracking": {
+    "applied": "Applied",
+    "shortlisted": "Shortlisted",
+    "interview": "Interview",
+    "selected": "Selected",
+    "rejected": "Rejected",
+    "viewTimeline": "View timeline",
+    "hideTimeline": "Hide timeline",
+    "appliedOn": "Applied on {{date}}",
+    "interviewScheduled": "Interview Scheduled"
+  },
   "savedJobs": {
     "heading": "Saved Jobs",
     "noJobs": "You haven't saved any jobs yet.",

@@ -64,6 +64,17 @@
     "heading": "आवेदित नौकरियाँ",
     "noJobs": "आपने अभी तक किसी नौकरी के लिए आवेदन नहीं किया है।"
   },
+  "tracking": {
+    "applied": "आवेदन किया",
+    "shortlisted": "शॉर्टलिस्ट",
+    "interview": "साक्षात्कार",
+    "selected": "चयनित",
+    "rejected": "अस्वीकृत",
+    "viewTimeline": "टाइमलाइन देखें",
+    "hideTimeline": "टाइमलाइन छुपाएं",
+    "appliedOn": "{{date}} को आवेदन किया",
+    "interviewScheduled": "साक्षात्कार निर्धारित"
+  },
   "savedJobs": {
     "heading": "सहेजी गई नौकरियाँ",
     "noJobs": "आपने अभी तक कोई नौकरी सहेजी नहीं है।",

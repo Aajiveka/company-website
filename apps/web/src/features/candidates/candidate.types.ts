@@ -28,18 +28,35 @@ export interface CandidateProfile {
 }
 
 /**
- * A job the candidate has applied to (tblJobSubscriberMapping + status). `status` is
- * tblMstrJobMappingStatus.Descr text (Applied/Shortlisted/Interview scheduled/Interview
- * attended/Selected/Rejected/...) — open-ended rather than a fixed union, since the master
- * table has 11 real values and the UI only special-cases a handful via statusTone().
+ * A job the candidate has applied to, with full tracking info.
  */
 export interface AppliedJob {
   jobId: number;
   designation: string;
   company: string;
+  industry: string;
   city: string;
+  workMode: string;
+  employmentType: string;
+  minExp: number;
+  minCtc: number;
+  maxCtc: number;
   appliedOn: string;
   status: string;
+  statusHistory: StatusHistoryEntry[];
+  interview: InterviewInfo | null;
+}
+
+export interface StatusHistoryEntry {
+  status: string;
+  timestamp: string;
+  comments: string | null;
+}
+
+export interface InterviewInfo {
+  scheduledOn: string;
+  mode: string;
+  location: string | null;
 }
 
 /** Candidate document (tblCandidateDocumentMap / tblMstrDocuments). */

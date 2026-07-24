@@ -394,30 +394,82 @@ export class CandidatesService {
    * through as-is.
    */
   async appliedJobs(subscriberId: number) {
-    const rows = await this.db.jobSubscriberMapping.findMany({
-      where: { subscriberID: subscriberId },
-      orderBy: { mapDate: 'desc' },
-      include: {
-        job: {
-          include: {
-            client: { select: { clientName: true } },
-            jobCity: { select: { descr: true } },
-            designation: { select: { descr: true } },
+    // Load the status master list so we can resolve jobMapStatusID → text
+    // (JobSubscriberStatus has no Prisma relation to MstrJobMappingStatus).
+    const [rows, statuses] = await Promise.all([
+      this.db.jobSubscriberMapping.findMany({
+        where: { subscriberID: subscriberId },
+        orderBy: { mapDate: 'desc' },
+        include: {
+          job: {
+            include: {
+              client: { select: { clientName: true } },
+              jobCity: { select: { descr: true } },
+              designation: { select: { descr: true } },
+              industryType: { select: { industryType: true } },
+              workMode: { select: { descr: true } },
+              employeeType: { select: { descr: true } },
+            },
+          },
+          jobMapStatus: { select: { descr: true } },
+          JobSubscriberStatus: { orderBy: { mappedTimestamp: 'asc' } },
+          JobInterviewStatus: {
+            include: { interviewMode: { select: { descr: true } } },
+            orderBy: { interviewScheduledOn: 'desc' },
           },
         },
-        jobMapStatus: { select: { descr: true } },
-      },
-    });
+      }),
+      this.db.mstrJobMappingStatus.findMany(),
+    ]);
+
+    const statusName = new Map(statuses.map((s) => [s.jobMapStatusID, s.descr ?? 'Unknown']));
 
     return rows.map((r) => {
       const descr = r.jobMapStatus?.descr ?? 'Mapped';
+
+      // Build the status history timeline.
+      // Always start with the initial "Applied" entry derived from mapDate.
+      const statusHistory: Array<{ status: string; timestamp: string; comments: string | null }> = [];
+
+      statusHistory.push({
+        status: 'Applied',
+        timestamp: r.mapDate?.toISOString() ?? '',
+        comments: null,
+      });
+
+      for (const sh of r.JobSubscriberStatus) {
+        const name = sh.jobMapStatusID != null ? (statusName.get(sh.jobMapStatusID) ?? 'Unknown') : 'Unknown';
+        statusHistory.push({
+          status: name === 'Mapped' ? 'Applied' : name,
+          timestamp: sh.mappedTimestamp?.toISOString() ?? '',
+          comments: sh.comments ?? null,
+        });
+      }
+
+      // Latest interview entry (if any).
+      const latestInterview = r.JobInterviewStatus.length > 0 ? r.JobInterviewStatus[0] : null;
+
       return {
         jobId: Number(r.jobID),
         designation: r.job?.designation?.descr ?? '',
         company: r.job?.client?.clientName ?? '',
+        industry: r.job?.industryType?.industryType ?? '',
         city: r.job?.jobCity?.descr ?? '',
+        workMode: r.job?.workMode?.descr ?? '',
+        employmentType: r.job?.employeeType?.descr ?? '',
+        minExp: r.job?.minExp ?? 0,
+        minCtc: r.job?.minCTC ?? 0,
+        maxCtc: r.job?.maxCTC ?? 0,
         appliedOn: r.mapDate?.toISOString().slice(0, 10) ?? '',
         status: descr === 'Mapped' ? 'Applied' : descr,
+        statusHistory,
+        interview: latestInterview
+          ? {
+              scheduledOn: latestInterview.interviewScheduledOn?.toISOString() ?? '',
+              mode: latestInterview.interviewMode?.descr ?? '',
+              location: latestInterview.interviewLocation ?? null,
+            }
+          : null,
       };
     });
   }
