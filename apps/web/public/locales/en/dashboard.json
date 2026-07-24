@@ -178,6 +178,17 @@
     "employment": "Employment history (at least one entry)",
     "certificates": "Certificates (at least one)"
   },
+  "analytics": {
+    "pipeline": "Applicant Pipeline",
+    "topJobs": "Top Jobs by Applicants",
+    "applied": "Applied / Mapped",
+    "shortlisted": "Shortlisted",
+    "interview": "Interview",
+    "selected": "Selected",
+    "rejected": "Rejected",
+    "noApplicants": "No applicants yet to show analytics.",
+    "noJobs": "No active jobs yet."
+  },
   "notifications": {
     "bell": "Notifications",
     "title": "Notifications",

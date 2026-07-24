@@ -90,6 +90,25 @@
     "noRecommendations": "नौकरी अनुशंसाएँ पाने के लिए अपनी प्रोफ़ाइल पूरी करें।",
     "viewAll": "सभी अनुशंसित नौकरियाँ देखें →"
   },
+  "compare": {
+    "add": "तुलना करें",
+    "remove": "तुलना से हटाएं",
+    "title": "नौकरियों की तुलना",
+    "attribute": "विशेषता",
+    "company": "कंपनी",
+    "location": "स्थान",
+    "industry": "उद्योग",
+    "workMode": "कार्य मोड",
+    "type": "रोज़गार प्रकार",
+    "experience": "अनुभव",
+    "salary": "वेतन सीमा",
+    "posted": "पोस्ट तिथि",
+    "comparing": "{{count}} नौकरी तुलना के लिए",
+    "comparing_other": "{{count}} नौकरियाँ तुलना के लिए",
+    "compareNow": "तुलना करें",
+    "clearAll": "सब हटाएं",
+    "removeJob": "तुलना से हटाएं"
+  },
   "alerts": {
     "heading": "नौकरी अलर्ट",
     "keyword": "कीवर्ड",

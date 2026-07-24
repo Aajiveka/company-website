@@ -4,6 +4,7 @@ import { Breadcrumbs, Card, CompanyProfileSkeleton, Table, type Column } from '@
 import { useCompanyJobs, useCompanyProfile } from '../client.api';
 import type { JobListing } from '../client.types';
 import { EmployerDashboardStats } from '../components/EmployerDashboardStats';
+import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
 
 const inr = (n: number) => `₹${(n / 100000).toFixed(1)}L`;
 
@@ -36,6 +37,10 @@ export default function CompanyProfilePage() {
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/company/profile' }, { label: t('company.heading') }]} />
 
       <EmployerDashboardStats />
+
+      <div className="my-6">
+        <AnalyticsDashboard />
+      </div>
 
       {isLoading || !company ? (
         <CompanyProfileSkeleton />

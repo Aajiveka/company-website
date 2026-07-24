@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Bookmark, Briefcase, Building2, IndianRupee, MapPin } from 'lucide-react';
+import { Bookmark, Briefcase, Building2, IndianRupee, MapPin, Scale } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, JobCardSkeleton, Loader } from '@/components/ui';
 import { Seo } from '@/components/Seo';
@@ -11,13 +11,18 @@ import { PageBanner } from '@/features/public/components/PageBanner';
 import { JobSearchBar } from '../components/JobSearchBar';
 import { JobFiltersPanel, type FilterValues } from '../components/JobFilters';
 import { useInfinitePublicJobs } from '../jobs.api';
+import { useCompareStore } from '../compare.store';
+import { CompareBar } from '../components/CompareDrawer';
 import type { PublicJob } from '../jobs.types';
 
 const PAGE_SIZE = 10;
 
 const lpa = (rupees: number) => (rupees / 100_000).toFixed(1).replace(/\.0$/, '');
 
-function JobCard({ job, isSaved, onToggleSave }: { job: PublicJob; isSaved: boolean; onToggleSave: () => void }) {
+function JobCard({ job, isSaved, onToggleSave, isCompared, onToggleCompare }: {
+  job: PublicJob; isSaved: boolean; onToggleSave: () => void;
+  isCompared: boolean; onToggleCompare: () => void;
+}) {
   const { t } = useTranslation('jobs');
   return (
     <Link to={`/jobs/${job.jobId}`} className="block">
@@ -34,6 +39,17 @@ function JobCard({ job, isSaved, onToggleSave }: { job: PublicJob; isSaved: bool
             <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               {job.industry}
             </span>
+            <button
+              onClick={(e) => { e.preventDefault(); onToggleCompare(); }}
+              className={cn(
+                'rounded-lg p-1.5 transition',
+                isCompared ? 'text-primary' : 'text-gray-400 hover:text-primary',
+              )}
+              aria-label={isCompared ? t('compare.remove') : t('compare.add')}
+              title={isCompared ? t('compare.remove') : t('compare.add')}
+            >
+              <Scale className={cn('h-4 w-4', isCompared && 'fill-current')} />
+            </button>
             <button
               onClick={(e) => { e.preventDefault(); onToggleSave(); }}
               className={cn(
@@ -97,6 +113,8 @@ export default function JobSearchPage() {
   const sortBy = (searchParams.get('sortBy') ?? 'newest') as FilterValues['sortBy'];
 
   const filterValues: FilterValues = { workMode, employmentType, industry, minExp, maxExp, minCtc, sortBy };
+
+  const compareStore = useCompareStore();
 
   const {
     data,
@@ -221,6 +239,11 @@ export default function JobSearchPage() {
                       if (savedIds?.includes(job.jobId)) unsaveJob.mutate(job.jobId);
                       else saveJob.mutate(job.jobId);
                     }}
+                    isCompared={compareStore.has(job.jobId)}
+                    onToggleCompare={() => {
+                      if (compareStore.has(job.jobId)) compareStore.remove(job.jobId);
+                      else compareStore.add(job);
+                    }}
                   />
                 ))}
               </div>
@@ -251,6 +274,8 @@ export default function JobSearchPage() {
           )}
         </div>
       </section>
+
+      <CompareBar />
     </>
   );
 }

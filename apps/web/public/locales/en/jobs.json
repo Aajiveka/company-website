@@ -90,6 +90,25 @@
     "noRecommendations": "Complete your profile to get job recommendations.",
     "viewAll": "View all recommended jobs →"
   },
+  "compare": {
+    "add": "Compare",
+    "remove": "Remove from compare",
+    "title": "Compare Jobs",
+    "attribute": "Attribute",
+    "company": "Company",
+    "location": "Location",
+    "industry": "Industry",
+    "workMode": "Work Mode",
+    "type": "Employment Type",
+    "experience": "Experience",
+    "salary": "Salary Range",
+    "posted": "Posted On",
+    "comparing": "{{count}} job to compare",
+    "comparing_other": "{{count}} jobs to compare",
+    "compareNow": "Compare",
+    "clearAll": "Clear all",
+    "removeJob": "Remove from comparison"
+  },
   "alerts": {
     "heading": "Job Alerts",
     "keyword": "Keyword",
