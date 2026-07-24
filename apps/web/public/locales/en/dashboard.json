@@ -140,6 +140,12 @@
     "interview": "Interview",
     "rejected": "Rejected"
   },
+  "stats": {
+    "totalApplied": "Applications",
+    "shortlisted": "Shortlisted",
+    "upcomingInterviews": "Upcoming Interviews",
+    "savedJobs": "Saved Jobs"
+  },
   "completion": {
     "heading": "Profile Completion",
     "hint": "Complete your profile to improve your chances with recruiters.",
