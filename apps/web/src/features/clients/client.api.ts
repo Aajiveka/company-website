@@ -109,3 +109,12 @@ export function useBulkDecideApplicants() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client', 'applicants'] }),
   });
 }
+
+/** Duplicate/repost a job (creates a new Active copy). */
+export function useDuplicateJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: number) => api.post(`/clients/me/jobs/${jobId}/duplicate`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.client.jobs('me') }),
+  });
+}

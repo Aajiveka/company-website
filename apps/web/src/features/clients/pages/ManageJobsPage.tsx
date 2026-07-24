@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Pencil, Plus, XCircle } from 'lucide-react';
+import { Copy, Pencil, Plus, XCircle } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Badge, Breadcrumbs, Button, Modal, statusTone, Table, useToast, type Column } from '@/components/ui';
-import { useCompanyJobs, useDeactivateJob } from '../client.api';
+import { useCompanyJobs, useDeactivateJob, useDuplicateJob } from '../client.api';
 import type { JobListing } from '../client.types';
 
 const inr = (n: number) => `₹${(n / 100000).toFixed(1)}L`;
@@ -14,6 +14,7 @@ export default function ManageJobsPage() {
   const { t } = useTranslation('public');
   const { data, isLoading } = useCompanyJobs();
   const deactivate = useDeactivateJob();
+  const duplicate = useDuplicateJob();
   const { notify } = useToast();
   const [confirmJob, setConfirmJob] = useState<JobListing | null>(null);
 
@@ -50,6 +51,16 @@ export default function ManageJobsPage() {
           >
             <Pencil className="h-3.5 w-3.5" /> {t('common:actions.edit')}
           </Link>
+          <button
+            onClick={() => duplicate.mutate(j.jobId, {
+              onSuccess: () => notify(t('manageJobs.duplicated'), 'success'),
+              onError: () => notify(t('manageJobs.duplicateFailed'), 'error'),
+            })}
+            disabled={duplicate.isPending}
+            className="inline-flex items-center gap-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 hover:bg-blue-100"
+          >
+            <Copy className="h-3.5 w-3.5" /> {t('manageJobs.duplicate')}
+          </button>
           {j.status === 'Active' && (
             <button
               onClick={() => setConfirmJob(j)}

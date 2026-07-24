@@ -116,7 +116,10 @@
     "closeWarning": "{{designation}} in {{city}} will no longer accept applicants. This can't be undone from here.",
     "closeButton": "Close Job",
     "closedSuccess": "Job closed.",
-    "closeFailed": "Could not close this job"
+    "closeFailed": "Could not close this job",
+    "duplicate": "Duplicate",
+    "duplicated": "Job duplicated as a new posting.",
+    "duplicateFailed": "Could not duplicate this job."
   },
   "jobPost": {
     "postTitle": "Post a Job",

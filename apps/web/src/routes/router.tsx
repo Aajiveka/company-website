@@ -56,6 +56,9 @@ const AdminDashboardPage = lazy(() => import('@/features/admin/pages/AdminDashbo
 const OnboardingPage = lazy(() => import('@/features/candidates/pages/OnboardingPage'));
 const NotificationSettingsPage = lazy(() => import('@/features/candidates/pages/NotificationSettingsPage'));
 const SalaryInsightsPage = lazy(() => import('@/features/public/pages/SalaryInsightsPage'));
+const EmailTemplatesPage = lazy(() => import('@/features/clients/pages/EmailTemplatesPage'));
+const AdminUsersPage = lazy(() => import('@/features/admin/pages/AdminUsersPage'));
+const AdminJobsPage = lazy(() => import('@/features/admin/pages/AdminJobsPage'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -123,6 +126,7 @@ export const router = createBrowserRouter([
               { path: '/company/post-job', element: withSuspense(<JobPostPage />) },
               { path: '/company/jobs/:id/edit', element: withSuspense(<JobPostPage />) },
               { path: '/company/applicants', element: withSuspense(<ApplicantsPage />) },
+              { path: '/company/email-templates', element: withSuspense(<EmailTemplatesPage />) },
             ],
           },
           // Admin
@@ -130,6 +134,8 @@ export const router = createBrowserRouter([
             element: <ProtectedRoute allow={[Role.Admin]} />,
             children: [
               { path: '/admin', element: withSuspense(<AdminDashboardPage />) },
+              { path: '/admin/users', element: withSuspense(<AdminUsersPage />) },
+              { path: '/admin/jobs', element: withSuspense(<AdminJobsPage />) },
             ],
           },
           // QC / Recruitment

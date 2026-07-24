@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarCheck, Check, X } from 'lucide-react';
+import { CalendarCheck, Check, StickyNote, X } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Badge, Breadcrumbs, Button, statusTone, Table, useToast, type Column } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useApplicants, useBulkDecideApplicants, useDecideApplicant, type ApplicantRow } from '../client.api';
+import { ApplicantNotesModal } from '../components/ApplicantNotesModal';
 import { ScheduleInterviewModal } from '../components/ScheduleInterviewModal';
 
 /** Client — applicants for the company's jobs, with bulk actions. */
@@ -17,6 +18,7 @@ export default function ApplicantsPage() {
   const { notify } = useToast();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [interviewTarget, setInterviewTarget] = useState<{ id: number; name: string } | null>(null);
+  const [notesTarget, setNotesTarget] = useState<{ id: number; name: string } | null>(null);
 
   const actionableRows = (data ?? []).filter((r) => r.jobStatus === 'Applied' || r.jobStatus === 'Mapped');
   const allSelected = actionableRows.length > 0 && actionableRows.every((r) => selected.has(r.jobSubscriberMapId));
@@ -99,32 +101,40 @@ export default function ApplicantsPage() {
     {
       key: 'actions',
       header: t('common:labels.actions'),
-      render: (r) =>
-        r.jobStatus === 'Applied' || r.jobStatus === 'Mapped' ? (
-          <div className="flex gap-2">
+      render: (r) => (
+        <div className="flex gap-2">
+          {(r.jobStatus === 'Applied' || r.jobStatus === 'Mapped') && (
+            <>
+              <button
+                onClick={() => act(r.jobSubscriberMapId, 'Shortlisted')}
+                className="inline-flex items-center gap-1 rounded-lg bg-green-50 dark:bg-green-900/20 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100"
+              >
+                <Check className="h-3.5 w-3.5" /> {t('applicants.shortlist')}
+              </button>
+              <button
+                onClick={() => act(r.jobSubscriberMapId, 'Rejected')}
+                className="inline-flex items-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100"
+              >
+                <X className="h-3.5 w-3.5" /> {t('applicants.reject')}
+              </button>
+            </>
+          )}
+          {r.jobStatus === 'Shortlisted' && (
             <button
-              onClick={() => act(r.jobSubscriberMapId, 'Shortlisted')}
-              className="inline-flex items-center gap-1 rounded-lg bg-green-50 dark:bg-green-900/20 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100"
+              onClick={() => setInterviewTarget({ id: r.jobSubscriberMapId, name: r.fullName })}
+              className="inline-flex items-center gap-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 text-xs font-medium text-purple-700 dark:text-purple-400 hover:bg-purple-100"
             >
-              <Check className="h-3.5 w-3.5" /> {t('applicants.shortlist')}
+              <CalendarCheck className="h-3.5 w-3.5" /> {t('interview.schedule')}
             </button>
-            <button
-              onClick={() => act(r.jobSubscriberMapId, 'Rejected')}
-              className="inline-flex items-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100"
-            >
-              <X className="h-3.5 w-3.5" /> {t('applicants.reject')}
-            </button>
-          </div>
-        ) : r.jobStatus === 'Shortlisted' ? (
+          )}
           <button
-            onClick={() => setInterviewTarget({ id: r.jobSubscriberMapId, name: r.fullName })}
-            className="inline-flex items-center gap-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 text-xs font-medium text-purple-700 dark:text-purple-400 hover:bg-purple-100"
+            onClick={() => setNotesTarget({ id: r.jobSubscriberMapId, name: r.fullName })}
+            className="inline-flex items-center gap-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-100"
           >
-            <CalendarCheck className="h-3.5 w-3.5" /> {t('interview.schedule')}
+            <StickyNote className="h-3.5 w-3.5" /> {t('notes.button')}
           </button>
-        ) : (
-          <span className="text-xs text-gray-400">—</span>
-        ),
+        </div>
+      ),
     },
   ];
 
@@ -181,6 +191,15 @@ export default function ApplicantsPage() {
           onClose={() => setInterviewTarget(null)}
           jobSubscriberMapId={interviewTarget.id}
           candidateName={interviewTarget.name}
+        />
+      )}
+
+      {notesTarget && (
+        <ApplicantNotesModal
+          open
+          onClose={() => setNotesTarget(null)}
+          jobSubscriberMapId={notesTarget.id}
+          candidateName={notesTarget.name}
         />
       )}
     </div>

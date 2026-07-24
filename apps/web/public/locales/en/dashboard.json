@@ -259,6 +259,57 @@
     "saved": "Preferences saved.",
     "saveFailed": "Could not save preferences."
   },
+  "notes": {
+    "title": "Notes — {{name}}",
+    "rating": "Your Rating",
+    "noteLabel": "Private Note",
+    "notePlaceholder": "Add a private note about this candidate…",
+    "button": "Notes",
+    "saved": "Note saved.",
+    "saveFailed": "Could not save note."
+  },
+  "emailTemplates": {
+    "heading": "Email Templates",
+    "interview_invite": "Interview Invitation",
+    "selection": "Selection Notification",
+    "rejection": "Rejection Notification",
+    "subject": "Subject",
+    "subjectPlaceholder": "Email subject line",
+    "body": "Body",
+    "bodyPlaceholder": "Write your email template here…",
+    "availablePlaceholders": "Available placeholders",
+    "saved": "Template saved.",
+    "saveFailed": "Could not save template."
+  },
+  "adminUsers": {
+    "heading": "User Management",
+    "searchPlaceholder": "Search by name, email or mobile…",
+    "name": "Name",
+    "email": "Email",
+    "mobile": "Mobile",
+    "role": "Role",
+    "active": "Active",
+    "inactive": "Inactive",
+    "joined": "Joined",
+    "noUsers": "No users found.",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "changeRole": "Change Role",
+    "changeRoleTitle": "Change Role — {{name}}",
+    "newRole": "New Role",
+    "updated": "User updated.",
+    "roleChanged": "Role changed.",
+    "updateFailed": "Could not update user."
+  },
+  "adminJobs": {
+    "heading": "Job Moderation",
+    "noJobs": "No jobs to moderate.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Job approved.",
+    "rejected": "Job rejected.",
+    "actionFailed": "Could not perform action."
+  },
   "notifications": {
     "bell": "Notifications",
     "title": "Notifications",

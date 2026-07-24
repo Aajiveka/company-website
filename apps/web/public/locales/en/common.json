@@ -40,7 +40,10 @@
     "savedJobs": "Saved Jobs",
     "resumeExport": "Download Resume",
     "adminDashboard": "Admin Dashboard",
-    "notificationSettings": "Email Preferences"
+    "notificationSettings": "Email Preferences",
+    "emailTemplates": "Email Templates",
+    "userManagement": "User Management",
+    "jobModeration": "Job Moderation"
   },
   "actions": {
     "search": "Search",
