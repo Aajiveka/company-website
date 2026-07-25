@@ -31,6 +31,9 @@ import {
   Workflow,
   LayoutTemplate,
   Palette,
+  Building,
+  Kanban,
+  UserCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { Role, type RoleId } from '@/types/roles';
@@ -64,6 +67,8 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'interviewCalendar', to: '/candidate/interview-calendar', icon: CalendarDays },
     { i18nKey: 'activityTimeline', to: '/candidate/activity', icon: Clock },
     { i18nKey: 'careerPath', to: '/candidate/career-path', icon: TrendingUp },
+    { i18nKey: 'compareCompanies', to: '/candidate/compare-companies', icon: Building },
+    { i18nKey: 'applicationTracker', to: '/candidate/tracker', icon: Kanban },
     { i18nKey: 'messages', to: '/candidate/messages', icon: MessageSquare },
     { i18nKey: 'notificationSettings', to: '/candidate/notifications', icon: Bell },
     { i18nKey: 'changePassword', to: '/candidate/change-password', icon: KeyRound },
@@ -93,6 +98,7 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'workflows', to: '/company/workflows', icon: Workflow },
     { i18nKey: 'templateLibrary', to: '/company/template-library', icon: LayoutTemplate },
     { i18nKey: 'branding', to: '/company/branding', icon: Palette },
+    { i18nKey: 'compareCandidates', to: '/company/compare-candidates', icon: UserCheck },
     { i18nKey: 'messages', to: '/company/messages', icon: MessageSquare },
   ],
   [Role.Admin]: [

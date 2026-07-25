@@ -62,7 +62,10 @@
     "campaigns": "Email Campaigns",
     "workflows": "Screening Workflows",
     "templateLibrary": "Template Library",
-    "branding": "Employer Branding"
+    "branding": "Employer Branding",
+    "compareCompanies": "Compare Companies",
+    "applicationTracker": "Application Tracker",
+    "compareCandidates": "Compare Candidates"
   },
   "actions": {
     "search": "Search",
@@ -122,6 +125,19 @@
     "en": "English",
     "hi": "हिन्दी",
     "label": "Language"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "offline": {
+    "message": "You're offline. Some features may be unavailable."
+  },
+  "errors": {
+    "somethingWrong": "Something went wrong",
+    "tryAgain": "Try Again",
+    "goBack": "Go Back"
   },
   "validation": {
     "required": "This field is required",

@@ -79,6 +79,10 @@ const EmailCampaignPage = lazy(() => import('@/features/clients/pages/EmailCampa
 const ScreeningWorkflowPage = lazy(() => import('@/features/clients/pages/ScreeningWorkflowPage'));
 const TemplateLibraryPage = lazy(() => import('@/features/clients/pages/TemplateLibraryPage'));
 const EmployerBrandingPage = lazy(() => import('@/features/clients/pages/EmployerBrandingPage'));
+const CompanyComparisonPage = lazy(() => import('@/features/candidates/pages/CompanyComparisonPage'));
+const ApplicationTrackerPage = lazy(() => import('@/features/candidates/pages/ApplicationTrackerPage'));
+const CandidateComparisonPage = lazy(() => import('@/features/clients/pages/CandidateComparisonPage'));
+const DashboardHome = lazy(() => import('@/features/dashboard/DashboardHome'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -145,6 +149,9 @@ export const router = createBrowserRouter([
               { path: '/candidate/interview-calendar', element: withSuspense(<InterviewCalendarPage />) },
               { path: '/candidate/activity', element: withSuspense(<ActivityTimelinePage />) },
               { path: '/candidate/career-path', element: withSuspense(<CareerPathPage />) },
+              { path: '/candidate/compare-companies', element: withSuspense(<CompanyComparisonPage />) },
+              { path: '/candidate/tracker', element: withSuspense(<ApplicationTrackerPage />) },
+              { path: '/candidate/dashboard', element: withSuspense(<DashboardHome />) },
             ],
           },
           // Client / Admin
@@ -167,6 +174,7 @@ export const router = createBrowserRouter([
               { path: '/company/workflows', element: withSuspense(<ScreeningWorkflowPage />) },
               { path: '/company/template-library', element: withSuspense(<TemplateLibraryPage />) },
               { path: '/company/branding', element: withSuspense(<EmployerBrandingPage />) },
+              { path: '/company/compare-candidates', element: withSuspense(<CandidateComparisonPage />) },
             ],
           },
           // Admin

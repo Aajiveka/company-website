@@ -62,7 +62,10 @@
     "campaigns": "ईमेल अभियान",
     "workflows": "स्क्रीनिंग वर्कफ़्लो",
     "templateLibrary": "टेम्पलेट लाइब्रेरी",
-    "branding": "नियोक्ता ब्रांडिंग"
+    "branding": "नियोक्ता ब्रांडिंग",
+    "compareCompanies": "कंपनियों की तुलना",
+    "applicationTracker": "आवेदन ट्रैकर",
+    "compareCandidates": "उम्मीदवारों की तुलना"
   },
   "actions": {
     "search": "खोजें",
@@ -122,6 +125,19 @@
     "en": "English",
     "hi": "हिन्दी",
     "label": "भाषा"
+  },
+  "theme": {
+    "light": "लाइट",
+    "dark": "डार्क",
+    "system": "सिस्टम"
+  },
+  "offline": {
+    "message": "आप ऑफ़लाइन हैं। कुछ सुविधाएं अनुपलब्ध हो सकती हैं।"
+  },
+  "errors": {
+    "somethingWrong": "कुछ गलत हो गया",
+    "tryAgain": "पुनः प्रयास करें",
+    "goBack": "वापस जाएं"
   },
   "validation": {
     "required": "यह फ़ील्ड आवश्यक है",
