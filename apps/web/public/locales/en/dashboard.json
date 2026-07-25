@@ -769,6 +769,41 @@
     "success": "Feedback submitted.",
     "error": "Could not submit feedback."
   },
+  "profilePhoto": {
+    "heading": "Profile Photo",
+    "upload": "Upload Photo",
+    "uploading": "Uploading...",
+    "uploaded": "Photo uploaded successfully.",
+    "uploadFailed": "Photo upload failed.",
+    "changePhoto": "Change photo",
+    "removePhoto": "Remove photo"
+  },
+  "adminSettings": {
+    "heading": "Site Settings",
+    "general": "General",
+    "features": "Features",
+    "email": "Email / SMTP",
+    "limits": "Limits",
+    "siteName": "Site Name",
+    "supportEmail": "Support Email",
+    "tollFreeNumber": "Toll-Free Number",
+    "enableJobAlerts": "Enable Job Alerts",
+    "enableAssessments": "Enable Assessments",
+    "enableReferrals": "Enable Referrals",
+    "enableMessaging": "Enable Messaging",
+    "maintenanceMode": "Maintenance Mode",
+    "smtpHost": "SMTP Host",
+    "smtpPort": "SMTP Port",
+    "senderEmail": "Sender Email",
+    "senderName": "Sender Name",
+    "maxJobsPerEmployer": "Max Jobs per Employer",
+    "maxApplicationsPerCandidate": "Max Applications per Candidate",
+    "maxFileUploadSizeMb": "Max File Upload Size (MB)",
+    "save": "Save Settings",
+    "saving": "Saving...",
+    "saved": "Settings saved.",
+    "saveFailed": "Could not save settings."
+  },
   "bulkEmail": {
     "title": "Bulk Email Upload",
     "dragDrop": "Drag & drop a CSV file here, or click to browse",
@@ -790,5 +825,24 @@
     "confirm": "Send Emails",
     "success": "Emails sent successfully.",
     "error": "Could not send emails."
+  },
+  "resumeImport": {
+    "heading": "Import Resume",
+    "dragDrop": "Drag & drop your resume here, or click to browse",
+    "uploadResume": "Upload Resume",
+    "parsing": "Parsing your resume\u2026",
+    "parsed": "Resume parsed successfully",
+    "importToProfile": "Import to Profile",
+    "importing": "Importing\u2026",
+    "imported": "Resume imported to your profile.",
+    "importFailed": "Could not import resume.",
+    "preview": "Preview parsed data"
+  },
+  "saveJob": {
+    "save": "Save job",
+    "removeSaved": "Remove from saved",
+    "saved": "Job saved.",
+    "removed": "Job removed from saved.",
+    "saveFailed": "Could not save job."
   }
 }

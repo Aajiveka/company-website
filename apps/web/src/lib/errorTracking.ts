@@ -13,8 +13,9 @@ export async function initErrorTracking(): Promise<void> {
   }
 
   try {
-    // @ts-expect-error — optional dependency, installed only when VITE_SENTRY_DSN is set
-    const mod = await import('@sentry/react');
+    // Dynamic import with variable to prevent Rollup from resolving the module at build time
+    const sentryModule = '@sentry/react';
+    const mod = await import(/* @vite-ignore */ sentryModule);
     sentry = mod;
 
     const isProd = (import.meta.env.VITE_ENV ?? 'development') === 'production';

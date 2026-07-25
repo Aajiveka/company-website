@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { LogOut, Menu as MenuIcon, UserCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/features/auth/auth.store';
 import { ROLE_LABEL } from '@/types/roles';
 import { Dropdown } from '@/components/ui';
+import DarkModeToggle from '@/components/DarkModeToggle';
 import { ThemeToggleDashboard } from '@/components/ThemeToggle';
 import { RouteAnnouncer } from '@/components/RouteAnnouncer';
+import PageTransition from '@/components/PageTransition';
 import { NotificationBell } from './NotificationBell';
 import { Sidebar } from './Sidebar';
 
@@ -15,6 +17,7 @@ export function DashboardLayout() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   // Close sidebar on Escape key
   useEffect(() => {
@@ -51,6 +54,7 @@ export function DashboardLayout() {
         </div>
         <div className="flex items-center gap-2">
           <NotificationBell />
+          <DarkModeToggle />
           <ThemeToggleDashboard />
           <Dropdown
             trigger={
@@ -79,7 +83,9 @@ export function DashboardLayout() {
       )}
 
       <main id="main-content" className="px-4 pb-10 pt-[4.5rem] md:pt-20 lg:pl-[17rem] lg:pr-6">
-        <Outlet />
+        <PageTransition transitionKey={location.pathname}>
+          <Outlet />
+        </PageTransition>
       </main>
     </div>
   );

@@ -19,6 +19,7 @@ import {
   MessageSquare,
   PenTool,
   Search,
+  Settings,
   ShieldCheck,
   Upload,
   UploadCloud,
@@ -110,6 +111,7 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
     { i18nKey: 'manageJobs', to: '/company/jobs', icon: Briefcase },
     { i18nKey: 'applicants', to: '/company/applicants', icon: Users },
+    { i18nKey: 'adminSettings', to: '/admin/settings', icon: Settings },
   ],
   [Role.Subscription]: [{ i18nKey: 'pricing', to: '/pricing', icon: FileText }],
 };

@@ -1,6 +1,7 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { env } from './env';
 import { tokenStorage } from './tokenStorage';
+import { captureError } from './errorTracking';
 
 /**
  * Central Axios instance.
@@ -60,6 +61,13 @@ api.interceptors.response.use(
       if (window.location.pathname !== '/login') {
         window.location.assign('/login');
       }
+    }
+    if (error.response && error.response.status >= 500) {
+      captureError(error, {
+        url: original?.url,
+        method: original?.method,
+        status: error.response.status,
+      });
     }
     return Promise.reject(error);
   },

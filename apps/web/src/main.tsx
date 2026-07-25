@@ -6,6 +6,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { RootFallback } from './components/RootFallback';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { PwaReloadPrompt } from './components/PwaReloadPrompt';
+import OfflineBanner from './components/OfflineBanner';
 import { router } from './routes/router';
 import { env } from './lib/env';
 import './lib/i18n';
@@ -23,6 +24,7 @@ async function bootstrap() {
       <ErrorBoundary fallback={<RootFallback />}>
         <AppProviders>
           <RouterProvider router={router} />
+          <OfflineBanner />
           <PwaInstallPrompt />
           <PwaReloadPrompt />
         </AppProviders>

@@ -65,7 +65,8 @@
     "branding": "Employer Branding",
     "compareCompanies": "Compare Companies",
     "applicationTracker": "Application Tracker",
-    "compareCandidates": "Compare Candidates"
+    "compareCandidates": "Compare Candidates",
+    "adminSettings": "Admin Settings"
   },
   "actions": {
     "search": "Search",
@@ -113,6 +114,19 @@
     "backHome": "Back to home",
     "goBack": "Go back",
     "browseJobs": "Or browse open jobs →"
+  },
+  "mobileNav": {
+    "home": "Home",
+    "jobs": "Jobs",
+    "dashboard": "Dashboard",
+    "messages": "Messages",
+    "menu": "Menu"
+  },
+  "pushNotif": {
+    "title": "Stay Updated",
+    "message": "Enable notifications to get instant updates about your applications.",
+    "enable": "Enable",
+    "notNow": "Not now"
   },
   "pwa": {
     "installTitle": "Install Aajiveka",

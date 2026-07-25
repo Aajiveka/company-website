@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Download, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/cn';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -8,19 +11,19 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISSED_KEY = 'pwa_install_dismissed';
-const DISMISS_DAYS = 14;
+const DISMISS_DAYS = 30;
 
 function wasDismissedRecently(): boolean {
   const stored = localStorage.getItem(DISMISSED_KEY);
   if (!stored) return false;
-  const diff = Date.now() - Number(stored);
-  return diff < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() - Number(stored) < DISMISS_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export function PwaInstallPrompt() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
+  const [animateOut, setAnimateOut] = useState(false);
 
   useEffect(() => {
     if (wasDismissedRecently()) return;
@@ -35,32 +38,53 @@ export function PwaInstallPrompt() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  const hide = useCallback((callback?: () => void) => {
+    setAnimateOut(true);
+    setTimeout(() => {
+      setVisible(false);
+      setAnimateOut(false);
+      callback?.();
+    }, 200);
+  }, []);
+
   const install = useCallback(async () => {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-      setVisible(false);
+      hide();
     }
     setDeferredPrompt(null);
-  }, [deferredPrompt]);
+  }, [deferredPrompt, hide]);
 
   const dismiss = useCallback(() => {
-    setVisible(false);
-    setDeferredPrompt(null);
-    localStorage.setItem(DISMISSED_KEY, String(Date.now()));
-  }, []);
+    hide(() => {
+      setDeferredPrompt(null);
+      localStorage.setItem(DISMISSED_KEY, String(Date.now()));
+    });
+  }, [hide]);
 
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[9998] mx-auto max-w-sm animate-slide-up rounded-xl border border-gray-200 bg-white p-4 shadow-lg sm:left-auto dark:border-gray-700 dark:bg-gray-800">
+    <Card
+      className={cn(
+        'fixed bottom-4 left-4 right-4 z-[9998] mx-auto max-w-sm shadow-xl',
+        'sm:left-auto sm:right-4',
+        'transition-all duration-200',
+        animateOut
+          ? 'translate-y-4 opacity-0'
+          : 'animate-slide-up translate-y-0 opacity-100',
+      )}
+    >
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20">
           <Download className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-navy">{t('pwa.installTitle')}</p>
+          <p className="text-sm font-semibold text-navy dark:text-white">
+            {t('pwa.installTitle')}
+          </p>
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
             {t('pwa.installMessage')}
           </p>
@@ -74,19 +98,15 @@ export function PwaInstallPrompt() {
         </button>
       </div>
       <div className="mt-3 flex gap-2">
-        <button
-          onClick={install}
-          className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90"
-        >
+        <Button onClick={install} className="flex-1" size="sm">
           {t('pwa.installButton')}
-        </button>
-        <button
-          onClick={dismiss}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
+        </Button>
+        <Button onClick={dismiss} variant="outline" size="sm">
           {t('pwa.notNow')}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }
+
+export default PwaInstallPrompt;

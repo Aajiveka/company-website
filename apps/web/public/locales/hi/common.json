@@ -65,7 +65,8 @@
     "branding": "नियोक्ता ब्रांडिंग",
     "compareCompanies": "कंपनियों की तुलना",
     "applicationTracker": "आवेदन ट्रैकर",
-    "compareCandidates": "उम्मीदवारों की तुलना"
+    "compareCandidates": "उम्मीदवारों की तुलना",
+    "adminSettings": "एडमिन सेटिंग्स"
   },
   "actions": {
     "search": "खोजें",
@@ -113,6 +114,19 @@
     "backHome": "होम पर वापस जाएं",
     "goBack": "वापस जाएं",
     "browseJobs": "या नौकरियाँ ब्राउज़ करें →"
+  },
+  "mobileNav": {
+    "home": "होम",
+    "jobs": "नौकरियाँ",
+    "dashboard": "डैशबोर्ड",
+    "messages": "संदेश",
+    "menu": "मेनू"
+  },
+  "pushNotif": {
+    "title": "अपडेट रहें",
+    "message": "अपने आवेदनों के बारे में तुरंत अपडेट पाने के लिए नोटिफिकेशन सक्षम करें।",
+    "enable": "सक्षम करें",
+    "notNow": "अभी नहीं"
   },
   "pwa": {
     "installTitle": "Aajiveka इंस्टॉल करें",
