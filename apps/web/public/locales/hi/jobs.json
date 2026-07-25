@@ -27,7 +27,20 @@
     "sortSalaryLow": "वेतन: कम → अधिक",
     "clearFilters": "सब हटाएं",
     "activeFilters": "{{count}} फ़िल्टर सक्रिय",
-    "activeFilters_other": "{{count}} फ़िल्टर सक्रिय"
+    "activeFilters_other": "{{count}} फ़िल्टर सक्रिय",
+    "globalHeading": "आजीवेका पर खोजें",
+    "globalPlaceholder": "नौकरियाँ, कंपनियाँ, उम्मीदवार खोजें...",
+    "resultsFor": "\"{{query}}\" के लिए खोज परिणाम",
+    "enterQuery": "शुरू करने के लिए एक खोज शब्द दर्ज करें।",
+    "noResults": "कोई परिणाम नहीं मिला।",
+    "tryDifferentQuery": "कोई अलग कीवर्ड आज़माएं या अपनी खोज को व्यापक करें।",
+    "tab_jobs": "नौकरियाँ",
+    "tab_companies": "कंपनियाँ",
+    "tab_candidates": "उम्मीदवार",
+    "postedOn": "{{date}} को पोस्ट किया गया",
+    "jobsCount": "{{count}} खुली पोज़ीशन",
+    "jobsCount_other": "{{count}} खुली पोज़ीशन",
+    "experience": "{{years}} वर्ष अनुभव"
   },
   "detail": {
     "breadcrumbJobs": "नौकरियाँ",

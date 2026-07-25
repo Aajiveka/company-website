@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 import { Card, CardHeader, CardTitle } from '../Card';
 
 describe('Card', () => {
@@ -8,13 +8,13 @@ describe('Card', () => {
     expect(screen.getByText('Card content')).toBeInTheDocument();
   });
 
-  it('applies className prop', () => {
-    render(<Card className="mt-4">Styled</Card>);
-    const el = screen.getByText('Styled');
-    expect(el.className).toContain('mt-4');
+  it('applies custom className', () => {
+    render(<Card className="my-custom-class">Content</Card>);
+    const el = screen.getByText('Content');
+    expect(el).toHaveClass('my-custom-class');
   });
 
-  it('has default styling', () => {
+  it('has default card styling', () => {
     render(<Card>Default</Card>);
     const el = screen.getByText('Default');
     expect(el.className).toContain('rounded-xl');
@@ -29,19 +29,40 @@ describe('Card', () => {
 });
 
 describe('CardHeader', () => {
-  it('renders children and has flex layout', () => {
+  it('renders children', () => {
     render(<CardHeader>Header content</CardHeader>);
-    const el = screen.getByText('Header content');
+    expect(screen.getByText('Header content')).toBeInTheDocument();
+  });
+
+  it('has flex layout classes', () => {
+    render(<CardHeader>Header</CardHeader>);
+    const el = screen.getByText('Header');
     expect(el.className).toContain('flex');
     expect(el.className).toContain('items-center');
+  });
+
+  it('applies custom className', () => {
+    render(<CardHeader className="extra">Header</CardHeader>);
+    expect(screen.getByText('Header')).toHaveClass('extra');
   });
 });
 
 describe('CardTitle', () => {
-  it('renders as an h3 with proper styling', () => {
-    render(<CardTitle>Title text</CardTitle>);
-    const el = screen.getByText('Title text');
-    expect(el.tagName).toBe('H3');
+  it('renders as an h3 element', () => {
+    render(<CardTitle>My Title</CardTitle>);
+    const heading = screen.getByRole('heading', { level: 3 });
+    expect(heading).toHaveTextContent('My Title');
+  });
+
+  it('applies custom className', () => {
+    render(<CardTitle className="custom-title">Title</CardTitle>);
+    const heading = screen.getByRole('heading', { level: 3 });
+    expect(heading).toHaveClass('custom-title');
+  });
+
+  it('has proper font styling', () => {
+    render(<CardTitle>Styled</CardTitle>);
+    const el = screen.getByText('Styled');
     expect(el.className).toContain('font-semibold');
   });
 });

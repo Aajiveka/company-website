@@ -53,7 +53,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div
               key={id}
               className={cn('flex items-start gap-2 rounded-lg border p-3 text-sm shadow-lg', colors[kind])}
-              role="status"
+              role="alert"
+              aria-live="polite"
             >
               <Icon className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
               <span className="flex-1">{message}</span>

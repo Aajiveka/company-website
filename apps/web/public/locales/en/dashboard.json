@@ -844,5 +844,22 @@
     "saved": "Job saved.",
     "removed": "Job removed from saved.",
     "saveFailed": "Could not save job."
+  },
+  "notificationsPage": {
+    "heading": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet.",
+    "emptyHint": "When there are updates about your applications, interviews, or new job matches, they will appear here.",
+    "loading": "Loading...",
+    "loadMore": "Load more",
+    "tab_all": "All",
+    "tab_unread": "Unread",
+    "tab_jobs": "Jobs",
+    "tab_interviews": "Interviews",
+    "tab_system": "System",
+    "type_job_match": "Job Match",
+    "type_application_update": "Application",
+    "type_interview": "Interview",
+    "type_system": "System"
   }
 }

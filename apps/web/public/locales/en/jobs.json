@@ -27,7 +27,20 @@
     "sortSalaryLow": "Salary: Low → High",
     "clearFilters": "Clear all",
     "activeFilters": "{{count}} filter active",
-    "activeFilters_other": "{{count}} filters active"
+    "activeFilters_other": "{{count}} filters active",
+    "globalHeading": "Search Aajiveka",
+    "globalPlaceholder": "Search jobs, companies, candidates...",
+    "resultsFor": "Search results for \"{{query}}\"",
+    "enterQuery": "Enter a search term to get started.",
+    "noResults": "No results found.",
+    "tryDifferentQuery": "Try a different keyword or broaden your search.",
+    "tab_jobs": "Jobs",
+    "tab_companies": "Companies",
+    "tab_candidates": "Candidates",
+    "postedOn": "Posted {{date}}",
+    "jobsCount": "{{count}} open position",
+    "jobsCount_other": "{{count}} open positions",
+    "experience": "{{years}} yrs experience"
   },
   "detail": {
     "breadcrumbJobs": "Jobs",

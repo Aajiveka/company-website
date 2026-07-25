@@ -69,10 +69,12 @@ function StepIndicator({ steps, current }: { steps: readonly string[]; current: 
 }
 
 /** Multi-step onboarding wizard for new candidates. */
-export function OnboardingWizard({ initialName, initialEmail, initialMobile }: {
+export function OnboardingWizard({ initialName, initialEmail, initialMobile, onComplete }: {
   initialName?: string;
   initialEmail?: string;
   initialMobile?: string;
+  /** Called when the user finishes the last step. */
+  onComplete?: () => void;
 }) {
   const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
@@ -233,10 +235,10 @@ export function OnboardingWizard({ initialName, initialEmail, initialMobile }: {
           <h2 className="text-xl font-bold text-navy">{t('onboarding.allDone')}</h2>
           <p className="mt-2 text-sm text-gray-500">{t('onboarding.allDoneHint')}</p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Button onClick={() => navigate('/candidate/cv-manager')}>
+            <Button onClick={() => (onComplete ? onComplete() : navigate('/candidate/dashboard'))}>
               {t('onboarding.editProfile')}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/jobs')}>
+            <Button variant="outline" onClick={() => (onComplete ? onComplete() : navigate('/jobs'))}>
               {t('onboarding.browseJobs')}
             </Button>
           </div>

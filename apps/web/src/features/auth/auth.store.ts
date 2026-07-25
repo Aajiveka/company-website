@@ -9,6 +9,8 @@ interface AuthState {
   /** True until the initial "do we have a session?" check has finished. */
   isLoading: boolean;
   setSession: (session: AuthSession) => void;
+  /** Merge partial updates into the current user object (e.g. after onboarding). */
+  updateUser: (patch: Partial<AuthUser>) => void;
   logout: () => Promise<void>;
   /** Restore the session from the persisted refresh token. Called once at startup. */
   bootstrap: () => Promise<void>;
@@ -24,6 +26,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     tokenStorage.setRefresh(session.refreshToken);
     set({ user: session.user, isAuthenticated: true, isLoading: false });
   },
+
+  updateUser: (patch) =>
+    set((state) => ({
+      user: state.user ? { ...state.user, ...patch } : state.user,
+    })),
 
   logout: async () => {
     // Hand the refresh token back so the API can actually revoke it. Without it the

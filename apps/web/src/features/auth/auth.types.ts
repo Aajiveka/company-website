@@ -8,6 +8,8 @@ export interface AuthUser {
   fullName: string;
   email: string;
   roleId: RoleId;
+  /** Whether the candidate has completed post-registration onboarding. */
+  isOnboarded?: boolean;
 }
 
 export interface AuthSession {

@@ -1,43 +1,44 @@
+import { useState } from 'react';
+import { cn } from '@/lib/cn';
+import { useLazyImage } from '@/hooks/useLazyImage';
+import { Skeleton } from '@/components/ui/Skeleton';
+
 interface OptimizedImageProps {
   src: string;
   alt: string;
-  width?: number;
-  height?: number;
+  width: number;
+  height: number;
   className?: string;
-  lazy?: boolean;
-  sizes?: string;
 }
 
-const WEBP_CONVERTIBLE = /\.(jpe?g|png)$/i;
-
-function toWebP(src: string): string {
-  return src.replace(WEBP_CONVERTIBLE, '.webp');
-}
-
-export function OptimizedImage({
-  src,
-  alt,
-  width,
-  height,
-  className,
-  lazy = true,
-  sizes,
-}: OptimizedImageProps) {
-  const hasWebP = WEBP_CONVERTIBLE.test(src);
+function OptimizedImage({ src, alt, width, height, className }: OptimizedImageProps) {
+  const { ref, isInView } = useLazyImage();
+  const [loaded, setLoaded] = useState(false);
 
   return (
-    <picture>
-      {hasWebP && <source srcSet={toWebP(src)} type="image/webp" />}
-      <img
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        className={className}
-        loading={lazy ? 'lazy' : 'eager'}
-        decoding="async"
-        sizes={sizes}
-      />
-    </picture>
+    <div
+      ref={ref as React.RefObject<HTMLDivElement>}
+      style={{ width, height }}
+      className={cn('relative overflow-hidden', className)}
+    >
+      {!loaded && <Skeleton className="absolute inset-0 h-full w-full" />}
+      {isInView && (
+        <img
+          src={src}
+          alt={alt}
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          className={cn(
+            'h-full w-full object-cover transition-opacity duration-300',
+            loaded ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+      )}
+    </div>
   );
 }
+
+export default OptimizedImage;

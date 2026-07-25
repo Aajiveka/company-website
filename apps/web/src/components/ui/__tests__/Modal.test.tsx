@@ -1,55 +1,55 @@
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { Modal } from '../Modal';
 
 describe('Modal', () => {
-  it('renders when open=true', () => {
+  it('renders when open is true', () => {
     render(
-      <Modal open onClose={vi.fn()} title="Test Modal">
-        <p>Modal body</p>
+      <Modal open onClose={vi.fn()}>
+        <p>Modal content</p>
       </Modal>,
     );
-    expect(screen.getByText('Modal body')).toBeInTheDocument();
+    expect(screen.getByText('Modal content')).toBeInTheDocument();
   });
 
-  it('does not render when open=false', () => {
+  it('does not render when open is false', () => {
     render(
-      <Modal open={false} onClose={vi.fn()} title="Hidden">
-        <p>Should not show</p>
+      <Modal open={false} onClose={vi.fn()}>
+        <p>Modal content</p>
       </Modal>,
     );
-    expect(screen.queryByText('Should not show')).not.toBeInTheDocument();
+    expect(screen.queryByText('Modal content')).not.toBeInTheDocument();
   });
 
-  it('shows title', () => {
+  it('calls onClose when close button is clicked', () => {
+    const onClose = vi.fn();
     render(
-      <Modal open onClose={vi.fn()} title="My Title">
+      <Modal open onClose={onClose} title="Test">
         <p>Content</p>
       </Modal>,
     );
-    expect(screen.getByText('My Title')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Close'));
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('shows a sr-only fallback title when no title is provided', () => {
-    render(
-      <Modal open onClose={vi.fn()}>
-        <p>No title</p>
-      </Modal>,
-    );
-    // Radix requires a title; component renders "Dialog" as sr-only
-    expect(screen.getByText('Dialog')).toBeInTheDocument();
-  });
-
-  it('calls onClose when close button is clicked', async () => {
+  it('calls onClose on Escape key', () => {
     const onClose = vi.fn();
     render(
-      <Modal open onClose={onClose} title="Closable">
-        <p>Close me</p>
+      <Modal open onClose={onClose}>
+        <p>Content</p>
       </Modal>,
     );
-    await userEvent.click(screen.getByLabelText('Close'));
-    expect(onClose).toHaveBeenCalledOnce();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('renders the title when provided', () => {
+    render(
+      <Modal open onClose={vi.fn()} title="My Title">
+        <p>Body</p>
+      </Modal>,
+    );
+    expect(screen.getByText('My Title')).toBeInTheDocument();
   });
 
   it('renders children content', () => {
@@ -60,5 +60,14 @@ describe('Modal', () => {
     );
     expect(screen.getByTestId('child')).toBeInTheDocument();
     expect(screen.getByText('Child content')).toBeInTheDocument();
+  });
+
+  it('renders a sr-only fallback title when title prop is omitted', () => {
+    render(
+      <Modal open onClose={vi.fn()}>
+        <p>Body</p>
+      </Modal>,
+    );
+    expect(screen.getByText('Dialog')).toBeInTheDocument();
   });
 });
