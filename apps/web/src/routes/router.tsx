@@ -69,9 +69,16 @@ const EmployerAnalyticsPage = lazy(() => import('@/features/clients/pages/Employ
 const BlogCmsPage = lazy(() => import('@/features/admin/pages/BlogCmsPage'));
 const MessagingPage = lazy(() => import('@/features/messaging/MessagingPage'));
 const SavedSearchesPage = lazy(() => import('@/features/candidates/pages/SavedSearchesPage'));
+const SkillGapPage = lazy(() => import('@/features/candidates/pages/SkillGapPage'));
+const InterviewCalendarPage = lazy(() => import('@/features/candidates/pages/InterviewCalendarPage'));
+const ActivityTimelinePage = lazy(() => import('@/features/candidates/pages/ActivityTimelinePage'));
+const CareerPathPage = lazy(() => import('@/features/candidates/pages/CareerPathPage'));
 const ReportExportPage = lazy(() => import('@/features/clients/pages/ReportExportPage'));
 const CandidateSourcePage = lazy(() => import('@/features/clients/pages/CandidateSourcePage'));
 const EmailCampaignPage = lazy(() => import('@/features/clients/pages/EmailCampaignPage'));
+const ScreeningWorkflowPage = lazy(() => import('@/features/clients/pages/ScreeningWorkflowPage'));
+const TemplateLibraryPage = lazy(() => import('@/features/clients/pages/TemplateLibraryPage'));
+const EmployerBrandingPage = lazy(() => import('@/features/clients/pages/EmployerBrandingPage'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -134,6 +141,10 @@ export const router = createBrowserRouter([
               { path: '/candidate/referrals', element: withSuspense(<ReferralPage />) },
               { path: '/candidate/messages', element: withSuspense(<MessagingPage />) },
               { path: '/candidate/saved-searches', element: withSuspense(<SavedSearchesPage />) },
+              { path: '/candidate/skill-gap', element: withSuspense(<SkillGapPage />) },
+              { path: '/candidate/interview-calendar', element: withSuspense(<InterviewCalendarPage />) },
+              { path: '/candidate/activity', element: withSuspense(<ActivityTimelinePage />) },
+              { path: '/candidate/career-path', element: withSuspense(<CareerPathPage />) },
             ],
           },
           // Client / Admin
@@ -153,6 +164,9 @@ export const router = createBrowserRouter([
               { path: '/company/reports', element: withSuspense(<ReportExportPage />) },
               { path: '/company/sourcing', element: withSuspense(<CandidateSourcePage />) },
               { path: '/company/campaigns', element: withSuspense(<EmailCampaignPage />) },
+              { path: '/company/workflows', element: withSuspense(<ScreeningWorkflowPage />) },
+              { path: '/company/template-library', element: withSuspense(<TemplateLibraryPage />) },
+              { path: '/company/branding', element: withSuspense(<EmployerBrandingPage />) },
             ],
           },
           // Admin

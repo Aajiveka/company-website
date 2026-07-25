@@ -53,9 +53,16 @@
     "employerAnalytics": "Analytics",
     "blogCms": "Blog CMS",
     "savedSearches": "Saved Searches",
+    "skillGap": "Skill Gap Analysis",
+    "interviewCalendar": "Interview Calendar",
+    "activityTimeline": "Activity Timeline",
+    "careerPath": "Career Path",
     "reports": "Reports & Export",
     "sourcing": "Candidate Sourcing",
-    "campaigns": "Email Campaigns"
+    "campaigns": "Email Campaigns",
+    "workflows": "Screening Workflows",
+    "templateLibrary": "Template Library",
+    "branding": "Employer Branding"
   },
   "actions": {
     "search": "Search",

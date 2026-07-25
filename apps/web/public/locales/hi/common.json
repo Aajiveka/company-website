@@ -53,9 +53,16 @@
     "employerAnalytics": "एनालिटिक्स",
     "blogCms": "ब्लॉग CMS",
     "savedSearches": "सहेजी गई खोजें",
+    "skillGap": "कौशल अंतर विश्लेषण",
+    "interviewCalendar": "साक्षात्कार कैलेंडर",
+    "activityTimeline": "गतिविधि टाइमलाइन",
+    "careerPath": "करियर पथ",
     "reports": "रिपोर्ट और निर्यात",
     "sourcing": "उम्मीदवार सोर्सिंग",
-    "campaigns": "ईमेल अभियान"
+    "campaigns": "ईमेल अभियान",
+    "workflows": "स्क्रीनिंग वर्कफ़्लो",
+    "templateLibrary": "टेम्पलेट लाइब्रेरी",
+    "branding": "नियोक्ता ब्रांडिंग"
   },
   "actions": {
     "search": "खोजें",
