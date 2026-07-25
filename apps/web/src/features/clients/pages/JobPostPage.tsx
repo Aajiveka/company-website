@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Breadcrumbs, Button, Card, FormSkeleton, Input, Select, useToast } from '@/components/ui';
+import RichTextEditor from '@/components/RichTextEditor';
 import { useCompanyJobs, useCompanyMasters, usePostJob, useUpdateJob } from '../client.api';
 
 const schema = (t: TFunction) => z.object({
@@ -37,6 +38,7 @@ export default function JobPostPage() {
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors },
   } = useForm<Values>({ resolver: zodResolver(schema(tCommon)) });
 
@@ -137,11 +139,17 @@ export default function JobPostPage() {
             <label className="mb-1.5 block text-sm font-medium text-navy" htmlFor="jd">
               {t('jobPost.description')}
             </label>
-            <textarea
-              id="jd"
-              rows={5}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-              {...register('description')}
+            <Controller
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <RichTextEditor
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder={t('jobPost.descriptionPlaceholder', 'Describe the role, responsibilities, requirements...')}
+                  minHeight="160px"
+                />
+              )}
             />
             {errors.description && <p className="mt-1 text-xs text-danger">{errors.description.message}</p>}
           </div>

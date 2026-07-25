@@ -9,6 +9,7 @@ import DarkModeToggle from '@/components/DarkModeToggle';
 import { ThemeToggleDashboard } from '@/components/ThemeToggle';
 import { RouteAnnouncer } from '@/components/RouteAnnouncer';
 import PageTransition from '@/components/PageTransition';
+import CommandPalette from '@/components/CommandPalette';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useBreadcrumbs } from '@/hooks/useBreadcrumbs';
 import { NotificationBell } from './NotificationBell';
@@ -36,6 +37,7 @@ export function DashboardLayout() {
   return (
     <div className="min-h-screen bg-brand-soft/40 dark:bg-gray-900">
       <meta name="robots" content="noindex,nofollow" />
+      <CommandPalette />
       <RouteAnnouncer />
       <a
         href="#main-content"

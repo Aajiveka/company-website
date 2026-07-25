@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { captureError } from '@/lib/errorTracking';
 import { Button, Card } from '@/components/ui';
 
 interface QueryErrorBoundaryProps {
@@ -21,6 +23,12 @@ export default function QueryErrorBoundary({
 }: QueryErrorBoundaryProps) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isError && error) {
+      captureError(error, { component: 'QueryErrorBoundary' });
+    }
+  }, [isError, error]);
 
   if (!isError) {
     return <>{children}</>;

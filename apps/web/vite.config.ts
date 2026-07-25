@@ -29,6 +29,16 @@ export default defineConfig(({ mode: _mode }) => ({
           { src: '/image/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
           { src: '/image/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        shortcuts: [
+          { name: 'Search Jobs', url: '/jobs', icons: [{ src: '/image/pwa-192x192.png', sizes: '192x192' }] },
+          { name: 'My Profile', url: '/candidate/profile', icons: [{ src: '/image/pwa-192x192.png', sizes: '192x192' }] },
+          { name: 'Applied Jobs', url: '/candidate/applied-jobs', icons: [{ src: '/image/pwa-192x192.png', sizes: '192x192' }] },
+        ],
+        share_target: {
+          action: '/jobs',
+          method: 'GET',
+          params: { title: 'q', text: 'q', url: 'q' },
+        },
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],

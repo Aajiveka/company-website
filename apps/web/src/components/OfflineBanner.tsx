@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { WifiOff } from 'lucide-react';
 import { useOnlineStatus } from '@/hooks/useOffline';
+import { offlineQueue } from '@/lib/offlineQueue';
 
 export default function OfflineBanner() {
   const { isOnline } = useOnlineStatus();
   const { t } = useTranslation('common');
+  const pendingCount = offlineQueue.size;
 
   return (
     <div
@@ -16,6 +18,9 @@ export default function OfflineBanner() {
     >
       <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span>{t('offline.message')}</span>
+      {pendingCount > 0 && (
+        <span>{t('offline.pendingSync', { count: pendingCount })}</span>
+      )}
     </div>
   );
 }

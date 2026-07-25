@@ -146,7 +146,8 @@
     "system": "System"
   },
   "offline": {
-    "message": "You're offline. Some features may be unavailable."
+    "message": "You're offline. Some features may be unavailable.",
+    "pendingSync": "{{count}} change(s) pending sync."
   },
   "errors": {
     "somethingWrong": "Something went wrong",
@@ -176,6 +177,12 @@
     "analytics": "Analytics",
     "settings": "Settings",
     "dashboard": "Dashboard"
+  },
+  "commandPalette": {
+    "placeholder": "Search pages and actions...",
+    "pages": "Pages",
+    "actions": "Actions",
+    "noResults": "No results found"
   },
   "validation": {
     "required": "This field is required",
