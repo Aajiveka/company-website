@@ -1,8 +1,7 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useLazyImage } from '../useLazyImage';
 
-// Mock IntersectionObserver
 let observerCallback: IntersectionObserverCallback;
 let observerInstance: {
   observe: ReturnType<typeof vi.fn>;
@@ -17,13 +16,13 @@ beforeEach(() => {
     disconnect: vi.fn(),
   };
 
-  vi.stubGlobal(
-    'IntersectionObserver',
-    vi.fn((callback: IntersectionObserverCallback) => {
+  class MockObserver {
+    constructor(callback: IntersectionObserverCallback) {
       observerCallback = callback;
-      return observerInstance;
-    }),
-  );
+      Object.assign(this, observerInstance);
+    }
+  }
+  vi.stubGlobal('IntersectionObserver', MockObserver);
 });
 
 afterEach(() => {
@@ -42,20 +41,16 @@ describe('useLazyImage', () => {
     expect(result.current.isInView).toBe(false);
   });
 
-  it('creates an IntersectionObserver with correct options', () => {
+  it('creates an IntersectionObserver when ref has an element', () => {
     const el = document.createElement('div');
-    const { result } = renderHook(() => useLazyImage());
 
-    // Assign the ref to a real element so the effect fires
-    // We need to re-render after setting the ref
-    (result.current.ref as React.MutableRefObject<HTMLElement | null>).current = el;
+    renderHook(() => {
+      const hook = useLazyImage();
+      (hook.ref as React.MutableRefObject<HTMLElement | null>).current = el;
+      return hook;
+    });
 
-    // Re-render to trigger effect with the element
-    const { result: result2 } = renderHook(() => useLazyImage());
-    (result2.current.ref as React.MutableRefObject<HTMLElement | null>).current = el;
-
-    // The IntersectionObserver constructor should have been called
-    expect(IntersectionObserver).toHaveBeenCalled();
+    expect(observerInstance.observe).toHaveBeenCalledWith(el);
   });
 
   it('sets isInView to true when element intersects', () => {
@@ -67,22 +62,15 @@ describe('useLazyImage', () => {
       return hook;
     });
 
-    // Initially false
     expect(result.current.isInView).toBe(false);
 
-    // Simulate intersection; we need to trigger the observer callback
-    // But since the ref is set before the effect runs in renderHook,
-    // the observer should have been set up
-    if (observerCallback) {
-      const entry = {
-        isIntersecting: true,
-        target: el,
-      } as unknown as IntersectionObserverEntry;
+    act(() => {
+      observerCallback(
+        [{ isIntersecting: true, target: el } as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
 
-      observerCallback([entry], {} as IntersectionObserver);
-    }
-
-    // After intersection, isInView should be true
     expect(result.current.isInView).toBe(true);
   });
 
@@ -95,15 +83,14 @@ describe('useLazyImage', () => {
       return hook;
     });
 
-    if (observerCallback) {
-      const entry = {
-        isIntersecting: true,
-        target: el,
-      } as unknown as IntersectionObserverEntry;
+    act(() => {
+      observerCallback(
+        [{ isIntersecting: true, target: el } as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
 
-      observerCallback([entry], {} as IntersectionObserver);
-      expect(observerInstance.unobserve).toHaveBeenCalledWith(el);
-    }
+    expect(observerInstance.unobserve).toHaveBeenCalledWith(el);
   });
 
   it('disconnects observer on unmount', () => {

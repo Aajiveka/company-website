@@ -11,6 +11,7 @@ import { authApi } from '../auth.api';
 import { loginSchema, type LoginValues } from '../auth.types';
 import { ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
+import SocialLoginButtons from '../components/SocialLoginButtons';
 
 export default function LoginPage() {
   const { setSession } = useAuth();
@@ -57,6 +58,7 @@ export default function LoginPage() {
         </>
       }
     >
+      <SocialLoginButtons mode="login" />
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
         <Input
           label={t('login.usernameOrEmail')}

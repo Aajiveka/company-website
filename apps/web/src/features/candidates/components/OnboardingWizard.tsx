@@ -14,6 +14,7 @@ import {
   useUpdateProfessional,
   useUpsertEducation,
 } from '../candidate.api';
+import type { CvPersonal, CvProfessional } from '../candidate.types';
 
 const STEPS = ['personal', 'professional', 'education', 'complete'] as const;
 const personalSchema = z.object({
@@ -110,7 +111,7 @@ export function OnboardingWizard({ initialName, initialEmail, initialMobile, onC
     isAxiosError(e) ? e.response?.data?.message ?? fallback : fallback;
 
   const onPersonalSubmit = personalForm.handleSubmit((values) => {
-    updatePersonal.mutate(values as any, {
+    updatePersonal.mutate(values as unknown as CvPersonal, {
       onSuccess: () => setStepIdx(1),
       onError: (e) => notify(errMsg(e, t('cv.personalError')), 'error'),
     });
@@ -125,7 +126,7 @@ export function OnboardingWizard({ initialName, initialEmail, initialMobile, onC
       preferredCityIds: [],
       tagNames: values.tagNames?.split(',').map(s => s.trim()).filter(Boolean) ?? [],
     };
-    updateProfessional.mutate(payload as any, {
+    updateProfessional.mutate(payload as unknown as CvProfessional, {
       onSuccess: () => setStepIdx(2),
       onError: (e) => notify(errMsg(e, t('cv.professionalError')), 'error'),
     });

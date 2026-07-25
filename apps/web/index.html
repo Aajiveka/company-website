@@ -27,6 +27,17 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Jost:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <!--
+      Content-Security-Policy should be set via HTTP response headers on the
+      production server / reverse proxy rather than a <meta> tag. Recommended policy:
+
+        default-src 'self';
+        script-src  'self';
+        style-src   'self' 'unsafe-inline' fonts.googleapis.com;
+        font-src    'self' fonts.gstatic.com;
+        img-src     'self' data: blob: https:;
+        connect-src 'self' https:;
+    -->
     <title>Aajiveka | Your Ultimate Career Partner</title>
   </head>
   <body>

@@ -12,6 +12,7 @@ import { authApi } from '../auth.api';
 import { registerSchema, type RegisterValues } from '../auth.types';
 import { Role, ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
+import SocialLoginButtons from '../components/SocialLoginButtons';
 
 const apiMessage = (err: unknown, fallback: string) =>
   isAxiosError(err) ? ((err.response?.data as { message?: string })?.message ?? fallback) : fallback;
@@ -75,6 +76,7 @@ export default function RegisterPage() {
         </>
       }
     >
+      {!pending && <SocialLoginButtons mode="register" />}
       {!pending ? (
         <form key="register-form" onSubmit={handleSubmit((v) => registerMutation.mutate(v))} className="space-y-4" noValidate>
           <Input label={t('register.fullName')} error={errors.fullName?.message} {...register('fullName')} />

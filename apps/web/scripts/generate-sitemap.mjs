@@ -27,6 +27,8 @@ const staticRoutes = [
   '/login',
   '/register',
   '/forgot-password',
+  '/help',
+  '/search',
 ];
 
 const today = new Date().toISOString().split('T')[0];

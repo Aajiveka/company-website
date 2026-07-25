@@ -6,7 +6,7 @@ import { compression } from 'vite-plugin-compression2';
 import path from 'node:path';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode: _mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
@@ -106,4 +106,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

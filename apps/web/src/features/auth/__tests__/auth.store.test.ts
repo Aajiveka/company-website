@@ -99,6 +99,43 @@ describe('useAuthStore', () => {
     });
   });
 
+  describe('updateUser', () => {
+    it('merges partial user data into existing user', () => {
+      useAuthStore.getState().setSession({
+        user: mockUser,
+        accessToken: 'a',
+        refreshToken: 'r',
+      });
+
+      useAuthStore.getState().updateUser({ fullName: 'Updated Name', isOnboarded: true });
+
+      const state = useAuthStore.getState();
+      expect(state.user).toEqual({
+        ...mockUser,
+        fullName: 'Updated Name',
+        isOnboarded: true,
+      });
+    });
+
+    it('does nothing when user is null', () => {
+      useAuthStore.getState().updateUser({ fullName: 'Nope' });
+      expect(useAuthStore.getState().user).toBeNull();
+    });
+  });
+
+  describe('isAuthenticated', () => {
+    it('is false by default and true after setSession', () => {
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+
+      useAuthStore.getState().setSession({
+        user: mockUser,
+        accessToken: 'a',
+        refreshToken: 'r',
+      });
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    });
+  });
+
   describe('bootstrap', () => {
     it('sets isLoading false immediately if no refresh token', async () => {
       vi.mocked(tokenStorage.getRefresh).mockReturnValue(null);

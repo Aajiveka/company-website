@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, abhijeet]
   pull_request:
 
 concurrency:
@@ -29,6 +29,12 @@ jobs:
         run: npm run test
         working-directory: apps/web
       - run: npm run build
+      - name: Vitest (web)
+        run: npx vitest run
+        working-directory: apps/web
+      - name: Lint (web)
+        run: npx eslint apps/web/src --max-warnings=3
+      # E2E tests require a running dev server — skip for now (see e2e-mock / e2e jobs below)
 
   e2e-mock:
     name: Playwright (mock API)

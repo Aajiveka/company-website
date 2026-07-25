@@ -9,6 +9,8 @@ import DarkModeToggle from '@/components/DarkModeToggle';
 import { ThemeToggleDashboard } from '@/components/ThemeToggle';
 import { RouteAnnouncer } from '@/components/RouteAnnouncer';
 import PageTransition from '@/components/PageTransition';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useBreadcrumbs } from '@/hooks/useBreadcrumbs';
 import { NotificationBell } from './NotificationBell';
 import { Sidebar } from './Sidebar';
 
@@ -18,6 +20,7 @@ export function DashboardLayout() {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const breadcrumbs = useBreadcrumbs();
 
   // Close sidebar on Escape key
   useEffect(() => {
@@ -83,6 +86,11 @@ export function DashboardLayout() {
       )}
 
       <main id="main-content" className="px-4 pb-10 pt-[4.5rem] md:pt-20 lg:pl-[17rem] lg:pr-6">
+        {breadcrumbs.length > 1 && (
+          <Breadcrumbs
+            items={breadcrumbs.map((b) => ({ label: b.label, to: b.href }))}
+          />
+        )}
         <PageTransition transitionKey={location.pathname}>
           <Outlet />
         </PageTransition>

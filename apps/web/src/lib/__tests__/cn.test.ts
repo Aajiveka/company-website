@@ -11,7 +11,8 @@ describe('cn', () => {
   });
 
   it('handles conditional classes via clsx syntax', () => {
-    expect(cn('base', false && 'hidden', 'extra')).toBe('base extra');
+    const hide = false;
+    expect(cn('base', hide && 'hidden', 'extra')).toBe('base extra');
   });
 
   it('handles arrays', () => {
