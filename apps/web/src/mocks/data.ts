@@ -58,6 +58,9 @@ export const CANDIDATE_PROFILE: CandidateProfile = {
   designation: 'Senior Software Engineer',
   totalExperience: '6 years',
   photoUrl: null,
+  resumeUrl: null,
+  resumeFileName: null,
+  resumeUploadedAt: null,
   skills: ['React', 'TypeScript', 'Node.js', 'SQL Server', 'Azure', 'REST APIs'],
   education: [
     { degree: 'B.E. Computer Science', institute: 'University of Pune', year: '2018' },

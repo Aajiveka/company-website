@@ -13,7 +13,31 @@ export interface Plan {
   active: boolean;
 }
 
-/** Response of POST /payments/orders — where to send the browser to pay. */
+/** Response of POST /payments/create-order — Razorpay checkout details. */
+export interface RazorpayOrderResponse {
+  orderRef: string;
+  razorpayOrderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  planName: string;
+}
+
+/** Body for POST /payments/verify. */
+export interface VerifyPaymentRequest {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+}
+
+/** Response of POST /payments/verify. */
+export interface VerifyPaymentResponse {
+  orderRef: string;
+  status: string;
+  alreadySettled?: boolean;
+}
+
+/** Response of POST /payments/orders — where to send the browser to pay (legacy BillDesk). */
 export interface CreateOrderResponse {
   orderRef: string;
   amountInr: number;
@@ -39,3 +63,15 @@ export interface OrderStatus {
 export type SubscriptionStatus =
   | { active: false }
   | { active: true; plan: string; startsAt: string; endsAt: string };
+
+/** A single entry from GET /payments/history. */
+export interface PaymentHistoryEntry {
+  orderRef: string;
+  status: PaymentStatus;
+  amountInr: number;
+  plan: string;
+  transactionId: string | null;
+  paymentMethod: string | null;
+  createdAt: string;
+  settledAt: string | null;
+}

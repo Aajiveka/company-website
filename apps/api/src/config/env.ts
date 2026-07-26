@@ -46,6 +46,11 @@ const schema = z.object({
   BILLDESK_MERCHANT_ID: z.string().optional(),
   BILLDESK_SECRET_KEY: z.string().optional(),
 
+  // Razorpay. The key ID is public (embedded in checkout); the secret signs/verifies.
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+
   // Notification drivers. 'log' writes to stdout (dev default); the real drivers need credentials.
   SMS_DRIVER: z.enum(['twofactor', 'sns', 'log']).default('log'),
   EMAIL_DRIVER: z.enum(['smtp', 'ses', 'log']).default('log'),

@@ -96,6 +96,21 @@ vi.mock('../components/JobSearchBar', () => ({
 
 vi.mock('../components/JobFilters', () => ({
   JobFiltersPanel: () => <div data-testid="job-filters" />,
+  DEFAULT_FILTERS: {
+    workMode: '',
+    employmentType: '',
+    industry: '',
+    minExp: undefined,
+    maxExp: undefined,
+    minCtc: 0,
+    maxCtc: 5_000_000,
+    sortBy: 'newest',
+    workModes: [],
+    employmentTypes: [],
+    locationsList: [],
+    skills: [],
+    postedWithin: '',
+  },
 }));
 
 vi.mock('../components/CompareDrawer', () => ({

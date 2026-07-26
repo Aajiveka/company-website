@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Download, FileText, BarChart3, Filter } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Breadcrumbs, Button, Card, CardHeader, CardTitle } from '@/components/ui';
+import { Breadcrumbs, Button, Card, CardHeader, CardTitle, Select } from '@/components/ui';
 import { api } from '@/lib/axios';
+import DateRangePicker, { type DateRange } from '@/features/admin/components/DateRangePicker';
+import ExportButton from '@/features/admin/components/ExportButton';
 
-interface DateRange {
+interface DateRangeState {
   from: string;
   to: string;
 }
@@ -68,7 +70,7 @@ interface ReportCardProps {
 
 function ReportCard({ type, icon, title, description }: ReportCardProps) {
   const { t } = useTranslation('dashboard');
-  const [range, setRange] = useState<DateRange>({
+  const [range, setRange] = useState<DateRangeState>({
     from: thirtyDaysAgoString(),
     to: todayString(),
   });
@@ -217,6 +219,84 @@ function ReportCard({ type, icon, title, description }: ReportCardProps) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Applicant Export Section (employer-facing)                         */
+/* ------------------------------------------------------------------ */
+
+interface JobOption {
+  jobId: number;
+  designation: string;
+}
+
+function ApplicantExportSection() {
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: thirtyDaysAgoString(),
+    to: todayString(),
+  });
+  const [selectedJobId, setSelectedJobId] = useState('');
+
+  // Fetch employer's jobs for the selector
+  const { data: jobs } = useQuery({
+    queryKey: ['client', 'me', 'jobs-for-export'],
+    queryFn: () =>
+      api.get<JobOption[]>('/clients/me/jobs').then((r) =>
+        r.data.map((j) => ({
+          jobId: j.jobId,
+          designation: j.designation,
+        })),
+      ),
+  });
+
+  const jobOptions = [
+    { label: 'All Jobs', value: '' },
+    ...(jobs ?? []).map((j) => ({ label: j.designation, value: String(j.jobId) })),
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="inline-flex rounded-lg bg-primary/10 p-2 text-primary">
+            <Download className="h-5 w-5" />
+          </div>
+          <CardTitle>Export Job Applicants</CardTitle>
+        </div>
+      </CardHeader>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        Download a CSV of applicants for your jobs. Filter by specific job and date range.
+      </p>
+
+      <div className="mb-4 space-y-3">
+        <div className="max-w-xs">
+          <Select
+            label="Job"
+            options={jobOptions}
+            value={selectedJobId}
+            onChange={(e) => setSelectedJobId(e.target.value)}
+            placeholder="Select a job..."
+          />
+        </div>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
+      </div>
+
+      <ExportButton
+        endpoint="/exports/applications"
+        filename={`applicants-${selectedJobId || 'all'}-${dateRange.from}-${dateRange.to}`}
+        label="Download Applicants CSV"
+        filters={{
+          ...(selectedJobId ? { jobId: Number(selectedJobId) } : {}),
+          from: dateRange.from,
+          to: dateRange.to,
+        }}
+      />
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main page                                                         */
+/* ------------------------------------------------------------------ */
+
 export default function ReportExportPage() {
   const { t } = useTranslation('dashboard');
 
@@ -249,8 +329,14 @@ export default function ReportExportPage() {
           { label: t('reports.heading') },
         ]}
       />
-      <h1 className="mb-6 font-heading text-2xl font-bold text-navy">{t('reports.heading')}</h1>
+      <h1 className="mb-6 font-heading text-2xl font-bold text-navy dark:text-white">{t('reports.heading')}</h1>
 
+      {/* Applicant export with job selector */}
+      <div className="mb-6">
+        <ApplicantExportSection />
+      </div>
+
+      {/* Existing report cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {reports.map((report) => (
           <ReportCard key={report.type} {...report} />

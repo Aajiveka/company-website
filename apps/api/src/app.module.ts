@@ -18,6 +18,7 @@ import { ExportsModule } from '@/modules/exports/exports.module';
 import { PaymentsModule } from '@/modules/payments/payments.module';
 import { HealthController } from '@/modules/health/health.controller';
 import { redisProvider } from '@/modules/auth/redis.provider';
+import { EmailModule } from '@/common/email/email.module';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 
@@ -27,6 +28,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
     AuditModule,
     BullModule.forRoot({ connection: { url: env.REDIS_URL } }),
     NotificationsModule,
+    EmailModule,
     JwtModule.register({}),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     AuthModule,

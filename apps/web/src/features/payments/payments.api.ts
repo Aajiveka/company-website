@@ -1,7 +1,16 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { queryKeys } from '@/lib/queryClient';
-import type { CreateOrderResponse, OrderStatus, Plan, SubscriptionStatus } from './payments.types';
+import type {
+  CreateOrderResponse,
+  OrderStatus,
+  PaymentHistoryEntry,
+  Plan,
+  RazorpayOrderResponse,
+  SubscriptionStatus,
+  VerifyPaymentRequest,
+  VerifyPaymentResponse,
+} from './payments.types';
 
 /**
  * The order reference is stashed here just before we hand the browser to the
@@ -20,7 +29,31 @@ export function usePlans() {
   });
 }
 
-/** Start a payment: POST /payments/orders { planId } → BillDesk redirect URL. */
+/** Create a Razorpay order: POST /payments/create-order { planId }. */
+export function useCreateRazorpayOrder() {
+  return useMutation({
+    mutationFn: (planId: number) =>
+      api.post<RazorpayOrderResponse>('/payments/create-order', { planId }).then((r) => r.data),
+  });
+}
+
+/** Verify Razorpay payment: POST /payments/verify. */
+export function useVerifyPayment() {
+  return useMutation({
+    mutationFn: (data: VerifyPaymentRequest) =>
+      api.post<VerifyPaymentResponse>('/payments/verify', data).then((r) => r.data),
+  });
+}
+
+/** GET /payments/history — user's payment history. */
+export function usePaymentHistory() {
+  return useQuery({
+    queryKey: [...queryKeys.payments.subscription, 'history'] as const,
+    queryFn: () => api.get<PaymentHistoryEntry[]>('/payments/history').then((r) => r.data),
+  });
+}
+
+/** Start a payment (legacy BillDesk): POST /payments/orders { planId } → redirect URL. */
 export function useCreateOrder() {
   return useMutation({
     mutationFn: (planId: number) =>

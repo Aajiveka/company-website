@@ -6,6 +6,7 @@ import { useCandidateProfile } from '../candidate.api';
 import { DashboardStats } from '../components/DashboardStats';
 import { ProfileCompletionMeter } from '../components/ProfileCompletionMeter';
 import { RecommendedJobs } from '@/features/jobs/components/RecommendedJobs';
+import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
 
 /** Candidate self-profile / CV view (candidate-profile.aspx). */
 export default function CandidateProfilePage() {
@@ -38,11 +39,7 @@ export default function CandidateProfilePage() {
 
           {/* Header card */}
           <Card className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-            <img
-              src={data.photoUrl ?? '/files/no-image.png'}
-              alt={data.fullName}
-              className="h-28 w-28 rounded-full object-cover ring-4 ring-brand-soft"
-            />
+            <ProfilePhotoUpload currentPhotoUrl={data.photoUrl ?? undefined} />
             <div className="text-center sm:text-left">
               <h1 className="font-heading text-2xl font-bold text-navy">{data.fullName}</h1>
               <p className="text-primary">{data.designation}</p>

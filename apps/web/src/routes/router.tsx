@@ -103,6 +103,7 @@ const ApplicationTrackerPage = lazy(() => import('@/features/candidates/pages/Ap
 const CandidateComparisonPage = lazy(() => import('@/features/clients/pages/CandidateComparisonPage'));
 const DashboardHome = lazy(() => import('@/features/dashboard/DashboardHome'));
 const AdminSettingsPage = lazy(() => import('@/features/admin/pages/AdminSettingsPage'));
+const ReportsPage = lazy(() => import('@/features/admin/pages/ReportsPage'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
 
 const withSuspense = (node: React.ReactNode) => <Suspense fallback={<Loader />}>{node}</Suspense>;
@@ -213,6 +214,7 @@ export const router = createBrowserRouter([
                   { path: '/admin/jobs', element: withSuspense(<AdminJobsPage />) },
                   { path: '/admin/blog', element: withSuspense(<BlogCmsPage />) },
                   { path: '/admin/settings', element: withSuspense(<AdminSettingsPage />) },
+                  { path: '/admin/reports', element: withSuspense(<ReportsPage />) },
                 ],
               },
               // QC / Recruitment

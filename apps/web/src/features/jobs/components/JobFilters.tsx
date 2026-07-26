@@ -1,18 +1,23 @@
 import { useMemo } from 'react';
 import { ChevronDown, ChevronUp, SlidersHorizontal, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { RangeSlider, MultiSelect } from '@/components/ui';
+import type { MultiSelectOption } from '@/components/ui';
 import { useJobFilters } from '../jobs.api';
 
-const EXP_RANGES = [
-  { label: 'anyExperience', min: undefined, max: undefined },
-  { label: 'fresher', min: 0, max: 0 },
-  { label: '1–3 yrs', min: 1, max: 3 },
-  { label: '3–5 yrs', min: 3, max: 5 },
-  { label: '5–10 yrs', min: 5, max: 10 },
-  { label: '10+ yrs', min: 10, max: undefined },
-] as const;
+const POSTED_WITHIN_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: 'Any time', value: '' },
+  { label: 'Today (24h)', value: '24h' },
+  { label: 'Last 7 days', value: '7d' },
+  { label: 'Last 30 days', value: '30d' },
+];
 
-const SALARY_STEPS = [0, 100_000, 200_000, 300_000, 500_000, 800_000, 1_200_000, 2_000_000, 3_000_000, 5_000_000];
+const SALARY_MIN = 0;
+const SALARY_MAX = 5_000_000;
+const SALARY_STEP = 50_000;
+
+const EXP_MIN = 0;
+const EXP_MAX = 30;
 
 export interface FilterValues {
   workMode: string;
@@ -21,8 +26,30 @@ export interface FilterValues {
   minExp?: number;
   maxExp?: number;
   minCtc: number;
-  sortBy: 'newest' | 'salary_high' | 'salary_low';
+  maxCtc: number;
+  sortBy: 'newest' | 'salary_high' | 'salary_low' | 'relevance';
+  workModes: string[];
+  employmentTypes: string[];
+  locationsList: string[];
+  skills: string[];
+  postedWithin: '' | '24h' | '7d' | '30d';
 }
+
+export const DEFAULT_FILTERS: FilterValues = {
+  workMode: '',
+  employmentType: '',
+  industry: '',
+  minExp: undefined,
+  maxExp: undefined,
+  minCtc: 0,
+  maxCtc: SALARY_MAX,
+  sortBy: 'newest',
+  workModes: [],
+  employmentTypes: [],
+  locationsList: [],
+  skills: [],
+  postedWithin: '',
+};
 
 interface JobFiltersProps {
   open: boolean;
@@ -37,23 +64,51 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
 
   const activeCount = useMemo(() => {
     let n = 0;
+    if (values.workModes.length > 0) n++;
+    if (values.employmentTypes.length > 0) n++;
+    if (values.industry) n++;
+    if (values.minExp != null && values.minExp > 0) n++;
+    if (values.maxExp != null && values.maxExp < EXP_MAX) n++;
+    if (values.minCtc > 0 || values.maxCtc < SALARY_MAX) n++;
+    if (values.locationsList.length > 0) n++;
+    if (values.skills.length > 0) n++;
+    if (values.postedWithin) n++;
+    if (values.sortBy !== 'newest') n++;
+    // Legacy single-value backward compat
     if (values.workMode) n++;
     if (values.employmentType) n++;
-    if (values.industry) n++;
-    if (values.minExp != null || values.maxExp != null) n++;
-    if (values.minCtc > 0) n++;
-    if (values.sortBy !== 'newest') n++;
     return n;
   }, [values]);
 
   const set = <K extends keyof FilterValues>(key: K, val: FilterValues[K]) =>
     onChange({ ...values, [key]: val });
 
-  const clearAll = () =>
-    onChange({ workMode: '', employmentType: '', industry: '', minExp: undefined, maxExp: undefined, minCtc: 0, sortBy: 'newest' });
+  const clearAll = () => onChange({ ...DEFAULT_FILTERS });
 
-  const salaryIndex = SALARY_STEPS.indexOf(values.minCtc) >= 0 ? SALARY_STEPS.indexOf(values.minCtc) : 0;
-  const lpa = (v: number) => (v / 100_000).toFixed(1).replace(/\.0$/, '');
+  const lpa = (v: number) => {
+    const l = v / 100_000;
+    return l >= 100 ? `${(l / 10).toFixed(0)} Cr` : `${l.toFixed(1).replace(/\.0$/, '')} L`;
+  };
+
+  const workModeOptions: MultiSelectOption[] = useMemo(
+    () => (data?.workModes ?? []).map((m) => ({ label: m, value: m })),
+    [data?.workModes],
+  );
+
+  const empTypeOptions: MultiSelectOption[] = useMemo(
+    () => (data?.employmentTypes ?? []).map((t) => ({ label: t, value: t })),
+    [data?.employmentTypes],
+  );
+
+  const locationOptions: MultiSelectOption[] = useMemo(
+    () => (data?.locations ?? []).map((l) => ({ label: l, value: l })),
+    [data?.locations],
+  );
+
+  const skillOptions: MultiSelectOption[] = useMemo(
+    () => (data?.skills ?? []).map((s) => ({ label: s, value: s })),
+    [data?.skills],
+  );
 
   return (
     <div className="mt-6">
@@ -71,7 +126,7 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
           {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
 
-        {/* Sort dropdown — always visible */}
+        {/* Sort dropdown -- always visible */}
         <select
           value={values.sortBy}
           onChange={(e) => set('sortBy', e.target.value as FilterValues['sortBy'])}
@@ -81,6 +136,7 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
           <option value="newest">{t('search.sortNewest')}</option>
           <option value="salary_high">{t('search.sortSalaryHigh')}</option>
           <option value="salary_low">{t('search.sortSalaryLow')}</option>
+          <option value="relevance">Relevance</option>
         </select>
 
         {activeCount > 0 && (
@@ -94,110 +150,145 @@ export function JobFiltersPanel({ open, onToggle, values, onChange }: JobFilters
         )}
       </div>
 
-      {/* Collapsible panel */}
+      {/* Collapsible panel -- slide-out on mobile */}
       {open && (
-        <div className="mt-4 grid gap-5 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 dark:border-gray-700 dark:bg-gray-800">
-          {/* Experience */}
-          <div>
-            <h4 className="mb-2 text-sm font-semibold text-navy">{t('search.experience')}</h4>
-            <div className="flex flex-wrap gap-2">
-              {EXP_RANGES.map((r, i) => {
-                const active = values.minExp === r.min && values.maxExp === r.max;
-                const label = i === 0 ? t(`search.${r.label}`) : i === 1 ? t('search.fresher') : r.label;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => onChange({ ...values, minExp: r.min as number | undefined, maxExp: r.max as number | undefined })}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                      active
-                        ? 'border-primary bg-primary text-white'
-                        : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary dark:border-gray-600 dark:text-gray-300'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+        <>
+          {/* Mobile overlay */}
+          <div
+            className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+            onClick={onToggle}
+          />
+          <div className="fixed inset-y-0 right-0 z-50 w-80 overflow-y-auto bg-white p-5 shadow-xl lg:relative lg:inset-auto lg:z-auto lg:mt-4 lg:w-full lg:rounded-xl lg:border lg:border-gray-200 lg:p-4 lg:shadow-none dark:bg-gray-800 dark:lg:border-gray-700">
+            {/* Mobile close */}
+            <div className="mb-4 flex items-center justify-between lg:hidden">
+              <h3 className="text-lg font-semibold text-navy dark:text-white">Filters</h3>
+              <button onClick={onToggle} className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <X className="h-5 w-5" />
+              </button>
             </div>
-          </div>
 
-          {/* Work Mode */}
-          <div>
-            <h4 className="mb-2 text-sm font-semibold text-navy">{t('search.workMode')}</h4>
-            <div className="flex flex-wrap gap-2">
-              {(data?.workModes ?? []).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => set('workMode', values.workMode === mode ? '' : mode)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                    values.workMode === mode
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary dark:border-gray-600 dark:text-gray-300'
-                  }`}
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {/* Salary Range */}
+              <div className="sm:col-span-2 lg:col-span-1">
+                <RangeSlider
+                  label={t('search.salary')}
+                  min={SALARY_MIN}
+                  max={SALARY_MAX}
+                  step={SALARY_STEP}
+                  value={[values.minCtc, values.maxCtc]}
+                  onChange={([lo, hi]) => onChange({ ...values, minCtc: lo, maxCtc: hi })}
+                  formatValue={(v) => `\u20B9${lpa(v)}`}
+                />
+              </div>
+
+              {/* Experience Range */}
+              <div>
+                <RangeSlider
+                  label={t('search.experience')}
+                  min={EXP_MIN}
+                  max={EXP_MAX}
+                  step={1}
+                  value={[values.minExp ?? EXP_MIN, values.maxExp ?? EXP_MAX]}
+                  onChange={([lo, hi]) => onChange({ ...values, minExp: lo, maxExp: hi })}
+                  formatValue={(v) => `${v} yr${v !== 1 ? 's' : ''}`}
+                />
+              </div>
+
+              {/* Work Mode MultiSelect */}
+              <div>
+                <MultiSelect
+                  label={t('search.workMode')}
+                  options={workModeOptions}
+                  value={values.workModes}
+                  onChange={(v) => set('workModes', v)}
+                  placeholder="All work modes"
+                />
+              </div>
+
+              {/* Employment Type MultiSelect */}
+              <div>
+                <MultiSelect
+                  label={t('search.employmentType')}
+                  options={empTypeOptions}
+                  value={values.employmentTypes}
+                  onChange={(v) => set('employmentTypes', v)}
+                  placeholder="All types"
+                />
+              </div>
+
+              {/* Posted Within */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Posted within
+                </label>
+                <select
+                  value={values.postedWithin}
+                  onChange={(e) => set('postedWithin', e.target.value as FilterValues['postedWithin'])}
+                  className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
                 >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
+                  {POSTED_WITHIN_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Employment Type */}
-          <div>
-            <h4 className="mb-2 text-sm font-semibold text-navy">{t('search.employmentType')}</h4>
-            <div className="flex flex-wrap gap-2">
-              {(data?.employmentTypes ?? []).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => set('employmentType', values.employmentType === type ? '' : type)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                    values.employmentType === type
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary dark:border-gray-600 dark:text-gray-300'
-                  }`}
+              {/* Location MultiSelect */}
+              <div>
+                <MultiSelect
+                  label="Cities"
+                  options={locationOptions}
+                  value={values.locationsList}
+                  onChange={(v) => set('locationsList', v)}
+                  placeholder="All cities"
+                />
+              </div>
+
+              {/* Skills MultiSelect */}
+              <div>
+                <MultiSelect
+                  label="Skills"
+                  options={skillOptions}
+                  value={values.skills}
+                  onChange={(v) => set('skills', v)}
+                  placeholder="All skills"
+                />
+              </div>
+
+              {/* Industry */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('search.industry')}
+                </label>
+                <select
+                  value={values.industry}
+                  onChange={(e) => set('industry', e.target.value)}
+                  className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
                 >
-                  {type}
-                </button>
-              ))}
+                  <option value="">All industries</option>
+                  {(data?.industries ?? []).map((ind) => (
+                    <option key={ind} value={ind}>{ind}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Mobile apply button */}
+            <div className="mt-5 flex gap-3 lg:hidden">
+              <button
+                onClick={clearAll}
+                className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-medium text-gray-600 dark:border-gray-600 dark:text-gray-300"
+              >
+                Clear all
+              </button>
+              <button
+                onClick={onToggle}
+                className="flex-1 rounded-lg bg-primary py-2.5 text-sm font-medium text-white"
+              >
+                Apply filters
+              </button>
             </div>
           </div>
-
-          {/* Industry */}
-          <div>
-            <h4 className="mb-2 text-sm font-semibold text-navy">{t('search.industry')}</h4>
-            <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
-              {(data?.industries ?? []).map((ind) => (
-                <button
-                  key={ind}
-                  onClick={() => set('industry', values.industry === ind ? '' : ind)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                    values.industry === ind
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary dark:border-gray-600 dark:text-gray-300'
-                  }`}
-                >
-                  {ind}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Salary Range */}
-          <div>
-            <h4 className="mb-2 text-sm font-semibold text-navy">{t('search.salary')}</h4>
-            <input
-              type="range"
-              min={0}
-              max={SALARY_STEPS.length - 1}
-              value={salaryIndex}
-              onChange={(e) => set('minCtc', SALARY_STEPS[Number(e.target.value)])}
-              className="w-full accent-primary"
-              aria-label={t('search.salary')}
-            />
-            <p className="mt-1 text-center text-xs text-gray-500 dark:text-gray-400">
-              {values.minCtc === 0 ? t('search.anyExperience') : `≥ ${t('search.salaryLpa', { value: lpa(values.minCtc) })}`}
-            </p>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

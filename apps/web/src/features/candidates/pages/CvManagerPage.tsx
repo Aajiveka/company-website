@@ -7,6 +7,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Breadcrumbs, Button, Card, CvManagerSkeleton, Input, Select, useToast } from '@/components/ui';
+import ResumeUpload from '../components/ResumeUpload';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import {
   useCvEditProfile,
@@ -572,6 +573,7 @@ export default function CvManagerPage() {
         <CvManagerSkeleton />
       ) : (
         <div className="space-y-6">
+          <ResumeUpload />
           <PersonalSection
             data={
               data.personal ?? {

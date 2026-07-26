@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Breadcrumbs, Button, Card, useToast } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { Breadcrumbs, Button, Card, FileUpload, useToast } from '@/components/ui';
 import { api } from '@/lib/axios';
+import { useUploadBulkJobs } from '../client.api';
 
 interface ParsedRow {
   designation: string;
@@ -50,7 +50,8 @@ export default function BulkJobImportPage() {
   const { notify } = useToast();
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState('');
-  const [dragOver, setDragOver] = useState(false);
+  const bulkUploadMutation = useUploadBulkJobs();
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const onFile = useCallback((file: File) => {
     setFileName(file.name);
@@ -62,17 +63,10 @@ export default function BulkJobImportPage() {
     reader.readAsText(file);
   }, []);
 
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.name.endsWith('.csv')) onFile(file);
-  }, [onFile]);
-
-  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = useCallback((files: File[]) => {
+    const file = files[0];
     if (file) onFile(file);
-  };
+  }, [onFile]);
 
   const validRows = rows.filter((r) => r.errors.length === 0);
   const errorRows = rows.filter((r) => r.errors.length > 0);
@@ -99,6 +93,25 @@ export default function BulkJobImportPage() {
     onError: () => notify(t('bulkImport.failed'), 'error'),
   });
 
+  const handleBulkFileUpload = useCallback((files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+    setUploadProgress(0);
+    bulkUploadMutation.mutate(
+      { file, onProgress: setUploadProgress },
+      {
+        onSuccess: (data) => {
+          notify(t('bulkImport.success', { count: data.imported }), 'success');
+          setUploadProgress(0);
+        },
+        onError: () => {
+          notify(t('bulkImport.failed'), 'error');
+          setUploadProgress(0);
+        },
+      },
+    );
+  }, [bulkUploadMutation, notify, t]);
+
   return (
     <div className="mx-auto max-w-5xl">
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/company/profile' }, { label: t('bulkImport.heading') }]} />
@@ -107,31 +120,35 @@ export default function BulkJobImportPage() {
       {/* Upload area */}
       {rows.length === 0 && (
         <Card>
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={onDrop}
-            className={cn(
-              'flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition',
-              dragOver ? 'border-primary bg-primary/5' : 'border-gray-300 dark:border-gray-600',
-            )}
-          >
-            <Upload className="mb-3 h-10 w-10 text-gray-400" />
-            <p className="text-sm font-medium text-navy">{t('bulkImport.dragDrop')}</p>
-            <p className="mt-1 text-xs text-gray-500">{t('bulkImport.orClick')}</p>
-            <label className="mt-4 cursor-pointer">
-              <Button type="button" variant="outline" size="sm" asChild>
-                <span><FileSpreadsheet className="mr-1.5 h-4 w-4" /> {t('bulkImport.chooseFile')}</span>
-              </Button>
-              <input type="file" accept=".csv" className="hidden" onChange={onInputChange} />
-            </label>
-          </div>
+          <FileUpload
+            accept=".csv,.xlsx"
+            maxSize={10 * 1024 * 1024}
+            onUpload={handleFileUpload}
+            label={t('bulkImport.dragDrop')}
+            hint={t('bulkImport.orClick')}
+            isUploading={bulkUploadMutation.isPending}
+            progress={uploadProgress}
+          />
 
           <div className="mt-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <p className="text-xs font-medium text-navy">{t('bulkImport.csvFormat')}</p>
-            <code className="mt-1 block text-xs text-gray-500">
+            <p className="text-xs font-medium text-navy dark:text-gray-200">{t('bulkImport.csvFormat')}</p>
+            <code className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
               designation, city, workMode, employmentType, minExp, minCtc, maxCtc, description
             </code>
+          </div>
+
+          {/* Direct file upload button */}
+          <div className="mt-4">
+            <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+              Or upload the file directly without preview:
+            </p>
+            <FileUpload
+              accept=".csv,.xlsx"
+              maxSize={10 * 1024 * 1024}
+              onUpload={handleBulkFileUpload}
+              isUploading={bulkUploadMutation.isPending}
+              progress={uploadProgress}
+            />
           </div>
         </Card>
       )}

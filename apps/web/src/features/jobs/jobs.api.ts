@@ -1,14 +1,21 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { queryKeys } from '@/lib/queryClient';
-import type { JobDetail, JobFilters, JobsPage, JobsQuery } from './jobs.types';
+import type {
+  FullTextSearchQuery,
+  JobDetail,
+  JobFilters,
+  JobsPage,
+  JobsQuery,
+  SuggestionsResponse,
+} from './jobs.types';
 
 /** Master lists for the function/location dropdowns. */
 export function useJobFilters() {
   return useQuery({
     queryKey: queryKeys.jobs.filters,
     queryFn: () => api.get<JobFilters>('/jobs/filters').then((r) => r.data),
-    // Master data barely changes — keep it for the session.
+    // Master data barely changes -- keep it for the session.
     staleTime: Infinity,
   });
 }
@@ -19,6 +26,26 @@ export function usePublicJobs(params: JobsQuery) {
     queryKey: queryKeys.jobs.search(params),
     queryFn: () => api.get<JobsPage>('/jobs', { params }).then((r) => r.data),
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Full-text search across jobs with ranking. */
+export function useFullTextJobSearch(params: FullTextSearchQuery) {
+  return useQuery({
+    queryKey: ['jobs', 'fulltext', params],
+    queryFn: () => api.get<JobsPage>('/jobs/search', { params }).then((r) => r.data),
+    placeholderData: keepPreviousData,
+    enabled: !!params.q?.trim(),
+  });
+}
+
+/** Autocomplete suggestions for job search. */
+export function useJobSuggestions(q: string, enabled = true) {
+  return useQuery({
+    queryKey: ['jobs', 'suggestions', q],
+    queryFn: () => api.get<SuggestionsResponse>('/jobs/suggestions', { params: { q } }).then((r) => r.data),
+    enabled: enabled && q.trim().length >= 2,
+    staleTime: 30_000,
   });
 }
 

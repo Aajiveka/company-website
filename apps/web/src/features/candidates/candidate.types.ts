@@ -22,6 +22,9 @@ export interface CandidateProfile {
   designation: string;
   totalExperience: string;
   photoUrl: string | null;
+  resumeUrl: string | null;
+  resumeFileName: string | null;
+  resumeUploadedAt: string | null;
   skills: string[];
   education: CandidateEducation[];
   experience: CandidateExperience[];

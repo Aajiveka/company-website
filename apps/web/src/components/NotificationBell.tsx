@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Bell, Briefcase, MessageSquare, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { Bell, Briefcase, MessageSquare, AlertCircle, CheckCircle, Info, Wifi, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui';
+import { NotificationType } from '@/features/notifications/notifications.types';
 
 function timeAgo(timestamp: string): string {
   const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
@@ -17,11 +18,11 @@ function timeAgo(timestamp: string): string {
 }
 
 const TYPE_ICONS: Record<string, typeof Bell> = {
-  job: Briefcase,
-  message: MessageSquare,
-  alert: AlertCircle,
-  success: CheckCircle,
-  info: Info,
+  [NotificationType.NEW_APPLICATION]: Briefcase,
+  [NotificationType.APPLICATION_STATUS]: CheckCircle,
+  [NotificationType.INTERVIEW_SCHEDULED]: AlertCircle,
+  [NotificationType.JOB_ALERT]: MessageSquare,
+  [NotificationType.SYSTEM]: Info,
 };
 
 function getNotificationIcon(type: string) {
@@ -35,7 +36,7 @@ interface NotificationBellProps {
 
 export default function NotificationBell({ className }: NotificationBellProps) {
   const { t } = useTranslation('dashboard');
-  const { notifications, unreadCount, markAsRead, markAllRead } =
+  const { notifications, unreadCount, markAsRead, markAllRead, connectionStatus } =
     useRealtimeNotifications();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,9 +78,16 @@ export default function NotificationBell({ className }: NotificationBellProps) {
         <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {t('notifications.title', 'Notifications')}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {t('notifications.title', 'Notifications')}
+              </h3>
+              {connectionStatus === 'connected' ? (
+                <Wifi className="h-3 w-3 text-green-500" />
+              ) : (
+                <WifiOff className="h-3 w-3 text-gray-400" />
+              )}
+            </div>
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
@@ -99,8 +107,8 @@ export default function NotificationBell({ className }: NotificationBellProps) {
             ) : (
               notifications.map((n) => (
                 <button
-                  key={n.notificationId}
-                  onClick={() => markAsRead(n.notificationId)}
+                  key={n.id}
+                  onClick={() => markAsRead(n.id)}
                   className={cn(
                     'flex w-full gap-3 px-4 py-3 text-left transition hover:bg-gray-50 dark:hover:bg-gray-700/50',
                     !n.read && 'bg-blue-50/50 dark:bg-blue-900/10',
@@ -117,10 +125,10 @@ export default function NotificationBell({ className }: NotificationBellProps) {
                       {n.title}
                     </p>
                     <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                      {n.body}
+                      {n.message}
                     </p>
                     <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">
-                      {timeAgo(n.timestamp)}
+                      {timeAgo(n.createdAt)}
                     </p>
                   </div>
                   {!n.read && (
@@ -134,10 +142,10 @@ export default function NotificationBell({ className }: NotificationBellProps) {
           {/* Footer */}
           <div className="border-t border-gray-200 dark:border-gray-700">
             <a
-              href="/candidate/activity"
+              href="/candidate/notifications"
               className="block px-4 py-2.5 text-center text-xs font-medium text-blue-600 hover:bg-gray-50 dark:text-blue-400 dark:hover:bg-gray-700/50"
             >
-              {t('notifications.viewAll', 'View all activity')}
+              {t('notifications.viewAll', 'View all notifications')}
             </a>
           </div>
         </div>

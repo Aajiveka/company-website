@@ -20,6 +20,7 @@ export class SmtpEmailProvider implements EmailProvider {
       to: message.to,
       subject: message.subject,
       text: message.text,
+      ...(message.html ? { html: message.html } : {}),
     });
     this.logger.log(`email sent to ${message.to}`);
   }

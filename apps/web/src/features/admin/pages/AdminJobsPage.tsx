@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Briefcase, CheckCircle2, Eye, FileText, Search, XCircle } from 'lucide-react';
+import ExportButton from '../components/ExportButton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -244,9 +245,20 @@ export default function AdminJobsPage() {
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('adminJobs.heading') }]} />
 
       {/* Header */}
-      <div className="mb-4 flex items-center gap-2">
-        <Briefcase className="h-6 w-6 text-navy dark:text-white" />
-        <h1 className="font-heading text-2xl font-bold text-navy dark:text-white">{t('adminJobs.heading')}</h1>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-6 w-6 text-navy dark:text-white" />
+          <h1 className="font-heading text-2xl font-bold text-navy dark:text-white">{t('adminJobs.heading')}</h1>
+        </div>
+        <ExportButton
+          endpoint="/exports/jobs"
+          filename={`jobs-export-${new Date().toISOString().slice(0, 10)}`}
+          label="Export Jobs"
+          filters={{
+            ...(statusFilter ? { status: statusFilter } : {}),
+            ...(companyFilter ? { company: companyFilter } : {}),
+          }}
+        />
       </div>
 
       {/* Stats bar */}

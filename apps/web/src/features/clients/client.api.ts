@@ -118,3 +118,23 @@ export function useDuplicateJob() {
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.client.jobs('me') }),
   });
 }
+
+/** Upload a CSV/XLSX file for bulk job import (multipart/form-data). */
+export function useUploadBulkJobs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (pct: number) => void }) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api
+        .post<{ imported: number }>('/clients/me/jobs/bulk-upload', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (e) => {
+            if (e.total && onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
+          },
+        })
+        .then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.client.jobs('me') }),
+  });
+}

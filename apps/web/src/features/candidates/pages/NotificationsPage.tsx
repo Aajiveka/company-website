@@ -1,5 +1,4 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   Bell,
@@ -9,28 +8,22 @@ import {
   CheckCheck,
   Info,
   Loader2,
+  Trash2,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
-import { api } from '@/lib/axios';
 import { Badge, Breadcrumbs, Button, Card, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import type { BadgeTone } from '@/components/ui/Badge';
-
-/* ---------- types ---------- */
-interface Notification {
-  id: number;
-  type: 'job_match' | 'application_update' | 'interview' | 'system';
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-}
-
-interface NotificationsPage {
-  rows: Notification[];
-  total: number;
-  page: number;
-  pageCount: number;
-}
+import {
+  useNotifications,
+  useMarkRead,
+  useMarkAllRead,
+  useDeleteNotification,
+  useNotificationStream,
+} from '@/features/notifications/notifications.api';
+import { NotificationType } from '@/features/notifications/notifications.types';
+import type { InAppNotification } from '@/features/notifications/notifications.types';
 
 /* ---------- filters ---------- */
 type FilterTab = 'all' | 'unread' | 'jobs' | 'interviews' | 'system';
@@ -38,56 +31,79 @@ type FilterTab = 'all' | 'unread' | 'jobs' | 'interviews' | 'system';
 const FILTER_TABS: FilterTab[] = ['all', 'unread', 'jobs', 'interviews', 'system'];
 
 /* ---------- helpers ---------- */
-const typeIcon = (type: Notification['type']) => {
+const typeIcon = (type: string) => {
   switch (type) {
-    case 'job_match':
+    case NotificationType.JOB_ALERT:
+    case NotificationType.NEW_APPLICATION:
       return <Briefcase className="h-5 w-5 text-primary" aria-hidden />;
-    case 'application_update':
+    case NotificationType.APPLICATION_STATUS:
       return <Bell className="h-5 w-5 text-amber-500" aria-hidden />;
-    case 'interview':
+    case NotificationType.INTERVIEW_SCHEDULED:
       return <Calendar className="h-5 w-5 text-purple-500" aria-hidden />;
-    case 'system':
+    case NotificationType.SYSTEM:
+    default:
       return <Info className="h-5 w-5 text-gray-500" aria-hidden />;
   }
 };
 
-const typeTone = (type: Notification['type']): BadgeTone => {
+const typeTone = (type: string): BadgeTone => {
   switch (type) {
-    case 'job_match':
+    case NotificationType.JOB_ALERT:
+    case NotificationType.NEW_APPLICATION:
       return 'blue';
-    case 'application_update':
+    case NotificationType.APPLICATION_STATUS:
       return 'amber';
-    case 'interview':
+    case NotificationType.INTERVIEW_SCHEDULED:
       return 'purple';
-    case 'system':
+    case NotificationType.SYSTEM:
+    default:
       return 'gray';
   }
 };
+
+function filterToApiParams(tab: FilterTab): { type?: string; unread?: number } {
+  switch (tab) {
+    case 'unread':
+      return { unread: 1 };
+    case 'jobs':
+      return { type: NotificationType.JOB_ALERT };
+    case 'interviews':
+      return { type: NotificationType.INTERVIEW_SCHEDULED };
+    case 'system':
+      return { type: NotificationType.SYSTEM };
+    default:
+      return {};
+  }
+}
 
 /* ---------- notification item ---------- */
 const NotificationItem = memo(function NotificationItem({
   notification,
   onMarkRead,
+  onDelete,
   formatDate,
 }: {
-  notification: Notification;
-  onMarkRead: (n: Notification) => void;
+  notification: InAppNotification;
+  onMarkRead: (n: InAppNotification) => void;
+  onDelete: (id: number) => void;
   formatDate: (iso: string) => string;
 }) {
   const n = notification;
   return (
-    <button
-      onClick={() => onMarkRead(n)}
+    <div
       className={cn(
-        'flex w-full items-start gap-3 rounded-xl p-4 text-left shadow-card transition',
+        'flex w-full items-start gap-3 rounded-xl p-4 shadow-card transition',
         n.read
           ? 'bg-white dark:bg-gray-800'
           : 'bg-primary/5 ring-1 ring-primary/20 dark:bg-primary/10',
       )}
     >
-      <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+      <button
+        onClick={() => onMarkRead(n)}
+        className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+      >
         {typeIcon(n.type)}
-      </div>
+      </button>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <h3
@@ -99,7 +115,7 @@ const NotificationItem = memo(function NotificationItem({
             {n.title}
           </h3>
           <Badge tone={typeTone(n.type)}>
-            {n.type}
+            {n.type.replace(/_/g, ' ').toLowerCase()}
           </Badge>
           {!n.read && (
             <span className="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
@@ -108,57 +124,55 @@ const NotificationItem = memo(function NotificationItem({
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{n.message}</p>
         <p className="mt-1.5 text-xs text-gray-400">{formatDate(n.createdAt)}</p>
       </div>
-    </button>
+      <button
+        onClick={() => onDelete(n.id)}
+        className="mt-1 shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-500 dark:hover:bg-gray-700"
+        aria-label="Delete notification"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
   );
 });
 
 /* ---------- component ---------- */
 export default function NotificationsPage() {
   const { t } = useTranslation('dashboard');
-  const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
 
+  // SSE for real-time updates
+  const { status: sseStatus } = useNotificationStream();
+
+  const filters = filterToApiParams(activeTab);
   const {
     data,
     isLoading,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['notifications', activeTab],
-    queryFn: async ({ pageParam = 1 }) => {
-      const params: Record<string, string | number> = { page: pageParam };
-      if (activeTab === 'unread') params.unread = 1;
-      if (activeTab === 'jobs') params.type = 'job_match';
-      if (activeTab === 'interviews') params.type = 'interview';
-      if (activeTab === 'system') params.type = 'system';
-      const { data } = await api.get<NotificationsPage>('/notifications', { params });
-      return data;
-    },
-    getNextPageParam: (last) => (last.page < last.pageCount ? last.page + 1 : undefined),
-    initialPageParam: 1,
-  });
+  } = useNotifications(filters);
 
   const allNotifications = useMemo(
     () => data?.pages.flatMap((p) => p.rows) ?? [],
     [data],
   );
 
-  const markRead = useMutation({
-    mutationFn: (id: number) => api.patch(`/notifications/${id}/read`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
-  });
-
-  const markAllRead = useMutation({
-    mutationFn: () => api.patch('/notifications/read-all'),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
-  });
+  const markRead = useMarkRead();
+  const markAllRead = useMarkAllRead();
+  const deleteNotification = useDeleteNotification();
 
   const handleMarkRead = useCallback(
-    (n: Notification) => {
+    (n: InAppNotification) => {
       if (!n.read) markRead.mutate(n.id);
     },
     [markRead],
+  );
+
+  const handleDelete = useCallback(
+    (id: number) => {
+      deleteNotification.mutate(id);
+    },
+    [deleteNotification],
   );
 
   const formatDate = useCallback((iso: string) => {
@@ -183,9 +197,16 @@ export default function NotificationsPage() {
 
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold text-navy dark:text-white">
-          {t('notificationsPage.heading')}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="font-heading text-2xl font-bold text-navy dark:text-white">
+            {t('notificationsPage.heading')}
+          </h1>
+          {sseStatus === 'connected' ? (
+            <Wifi className="h-4 w-4 text-green-500" aria-label="Live updates active" />
+          ) : (
+            <WifiOff className="h-4 w-4 text-gray-400" aria-label="Reconnecting..." />
+          )}
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -246,6 +267,7 @@ export default function NotificationsPage() {
               key={n.id}
               notification={n}
               onMarkRead={handleMarkRead}
+              onDelete={handleDelete}
               formatDate={formatDate}
             />
           ))}

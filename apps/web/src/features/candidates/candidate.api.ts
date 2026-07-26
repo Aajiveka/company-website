@@ -229,3 +229,49 @@ export function useChangePassword() {
       api.post<{ message: string }>('/candidates/me/change-password', payload).then((r) => r.data),
   });
 }
+
+/** Upload a resume (multipart/form-data). */
+export function useUploadResume() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (pct: number) => void }) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api
+        .post<{ url: string; fileName: string }>('/api/files/resume', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (e) => {
+            if (e.total && onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
+          },
+        })
+        .then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+  });
+}
+
+/** Delete the current resume. */
+export function useDeleteResume() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.delete('/api/files/resume').then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+  });
+}
+
+/** Upload a profile photo / avatar (multipart/form-data). */
+export function useUploadAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api
+        .post<{ url: string }>('/api/files/avatar', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+  });
+}

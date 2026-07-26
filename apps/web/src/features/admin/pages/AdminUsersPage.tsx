@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Search, ShieldCheck, ShieldOff, Trash2, UserCog, Users } from 'lucide-react';
+import ExportButton from '../components/ExportButton';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -247,6 +248,15 @@ export default function AdminUsersPage() {
             <Badge tone="gray">{data.length}</Badge>
           )}
         </h1>
+        <ExportButton
+          endpoint="/exports/users"
+          filename={`users-export-${new Date().toISOString().slice(0, 10)}`}
+          label="Export Users"
+          filters={{
+            ...(roleFilter ? { roleId: Number(roleFilter) } : {}),
+            ...(statusFilter ? { isActive: statusFilter === 'active' } : {}),
+          }}
+        />
       </div>
 
       {/* Search & Filter bar */}

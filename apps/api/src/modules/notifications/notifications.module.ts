@@ -3,6 +3,8 @@ import { Global, Logger, Module } from '@nestjs/common';
 import { env } from '@/config/env';
 import { NotificationsService } from './notifications.service';
 import { NotificationsWorker } from './notifications.worker';
+import { NotificationsController } from './notifications.controller';
+import { SseNotificationsService } from './sse-notifications.service';
 import { LogNotificationProvider } from './providers/log.provider';
 import { SesEmailProvider } from './providers/ses.provider';
 import { SmtpEmailProvider } from './providers/smtp.provider';
@@ -15,8 +17,10 @@ const logger = new Logger('NotificationsModule');
 @Global()
 @Module({
   imports: [BullModule.registerQueue({ name: NOTIFICATIONS_QUEUE })],
+  controllers: [NotificationsController],
   providers: [
     NotificationsService,
+    SseNotificationsService,
     NotificationsWorker,
     LogNotificationProvider,
     {
@@ -54,6 +58,6 @@ const logger = new Logger('NotificationsModule');
       inject: [LogNotificationProvider],
     },
   ],
-  exports: [NotificationsService],
+  exports: [NotificationsService, SseNotificationsService],
 })
 export class NotificationsModule {}

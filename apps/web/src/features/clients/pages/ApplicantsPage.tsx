@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarCheck, Check, StickyNote, X } from 'lucide-react';
+import ExportButton from '@/features/admin/components/ExportButton';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Badge, Breadcrumbs, Button, ConfirmDialog, statusTone, Table, useToast, type Column } from '@/components/ui';
@@ -145,7 +146,14 @@ export default function ApplicantsPage() {
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/company/profile' }, { label: t('applicants.heading') }]} />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-heading text-2xl font-bold text-navy">{t('applicants.heading')}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="font-heading text-2xl font-bold text-navy">{t('applicants.heading')}</h1>
+          <ExportButton
+            endpoint="/exports/applicants"
+            filename={`applicants-export-${new Date().toISOString().slice(0, 10)}`}
+            label="Export Applicants"
+          />
+        </div>
 
         {/* Bulk action bar */}
         {selected.size > 0 && (

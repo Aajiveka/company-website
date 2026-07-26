@@ -7,9 +7,10 @@ import { Seo } from '@/components/Seo';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/features/auth/auth.store';
 import { useSavedJobIds, useSaveJob, useUnsaveJob } from '@/features/candidates/candidate.api';
+import { SavedSearches } from '@/features/candidates/components/SavedSearches';
 import { PageBanner } from '@/features/public/components/PageBanner';
 import { JobSearchBar } from '../components/JobSearchBar';
-import { JobFiltersPanel, type FilterValues } from '../components/JobFilters';
+import { JobFiltersPanel, DEFAULT_FILTERS, type FilterValues } from '../components/JobFilters';
 import { useInfinitePublicJobs } from '../jobs.api';
 import { useCompareStore } from '../compare.store';
 import { CompareBar } from '../components/CompareDrawer';
@@ -110,9 +111,18 @@ export default function JobSearchPage() {
   const minExp = intParam(searchParams, 'minExp');
   const maxExp = intParam(searchParams, 'maxExp');
   const minCtc = intParam(searchParams, 'minCtc') ?? 0;
+  const maxCtc = intParam(searchParams, 'maxCtc') ?? DEFAULT_FILTERS.maxCtc;
   const sortBy = (searchParams.get('sortBy') ?? 'newest') as FilterValues['sortBy'];
+  const workModes = searchParams.get('workModes')?.split(',').filter(Boolean) ?? [];
+  const employmentTypes = searchParams.get('employmentTypes')?.split(',').filter(Boolean) ?? [];
+  const locationsList = searchParams.get('locations')?.split(',').filter(Boolean) ?? [];
+  const skills = searchParams.get('skills')?.split(',').filter(Boolean) ?? [];
+  const postedWithin = (searchParams.get('postedWithin') ?? '') as FilterValues['postedWithin'];
 
-  const filterValues: FilterValues = { workMode, employmentType, industry, minExp, maxExp, minCtc, sortBy };
+  const filterValues: FilterValues = {
+    workMode, employmentType, industry, minExp, maxExp, minCtc, maxCtc,
+    sortBy, workModes, employmentTypes, locationsList, skills, postedWithin,
+  };
 
   const compareStore = useCompareStore();
 
@@ -131,6 +141,12 @@ export default function JobSearchPage() {
     minExp,
     maxExp,
     minCtc: minCtc || undefined,
+    maxCtc: maxCtc < DEFAULT_FILTERS.maxCtc ? maxCtc : undefined,
+    workModes: workModes.length > 0 ? workModes : undefined,
+    employmentTypes: employmentTypes.length > 0 ? employmentTypes : undefined,
+    locations: locationsList.length > 0 ? locationsList : undefined,
+    skills: skills.length > 0 ? skills : undefined,
+    postedWithin: postedWithin || undefined,
     sortBy: sortBy !== 'newest' ? sortBy : undefined,
     pageSize: PAGE_SIZE,
   });
@@ -173,9 +189,15 @@ export default function JobSearchPage() {
       workMode: next.workMode || undefined,
       employmentType: next.employmentType || undefined,
       industry: next.industry || undefined,
-      minExp: next.minExp != null ? String(next.minExp) : undefined,
-      maxExp: next.maxExp != null ? String(next.maxExp) : undefined,
+      minExp: next.minExp != null && next.minExp > 0 ? String(next.minExp) : undefined,
+      maxExp: next.maxExp != null && next.maxExp < 30 ? String(next.maxExp) : undefined,
       minCtc: next.minCtc > 0 ? String(next.minCtc) : undefined,
+      maxCtc: next.maxCtc < DEFAULT_FILTERS.maxCtc ? String(next.maxCtc) : undefined,
+      workModes: next.workModes.length > 0 ? next.workModes.join(',') : undefined,
+      employmentTypes: next.employmentTypes.length > 0 ? next.employmentTypes.join(',') : undefined,
+      locations: next.locationsList.length > 0 ? next.locationsList.join(',') : undefined,
+      skills: next.skills.length > 0 ? next.skills.join(',') : undefined,
+      postedWithin: next.postedWithin || undefined,
       sortBy: next.sortBy !== 'newest' ? next.sortBy : undefined,
     });
   };
@@ -213,6 +235,14 @@ export default function JobSearchPage() {
             values={filterValues}
             onChange={onFiltersChange}
           />
+
+          {/* Saved Searches */}
+          <div className="mb-6 mt-4">
+            <SavedSearches
+              currentQuery={designation}
+              currentFilters={filterValues as unknown as Record<string, unknown>}
+            />
+          </div>
 
           <p className="mb-6 mt-4 text-sm text-gray-500" aria-live="polite" aria-atomic="true">
             {isLoading ? t('search.searching') : t('search.jobsFound', { count: total })}

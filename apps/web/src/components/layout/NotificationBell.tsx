@@ -6,6 +6,9 @@ import {
   CalendarCheck,
   CheckCircle2,
   FileCheck,
+  Info,
+  Wifi,
+  WifiOff,
   XCircle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +17,8 @@ import { useAuth } from '@/features/auth/auth.store';
 import { Role } from '@/types/roles';
 import { useAppliedJobs } from '@/features/candidates/candidate.api';
 import type { AppliedJob } from '@/features/candidates/candidate.types';
+import { useNotificationStream } from '@/features/notifications/notifications.api';
+import type { InAppNotification } from '@/features/notifications/notifications.types';
 
 interface Notification {
   id: string;
@@ -77,6 +82,18 @@ function deriveFromAppliedJobs(jobs: AppliedJob[], t: (key: string, opts?: Recor
   return notifications.slice(0, 20);
 }
 
+/** Convert SSE InAppNotification to the local Notification shape. */
+function fromSSE(n: InAppNotification): Notification {
+  return {
+    id: `sse-${n.id}`,
+    icon: <Info className="h-4 w-4 text-primary" />,
+    title: n.title,
+    body: n.message,
+    time: n.createdAt,
+    to: n.link ?? '/candidate/notifications',
+  };
+}
+
 /** Notification bell with dropdown — shows in the dashboard topbar. */
 export function NotificationBell() {
   const { t } = useTranslation('dashboard');
@@ -84,6 +101,17 @@ export function NotificationBell() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // SSE real-time notifications
+  const [sseNotifications, setSseNotifications] = useState<Notification[]>([]);
+  const onSSENotification = useCallback((n: InAppNotification) => {
+    setSseNotifications((prev) => {
+      const mapped = fromSSE(n);
+      const filtered = prev.filter((p) => p.id !== mapped.id);
+      return [mapped, ...filtered].slice(0, 20);
+    });
+  }, []);
+  const { status: sseStatus } = useNotificationStream(onSSENotification);
 
   // Track which notifications the user has seen
   const [seenAt, setSeenAt] = useState<number>(() => {
@@ -101,10 +129,21 @@ export function NotificationBell() {
   const isCandidate = user?.roleId === Role.Subscriber;
   const { data: appliedJobs } = useAppliedJobs(isCandidate);
 
-  const notifications = useMemo(() => {
+  const derivedNotifications = useMemo(() => {
     if (!isCandidate || !appliedJobs) return [];
     return deriveFromAppliedJobs(appliedJobs, t);
   }, [appliedJobs, isCandidate, t]);
+
+  // Merge SSE notifications with derived ones (SSE first, then derived)
+  const notifications = useMemo(() => {
+    const ids = new Set(sseNotifications.map((n) => n.id));
+    const merged = [...sseNotifications];
+    for (const n of derivedNotifications) {
+      if (!ids.has(n.id)) merged.push(n);
+    }
+    merged.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    return merged.slice(0, 30);
+  }, [sseNotifications, derivedNotifications]);
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => new Date(n.time).getTime() > seenAt).length,
@@ -164,7 +203,14 @@ export function NotificationBell() {
         <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-navy">{t('notifications.title')}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-navy">{t('notifications.title')}</h3>
+              {sseStatus === 'connected' ? (
+                <Wifi className="h-3 w-3 text-green-500" aria-label="Live" />
+              ) : (
+                <WifiOff className="h-3 w-3 text-gray-400" aria-label="Reconnecting..." />
+              )}
+            </div>
             {notifications.length > 0 && (
               <button
                 onClick={markSeen}
@@ -215,7 +261,7 @@ export function NotificationBell() {
           {notifications.length > 0 && (
             <div className="border-t border-gray-100 px-4 py-2 dark:border-gray-700">
               <button
-                onClick={() => { setIsOpen(false); navigate('/candidate/applied-jobs'); }}
+                onClick={() => { setIsOpen(false); navigate('/candidate/notifications'); }}
                 className="w-full rounded text-center text-xs font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {t('notifications.viewAll')}

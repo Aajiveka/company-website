@@ -1,85 +1,87 @@
-import { useRef, useState, type ChangeEvent } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import { useCallback, useState } from 'react';
 import { Camera, User } from 'lucide-react';
-import { api } from '@/lib/axios';
+import { useTranslation } from 'react-i18next';
+import { FileUpload, ImageCropper, Modal, Skeleton, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { Button, Skeleton, useToast } from '@/components/ui';
+import { useUploadAvatar } from '../candidate.api';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
-  onUploaded: (url: string) => void;
+  onUploaded?: (url: string) => void;
 }
 
-const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp';
+const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+const ACCEPTED = 'image/*';
 
 export default function ProfilePhotoUpload({
   currentPhotoUrl,
   onUploaded,
 }: ProfilePhotoUploadProps) {
-  const { t } = useTranslation('dashboard');
+  const { t } = useTranslation('common');
   const { notify } = useToast();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const uploadMutation = useUploadAvatar();
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('photo', file);
-      const { data } = await api.post<{ url: string }>(
-        '/candidates/me/photo',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
-      );
-      return data.url;
-    },
-    onSuccess: (url) => {
-      notify(t('profilePhoto.uploaded'), 'success');
-      setPreview(null);
-      onUploaded(url);
-    },
-    onError: () => {
-      notify(t('profilePhoto.uploadFailed'), 'error');
-    },
-  });
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFilesSelected = useCallback((files: File[]) => {
+    const file = files[0];
     if (!file) return;
-
-    // Show local preview
     const objectUrl = URL.createObjectURL(file);
-    setPreview(objectUrl);
+    setCropSrc(objectUrl);
+  }, []);
 
-    // Upload immediately
-    uploadMutation.mutate(file);
-  };
+  const handleCrop = useCallback(
+    (blob: Blob) => {
+      // Show preview immediately
+      const previewUrl = URL.createObjectURL(blob);
+      setPreview(previewUrl);
+      setCropSrc(null);
+
+      const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+      uploadMutation.mutate(file, {
+        onSuccess: (data) => {
+          notify(t('upload.avatarSuccess'), 'success');
+          setPreview(null);
+          onUploaded?.(data.url);
+        },
+        onError: () => {
+          notify(t('upload.avatarFailed'), 'error');
+          setPreview(null);
+        },
+      });
+    },
+    [uploadMutation, notify, t, onUploaded],
+  );
+
+  const handleCancelCrop = useCallback(() => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  }, [cropSrc]);
 
   const displayUrl = preview ?? currentPhotoUrl;
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <button
-        type="button"
+      {/* Avatar circle */}
+      <div
         className={cn(
-          'group relative h-24 w-24 overflow-hidden rounded-full',
+          'group relative h-28 w-28 overflow-hidden rounded-full',
           'border-2 border-gray-200 dark:border-gray-700',
           'bg-gray-100 dark:bg-gray-800',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900',
         )}
-        onClick={() => inputRef.current?.click()}
-        aria-label={t('profilePhoto.changePhoto')}
       >
         {uploadMutation.isPending ? (
           <Skeleton className="h-full w-full rounded-full" />
         ) : displayUrl ? (
           <img
             src={displayUrl}
-            alt={t('profilePhoto.heading')}
+            alt={t('upload.profilePhoto')}
             className="h-full w-full object-cover"
           />
         ) : (
-          <User className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500" />
+          <div className="flex h-full w-full items-center justify-center">
+            <User className="h-12 w-12 text-gray-400 dark:text-gray-500" />
+          </div>
         )}
 
         {/* Camera overlay on hover */}
@@ -91,26 +93,29 @@ export default function ProfilePhotoUpload({
         >
           <Camera className="h-6 w-6 text-white" />
         </div>
-      </button>
+      </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ACCEPTED_TYPES}
-        className="hidden"
-        onChange={handleFileChange}
+      {/* File upload trigger */}
+      <FileUpload
+        accept={ACCEPTED}
+        maxSize={MAX_SIZE}
+        onUpload={handleFilesSelected}
+        hint={t('upload.avatarHint')}
+        isUploading={uploadMutation.isPending}
+        className="w-full max-w-xs"
       />
 
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => inputRef.current?.click()}
-        disabled={uploadMutation.isPending}
-      >
-        {uploadMutation.isPending
-          ? t('profilePhoto.uploading')
-          : t('profilePhoto.upload')}
-      </Button>
+      {/* Image cropper modal */}
+      {cropSrc && (
+        <Modal open onClose={handleCancelCrop} title={t('upload.cropHeading')} className="max-w-lg">
+          <ImageCropper
+            src={cropSrc}
+            onCrop={handleCrop}
+            onCancel={handleCancelCrop}
+            aspect={1}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
