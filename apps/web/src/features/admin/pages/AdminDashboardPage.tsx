@@ -3,6 +3,7 @@ import { BarChart3, Briefcase, Building2, Clock, IndianRupee, TrendingUp, Users 
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Badge, Breadcrumbs, Card, CardSkeleton, Skeleton } from '@/components/ui';
+import PageMeta from '@/components/PageMeta';
 import { cn } from '@/lib/cn';
 import { api } from '@/lib/axios';
 
@@ -158,6 +159,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
+      <PageMeta title="Admin Dashboard" />
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('admin.heading') }]} />
       <h1 className="mb-6 font-heading text-2xl font-bold text-navy dark:text-white">{t('admin.heading')}</h1>
 

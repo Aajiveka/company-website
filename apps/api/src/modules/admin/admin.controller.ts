@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/shared/roles';
@@ -41,6 +41,7 @@ export class AdminController {
 
   @Patch('users/:userId')
   @ApiOperation({ summary: 'Update a user role or active status' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   updateUser(
     @Param('userId', ParseIntPipe) userId: number,
     @CurrentUser() user: RequestUser,
@@ -71,12 +72,14 @@ export class AdminController {
 
   @Post('jobs/:jobId/approve')
   @ApiOperation({ summary: 'Approve a job listing' })
+  @ApiResponse({ status: 404, description: 'Job not found' })
   approveJob(@Param('jobId', ParseIntPipe) jobId: number, @CurrentUser() user: RequestUser) {
     return this.admin.approveJob(jobId, user.userId);
   }
 
   @Post('jobs/:jobId/reject')
   @ApiOperation({ summary: 'Reject a job listing' })
+  @ApiResponse({ status: 404, description: 'Job not found' })
   rejectJob(@Param('jobId', ParseIntPipe) jobId: number, @CurrentUser() user: RequestUser) {
     return this.admin.rejectJob(jobId, user.userId);
   }
@@ -117,6 +120,7 @@ export class AdminController {
 
   @Patch('blog-posts/:id')
   @ApiOperation({ summary: 'Update a blog post' })
+  @ApiResponse({ status: 404, description: 'Blog post not found' })
   updateBlogPost(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: RequestUser,
@@ -127,6 +131,7 @@ export class AdminController {
 
   @Delete('blog-posts/:id')
   @ApiOperation({ summary: 'Delete a blog post' })
+  @ApiResponse({ status: 404, description: 'Blog post not found' })
   deleteBlogPost(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: RequestUser) {
     return this.admin.deleteBlogPost(id, user.userId);
   }

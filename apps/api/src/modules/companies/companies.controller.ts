@@ -1,5 +1,5 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '@/common/decorators/public.decorator';
 import { CompaniesService } from './companies.service';
 
@@ -18,6 +18,7 @@ export class CompaniesController {
   @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Company detail by ID' })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   byId(@Param('id', ParseIntPipe) id: number) {
     return this.companies.byId(id);
   }

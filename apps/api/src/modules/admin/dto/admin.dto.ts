@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AdminUsersQueryDto {
@@ -55,9 +55,9 @@ export class UpdateSettingsDto {
 }
 
 export class CreateBlogPostDto {
-  @IsString() title: string;
-  @IsString() slug: string;
-  @IsOptional() @IsString() excerpt?: string;
+  @IsString() @MaxLength(200) title: string;
+  @IsString() @MaxLength(200) slug: string;
+  @IsOptional() @IsString() @MaxLength(500) excerpt?: string;
   @IsString() body: string;
   @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsString() category?: string;

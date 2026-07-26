@@ -45,7 +45,7 @@ export function useCvMasters() {
   return useQuery({
     queryKey: ['candidate', 'cv-masters'],
     queryFn: () => api.get<CvMasters>('/candidates/me/cv-masters').then((r) => r.data),
-    staleTime: Infinity,
+    staleTime: 10 * 60_000, // 10 minutes
   });
 }
 
@@ -238,7 +238,7 @@ export function useUploadResume() {
       const form = new FormData();
       form.append('file', file);
       return api
-        .post<{ url: string; fileName: string }>('/api/files/resume', form, {
+        .post<{ url: string; fileName: string }>('/files/resume', form, {
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (e) => {
             if (e.total && onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
@@ -254,7 +254,7 @@ export function useUploadResume() {
 export function useDeleteResume() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.delete('/api/files/resume').then((r) => r.data),
+    mutationFn: () => api.delete('/files/resume').then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
   });
 }
@@ -267,11 +267,105 @@ export function useUploadAvatar() {
       const form = new FormData();
       form.append('file', file);
       return api
-        .post<{ url: string }>('/api/files/avatar', form, {
+        .post<{ url: string }>('/files/avatar', form, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((r) => r.data);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+  });
+}
+
+// ── Dashboard ──
+
+export interface DashboardSummary {
+  appliedCount: number;
+  savedCount: number;
+  interviewCount: number;
+  profileCompletion: number;
+}
+
+export function useDashboard() {
+  return useQuery({
+    queryKey: ['candidate', 'dashboard'],
+    queryFn: () => api.get<DashboardSummary>('/candidates/me/dashboard').then((r) => r.data),
+  });
+}
+
+// ── Notification Preferences ──
+
+export interface NotificationPrefs {
+  emailAlerts: boolean;
+  pushAlerts: boolean;
+  smsAlerts: boolean;
+  jobAlertFrequency: 'Daily' | 'Weekly' | 'Instant';
+}
+
+export function useNotificationPrefs() {
+  return useQuery({
+    queryKey: ['candidate', 'notification-prefs'],
+    queryFn: () => api.get<NotificationPrefs>('/candidates/me/notification-prefs').then((r) => r.data),
+  });
+}
+
+export function useUpdateNotificationPrefs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Partial<NotificationPrefs>) =>
+      api.put('/candidates/me/notification-prefs', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['candidate', 'notification-prefs'] }),
+  });
+}
+
+// ── Saved Searches ──
+
+export interface SavedSearchItem {
+  id: number;
+  name: string;
+  query: string | null;
+  filters: Record<string, unknown> | null;
+  createdAt: string | null;
+}
+
+export function useSavedSearches() {
+  return useQuery({
+    queryKey: ['candidate', 'saved-searches'],
+    queryFn: () => api.get<SavedSearchItem[]>('/candidates/me/saved-searches').then((r) => r.data),
+  });
+}
+
+export function useCreateSavedSearch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { name: string; query?: string; filters?: Record<string, unknown> }) =>
+      api.post<SavedSearchItem>('/candidates/me/saved-searches', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['candidate', 'saved-searches'] }),
+  });
+}
+
+export function useDeleteSavedSearch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/candidates/me/saved-searches/${id}`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['candidate', 'saved-searches'] }),
+  });
+}
+
+// ── Recommendations ──
+
+export function useRecommendedJobs() {
+  return useQuery({
+    queryKey: ['candidate', 'recommendations'],
+    queryFn: () => api.get('/jobs/recommended').then((r) => r.data),
+    staleTime: 5 * 60_000,
+  });
+}
+
+// ── Activity ──
+
+export function useActivity() {
+  return useQuery({
+    queryKey: ['candidate', 'activity'],
+    queryFn: () => api.get('/candidates/me/activity').then((r) => r.data),
   });
 }

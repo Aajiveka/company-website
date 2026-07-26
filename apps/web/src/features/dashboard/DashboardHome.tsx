@@ -14,6 +14,7 @@ import { useAuth } from '@/features/auth/auth.store';
 import { Role } from '@/types/roles';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui';
+import PageMeta from '@/components/PageMeta';
 import DashboardWidgets from '@/features/candidates/components/DashboardWidgets';
 
 /* ------------------------------------------------------------------ */
@@ -207,17 +208,29 @@ export default function DashboardHome() {
     );
   }
 
+  let content: React.ReactNode;
   switch (user.roleId) {
     case Role.Subscriber:
-      return <CandidateDashboard />;
+      content = <CandidateDashboard />;
+      break;
     case Role.Client:
-      return <ClientDashboard />;
+      content = <ClientDashboard />;
+      break;
     case Role.Admin:
-      return <AdminDashboard />;
+      content = <AdminDashboard />;
+      break;
     case Role.QC1:
     case Role.QC2:
-      return <QcDashboard />;
+      content = <QcDashboard />;
+      break;
     default:
-      return <CandidateDashboard />;
+      content = <CandidateDashboard />;
   }
+
+  return (
+    <>
+      <PageMeta title="Dashboard" />
+      {content}
+    </>
+  );
 }

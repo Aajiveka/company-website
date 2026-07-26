@@ -44,6 +44,9 @@ export class JobsService {
     private readonly applications: JobApplicationsService,
   ) {}
 
+  private filtersCache: { data: unknown; expiry: number } | null = null;
+  private static readonly FILTERS_TTL = 5 * 60_000; // 5 minutes
+
   private get db() {
     return this.prisma.client;
   }
@@ -52,6 +55,10 @@ export class JobsService {
    * Master lists for the public search.
    */
   async filters() {
+    if (this.filtersCache && Date.now() < this.filtersCache.expiry) {
+      return this.filtersCache.data;
+    }
+
     const [designations, industries, states, cities, workModes, empTypes, skills] = await Promise.all([
       this.db.mstrDesignation.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
       this.db.mstrIndustryType.findMany({
@@ -65,7 +72,7 @@ export class JobsService {
       this.db.mstrSkills.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
     ]);
     const clean = (xs: (string | null)[]) => xs.filter((d): d is string => !!d?.trim());
-    return {
+    const result = {
       designations: clean(designations.map((d) => d.descr)),
       industries: clean(industries.map((i) => i.industryType)),
       states: clean(states.map((s) => s.descr)),
@@ -77,6 +84,8 @@ export class JobsService {
       employmentTypes: clean(empTypes.map((e) => e.descr)),
       skills: clean(skills.map((s) => s.descr)),
     };
+    this.filtersCache = { data: result, expiry: Date.now() + JobsService.FILTERS_TTL };
+    return result;
   }
 
   /** Compute a date cutoff for "posted within" filter. */

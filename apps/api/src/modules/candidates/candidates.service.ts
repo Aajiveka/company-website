@@ -727,7 +727,7 @@ export class CandidatesService {
   async notificationPrefs(subscriberId: number) {
     const defaults = { emailAlerts: true, pushAlerts: true, smsAlerts: false, jobAlertFrequency: 'Daily' as const };
     try {
-      const row = await (this.db as any).notificationPreference.findUnique({
+      const row = await this.db.notificationPreference.findUnique({
         where: { subscriberID: subscriberId },
       });
       if (!row) return defaults;
@@ -746,7 +746,7 @@ export class CandidatesService {
   /** Upsert notification preferences. */
   async updateNotificationPrefs(subscriberId: number, dto: UpdateNotificationPrefsDto) {
     try {
-      await (this.db as any).notificationPreference.upsert({
+      await this.db.notificationPreference.upsert({
         where: { subscriberID: subscriberId },
         create: {
           subscriberID: subscriberId,
@@ -772,11 +772,11 @@ export class CandidatesService {
   /** List saved searches for the candidate. */
   async savedSearches(subscriberId: number) {
     try {
-      const rows = await (this.db as any).savedSearch.findMany({
+      const rows = await this.db.savedSearch.findMany({
         where: { subscriberID: subscriberId },
         orderBy: { createdAt: 'desc' },
       });
-      return rows.map((r: any) => ({
+      return rows.map((r) => ({
         id: Number(r.id),
         name: r.name,
         query: r.query ?? null,
@@ -791,7 +791,7 @@ export class CandidatesService {
   /** Create a saved search. */
   async createSavedSearch(subscriberId: number, dto: CreateSavedSearchDto) {
     try {
-      const row = await (this.db as any).savedSearch.create({
+      const row = await this.db.savedSearch.create({
         data: {
           subscriberID: subscriberId,
           name: dto.name,
@@ -814,7 +814,7 @@ export class CandidatesService {
   /** Delete a saved search, verifying ownership. */
   async deleteSavedSearch(subscriberId: number, id: number) {
     try {
-      const deleted = await (this.db as any).savedSearch.deleteMany({
+      const deleted = await this.db.savedSearch.deleteMany({
         where: { id, subscriberID: subscriberId },
       });
       if (deleted.count === 0) {

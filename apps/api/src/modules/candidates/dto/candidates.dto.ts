@@ -9,8 +9,10 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
@@ -250,14 +252,17 @@ export class CreateSavedSearchDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   name!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   query?: string;
 
   @ApiPropertyOptional({ description: 'Arbitrary filter object, stored as JSON' })
   @IsOptional()
+  @IsObject()
   filters?: Record<string, unknown>;
 }
