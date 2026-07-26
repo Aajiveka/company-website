@@ -9,7 +9,7 @@ test.describe('Authentication', () => {
   test('shows validation errors on empty submit', async ({ page }) => {
     await page.goto('/login');
     await page.click('button[type="submit"]');
-    await expect(page.locator('[role="alert"]')).toBeVisible();
+    await expect(page.locator('[role="alert"]').first()).toBeVisible();
   });
 
   test('navigates to register page', async ({ page }) => {

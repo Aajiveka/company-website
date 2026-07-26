@@ -3,8 +3,9 @@ import { test, expect } from '@playwright/test';
 test.describe('Language Switching (i18n)', () => {
   test.beforeEach(async ({ page }) => {
     // Reset language to English before every test.
-    await page.addInitScript(() => localStorage.setItem('i18nextLng', 'en'));
     await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('i18nextLng', 'en'));
+    await page.reload();
   });
 
   test('default language is English', async ({ page }) => {

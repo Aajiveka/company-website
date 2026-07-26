@@ -53,7 +53,7 @@ export function RecommendedJobs() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { data, isLoading } = useRecommendedJobs(isAuthenticated);
-  const { data: savedIds } = useSavedJobIds();
+  const { data: savedIds } = useSavedJobIds(isAuthenticated);
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
 

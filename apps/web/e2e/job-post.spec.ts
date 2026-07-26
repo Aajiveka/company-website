@@ -50,15 +50,23 @@ const POSTED_JOB = {
   description: 'A great role for experienced developers.',
 };
 
-function mockAuthSession(page: import('@playwright/test').Page) {
-  return page.route('**/api/auth/session', (route) =>
+async function mockAuthSession(page: import('@playwright/test').Page) {
+  // Set refresh token so the auth bootstrap calls /auth/me
+  await page.addInitScript(() => {
+    localStorage.setItem('aaj.refresh', 'fake-refresh-token');
+  });
+  await page.route('**/api/auth/refresh', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        user: { userId: 1, fullName: 'Test Employer', roleId: 4 },
-        token: 'fake-token',
-      }),
+      body: JSON.stringify({ accessToken: 'fake-access', refreshToken: 'fake-refresh-token' }),
+    }),
+  );
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ userId: 1, fullName: 'Test Employer', roleId: 4 }),
     }),
   );
 }
@@ -68,8 +76,8 @@ test.describe('Job Posting Flow', () => {
     // Mock auth so ProtectedRoute allows access
     await mockAuthSession(page);
 
-    // Masters data for dropdowns
-    await page.route('**/api/company/masters', (route) =>
+    // Masters data for dropdowns — app calls /clients/masters
+    await page.route('**/api/clients/masters', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -77,9 +85,9 @@ test.describe('Job Posting Flow', () => {
       }),
     );
 
-    // Company jobs listing — starts empty, returns posted job after POST
+    // Company jobs listing — app calls /clients/me/jobs
     let jobs: typeof POSTED_JOB[] = [];
-    await page.route('**/api/company/jobs', (route) => {
+    await page.route('**/api/clients/me/jobs', (route) => {
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -172,7 +180,7 @@ test.describe('Job Posting Flow', () => {
 
   test('submitted job appears in the listing page', async ({ page }) => {
     // Navigate directly to jobs listing with a pre-populated job
-    await page.route('**/api/company/jobs', (route) =>
+    await page.route('**/api/clients/me/jobs', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',

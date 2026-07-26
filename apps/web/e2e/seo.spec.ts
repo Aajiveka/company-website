@@ -20,9 +20,10 @@ test.describe('SEO', () => {
 
   test('home page has JSON-LD structured data', async ({ page }) => {
     await page.goto('/');
+    // Wait for React to fully render the home page (JSON-LD is inside a lazy component)
+    await expect(page.locator('h1').first()).toBeVisible({ timeout: 10_000 });
     const jsonLd = page.locator('script[type="application/ld+json"]');
-    const count = await jsonLd.count();
-    expect(count).toBeGreaterThanOrEqual(1);
+    await expect(jsonLd.first()).toBeAttached({ timeout: 5_000 });
   });
 
   test('public pages are indexable', async ({ page }) => {

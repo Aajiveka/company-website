@@ -94,16 +94,26 @@ const ADMIN_JOBS = [
   },
 ];
 
-function setupAdminMocks(page: import('@playwright/test').Page) {
-  return Promise.all([
-    page.route('**/api/auth/session', (route) =>
+async function setupAdminMocks(page: import('@playwright/test').Page) {
+  // Set refresh token so the auth bootstrap calls /auth/me
+  await page.addInitScript(() => {
+    localStorage.setItem('aaj.refresh', 'fake-refresh-token');
+  });
+
+  await Promise.all([
+    // Auth: mock the refresh + me endpoints the app actually calls
+    page.route('**/api/auth/refresh', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          user: { userId: 1, fullName: 'Admin User', roleId: 5 },
-          token: 'fake-admin-token',
-        }),
+        body: JSON.stringify({ accessToken: 'fake-access', refreshToken: 'fake-refresh-token' }),
+      }),
+    ),
+    page.route('**/api/auth/me', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ userId: 1, fullName: 'Admin User', roleId: 5 }),
       }),
     ),
     page.route('**/api/admin/stats', (route) =>

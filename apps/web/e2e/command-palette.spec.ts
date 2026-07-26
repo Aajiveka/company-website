@@ -7,40 +7,46 @@ import { test, expect } from '@playwright/test';
  * keyboard navigation (arrow keys, Enter, Escape) and text filtering.
  */
 
+/** Press Ctrl+K and wait for the command palette dialog to appear. */
+async function openPalette(page: import('@playwright/test').Page) {
+  const dialog = page.locator('[role="dialog"]');
+  await expect(async () => {
+    if (!(await dialog.isVisible())) {
+      await page.keyboard.press('Control+k');
+    }
+    await expect(dialog).toBeVisible({ timeout: 500 });
+  }).toPass({ timeout: 5_000 });
+  return dialog;
+}
+
 test.describe('Command Palette', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('body')).toBeVisible();
+    // Wait for React to fully mount (nav renders after hydration)
+    await expect(page.locator('nav').first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('opens with Ctrl+K and shows dialog', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    const dialog = await openPalette(page);
+    await expect(dialog).toBeVisible();
   });
 
   test('shows search input focused when opened', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-
-    const input = page.locator('[role="dialog"] input[type="text"]');
-    await expect(input).toBeVisible({ timeout: 5_000 });
+    const dialog = await openPalette(page);
+    const input = dialog.locator('input[type="text"]');
+    await expect(input).toBeVisible();
     await expect(input).toBeFocused();
   });
 
   test('closes with Escape key', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    const dialog = await openPalette(page);
 
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
   });
 
   test('closes when clicking backdrop', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    const dialog = await openPalette(page);
 
     // Click the backdrop (the dark overlay behind the dialog)
     await page.locator('.bg-black\\/40').click({ force: true });
@@ -48,11 +54,7 @@ test.describe('Command Palette', () => {
   });
 
   test('toggles open/closed with repeated Ctrl+K', async ({ page }) => {
-    const dialog = page.locator('[role="dialog"]');
-
-    // Open
-    await page.keyboard.press('Control+k');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    const dialog = await openPalette(page);
 
     // Close
     await page.keyboard.press('Control+k');
@@ -60,10 +62,7 @@ test.describe('Command Palette', () => {
   });
 
   test('filters results when typing', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
-
+    const dialog = await openPalette(page);
     const input = dialog.locator('input[type="text"]');
 
     // Type a filter term — "jobs" should narrow results
@@ -77,10 +76,7 @@ test.describe('Command Palette', () => {
   });
 
   test('shows no results message for non-matching query', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
-
+    const dialog = await openPalette(page);
     const input = dialog.locator('input[type="text"]');
     await input.fill('zzzzzznonexistent');
 
@@ -90,9 +86,7 @@ test.describe('Command Palette', () => {
   });
 
   test('navigates with arrow keys and highlights active item', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    const dialog = await openPalette(page);
 
     // First item should be active by default
     const firstItem = dialog.locator('[data-active="true"]');
@@ -107,17 +101,19 @@ test.describe('Command Palette', () => {
   });
 
   test('selects item with Enter and navigates to target page', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    const dialog = await openPalette(page);
 
     // Filter to "jobs" to narrow the list
     const input = dialog.locator('input[type="text"]');
     await input.fill('jobs');
 
-    // Wait for filtered results
+    // Wait for debounce (150ms) to filter the list — "jobs" matches fewer than the full 12 items
     const options = dialog.locator('[role="option"]');
-    await expect(options.first()).toBeVisible({ timeout: 3_000 });
+    await expect(async () => {
+      const count = await options.count();
+      expect(count).toBeGreaterThan(0);
+      expect(count).toBeLessThan(12);
+    }).toPass({ timeout: 3_000 });
 
     // Press Enter to select the first matching result
     await page.keyboard.press('Enter');
@@ -130,9 +126,7 @@ test.describe('Command Palette', () => {
   });
 
   test('displays section headers for pages and actions', async ({ page }) => {
-    await page.keyboard.press('Control+k');
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
+    const dialog = await openPalette(page);
 
     // Section headers should be visible
     await expect(dialog.getByText(/pages/i)).toBeVisible();

@@ -3,8 +3,9 @@ import { test, expect } from '@playwright/test';
 test.describe('Dark Mode Toggle', () => {
   test.beforeEach(async ({ page }) => {
     // Clear any stored theme preference so each test starts fresh.
-    await page.addInitScript(() => localStorage.removeItem('theme'));
     await page.goto('/');
+    await page.evaluate(() => localStorage.removeItem('theme'));
+    await page.reload();
   });
 
   test('toggle adds "dark" class to <html> element', async ({ page }) => {

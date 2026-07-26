@@ -191,10 +191,11 @@ export function useSavedJobs() {
 }
 
 /** GET just the saved job IDs (for bookmark toggle icons). */
-export function useSavedJobIds() {
+export function useSavedJobIds(enabled = true) {
   return useQuery({
     queryKey: ['candidate', 'saved-job-ids'],
     queryFn: () => api.get<number[]>('/candidates/me/saved-job-ids').then((r) => r.data),
+    enabled,
   });
 }
 

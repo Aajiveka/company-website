@@ -98,7 +98,7 @@ export default function JobSearchPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { data: savedIds } = useSavedJobIds();
+  const { data: savedIds } = useSavedJobIds(isAuthenticated);
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
 

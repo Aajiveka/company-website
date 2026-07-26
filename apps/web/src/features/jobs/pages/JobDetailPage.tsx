@@ -41,7 +41,7 @@ export default function JobDetailPage() {
 
   const [applied, setApplied] = useState(false);
 
-  const { data: savedIds } = useSavedJobIds();
+  const { data: savedIds } = useSavedJobIds(isAuthenticated);
   const saveJob = useSaveJob();
   const unsaveJob = useUnsaveJob();
   const isSaved = savedIds?.includes(Number(id)) ?? false;

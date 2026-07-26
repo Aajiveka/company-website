@@ -34,19 +34,46 @@ const DASHBOARD_STATS = {
   interviews: 3,
 };
 
-function setupCandidateMocks(page: import('@playwright/test').Page) {
-  return Promise.all([
-    page.route('**/api/auth/session', (route) =>
+async function setupCandidateMocks(page: import('@playwright/test').Page) {
+  // Set refresh token so the auth bootstrap calls /auth/me
+  await page.addInitScript(() => {
+    localStorage.setItem('aaj.refresh', 'fake-refresh-token');
+  });
+
+  await Promise.all([
+    // Auth: mock the refresh + me endpoints the app actually calls
+    page.route('**/api/auth/refresh', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          user: { userId: 10, fullName: 'Priya Patel', roleId: 1 },
-          token: 'fake-candidate-token',
-        }),
+        body: JSON.stringify({ accessToken: 'fake-access', refreshToken: 'fake-refresh-token' }),
       }),
     ),
-    page.route('**/api/candidate/profile', (route) => {
+    page.route('**/api/auth/me', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ userId: 10, fullName: 'Priya Patel', roleId: 1, isOnboarded: true }),
+      }),
+    ),
+    // Profile data — the app calls /candidates/me
+    page.route('**/api/candidates/me', (route) => {
+      const url = route.request().url();
+      // Sub-paths like /candidates/me/applied-jobs
+      if (url.includes('/applied-jobs')) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
+      }
+      if (url.includes('/saved-job-ids')) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
+      }
       if (route.request().method() === 'GET') {
         return route.fulfill({
           status: 200,
@@ -61,26 +88,11 @@ function setupCandidateMocks(page: import('@playwright/test').Page) {
         body: JSON.stringify({ ...CANDIDATE_PROFILE, fullName: 'Priya Patel Updated' }),
       });
     }),
-    page.route('**/api/candidate/dashboard-stats', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(DASHBOARD_STATS),
-      }),
-    ),
-    // Mock other endpoints the profile page may call
-    page.route('**/api/candidate/profile-completion', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ percentage: 75, missing: ['photo', 'resume'] }),
-      }),
-    ),
     page.route('**/api/jobs/recommended*', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([]),
+        body: JSON.stringify({ rows: [], total: 0 }),
       }),
     ),
   ]);
@@ -94,8 +106,8 @@ test.describe('Candidate Profile Page', () => {
   test('renders candidate name and designation', async ({ page }) => {
     await page.goto('/candidate/profile');
 
-    await expect(page.getByText('Priya Patel')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('Senior Developer')).toBeVisible();
+    await expect(page.getByText('Priya Patel').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Senior Developer').first()).toBeVisible();
   });
 
   test('displays contact information', async ({ page }) => {
@@ -128,7 +140,7 @@ test.describe('Candidate Profile Page', () => {
 
     await expect(page.getByText('B.Tech Computer Science')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('IIT Bombay')).toBeVisible();
-    await expect(page.getByText('2020')).toBeVisible();
+    await expect(page.getByText('2020').first()).toBeVisible();
   });
 
   test('shows experience duration', async ({ page }) => {

@@ -33,8 +33,7 @@ test.describe('Responsive Design', () => {
       'button[aria-label*="menu" i], button[aria-label*="Menu" i], [data-testid="mobile-menu"], button:has(svg.lucide-menu)',
     );
     // Either a hamburger is visible or the nav is collapsed — page should still load without overflow
-    const bodyVisible = await page.locator('body').isVisible();
-    expect(bodyVisible).toBe(true);
+    await expect(page.locator('body')).toBeVisible({ timeout: 10_000 });
   });
 
   test('hero section does not overflow on mobile', async ({ page }) => {
