@@ -2,9 +2,13 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getErrorMessage } from '@/lib/axios';
+import { isAxiosError } from 'axios';
 import { Plus, Trash2 } from 'lucide-react';
-import { Breadcrumbs, Button, Card, CardSkeleton, Input, Select, useToast } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { Breadcrumbs, Button, Card, CvManagerSkeleton, Input, Select, useToast } from '@/components/ui';
+import ResumeUpload from '../components/ResumeUpload';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import {
   useCvEditProfile,
   useCvMasters,
@@ -32,34 +36,34 @@ const opts = (list?: CvMasterOption[]) => (list ?? []).map((o) => ({ label: o.la
 function useErrorNotify() {
   const { notify } = useToast();
   return (fallback: string) => (e: unknown) =>
-    notify(getErrorMessage(e, fallback), 'error');
+    notify(isAxiosError(e) ? e.response?.data?.message ?? fallback : fallback, 'error');
 }
 
 /* ------------------------------- Personal -------------------------------- */
 
-const personalSchema = z.object({
-  fullName: z.string().trim().min(2, 'Enter your name'),
-  email: z.string().trim().email('Enter a valid email').optional().or(z.literal('')),
-  mobile: z.string().regex(/^\d{10}$/, 'Enter a 10-digit mobile number'),
+const personalSchema = (t: TFunction) => z.object({
+  fullName: z.string().min(2, t('validation.enterName')),
+  email: z.string().email(t('validation.validEmail')).optional().or(z.literal('')),
+  mobile: z.string().min(10, t('validation.validMobile')),
   dob: z.string().optional(),
   gender: z.enum(['M', 'F']),
-  address: z.string().trim().optional(),
+  address: z.string().optional(),
   cityId: z.coerce.number().optional(),
 });
-type PersonalValues = z.infer<typeof personalSchema>;
+type PersonalValues = z.infer<ReturnType<typeof personalSchema>>;
 
 function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMasters }) {
+  const { t } = useTranslation('dashboard');
+  const { t: tCommon } = useTranslation('common');
   const update = useUpdatePersonal();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  // defaultValues seeds the form once, on mount, from whatever the parent already loaded — it
-  // must NOT be kept in sync with `data` reactively, or saving any OTHER section on this page
-  // (which refetches the same shared cv-edit query) would reset whatever the user is mid-typing
-  // here back to the last-saved server value.
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<PersonalValues>({
-    resolver: zodResolver(personalSchema),
+  const { register, handleSubmit, setValue, formState: { errors, isDirty } } = useForm<PersonalValues>({
+    resolver: zodResolver(personalSchema(tCommon)),
     defaultValues: { ...data, email: data.email ?? '', cityId: data.cityId ?? undefined },
   });
+
+  useUnsavedChanges(isDirty);
 
   // Cascading state → city
   const initState = data.cityId ? masters?.cities.find((c) => c.id === data.cityId)?.stateId ?? '' : '';
@@ -80,27 +84,27 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
         address: values.address || '',
         cityId: values.cityId ?? null,
       },
-      { onSuccess: () => notify('Personal details saved.', 'success'), onError: onError('Could not save personal details') },
+      { onSuccess: () => notify(t('cv.personalSaved'), 'success'), onError: onError(t('cv.personalError')) },
     );
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-navy">Personal Details</h2>
+      <h2 className="mb-4 text-lg font-semibold text-navy">{t('cv.personalDetails')}</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Full Name" required autoComplete="name" error={errors.fullName?.message} {...register('fullName')} />
-          <Input label="Email" type="email" autoComplete="email" error={errors.email?.message} {...register('email')} />
-          <Input label="Mobile" required inputMode="numeric" autoComplete="tel" error={errors.mobile?.message} {...register('mobile')} />
-          <Input label="Date of Birth" type="date" error={errors.dob?.message} {...register('dob')} />
+          <Input label={t('cv.fullName')} error={errors.fullName?.message} {...register('fullName')} />
+          <Input label={t('cv.email')} type="email" error={errors.email?.message} {...register('email')} />
+          <Input label={t('cv.mobile')} error={errors.mobile?.message} {...register('mobile')} />
+          <Input label={t('cv.dob')} type="date" error={errors.dob?.message} {...register('dob')} />
           <Select
-            label="Gender"
-            options={[{ label: 'Male', value: 'M' }, { label: 'Female', value: 'F' }]}
+            label={t('cv.gender')}
+            options={[{ label: t('cv.male'), value: 'M' }, { label: t('cv.female'), value: 'F' }]}
             error={errors.gender?.message}
             {...register('gender')}
           />
           <Select
-            label="State"
-            placeholder="Select…"
+            label={t('cv.state')}
+            placeholder={t('common:labels.select')}
             options={opts(masters?.states)}
             value={selectedStateId}
             onChange={(e) => {
@@ -109,16 +113,16 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
             }}
           />
           <Select
-            label="District / City"
-            placeholder={selectedStateId ? 'Select…' : 'Select state first'}
+            label={t('cv.districtCity')}
+            placeholder={selectedStateId ? t('common:labels.select') : t('common:labels.selectStateFirst')}
             options={opts(filteredCities)}
             disabled={!selectedStateId}
             {...register('cityId')}
           />
         </div>
-        <Input label="Address" error={errors.address?.message} {...register('address')} />
+        <Input label={t('cv.address')} error={errors.address?.message} {...register('address')} />
         <div className="flex justify-end">
-          <Button type="submit" isLoading={update.isPending}>Save</Button>
+          <Button type="submit" isLoading={update.isPending}>{t('common:actions.save')}</Button>
         </div>
       </form>
     </Card>
@@ -146,12 +150,11 @@ function ProfessionalSection({
   data: CvProfessional;
   masters?: CvMasters;
 }) {
+  const { t } = useTranslation('dashboard');
   const update = useUpdateProfessional();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  // Seeded once from `data` at mount — see the comment in PersonalSection for why this must
-  // not reactively resync when a sibling section's save refetches the shared cv-edit query.
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfessionalValues>({
+  const { register, handleSubmit, setValue, formState: { errors, isDirty } } = useForm<ProfessionalValues>({
     resolver: zodResolver(professionalSchema),
     defaultValues: {
       subFunctionId: data.subFunctionId ?? undefined,
@@ -164,6 +167,8 @@ function ProfessionalSection({
       flgReadyToRelocate: data.flgReadyToRelocate,
     },
   });
+  useUnsavedChanges(isDirty);
+
   const [preferredCityIds, setPreferredCityIds] = useState<number[]>(data.preferredCityIds);
   const [tagsText, setTagsText] = useState(data.tagNames.join(', '));
 
@@ -197,24 +202,24 @@ function ProfessionalSection({
         noticePeriod: values.noticePeriod ?? null,
         flgReadyToRelocate: !!values.flgReadyToRelocate,
         preferredCityIds,
-        tagNames: tagsText.split(',').map((t) => t.trim()).filter(Boolean),
+        tagNames: tagsText.split(',').map((s) => s.trim()).filter(Boolean),
       },
-      { onSuccess: () => notify('Professional details saved.', 'success'), onError: onError('Could not save professional details') },
+      { onSuccess: () => notify(t('cv.professionalSaved'), 'success'), onError: onError(t('cv.professionalError')) },
     );
 
   return (
     <Card>
-      <h2 className="mb-4 text-lg font-semibold text-navy">Professional Details</h2>
+      <h2 className="mb-4 text-lg font-semibold text-navy">{t('cv.professionalDetails')}</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select label="Designation / Function" placeholder="Select…" options={opts(masters?.subFunctions)} {...register('subFunctionId')} />
-          <Select label="Industry" placeholder="Select…" options={opts(masters?.industries)} {...register('industryTypeId')} />
-          <Select label="Primary Skill" placeholder="Select…" options={opts(masters?.skills)} {...register('skillId')} />
-          <Input label="Total Experience (yrs)" type="number" error={errors.totalExp?.message} {...register('totalExp')} />
-          <Input label="Current CTC (₹)" type="number" error={errors.currentCtc?.message} {...register('currentCtc')} />
+          <Select label={t('cv.designation')} placeholder={t('common:labels.select')} options={opts(masters?.subFunctions)} {...register('subFunctionId')} />
+          <Select label={t('cv.industry')} placeholder={t('common:labels.select')} options={opts(masters?.industries)} {...register('industryTypeId')} />
+          <Select label={t('cv.primarySkill')} placeholder={t('common:labels.select')} options={opts(masters?.skills)} {...register('skillId')} />
+          <Input label={t('cv.totalExperience')} type="number" error={errors.totalExp?.message} {...register('totalExp')} />
+          <Input label={t('cv.currentCtc')} type="number" error={errors.currentCtc?.message} {...register('currentCtc')} />
           <Select
-            label="Current State"
-            placeholder="Select…"
+            label={t('cv.currentState')}
+            placeholder={t('common:labels.select')}
             options={opts(masters?.states)}
             value={currentStateId}
             onChange={(e) => {
@@ -223,29 +228,29 @@ function ProfessionalSection({
             }}
           />
           <Select
-            label="Current District / City"
-            placeholder={currentStateId ? 'Select…' : 'Select state first'}
+            label={t('cv.currentDistrictCity')}
+            placeholder={currentStateId ? t('common:labels.select') : t('common:labels.selectStateFirst')}
             options={opts(filteredCurrentCities)}
             disabled={!currentStateId}
             {...register('currentCityId')}
           />
-          <Input label="Notice Period (days)" type="number" error={errors.noticePeriod?.message} {...register('noticePeriod')} />
+          <Input label={t('cv.noticePeriod')} type="number" error={errors.noticePeriod?.message} {...register('noticePeriod')} />
         </div>
         <label className="flex items-center gap-2 text-sm text-navy">
           <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30" {...register('flgReadyToRelocate')} />
-          Ready to relocate
+          {t('cv.readyToRelocate')}
         </label>
         <div>
-          <p className="mb-1.5 text-sm font-medium text-navy">Preferred Locations</p>
+          <p className="mb-1.5 text-sm font-medium text-navy">{t('cv.preferredLocations')}</p>
           <Select
-            placeholder="All states"
+            placeholder={t('cv.allStates')}
             options={opts(masters?.states)}
             value={prefStateFilter}
             onChange={(e) => setPrefStateFilter(Number(e.target.value) || '')}
           />
           <div className="mt-2 flex flex-wrap gap-3">
             {filteredPrefCities.map((c) => (
-              <label key={c.id} className="flex items-center gap-1.5 text-sm text-gray-600">
+              <label key={c.id} className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
                 <input
                   type="checkbox"
                   checked={preferredCityIds.includes(c.id)}
@@ -257,9 +262,9 @@ function ProfessionalSection({
             ))}
           </div>
         </div>
-        <Input label="Skills (comma separated)" value={tagsText} onChange={(e) => setTagsText(e.target.value)} />
+        <Input label={t('cv.skillsCsv')} value={tagsText} onChange={(e) => setTagsText(e.target.value)} />
         <div className="flex justify-end">
-          <Button type="submit" isLoading={update.isPending}>Save</Button>
+          <Button type="submit" isLoading={update.isPending}>{t('common:actions.save')}</Button>
         </div>
       </form>
     </Card>
@@ -269,10 +274,7 @@ function ProfessionalSection({
 /* ------------------------------- Education -------------------------------- */
 
 function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters?: CvMasters }) {
-  // Seeded once from `rows` at mount. No resync effect: every other section's save refetches
-  // the same shared cv-edit query, and resyncing here on every change would wipe out whatever
-  // the user is mid-editing in this section before they've clicked ITS Save. Instead, each row
-  // updates its own local entry directly from its own mutation's result below.
+  const { t } = useTranslation('dashboard');
   const [list, setList] = useState<CvEducationEntry[]>(rows);
   const upsert = useUpsertEducation();
   const del = useDeleteEducation();
@@ -289,9 +291,9 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
       {
         onSuccess: (result) => {
           update(i, { subscriberEducationId: result.subscriberEducationId });
-          notify('Education saved.', 'success');
+          notify(t('cv.educationSaved'), 'success');
         },
-        onError: onError('Could not save this entry'),
+        onError: onError(t('cv.saveError')),
       },
     );
   };
@@ -303,54 +305,54 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
     del.mutate(row.subscriberEducationId, {
       onSuccess: () => {
         setList((prev) => prev.filter((_, idx) => idx !== i));
-        notify('Education removed.', 'success');
+        notify(t('cv.educationRemoved'), 'success');
       },
-      onError: onError('Could not remove this entry'),
+      onError: onError(t('cv.removeError')),
     });
   };
 
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-navy">Education</h2>
+        <h2 className="text-lg font-semibold text-navy">{t('cv.educationSection')}</h2>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => setList((prev) => [...prev, { subscriberEducationId: 0, courseTypeId: null, degreeId: null }])}
         >
-          <Plus className="h-4 w-4" /> Add
+          <Plus className="h-4 w-4" /> {t('cv.add')}
         </Button>
       </div>
       <div className="space-y-3">
         {list.map((row, i) => (
           <div key={row.subscriberEducationId || `new-${i}`} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
             <Select
-              placeholder="Course type…"
+              placeholder={`${t('cv.courseType')}…`}
               options={opts(masters?.courseTypes)}
               value={row.courseTypeId ?? ''}
               onChange={(e) => update(i, { courseTypeId: Number(e.target.value) })}
             />
             <Select
-              placeholder="Degree…"
+              placeholder={`${t('cv.degree')}…`}
               options={opts(masters?.educationDegrees)}
               value={row.degreeId ?? ''}
               onChange={(e) => update(i, { degreeId: Number(e.target.value) })}
             />
             <Button type="button" size="sm" onClick={() => save(row, i)} isLoading={upsert.isPending}>
-              Save
+              {t('common:actions.save')}
             </Button>
             <button
               type="button"
               onClick={() => remove(row, i)}
-              className="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 text-red-700 hover:bg-red-100"
-              aria-label="Remove"
+              className="inline-flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 px-3 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/30"
+              aria-label={t('common:actions.delete')}
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm text-gray-500">No education entries yet.</p>}
+        {list.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">{t('cv.noEducation')}</p>}
       </div>
     </Card>
   );
@@ -359,7 +361,7 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
 /* ------------------------------- Employment -------------------------------- */
 
 function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; masters?: CvMasters }) {
-  // See EducationSection above — seeded once at mount, no resync effect.
+  const { t } = useTranslation('dashboard');
   const [list, setList] = useState<CvEmploymentEntry[]>(rows);
   const upsert = useUpsertEmployment();
   const del = useDeleteEmployment();
@@ -391,9 +393,9 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
       {
         onSuccess: (result) => {
           update(i, { subscriberEmployerId: result.subscriberEmployerId });
-          notify('Employment saved.', 'success');
+          notify(t('cv.employmentSaved'), 'success');
         },
-        onError: onError('Could not save this entry'),
+        onError: onError(t('cv.saveError')),
       },
     );
   };
@@ -405,38 +407,38 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
     del.mutate(row.subscriberEmployerId, {
       onSuccess: () => {
         setList((prev) => prev.filter((_, idx) => idx !== i));
-        notify('Employment removed.', 'success');
+        notify(t('cv.employmentRemoved'), 'success');
       },
-      onError: onError('Could not remove this entry'),
+      onError: onError(t('cv.removeError')),
     });
   };
 
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-navy">Employment History</h2>
+        <h2 className="text-lg font-semibold text-navy">{t('cv.employmentHistory')}</h2>
         <Button type="button" variant="outline" size="sm" onClick={() => setList((prev) => [...prev, blank])}>
-          <Plus className="h-4 w-4" /> Add
+          <Plus className="h-4 w-4" /> {t('cv.add')}
         </Button>
       </div>
       <div className="space-y-4">
         {list.map((row, i) => (
-          <div key={row.subscriberEmployerId || `new-${i}`} className="rounded-lg border border-gray-200 p-4">
+          <div key={row.subscriberEmployerId || `new-${i}`} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input placeholder="Employer" value={row.employer} onChange={(e) => update(i, { employer: e.target.value })} />
+              <Input placeholder={t('cv.employer')} value={row.employer} onChange={(e) => update(i, { employer: e.target.value })} />
               <Select
-                placeholder="Designation…"
+                placeholder={`${t('common:labels.designation')}…`}
                 options={opts(masters?.designations)}
                 value={row.designationId ?? ''}
                 onChange={(e) => update(i, { designationId: Number(e.target.value) })}
               />
               <Select
-                placeholder="Employment type…"
+                placeholder={`${t('cv.employmentType')}…`}
                 options={opts(masters?.employmentTypes)}
                 value={row.employeeTypeId ?? ''}
                 onChange={(e) => update(i, { employeeTypeId: Number(e.target.value) })}
               />
-              <Input placeholder="Salary" type="number" value={row.salary ?? ''} onChange={(e) => update(i, { salary: Number(e.target.value) })} />
+              <Input placeholder={t('cv.salary')} type="number" value={row.salary ?? ''} onChange={(e) => update(i, { salary: Number(e.target.value) })} />
               <Input type="date" value={row.joiningDate} onChange={(e) => update(i, { joiningDate: e.target.value })} />
               <Input
                 type="date"
@@ -445,25 +447,25 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
                 onChange={(e) => update(i, { releavingDate: e.target.value })}
               />
             </div>
-            <div className="mt-3 flex items-center justify-between">
-              <label className="flex items-center gap-1.5 text-sm text-gray-600">
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <label className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
                 <input
                   type="checkbox"
                   checked={row.flgCurrent}
                   onChange={(e) => update(i, { flgCurrent: e.target.checked })}
                   className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30"
                 />
-                Currently working here
+                {t('cv.currentlyWorking')}
               </label>
               <div className="flex gap-2">
                 <Button type="button" size="sm" onClick={() => save(row, i)} isLoading={upsert.isPending}>
-                  Save
+                  {t('common:actions.save')}
                 </Button>
                 <button
                   type="button"
                   onClick={() => remove(row, i)}
-                  className="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 text-red-700 hover:bg-red-100"
-                  aria-label="Remove"
+                  className="inline-flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 px-3 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/30"
+                  aria-label={t('common:actions.delete')}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -471,7 +473,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
             </div>
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm text-gray-500">No employment entries yet.</p>}
+        {list.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">{t('cv.noEmployment')}</p>}
       </div>
     </Card>
   );
@@ -480,7 +482,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
 /* ------------------------------- Certificates -------------------------------- */
 
 function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
-  // See EducationSection above — seeded once at mount, no resync effect.
+  const { t } = useTranslation('dashboard');
   const [list, setList] = useState<CvCertificateEntry[]>(rows);
   const upsert = useUpsertCertificate();
   const del = useDeleteCertificate();
@@ -494,9 +496,9 @@ function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
       {
         onSuccess: (result) => {
           setList((prev) => prev.map((r, idx) => (idx === i ? { ...r, subscriberCertificateId: result.subscriberCertificateId } : r)));
-          notify('Certificate saved.', 'success');
+          notify(t('cv.certificateSaved'), 'success');
         },
-        onError: onError('Could not save this entry'),
+        onError: onError(t('cv.saveError')),
       },
     );
   };
@@ -508,47 +510,47 @@ function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
     del.mutate(row.subscriberCertificateId, {
       onSuccess: () => {
         setList((prev) => prev.filter((_, idx) => idx !== i));
-        notify('Certificate removed.', 'success');
+        notify(t('cv.certificateRemoved'), 'success');
       },
-      onError: onError('Could not remove this entry'),
+      onError: onError(t('cv.removeError')),
     });
   };
 
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-navy">Certificates</h2>
+        <h2 className="text-lg font-semibold text-navy">{t('cv.certificates')}</h2>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => setList((prev) => [...prev, { subscriberCertificateId: 0, certificateName: '' }])}
         >
-          <Plus className="h-4 w-4" /> Add
+          <Plus className="h-4 w-4" /> {t('cv.add')}
         </Button>
       </div>
       <div className="space-y-3">
         {list.map((row, i) => (
           <div key={row.subscriberCertificateId || `new-${i}`} className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
             <Input
-              placeholder="Certificate name"
+              placeholder={t('cv.certificateName')}
               value={row.certificateName}
               onChange={(e) => setList((prev) => prev.map((r, idx) => (idx === i ? { ...r, certificateName: e.target.value } : r)))}
             />
             <Button type="button" size="sm" onClick={() => save(row, i)} isLoading={upsert.isPending}>
-              Save
+              {t('common:actions.save')}
             </Button>
             <button
               type="button"
               onClick={() => remove(row, i)}
-              className="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 text-red-700 hover:bg-red-100"
-              aria-label="Remove"
+              className="inline-flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 px-3 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/30"
+              aria-label={t('common:actions.delete')}
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm text-gray-500">No certificates yet.</p>}
+        {list.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">{t('cv.noCertificates')}</p>}
       </div>
     </Card>
   );
@@ -558,18 +560,20 @@ function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
 
 /** Candidate — editable CV manager (candidate-dashboard-cv-manager.aspx). */
 export default function CvManagerPage() {
+  const { t } = useTranslation('dashboard');
   const { data, isLoading } = useCvEditProfile();
   const { data: masters } = useCvMasters();
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Breadcrumbs items={[{ label: 'Dashboard', to: '/candidate/profile' }, { label: 'CV Manager' }]} />
-      <h1 className="mb-4 font-heading text-2xl font-bold text-navy">CV Manager</h1>
+      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/candidate/profile' }, { label: t('cv.heading') }]} />
+      <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{t('cv.heading')}</h1>
 
       {isLoading || !data ? (
-        <CardSkeleton />
+        <CvManagerSkeleton />
       ) : (
         <div className="space-y-6">
+          <ResumeUpload />
           <PersonalSection
             data={
               data.personal ?? {

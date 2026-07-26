@@ -10,15 +10,13 @@ export interface SelectOption {
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
-  /** Show a red asterisk after the label. */
-  required?: boolean;
   options: SelectOption[];
   placeholder?: string;
 }
 
 /** Native select styled to match the reference dropdowns. */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, label, error, required, options, placeholder, id, ...props }, ref) => {
+  ({ className, label, error, options, placeholder, id, ...props }, ref) => {
     const autoId = useId();
     const selectId = id ?? autoId;
     const errorId = `${selectId}-error`;
@@ -27,7 +25,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label htmlFor={selectId} className="mb-1.5 block text-sm font-medium text-navy dark:text-gray-200">
             {label}
-            {required && <span className="ml-0.5 text-danger">*</span>}
+            {props.required && <span className="ml-0.5 text-danger" aria-hidden>*</span>}
           </label>
         )}
         <div className="relative">
@@ -37,10 +35,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             className={cn(
-              'h-11 w-full appearance-none rounded-lg border bg-white px-3.5 pr-9 text-sm outline-none transition',
+              'h-11 w-full appearance-none rounded-lg border bg-white px-3.5 pr-9 text-sm outline-none transition dark:bg-gray-800 dark:text-gray-100',
               'focus:ring-2 focus:ring-primary/30',
-              'dark:bg-gray-900 dark:text-gray-100',
-              error ? 'border-danger' : 'border-gray-300 focus:border-primary dark:border-gray-700',
+              error ? 'border-danger' : 'border-gray-300 focus:border-primary dark:border-gray-600',
               className,
             )}
             {...props}
@@ -53,7 +50,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ))}
           </select>
           <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
             aria-hidden
           />
         </div>

@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, type QueryClient as QC } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,3 +33,37 @@ export const queryKeys = {
     subscription: ['payments', 'subscription'] as const,
   },
 } as const;
+
+// ---------------------------------------------------------------------------
+// Invalidation helpers
+// ---------------------------------------------------------------------------
+
+/** Invalidate all job-related queries (search, detail, filters). */
+export function invalidateJobs(qc: QC) {
+  return qc.invalidateQueries({ queryKey: ['jobs'] });
+}
+
+/** Invalidate all application-related queries. */
+export function invalidateApplications(qc: QC) {
+  return qc.invalidateQueries({ queryKey: ['candidate'] });
+}
+
+/** Invalidate all recruitment queries (candidates list, QC1 dashboard). */
+export function invalidateRecruitment(qc: QC) {
+  return qc.invalidateQueries({ queryKey: ['recruitment'] });
+}
+
+/** Invalidate all client/employer queries (company profile, job listings). */
+export function invalidateClient(qc: QC) {
+  return qc.invalidateQueries({ queryKey: ['client'] });
+}
+
+/** Invalidate all payment queries (plans, subscription, orders). */
+export function invalidatePayments(qc: QC) {
+  return qc.invalidateQueries({ queryKey: ['payments'] });
+}
+
+/** Invalidate the authenticated user query. */
+export function invalidateAuth(qc: QC) {
+  return qc.invalidateQueries({ queryKey: queryKeys.auth.me });
+}

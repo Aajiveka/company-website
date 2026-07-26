@@ -1,34 +1,58 @@
-import { Moon, Sun, Monitor } from 'lucide-react';
-import { useThemeStore } from '@/lib/theme';
+import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 
-const options = [
-  { value: 'light' as const, Icon: Sun, label: 'Light' },
-  { value: 'dark' as const, Icon: Moon, label: 'Dark' },
-  { value: 'system' as const, Icon: Monitor, label: 'System' },
-];
+function getInitialTheme(): 'light' | 'dark' {
+  const stored = localStorage.getItem('theme');
+  if (stored === 'dark' || stored === 'light') return stored;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
-/** Compact 3-way theme toggle: Light / Dark / System. */
-export function ThemeToggle({ className }: { className?: string }) {
-  const { theme, setTheme } = useThemeStore();
+/** Sun/Moon toggle that persists theme to localStorage and sets .dark on <html>. */
+export function ThemeToggle() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   return (
-    <div className={`inline-flex items-center rounded-lg border border-gray-200 p-0.5 dark:border-gray-700 ${className ?? ''}`} role="radiogroup" aria-label="Theme">
-      {options.map(({ value, Icon, label }) => (
-        <button
-          key={value}
-          role="radio"
-          aria-checked={theme === value}
-          aria-label={label}
-          onClick={() => setTheme(value)}
-          className={`rounded-md p-1.5 transition-colors ${
-            theme === value
-              ? 'bg-primary text-white'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-          }`}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      ))}
-    </div>
+    <button
+      onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60"
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+    </button>
+  );
+}
+
+/** Dashboard variant — different colors for the white header bar. */
+export function ThemeToggleDashboard() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  return (
+    <button
+      onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-gray-300 dark:hover:bg-gray-700"
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+    </button>
   );
 }

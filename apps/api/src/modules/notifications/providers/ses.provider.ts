@@ -17,7 +17,10 @@ export class SesEmailProvider implements EmailProvider {
         Content: {
           Simple: {
             Subject: { Data: message.subject, Charset: 'UTF-8' },
-            Body: { Text: { Data: message.text, Charset: 'UTF-8' } },
+            Body: {
+              Text: { Data: message.text, Charset: 'UTF-8' },
+              ...(message.html ? { Html: { Data: message.html, Charset: 'UTF-8' } } : {}),
+            },
           },
         },
       }),

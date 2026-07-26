@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Loader } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth.store';
 import { queryClient, queryKeys } from '@/lib/queryClient';
-import { LAST_ORDER_REF_KEY, useOrder } from '../payments.api';
+import { LAST_ORDER_REF_KEY, useOrder, useVerifyPayment } from '../payments.api';
 
 const POLL_TIMEOUT_MS = 60_000;
 
@@ -12,11 +13,16 @@ const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 
 /**
- * Landing page after the gateway redirects back. The redirect is only a hint —
- * the server-to-server webhook is what actually settles the order — so we poll
- * the order status until it resolves rather than trusting the redirect.
+ * Landing page after payment completes. For Razorpay, the checkout modal
+ * redirects here with `?ref=<orderRef>`. The page polls the order status
+ * until it resolves.
+ *
+ * If Razorpay query params are present (`razorpay_order_id`, `razorpay_payment_id`,
+ * `razorpay_signature`), we also trigger server-side verification as a fallback
+ * in case the checkout handler's verify call didn't complete.
  */
 export default function PaymentReturnPage() {
+  const { t } = useTranslation('common');
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [params] = useSearchParams();
   const orderRef = useMemo(
@@ -24,6 +30,31 @@ export default function PaymentReturnPage() {
     [params],
   );
   const [timedOut, setTimedOut] = useState(false);
+  const [verifyAttempted, setVerifyAttempted] = useState(false);
+
+  const verifyPayment = useVerifyPayment();
+
+  // If Razorpay params are on the URL, attempt verification as a fallback.
+  const razorpayOrderId = params.get('razorpay_order_id');
+  const razorpayPaymentId = params.get('razorpay_payment_id');
+  const razorpaySignature = params.get('razorpay_signature');
+
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      razorpayOrderId &&
+      razorpayPaymentId &&
+      razorpaySignature &&
+      !verifyAttempted
+    ) {
+      setVerifyAttempted(true);
+      verifyPayment.mutate({
+        razorpayOrderId,
+        razorpayPaymentId,
+        razorpaySignature,
+      });
+    }
+  }, [isAuthenticated, razorpayOrderId, razorpayPaymentId, razorpaySignature, verifyAttempted, verifyPayment]);
 
   const enabled = isAuthenticated && !!orderRef && !timedOut;
   const { data: order } = useOrder(orderRef, enabled);
@@ -33,8 +64,8 @@ export default function PaymentReturnPage() {
   // Stop polling after a while so a stuck order doesn't spin forever.
   useEffect(() => {
     if (!enabled || settled) return;
-    const t = setTimeout(() => setTimedOut(true), POLL_TIMEOUT_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setTimedOut(true), POLL_TIMEOUT_MS);
+    return () => clearTimeout(timer);
   }, [enabled, settled]);
 
   // Once the payment succeeds, drop the stashed ref and refresh the subscription.
@@ -46,7 +77,7 @@ export default function PaymentReturnPage() {
   }, [status]);
 
   return (
-    <div className="container flex justify-center py-16">
+    <div className="container flex justify-center py-10 sm:py-16">
       <Card className="w-full max-w-md text-center">{renderBody()}</Card>
     </div>
   );
@@ -60,10 +91,10 @@ export default function PaymentReturnPage() {
       return (
         <>
           <XCircle className="mx-auto h-12 w-12 text-red-500" />
-          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">No payment reference</h1>
-          <p className="mt-2 text-sm text-gray-600">We couldn't find a payment to show. Please start again.</p>
+          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">{t('payments.noPaymentRef')}</h1>
+          <p className="mt-2 text-sm text-gray-600">{t('payments.noPaymentRefDesc')}</p>
           <Link to="/pricing" className="mt-6 inline-block">
-            <Button>Back to plans</Button>
+            <Button>{t('actions.backToPlans')}</Button>
           </Link>
         </>
       );
@@ -73,12 +104,12 @@ export default function PaymentReturnPage() {
       return (
         <>
           <Clock className="mx-auto h-12 w-12 text-primary" />
-          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">Log in to view your payment</h1>
+          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">{t('payments.loginToView')}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in with the same account to see the status of order {orderRef}.
+            {t('payments.loginToViewDesc', { orderRef })}
           </p>
           <Link to="/login" className="mt-6 inline-block">
-            <Button>Log in</Button>
+            <Button>{t('actions.logIn')}</Button>
           </Link>
         </>
       );
@@ -88,13 +119,13 @@ export default function PaymentReturnPage() {
       return (
         <>
           <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
-          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">Payment successful</h1>
+          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">{t('payments.paymentSuccessful')}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Your {order?.plan} membership is active
-            {order?.subscriptionEndsAt ? ` until ${formatDate(order.subscriptionEndsAt)}` : ''}.
+            {t('payments.membershipActive', { plan: order?.plan })}
+            {order?.subscriptionEndsAt ? t('payments.membershipActiveUntil', { date: formatDate(order.subscriptionEndsAt) }) : ''}.
           </p>
           <Link to="/candidate/subscription" className="mt-6 inline-block">
-            <Button>View membership</Button>
+            <Button>{t('actions.viewMembership')}</Button>
           </Link>
         </>
       );
@@ -104,12 +135,12 @@ export default function PaymentReturnPage() {
       return (
         <>
           <XCircle className="mx-auto h-12 w-12 text-red-500" />
-          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">Payment failed</h1>
+          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">{t('payments.paymentFailed')}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            {order?.errorDescription || 'Your payment could not be completed.'}
+            {order?.errorDescription || t('payments.paymentFailedDefault')}
           </p>
           <Link to="/pricing" className="mt-6 inline-block">
-            <Button>Try again</Button>
+            <Button>{t('actions.tryAgain')}</Button>
           </Link>
         </>
       );
@@ -119,12 +150,12 @@ export default function PaymentReturnPage() {
       return (
         <>
           <Clock className="mx-auto h-12 w-12 text-amber-500" />
-          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">Still processing</h1>
+          <h1 className="mt-4 font-heading text-xl font-semibold text-navy">{t('payments.stillProcessing')}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            This is taking longer than usual. Your membership will appear once the payment settles.
+            {t('payments.stillProcessingDesc')}
           </p>
           <Link to="/candidate/subscription" className="mt-6 inline-block">
-            <Button variant="outline">Check membership</Button>
+            <Button variant="outline">{t('actions.checkMembership')}</Button>
           </Link>
         </>
       );
@@ -133,8 +164,8 @@ export default function PaymentReturnPage() {
     return (
       <>
         <Loader />
-        <h1 className="mt-4 font-heading text-xl font-semibold text-navy">Payment processing…</h1>
-        <p className="mt-2 text-sm text-gray-600">Please wait while we confirm your payment.</p>
+        <h1 className="mt-4 font-heading text-xl font-semibold text-navy">{t('payments.paymentProcessing')}</h1>
+        <p className="mt-2 text-sm text-gray-600">{t('payments.paymentProcessingDesc')}</p>
       </>
     );
   }

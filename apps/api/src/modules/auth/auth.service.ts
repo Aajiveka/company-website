@@ -6,6 +6,7 @@ import { env } from '@/config/env';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { NotificationsService } from '@/modules/notifications/notifications.service';
+import { EmailService } from '@/common/email/email.service';
 import { Role, type RoleId } from '@/shared/roles';
 import { OtpService } from './otp.service';
 
@@ -58,6 +59,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly otp: OtpService,
     private readonly notifications: NotificationsService,
+    private readonly emailService: EmailService,
     private readonly audit: AuditService,
   ) {}
 
@@ -363,6 +365,17 @@ export class AuthService {
       entity: 'SubscriberRegistration',
       entityId: Number(subscriber.subscriberID),
     });
+
+    // Send welcome email (fire-and-forget — registration must not fail if the email queue is down).
+    if (authUser.email) {
+      this.emailService
+        .sendWelcome(authUser.email, {
+          fullName: authUser.fullName,
+          profileUrl: `${env.APP_URL}/profile`,
+        })
+        .catch(() => {}); // swallowed — delivery is retried by the queue worker
+    }
+
     const t = await this.issueTokens(authUser);
     return { user: authUser, accessToken: t.accessToken, refreshToken: t.refreshToken };
   }
@@ -401,10 +414,10 @@ export class AuthService {
       const email = person?.emailID;
 
       if (email) {
-        await this.notifications.sendEmail({
-          to: email,
-          subject: 'Reset your Aajiveka password',
-          text: `Open this link to set a new password. It expires in one hour.\n\n${env.APP_URL}/reset-password?token=${token}`,
+        const resetUrl = `${env.APP_URL}/reset-password?token=${token}`;
+        await this.emailService.sendPasswordReset(email, {
+          resetUrl,
+          expiresIn: '1 hour',
         });
       }
       await this.audit.record({ userId: Number(user.userID), action: 'password.reset_requested' });

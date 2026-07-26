@@ -10,6 +10,7 @@
       content="Aajiveka — India's next-gen job portal connecting talented professionals with top employers. Search jobs, build resumes, and advance your career."
     />
     <meta name="theme-color" content="#005985" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="canonical" href="https://aajiveka.com/" />
 
     <!-- Open Graph defaults (overridden per-page by React 19 meta hoisting) -->
@@ -18,20 +19,41 @@
     <meta property="og:image" content="https://aajiveka.com/image/og-default.png" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Preload hero banner (LCP image) -->
-    <link rel="preload" as="image" href="/image/banner.jpg" />
-
-    <!-- Fonts: Inter (body) + Jost (headings) — Latin subset only -->
+    <!-- Fonts: Inter (body) + Jost (headings), matching the reference themes -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Jost:wght@400;500;600;700&display=swap&subset=latin"
       rel="stylesheet"
     />
+    <!--
+      Content-Security-Policy should be set via HTTP response headers on the
+      production server / reverse proxy rather than a <meta> tag. Recommended policy:
+
+        default-src 'self';
+        script-src  'self';
+        style-src   'self' 'unsafe-inline' fonts.googleapis.com;
+        font-src    'self' fonts.gstatic.com;
+        img-src     'self' data: blob: https:;
+        connect-src 'self' https:;
+    -->
     <title>Aajiveka | Your Ultimate Career Partner</title>
   </head>
   <body>
+    <script>
+      // Apply dark class before first paint to prevent flash
+      (function(){var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark')})();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>

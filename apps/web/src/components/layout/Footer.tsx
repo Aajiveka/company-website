@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Facebook, Instagram, Linkedin, Twitter, Youtube } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 const socials = [
   { href: 'https://www.facebook.com/profile.php?id=100092726993362', Icon: Facebook, label: 'Facebook' },
@@ -10,32 +10,34 @@ const socials = [
   { href: 'https://www.instagram.com/aajiveka/', Icon: Instagram, label: 'Instagram' },
 ];
 
-const columnA = [
-  { label: 'About Us', to: '/about' },
-  { label: 'Testimonial', to: '/testimonial' },
-  { label: 'Pricing', to: '/pricing' },
-  { label: 'Contact Us', to: '/contact' },
-];
-const columnB = [
-  { label: 'Blog', to: '/blogs' },
-  { label: 'Career with us', to: '/career' },
-  { label: 'Services', to: '/resume' },
-];
-const columnC = [
-  { label: 'Privacy Policy', to: '/privacy' },
-  { label: 'Terms and Conditions', to: '/terms' },
-  { label: 'Subscription Benefits', to: '/subscription' },
-];
-
 /** Public footer — mirrors the FrontMaster.Master footer (bg #035A86). */
 export function Footer() {
+  const { t } = useTranslation();
+
+  const columnA = [
+    { label: t('footer.aboutUs'), to: '/about' },
+    { label: t('footer.testimonial'), to: '/testimonial' },
+    { label: t('footer.pricing'), to: '/pricing' },
+    { label: t('footer.contactUs'), to: '/contact' },
+  ];
+  const columnB = [
+    { label: t('footer.blog'), to: '/blogs' },
+    { label: t('footer.careerWithUs'), to: '/career' },
+    { label: t('footer.services'), to: '/resume' },
+  ];
+  const columnC = [
+    { label: t('footer.privacyPolicy'), to: '/privacy' },
+    { label: t('footer.termsAndConditions'), to: '/terms' },
+    { label: t('footer.subscriptionBenefits'), to: '/subscription' },
+  ];
+
   return (
-    <footer className="bg-primary-light py-10 text-white md:py-14">
+    <footer aria-label="Site footer" className="bg-primary-light py-10 text-white md:py-14">
       <div className="container">
         <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <img src="/image/logo.svg" alt="Aajiveka" className="w-24 sm:w-32" />
-            <h6 className="mt-4 font-normal">Follow us on :</h6>
+            <img src="/image/logo.svg" alt="Aajiveka" className="w-24 sm:w-32" width={128} height={48} loading="lazy" decoding="async" />
+            <h6 className="mt-4 font-normal">{t('footer.followUs')}</h6>
             <ul className="mt-2 flex gap-3">
               {socials.map(({ href, Icon, label }) => (
                 <li key={label}>
@@ -44,7 +46,7 @@ export function Footer() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60"
                   >
                     <Icon className="h-4 w-4" />
                   </a>
@@ -53,15 +55,18 @@ export function Footer() {
             </ul>
           </div>
 
-          <nav aria-label="Footer navigation" className="contents">
+          <nav aria-label="Footer links">
             <FooterColumn links={columnA} />
+          </nav>
+          <nav aria-label="More links">
             <FooterColumn links={columnB} />
+          </nav>
+          <nav aria-label="Legal">
             <FooterColumn links={columnC} />
           </nav>
         </div>
-        <div className="mt-10 flex flex-col items-center gap-3 border-t border-white/15 pt-6 text-sm text-white/80 sm:flex-row sm:justify-between">
-          <span>© {new Date().getFullYear()} Aajiveka. All rights reserved.</span>
-          <ThemeToggle />
+        <div className="mt-10 border-t border-white/15 pt-6 text-center text-sm text-white/80">
+          {t('footer.copyright', { year: new Date().getFullYear() })}
         </div>
       </div>
     </footer>
@@ -72,8 +77,8 @@ function FooterColumn({ links }: { links: { label: string; to: string }[] }) {
   return (
     <ul className="space-y-2">
       {links.map((l) => (
-        <li key={l.label}>
-          <Link to={l.to} className="text-white/90 transition hover:text-white">
+        <li key={l.to}>
+          <Link to={l.to} className="rounded text-white/90 transition hover:text-white focus-visible:ring-2 focus-visible:ring-white/60">
             {l.label}
           </Link>
         </li>

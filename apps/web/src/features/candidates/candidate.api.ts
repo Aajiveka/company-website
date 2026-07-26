@@ -10,6 +10,7 @@ import type {
   CvPersonal,
   CvProfessional,
   JobAlert,
+  SavedJob,
 } from './candidate.types';
 
 const CV_EDIT_KEY = ['candidate', 'cv-edit'];
@@ -28,10 +29,14 @@ export function useCandidateProfile() {
 }
 
 /** GET jobs the candidate has applied to (spSubscriberInterviews / mapping). */
-export function useAppliedJobs() {
+export function useAppliedJobs(enabled = true) {
   return useQuery({
     queryKey: ['candidate', 'applied-jobs'],
     queryFn: () => api.get<AppliedJob[]>('/candidates/me/applied-jobs').then((r) => r.data),
+    enabled,
+    // Poll every 60s for status updates (powers notification bell)
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -40,7 +45,7 @@ export function useCvMasters() {
   return useQuery({
     queryKey: ['candidate', 'cv-masters'],
     queryFn: () => api.get<CvMasters>('/candidates/me/cv-masters').then((r) => r.data),
-    staleTime: Infinity,
+    staleTime: 10 * 60_000, // 10 minutes
   });
 }
 
@@ -177,10 +182,190 @@ export function useCreateJobAlert() {
   });
 }
 
+/** GET saved/bookmarked jobs. */
+export function useSavedJobs() {
+  return useQuery({
+    queryKey: ['candidate', 'saved-jobs'],
+    queryFn: () => api.get<SavedJob[]>('/candidates/me/saved-jobs').then((r) => r.data),
+  });
+}
+
+/** GET just the saved job IDs (for bookmark toggle icons). */
+export function useSavedJobIds() {
+  return useQuery({
+    queryKey: ['candidate', 'saved-job-ids'],
+    queryFn: () => api.get<number[]>('/candidates/me/saved-job-ids').then((r) => r.data),
+  });
+}
+
+/** Save / bookmark a job. */
+export function useSaveJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: number) => api.post(`/candidates/me/saved-jobs/${jobId}`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['candidate', 'saved-jobs'] });
+      qc.invalidateQueries({ queryKey: ['candidate', 'saved-job-ids'] });
+    },
+  });
+}
+
+/** Remove a saved job bookmark. */
+export function useUnsaveJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: number) => api.delete(`/candidates/me/saved-jobs/${jobId}`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['candidate', 'saved-jobs'] });
+      qc.invalidateQueries({ queryKey: ['candidate', 'saved-job-ids'] });
+    },
+  });
+}
+
 /** Change password (spSecChangePassword). */
 export function useChangePassword() {
   return useMutation({
     mutationFn: (payload: { currentPassword: string; newPassword: string }) =>
       api.post<{ message: string }>('/candidates/me/change-password', payload).then((r) => r.data),
+  });
+}
+
+/** Upload a resume (multipart/form-data). */
+export function useUploadResume() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (pct: number) => void }) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api
+        .post<{ url: string; fileName: string }>('/files/resume', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (e) => {
+            if (e.total && onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
+          },
+        })
+        .then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+  });
+}
+
+/** Delete the current resume. */
+export function useDeleteResume() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.delete('/files/resume').then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+  });
+}
+
+/** Upload a profile photo / avatar (multipart/form-data). */
+export function useUploadAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api
+        .post<{ url: string }>('/files/avatar', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+  });
+}
+
+// ── Dashboard ──
+
+export interface DashboardSummary {
+  appliedCount: number;
+  savedCount: number;
+  interviewCount: number;
+  profileCompletion: number;
+}
+
+export function useDashboard() {
+  return useQuery({
+    queryKey: ['candidate', 'dashboard'],
+    queryFn: () => api.get<DashboardSummary>('/candidates/me/dashboard').then((r) => r.data),
+  });
+}
+
+// ── Notification Preferences ──
+
+export interface NotificationPrefs {
+  emailAlerts: boolean;
+  pushAlerts: boolean;
+  smsAlerts: boolean;
+  jobAlertFrequency: 'Daily' | 'Weekly' | 'Instant';
+}
+
+export function useNotificationPrefs() {
+  return useQuery({
+    queryKey: ['candidate', 'notification-prefs'],
+    queryFn: () => api.get<NotificationPrefs>('/candidates/me/notification-prefs').then((r) => r.data),
+  });
+}
+
+export function useUpdateNotificationPrefs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Partial<NotificationPrefs>) =>
+      api.put('/candidates/me/notification-prefs', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['candidate', 'notification-prefs'] }),
+  });
+}
+
+// ── Saved Searches ──
+
+export interface SavedSearchItem {
+  id: number;
+  name: string;
+  query: string | null;
+  filters: Record<string, unknown> | null;
+  createdAt: string | null;
+}
+
+export function useSavedSearches() {
+  return useQuery({
+    queryKey: ['candidate', 'saved-searches'],
+    queryFn: () => api.get<SavedSearchItem[]>('/candidates/me/saved-searches').then((r) => r.data),
+  });
+}
+
+export function useCreateSavedSearch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { name: string; query?: string; filters?: Record<string, unknown> }) =>
+      api.post<SavedSearchItem>('/candidates/me/saved-searches', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['candidate', 'saved-searches'] }),
+  });
+}
+
+export function useDeleteSavedSearch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/candidates/me/saved-searches/${id}`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['candidate', 'saved-searches'] }),
+  });
+}
+
+// ── Recommendations ──
+
+export function useRecommendedJobs() {
+  return useQuery({
+    queryKey: ['candidate', 'recommendations'],
+    queryFn: () => api.get('/jobs/recommended').then((r) => r.data),
+    staleTime: 5 * 60_000,
+  });
+}
+
+// ── Activity ──
+
+export function useActivity() {
+  return useQuery({
+    queryKey: ['candidate', 'activity'],
+    queryFn: () => api.get('/candidates/me/activity').then((r) => r.data),
   });
 }

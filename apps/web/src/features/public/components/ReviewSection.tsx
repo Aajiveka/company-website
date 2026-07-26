@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 const REVIEWS = [
   {
     text: '"Aajiveka has been an invaluable resource for our finance company. Their job portal consistently delivers highly qualified candidates, saving us time and effort in the hiring process."',
@@ -21,22 +23,23 @@ const REVIEWS = [
 
 /** "Review from our Customers" section (reused on About). */
 export function ReviewSection() {
+  const { t } = useTranslation('public');
   return (
     <section className="py-12 md:py-20">
       <div className="container">
-        <h2 className="text-center">Review from our Customers</h2>
+        <h2 className="text-center">{t('reviews.heading')}</h2>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {REVIEWS.map((r) => (
             <div key={r.name}>
-              <div className="rounded-2xl bg-white p-4 shadow-card sm:p-6">
-                <p className="text-gray-600">{r.text}</p>
-                <img src="/image/Stars.png" alt="5 stars" className="mt-4 h-5" loading="lazy" decoding="async" />
+              <div className="rounded-2xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-4 shadow-card sm:p-6">
+                <p className="text-gray-600 dark:text-gray-300">{r.text}</p>
+                <img src="/image/Stars.webp" alt="5 stars" className="mt-4 h-5" loading="lazy" decoding="async" />
               </div>
               <div className="mt-4 flex items-center gap-2 pl-3 sm:gap-3">
                 <img src={r.avatar} alt={r.name} className="h-10 w-10 rounded-full sm:h-12 sm:w-12" loading="lazy" decoding="async" />
                 <div>
                   <h5 className="font-bold text-navy">{r.name}</h5>
-                  <p className="text-sm text-gray-500">-{r.role}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">-{r.role}</p>
                 </div>
               </div>
             </div>

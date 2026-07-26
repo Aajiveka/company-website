@@ -17,9 +17,9 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 const icons = { success: CheckCircle2, error: XCircle, info: Info };
 const colors = {
-  success: 'border-green-200 bg-white text-green-800 dark:border-green-800 dark:bg-gray-900 dark:text-green-300',
-  error: 'border-red-200 bg-white text-red-800 dark:border-red-800 dark:bg-gray-900 dark:text-red-300',
-  info: 'border-blue-200 bg-white text-blue-800 dark:border-blue-800 dark:bg-gray-900 dark:text-blue-300',
+  success: 'border-green-200 bg-white text-green-800 dark:border-green-800 dark:bg-gray-800 dark:text-green-300',
+  error: 'border-red-200 bg-white text-red-800 dark:border-red-800 dark:bg-gray-800 dark:text-red-300',
+  info: 'border-blue-200 bg-white text-blue-800 dark:border-blue-800 dark:bg-gray-800 dark:text-blue-300',
 };
 
 let counter = 0;
@@ -46,19 +46,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div aria-live="polite" aria-atomic="false" className="fixed right-2 top-2 z-[1100] flex w-72 max-w-[90vw] flex-col gap-2 sm:right-4 sm:top-4 sm:w-80">
+      <div className="fixed right-2 top-2 z-[1100] flex w-72 max-w-[90vw] flex-col gap-2 sm:right-4 sm:top-4 sm:w-80" aria-live="polite" aria-atomic="true">
         {toasts.map(({ id, kind, message }) => {
           const Icon = icons[kind];
           return (
             <div
               key={id}
               className={cn('flex items-start gap-2 rounded-lg border p-3 text-sm shadow-lg', colors[kind])}
-              role="status"
+              role="alert"
             >
               <Icon className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
               <span className="flex-1">{message}</span>
-              <button onClick={() => remove(id)} aria-label="Dismiss">
-                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              <button onClick={() => remove(id)} aria-label="Dismiss" className="rounded focus-visible:ring-2 focus-visible:ring-primary/40">
+                <X className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
               </button>
             </div>
           );

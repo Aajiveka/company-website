@@ -1,10 +1,12 @@
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, UserRound } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui';
-import { Seo } from '@/components/Seo';
+import { Seo, SITE_URL } from '@/components/Seo';
 import { BLOG_POSTS, getPost } from '../blogs.data';
 
 export default function BlogDetailPage() {
+  const { t } = useTranslation('public');
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? getPost(slug) : undefined;
 
@@ -12,9 +14,9 @@ export default function BlogDetailPage() {
     return (
       <section className="flex min-h-[60vh] items-center justify-center pt-24 text-center">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-navy">Article not found</h1>
+          <h1 className="font-heading text-2xl font-bold text-navy">{t('blogs.articleNotFound')}</h1>
           <Link to="/blogs" className="mt-4 inline-block text-primary hover:underline">
-            ← Back to blog
+            ← {t('blogs.backToBlog')}
           </Link>
         </div>
       </section>
@@ -30,12 +32,27 @@ export default function BlogDetailPage() {
         description={post.excerpt}
         path={`/blogs/${post.slug}`}
         ogType="article"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: post.title,
+          description: post.excerpt,
+          datePublished: post.date,
+          author: { '@type': 'Organization', name: post.author },
+          publisher: {
+            '@type': 'Organization',
+            name: 'Aajiveka',
+            logo: { '@type': 'ImageObject', url: `${SITE_URL}/image/logo.svg` },
+          },
+          image: `${SITE_URL}${post.image}`,
+          mainEntityOfPage: `${SITE_URL}/blogs/${post.slug}`,
+        }}
       />
       <div className="container max-w-3xl">
         <Link to="/blogs" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-          <ArrowLeft className="h-4 w-4" /> Back to blog
+          <ArrowLeft className="h-4 w-4" /> {t('blogs.backToBlog')}
         </Link>
-        <h1 className="mt-4 font-heading text-3xl font-bold leading-tight text-navy">{post.title}</h1>
+        <h1 className="mt-4 font-heading text-2xl font-bold leading-tight text-navy sm:text-3xl">{post.title}</h1>
         <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-500">
           <span className="flex items-center gap-1.5">
             <CalendarDays className="h-4 w-4" /> {post.date}
@@ -53,7 +70,7 @@ export default function BlogDetailPage() {
 
         {/* Related */}
         <div className="mt-12 border-t border-gray-100 pt-8">
-          <h2 className="text-xl">Related Articles</h2>
+          <h2 className="text-xl">{t('blogs.relatedArticles')}</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {related.map((r) => (
               <Link key={r.slug} to={`/blogs/${r.slug}`} className="group">
@@ -66,7 +83,7 @@ export default function BlogDetailPage() {
 
         <div className="mt-10 text-center">
           <Link to="/register">
-            <Button>Start your job search</Button>
+            <Button>{t('blogs.startJobSearch')}</Button>
           </Link>
         </div>
       </div>

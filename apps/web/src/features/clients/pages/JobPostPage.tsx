@@ -1,30 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Breadcrumbs, Button, Card, Input, Select, Textarea, useToast } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { Breadcrumbs, Button, Card, ErrorSummary, FormSkeleton, Input, Select, useToast } from '@/components/ui';
+import RichTextEditor from '@/components/RichTextEditor';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { useCompanyJobs, useCompanyMasters, usePostJob, useUpdateJob } from '../client.api';
 
-const schema = z
-  .object({
-    designationId: z.coerce.number().min(1, 'Select a designation'),
-    cityId: z.coerce.number().min(1, 'Select a location'),
-    workModeId: z.coerce.number().min(1, 'Select a work mode'),
-    employmentTypeId: z.coerce.number().min(1, 'Select employment type'),
-    minExp: z.coerce.number().min(0, 'Must be 0 or more'),
-    minCtc: z.coerce.number().min(0, 'Must be 0 or more'),
-    maxCtc: z.coerce.number().min(0, 'Must be 0 or more'),
-    description: z.string().trim().min(10, 'Add a job description (at least 10 characters)'),
-  })
-  .refine((v) => v.maxCtc >= v.minCtc, {
-    message: 'Max CTC must be greater than or equal to Min CTC',
-    path: ['maxCtc'],
-  });
-type Values = z.infer<typeof schema>;
+const schema = (t: TFunction) => z.object({
+  designationId: z.coerce.number().min(1, t('validation.selectDesignation')),
+  cityId: z.coerce.number().min(1, t('validation.selectLocation')),
+  workModeId: z.coerce.number().min(1, t('validation.selectWorkMode')),
+  employmentTypeId: z.coerce.number().min(1, t('validation.selectEmploymentType')),
+  minExp: z.coerce.number().min(0),
+  minCtc: z.coerce.number().min(0),
+  maxCtc: z.coerce.number().min(0),
+  description: z.string().min(10, t('validation.addDescription')),
+});
+type Values = z.infer<ReturnType<typeof schema>>;
 
 /** Client — post a new job, or edit an existing one (job-post.aspx). */
 export default function JobPostPage() {
+  const { t } = useTranslation('public');
+  const { t: tCommon } = useTranslation('common');
   const { id } = useParams();
   const isEdit = !!id;
   const { notify } = useToast();
@@ -38,12 +39,14 @@ export default function JobPostPage() {
     handleSubmit,
     reset,
     setValue,
-    formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+    control,
+    formState: { errors, isDirty },
+  } = useForm<Values>({ resolver: zodResolver(schema(tCommon)) });
+
+  useUnsavedChanges(isDirty);
 
   const job = isEdit ? jobs?.find((j) => String(j.jobId) === id) : undefined;
 
-  // Derive stateId from existing cityId for edit mode
   const [selectedStateId, setSelectedStateId] = useState<number | ''>('');
   const filteredCities = useMemo(
     () => (selectedStateId ? (masters?.cities ?? []).filter((c) => c.stateId === selectedStateId) : []),
@@ -71,7 +74,7 @@ export default function JobPostPage() {
     const mutation = isEdit ? update : post;
     mutation.mutate(values, {
       onSuccess: () => {
-        notify(isEdit ? 'Job updated successfully.' : 'Job posted successfully.', 'success');
+        notify(isEdit ? t('jobPost.updateSuccess') : t('jobPost.postSuccess'), 'success');
         navigate('/company/jobs');
       },
     });
@@ -82,22 +85,25 @@ export default function JobPostPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Breadcrumbs items={[{ label: 'Manage Jobs', to: '/company/jobs' }, { label: isEdit ? 'Edit Job' : 'Post a Job' }]} />
-      <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{isEdit ? 'Edit Job' : 'Post a Job'}</h1>
+      <Breadcrumbs items={[{ label: t('manageJobs.heading'), to: '/company/jobs' }, { label: isEdit ? t('jobPost.editTitle') : t('jobPost.postTitle') }]} />
+      <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{isEdit ? t('jobPost.editTitle') : t('jobPost.postTitle')}</h1>
+      {!masters ? (
+        <FormSkeleton fields={8} />
+      ) : (
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <ErrorSummary errors={errors} heading={tCommon('validation.errorSummary', 'Please fix the following errors:')} />
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
-              label="Designation"
-              required
-              placeholder="Select…"
+              label={t('jobPost.designation')}
+              placeholder={t('common:labels.select')}
               options={opts(masters?.designations)}
               error={errors.designationId?.message}
               {...register('designationId')}
             />
             <Select
-              label="State"
-              placeholder="Select…"
+              label={t('jobPost.state')}
+              placeholder={t('common:labels.select')}
               options={opts(masters?.states)}
               value={selectedStateId}
               onChange={(e) => {
@@ -106,50 +112,59 @@ export default function JobPostPage() {
               }}
             />
             <Select
-              label="District / City"
-              required
-              placeholder={selectedStateId ? 'Select…' : 'Select state first'}
+              label={t('jobPost.districtCity')}
+              placeholder={selectedStateId ? t('common:labels.select') : t('common:labels.selectStateFirst')}
               options={opts(filteredCities)}
               error={errors.cityId?.message}
               disabled={!selectedStateId}
               {...register('cityId')}
             />
             <Select
-              label="Work Mode"
-              required
-              placeholder="Select…"
+              label={t('jobPost.workMode')}
+              placeholder={t('common:labels.select')}
               options={opts(masters?.workModes)}
               error={errors.workModeId?.message}
               {...register('workModeId')}
             />
             <Select
-              label="Employment Type"
-              required
-              placeholder="Select…"
+              label={t('jobPost.employmentType')}
+              placeholder={t('common:labels.select')}
               options={opts(masters?.employmentTypes)}
               error={errors.employmentTypeId?.message}
               {...register('employmentTypeId')}
             />
-            <Input label="Minimum Experience (yrs)" required type="number" error={errors.minExp?.message} {...register('minExp')} />
+            <Input label={t('jobPost.minExperience')} type="number" error={errors.minExp?.message} {...register('minExp')} />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input label="Min CTC (₹)" required type="number" error={errors.minCtc?.message} {...register('minCtc')} />
-              <Input label="Max CTC (₹)" required type="number" error={errors.maxCtc?.message} {...register('maxCtc')} />
+              <Input label={t('jobPost.minCtc')} type="number" error={errors.minCtc?.message} {...register('minCtc')} />
+              <Input label={t('jobPost.maxCtc')} type="number" error={errors.maxCtc?.message} {...register('maxCtc')} />
             </div>
           </div>
-          <Textarea
-            label="Job Description"
-            required
-            rows={5}
-            error={errors.description?.message}
-            {...register('description')}
-          />
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-navy" htmlFor="jd">
+              {t('jobPost.description')}
+            </label>
+            <Controller
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <RichTextEditor
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder={t('jobPost.descriptionPlaceholder', 'Describe the role, responsibilities, requirements...')}
+                  minHeight="160px"
+                />
+              )}
+            />
+            {errors.description && <p className="mt-1 text-xs text-danger">{errors.description.message}</p>}
+          </div>
           <div className="flex justify-end">
             <Button type="submit" isLoading={post.isPending || update.isPending}>
-              {isEdit ? 'Save Changes' : 'Publish Job'}
+              {isEdit ? t('jobPost.saveButton') : t('jobPost.publishButton')}
             </Button>
           </div>
         </form>
       </Card>
+      )}
     </div>
   );
 }

@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
 import { JOB_STATUS_ACTIVE, JobMapStatus, SubscriberStatus } from '@/shared/status';
-import type { ApplicantDecisionDto, CreateJobDto, UpdateJobDto } from './dto/clients.dto';
+import type { ApplicantDecisionDto, ApplicantNoteDto, CreateJobDto, UpdateBrandingDto, UpdateJobDto } from './dto/clients.dto';
 
 const jobStatus = (statusId: number | null) =>
   statusId === JOB_STATUS_ACTIVE ? 'Active' : 'Closed';
@@ -286,5 +286,286 @@ export class ClientsService {
       detail: { decision: dto.decision },
     });
     return { ok: true };
+  }
+
+  // ---------------------------------------------------------------------------
+  // New endpoints
+  // ---------------------------------------------------------------------------
+
+  /** Duplicate an existing job posting — creates a new active copy with the same fields and skills. */
+  async duplicateJob(userId: number, jobId: number) {
+    const job = await this.ownedJob(userId, jobId);
+
+    return this.db.$transaction(async (tx) => {
+      const skills = await tx.clientJobSkill.findMany({
+        where: { jobID: job.jobID },
+        select: { skillID: true },
+      });
+
+      const newJob = await tx.clientJobs.create({
+        data: {
+          clientID: job.clientID,
+          designationID: job.designationID,
+          employeeTypeID: job.employeeTypeID,
+          workModeID: job.workModeID,
+          jobCityID: job.jobCityID,
+          industryTypeID: job.industryTypeID,
+          jobDescr: job.jobDescr,
+          jobCandidateProfile: job.jobCandidateProfile,
+          minExp: job.minExp,
+          minCTC: job.minCTC,
+          maxCTC: job.maxCTC,
+          maxEmp: job.maxEmp,
+          statusID: JOB_STATUS_ACTIVE,
+          timestampIns: new Date(),
+          loginIDIns: userId,
+        },
+      });
+
+      if (skills.length) {
+        await tx.clientJobSkill.createMany({
+          data: skills.map((s) => ({ jobID: newJob.jobID, skillID: s.skillID })),
+        });
+      }
+
+      return { jobId: Number(newJob.jobID) };
+    });
+  }
+
+  /** Bulk-upload jobs from a CSV file. */
+  async bulkUploadJobs(userId: number, file: Express.Multer.File) {
+    if (!file || !file.buffer) throw new BadRequestException('No file provided');
+
+    const clientId = await this.clientIdFor(userId);
+    const content = file.buffer.toString('utf-8');
+    const lines = content.split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 2) throw new BadRequestException('CSV must have a header row and at least one data row');
+
+    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    const dataLines = lines.slice(1);
+
+    // Pre-load master tables for name -> id lookup
+    const [designations, cities, workModes, empTypes] = await Promise.all([
+      this.db.mstrDesignation.findMany(),
+      this.db.mstrCily.findMany(),
+      this.db.mstrWorkMode.findMany(),
+      this.db.mstrEmpType.findMany(),
+    ]);
+
+    const findId = <T extends { descr?: string | null }>(list: (T & { [k: string]: any })[], name: string, idField: string): number | null => {
+      const match = list.find((item) => (item.descr ?? '').toLowerCase().trim() === name.toLowerCase().trim());
+      return match ? match[idField] : null;
+    };
+
+    let imported = 0;
+
+    for (const line of dataLines) {
+      const values = line.split(',').map((v) => v.trim());
+      const row: Record<string, string> = {};
+      headers.forEach((h, i) => {
+        row[h] = values[i] ?? '';
+      });
+
+      const designationId = findId(designations, row['designation'] ?? '', 'designationID');
+      const cityId = findId(cities, row['city'] ?? '', 'cityID');
+      const workModeId = findId(workModes, row['workmode'] ?? '', 'workModeID');
+      const empTypeId = findId(empTypes, row['employmenttype'] ?? '', 'employeeTypeID');
+
+      if (!designationId || !cityId || !workModeId || !empTypeId) continue; // skip rows that can't be resolved
+
+      const minExp = row['minexp'] ? parseInt(row['minexp'], 10) : null;
+      const minCtc = row['minctc'] ? parseInt(row['minctc'], 10) : 0;
+      const maxCtc = row['maxctc'] ? parseInt(row['maxctc'], 10) : 0;
+      const description = row['description'] ?? null;
+
+      await this.db.clientJobs.create({
+        data: {
+          clientID: clientId,
+          designationID: designationId,
+          employeeTypeID: empTypeId,
+          workModeID: workModeId,
+          jobCityID: cityId,
+          jobDescr: description,
+          minExp: isNaN(minExp as number) ? null : minExp,
+          minCTC: isNaN(minCtc) ? 0 : minCtc,
+          maxCTC: isNaN(maxCtc) ? 0 : maxCtc,
+          statusID: JOB_STATUS_ACTIVE,
+          timestampIns: new Date(),
+          loginIDIns: userId,
+        },
+      });
+
+      imported++;
+    }
+
+    return { imported };
+  }
+
+  /** Company analytics — job counts, application pipeline funnel, per-job performance. */
+  async analytics(userId: number) {
+    const clientId = await this.clientIdFor(userId);
+
+    const jobs = await this.db.clientJobs.findMany({
+      where: { clientID: clientId },
+      select: {
+        jobID: true,
+        statusID: true,
+        designation: { select: { descr: true } },
+        JobSubscriberMapping: {
+          select: { jobMapStatusID: true },
+        },
+      },
+    });
+
+    const totalJobs = jobs.length;
+    const activeJobs = jobs.filter((j) => j.statusID === JOB_STATUS_ACTIVE).length;
+
+    let totalApplications = 0;
+    let shortlisted = 0;
+    let interviewScheduled = 0;
+    let selected = 0;
+    let rejected = 0;
+
+    const jobPerformance = jobs.map((j) => {
+      const apps = j.JobSubscriberMapping;
+      const jShortlisted = apps.filter((a) => a.jobMapStatusID === JobMapStatus.SHORTLISTED).length;
+      const jInterviewScheduled = apps.filter((a) => a.jobMapStatusID === JobMapStatus.INTERVIEW_SCHEDULED).length;
+      const jSelected = apps.filter((a) => a.jobMapStatusID === JobMapStatus.SELECTED).length;
+      const jRejected = apps.filter((a) => a.jobMapStatusID === JobMapStatus.REJECTED).length;
+
+      totalApplications += apps.length;
+      shortlisted += jShortlisted;
+      interviewScheduled += jInterviewScheduled;
+      selected += jSelected;
+      rejected += jRejected;
+
+      return {
+        jobId: Number(j.jobID),
+        designation: j.designation?.descr ?? '',
+        applications: apps.length,
+        shortlisted: jShortlisted,
+      };
+    });
+
+    return {
+      totalJobs,
+      activeJobs,
+      totalApplications,
+      shortlisted,
+      interviewScheduled,
+      selected,
+      rejected,
+      jobPerformance,
+    };
+  }
+
+  /** Get company branding data. */
+  async getBranding(userId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const branding = await this.db.companyBranding.findUnique({
+      where: { clientID: clientId },
+    });
+
+    return {
+      tagline: branding?.tagline ?? '',
+      coverImageUrl: branding?.coverImageUrl ?? '',
+      culture: branding?.culture ?? '',
+      benefits: branding?.benefits ?? '[]',
+    };
+  }
+
+  /** Upsert company branding data. */
+  async updateBranding(userId: number, dto: UpdateBrandingDto) {
+    const clientId = await this.clientIdFor(userId);
+
+    await this.db.companyBranding.upsert({
+      where: { clientID: clientId },
+      create: {
+        clientID: clientId,
+        tagline: dto.tagline ?? null,
+        coverImageUrl: dto.coverImageUrl ?? null,
+        culture: dto.culture ?? null,
+        benefits: dto.benefits ?? null,
+      },
+      update: {
+        ...(dto.tagline !== undefined && { tagline: dto.tagline ?? null }),
+        ...(dto.coverImageUrl !== undefined && { coverImageUrl: dto.coverImageUrl ?? null }),
+        ...(dto.culture !== undefined && { culture: dto.culture ?? null }),
+        ...(dto.benefits !== undefined && { benefits: dto.benefits ?? null }),
+        updatedAt: new Date(),
+      },
+    });
+
+    return { ok: true };
+  }
+
+  /** Get notes on an applicant. Verifies the applicant belongs to this company first. */
+  async getApplicantNotes(userId: number, jobSubscriberMapId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: { job: { select: { clientID: true } } },
+    });
+    if (!mapping || Number(mapping.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const notes = await this.db.applicantNote.findMany({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      notes: notes.map((n) => ({
+        noteId: Number(n.noteId),
+        note: n.note,
+        createdAt: n.createdAt.toISOString(),
+        updatedBy: n.updatedBy != null ? Number(n.updatedBy) : null,
+      })),
+    };
+  }
+
+  /** Save a note on an applicant. */
+  async saveApplicantNote(userId: number, jobSubscriberMapId: number, dto: ApplicantNoteDto) {
+    const clientId = await this.clientIdFor(userId);
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: { job: { select: { clientID: true } } },
+    });
+    if (!mapping || Number(mapping.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+
+    await this.db.applicantNote.create({
+      data: {
+        jobSubscriberMapID: jobSubscriberMapId,
+        note: dto.note,
+        updatedBy: userId,
+      },
+    });
+
+    return { ok: true };
+  }
+
+  /** Public company page — no auth required. */
+  async publicCompanyInfo(clientId: number) {
+    const c = await this.db.clientMstr.findUnique({
+      where: { clientID: clientId },
+      include: {
+        city: { select: { descr: true } },
+        industryType: { select: { industryType: true } },
+      },
+    });
+    if (!c) throw new NotFoundException('Company not found');
+
+    return {
+      clientId: Number(c.clientID),
+      clientName: c.clientName ?? '',
+      industry: c.industryType?.industryType ?? '',
+      city: c.city?.descr ?? '',
+      website: c.companyWebsite ?? '',
+      logoUrl: c.companyLogo?.trim() ? `/files/${c.companyLogo}` : null,
+      description: c.companyDescr ?? '',
+    };
   }
 }

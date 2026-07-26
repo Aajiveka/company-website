@@ -1,4 +1,10 @@
 @import 'tailwindcss';
+@import './animations.css';
+
+/* ------------------------------------------------------------------ */
+/* Dark mode variant (class-based)                                     */
+/* ------------------------------------------------------------------ */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Dark mode via .dark class on <html> */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -32,10 +38,22 @@
   --color-brand: #1967d2;
   --color-brand-soft: #f0f5f7;
 
+  /* Dark-mode surface tokens */
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-inset: #f0f5f7;
+
   --font-sans: Inter, system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-heading: Jost, Inter, system-ui, sans-serif;
 
+  --animate-slide-up: slide-up 0.3s ease-out;
+
   --shadow-card: 0 6px 15px rgba(64, 79, 104, 0.05);
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(1rem); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /*
@@ -55,6 +73,18 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Dark mode — override semantic tokens so text-navy, bg-brand-soft   */
+/* etc. adapt automatically without per-element dark: overrides.       */
+/* ------------------------------------------------------------------ */
+.dark {
+  --color-navy: #e5e7eb;
+  --color-navy-deep: #f3f4f6;
+  --color-brand-soft: #1f2937;
+  --color-muted: #9ca3af;
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------------ */
 /* Base — mirrors the reference NewTheme typography/colors             */
 /* ------------------------------------------------------------------ */
 @layer base {
@@ -62,8 +92,7 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply font-sans text-[#121212] antialiased;
-    @apply dark:bg-gray-950 dark:text-gray-100;
+    @apply font-sans text-[#121212] antialiased dark:bg-gray-900 dark:text-gray-100;
   }
   /* Global focus-visible ring for interactive elements that lack component-level focus styles */
   a:focus-visible,
@@ -90,7 +119,7 @@
 @layer components {
   /* Public hero banner */
   .hero-banner {
-    background-image: url('/image/banner.jpg');
+    background-image: image-set(url('/image/banner.webp') type('image/webp'), url('/image/banner.jpg') type('image/jpeg'));
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -100,5 +129,37 @@
     @apply rounded-full bg-primary-light px-4 py-2 font-medium text-white transition
       hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2
       disabled:opacity-60 sm:px-6 sm:py-2.5;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Print styles — used by the Resume Preview page                      */
+/* ------------------------------------------------------------------ */
+@media print {
+  @page {
+    margin: 1cm 1.5cm;
+    size: A4;
+  }
+
+  /* Hide layout chrome when printing */
+  header, aside, nav, footer,
+  .print\:hidden,
+  a[href="#main-content"] { display: none !important; }
+
+  /* Reset main content area for clean print */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Force light background for print */
+  body, .min-h-screen {
+    background: white !important;
+  }
+
+  /* Ensure exact colors for resume elements */
+  .resume-print {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }

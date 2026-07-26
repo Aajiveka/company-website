@@ -20,6 +20,8 @@ import { CandidatesService } from './candidates.service';
 import {
   ChangePasswordDto,
   CreateJobAlertDto,
+  CreateSavedSearchDto,
+  UpdateNotificationPrefsDto,
   UpdatePersonalDto,
   UpdateProfessionalDto,
   UpsertCertificateDto,
@@ -35,7 +37,7 @@ export class CandidatesController {
   constructor(private readonly candidates: CandidatesService) {}
 
   @Get('me')
-  @ApiOperation({ summary: 'The signed-in candidate’s CV (spSubscriberGetCVToDisplay)' })
+  @ApiOperation({ summary: 'The signed-in candidate\'s CV (spSubscriberGetCVToDisplay)' })
   async profile(@CurrentUser() user: RequestUser) {
     return this.candidates.profile(await this.candidates.subscriberIdFor(user.userId));
   }
@@ -47,7 +49,7 @@ export class CandidatesController {
   }
 
   @Get('me/cv-edit')
-  @ApiOperation({ summary: 'The candidate’s CV in edit-friendly shape (raw ids, not display strings)' })
+  @ApiOperation({ summary: 'The candidate\'s CV in edit-friendly shape (raw ids, not display strings)' })
   async editProfile(@CurrentUser() user: RequestUser) {
     return this.candidates.editProfile(await this.candidates.subscriberIdFor(user.userId));
   }
@@ -138,10 +140,87 @@ export class CandidatesController {
     return this.candidates.createJobAlert(await this.candidates.subscriberIdFor(user.userId), dto);
   }
 
+  @Get('me/saved-jobs')
+  @ApiOperation({ summary: 'Saved / bookmarked jobs' })
+  async savedJobs(@CurrentUser() user: RequestUser) {
+    return this.candidates.savedJobs(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Get('me/saved-job-ids')
+  @ApiOperation({ summary: 'Just the job IDs the candidate has saved (for bookmark icons)' })
+  async savedJobIds(@CurrentUser() user: RequestUser) {
+    return this.candidates.savedJobIds(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Post('me/saved-jobs/:jobId')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Save / bookmark a job' })
+  async saveJob(@Param('jobId', ParseIntPipe) jobId: number, @CurrentUser() user: RequestUser) {
+    return this.candidates.saveJob(await this.candidates.subscriberIdFor(user.userId), jobId);
+  }
+
+  @Delete('me/saved-jobs/:jobId')
+  @ApiOperation({ summary: 'Remove a saved job bookmark' })
+  async unsaveJob(@Param('jobId', ParseIntPipe) jobId: number, @CurrentUser() user: RequestUser) {
+    return this.candidates.unsaveJob(await this.candidates.subscriberIdFor(user.userId), jobId);
+  }
+
   @Post('me/change-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Change password (verified against the Argon2 hash)' })
   changePassword(@CurrentUser() user: RequestUser, @Body() dto: ChangePasswordDto) {
     return this.candidates.changePassword(user.userId, dto.currentPassword, dto.newPassword);
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // NEW ENDPOINTS
+  // ────────────────────────────────────────────────────────────────────────────
+
+  @Get('me/dashboard')
+  @ApiOperation({ summary: 'Dashboard summary (applied, saved, interview counts, profile completion)' })
+  async dashboard(@CurrentUser() user: RequestUser) {
+    return this.candidates.dashboard(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Get('me/notification-prefs')
+  @ApiOperation({ summary: 'Get notification preferences' })
+  async notificationPrefs(@CurrentUser() user: RequestUser) {
+    return this.candidates.notificationPrefs(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Put('me/notification-prefs')
+  @ApiOperation({ summary: 'Update notification preferences' })
+  async updateNotificationPrefs(@CurrentUser() user: RequestUser, @Body() dto: UpdateNotificationPrefsDto) {
+    return this.candidates.updateNotificationPrefs(await this.candidates.subscriberIdFor(user.userId), dto);
+  }
+
+  @Get('me/saved-searches')
+  @ApiOperation({ summary: 'List saved searches' })
+  async savedSearches(@CurrentUser() user: RequestUser) {
+    return this.candidates.savedSearches(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Post('me/saved-searches')
+  @ApiOperation({ summary: 'Create a saved search' })
+  async createSavedSearch(@CurrentUser() user: RequestUser, @Body() dto: CreateSavedSearchDto) {
+    return this.candidates.createSavedSearch(await this.candidates.subscriberIdFor(user.userId), dto);
+  }
+
+  @Delete('me/saved-searches/:id')
+  @ApiOperation({ summary: 'Delete a saved search' })
+  async deleteSavedSearch(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: RequestUser) {
+    return this.candidates.deleteSavedSearch(await this.candidates.subscriberIdFor(user.userId), id);
+  }
+
+  @Get('me/recommendations')
+  @ApiOperation({ summary: 'Recommended jobs based on candidate profile' })
+  async recommendations(@CurrentUser() user: RequestUser) {
+    return this.candidates.recommendations(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Get('me/activity')
+  @ApiOperation({ summary: 'Activity timeline (audit log + recent applications)' })
+  async activity(@CurrentUser() user: RequestUser) {
+    return this.candidates.activity(user.userId, await this.candidates.subscriberIdFor(user.userId));
   }
 }

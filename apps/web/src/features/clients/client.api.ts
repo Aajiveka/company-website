@@ -94,3 +94,47 @@ export function useDecideApplicant() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['client', 'applicants'] }),
   });
 }
+
+/** Bulk shortlist or reject multiple applicants at once. */
+export function useBulkDecideApplicants() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { ids: number[]; decision: 'Shortlisted' | 'Rejected' }) => {
+      await Promise.all(
+        payload.ids.map((id) =>
+          api.post(`/clients/me/applicants/${id}/decision`, { decision: payload.decision }),
+        ),
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['client', 'applicants'] }),
+  });
+}
+
+/** Duplicate/repost a job (creates a new Active copy). */
+export function useDuplicateJob() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: number) => api.post(`/clients/me/jobs/${jobId}/duplicate`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.client.jobs('me') }),
+  });
+}
+
+/** Upload a CSV/XLSX file for bulk job import (multipart/form-data). */
+export function useUploadBulkJobs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (pct: number) => void }) => {
+      const form = new FormData();
+      form.append('file', file);
+      return api
+        .post<{ imported: number }>('/clients/me/jobs/bulk-upload', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (e) => {
+            if (e.total && onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
+          },
+        })
+        .then((r) => r.data);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.client.jobs('me') }),
+  });
+}

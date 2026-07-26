@@ -4,8 +4,8 @@ type BannerVariant = 'about' | 'blog' | 'jobs' | 'subscription' | 'testimonial';
 
 const variants: Record<BannerVariant, string> = {
   // Mirrors NewTheme banner classes (background image / color + height).
-  about: "min-h-[360px] bg-[url('/image/About_banner.jpg')] bg-cover bg-center text-white sm:min-h-[520px]",
-  blog: "min-h-[280px] bg-[url('/image/blog_banner.jpg')] bg-cover bg-center text-white sm:min-h-[380px]",
+  about: "min-h-[360px] bg-[image:image-set(url('/image/About_banner.webp')_type('image/webp'),url('/image/About_banner.jpg')_type('image/jpeg'))] bg-cover bg-center text-white sm:min-h-[520px]",
+  blog: "min-h-[280px] bg-[image:image-set(url('/image/blog_banner.webp')_type('image/webp'),url('/image/blog_banner.jpg')_type('image/jpeg'))] bg-cover bg-center text-white sm:min-h-[380px]",
   jobs: 'min-h-[260px] bg-primary text-white sm:min-h-[360px]',
   subscription: 'min-h-[240px] bg-primary text-white sm:min-h-[320px]',
   testimonial: 'min-h-[300px] bg-[#D6DFE4] text-navy sm:min-h-[420px]',

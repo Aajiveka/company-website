@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { Button, CardSkeleton } from '@/components/ui';
 import { usePlans } from '@/features/payments/payments.api';
@@ -65,6 +66,7 @@ const FALLBACK_TIERS: ViewTier[] = PRICING_TIERS.map((t) => ({
  * pricing matrix is kept only as a display fallback.
  */
 export function PricingPlans() {
+  const { t } = useTranslation('common');
   const { data: plans, isLoading } = usePlans();
   const [tierId, setTierId] = useState<string | null>(null);
 
@@ -88,14 +90,33 @@ export function PricingPlans() {
   return (
     <div className="container py-12">
       {/* Tier tabs */}
-      <div className="mx-auto mb-10 flex max-w-2xl flex-col gap-2 rounded-full bg-white p-1.5 shadow-card sm:flex-row">
+      <div
+        role="tablist"
+        aria-label={t('labels.pricingTiers', { defaultValue: 'Pricing tiers' })}
+        className="mx-auto mb-10 flex max-w-2xl flex-col gap-2 rounded-full bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-1.5 shadow-card sm:flex-row"
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const idx = tiers.findIndex((tt) => tt.id === activeId);
+            setTierId(tiers[(idx + 1) % tiers.length].id);
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const idx = tiers.findIndex((tt) => tt.id === activeId);
+            setTierId(tiers[(idx - 1 + tiers.length) % tiers.length].id);
+          }
+        }}
+      >
         {tiers.map((t) => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={t.id === activeId}
+            aria-controls={`tier-panel-${t.id}`}
+            tabIndex={t.id === activeId ? 0 : -1}
             onClick={() => setTierId(t.id)}
             className={cn(
-              'flex-1 rounded-full px-2 py-2 text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm',
-              t.id === activeId ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50',
+              'flex-1 rounded-full px-2 py-2 text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm focus-visible:ring-2 focus-visible:ring-primary/40',
+              t.id === activeId ? 'bg-primary text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700',
             )}
           >
             {t.label}
@@ -104,13 +125,13 @@ export function PricingPlans() {
       </div>
 
       {/* Plan cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div role="tabpanel" id={`tier-panel-${activeId}`} aria-label={tier.label} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {tier.plans.map((plan) => (
           <div
             key={plan.key}
             className={cn(
               'flex flex-col rounded-2xl border p-4 shadow-card transition hover:-translate-y-1 sm:p-6',
-              plan.highlighted ? 'border-primary bg-primary text-white' : 'border-gray-100 bg-white',
+              plan.highlighted ? 'border-primary bg-primary text-white' : 'border-gray-100 bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700',
             )}
           >
             <h3 className={cn('font-heading text-xl font-semibold', plan.highlighted ? 'text-white' : 'text-navy')}>
@@ -120,7 +141,7 @@ export function PricingPlans() {
               <span className="font-heading text-3xl font-bold sm:text-4xl">₹{plan.price}</span>
               {plan.perMonth && (
                 <span className={cn('ml-1 text-sm', plan.highlighted ? 'text-white/80' : 'text-gray-500')}>
-                  Per Month
+                  {t('labels.perMonth')}
                 </span>
               )}
             </div>
@@ -128,7 +149,7 @@ export function PricingPlans() {
               {PLAN_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <Check className={cn('mt-0.5 h-4 w-4 flex-shrink-0', plan.highlighted ? 'text-accent' : 'text-primary')} />
-                  <span className={plan.highlighted ? 'text-white/90' : 'text-gray-600'}>{f}</span>
+                  <span className={plan.highlighted ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}>{f}</span>
                 </li>
               ))}
             </ul>
@@ -137,7 +158,7 @@ export function PricingPlans() {
             ) : (
               <Link to="/register" className="mt-6">
                 <Button variant={plan.highlighted ? 'accent' : 'primary'} className="w-full">
-                  Get Started
+                  {t('actions.getStarted')}
                 </Button>
               </Link>
             )}

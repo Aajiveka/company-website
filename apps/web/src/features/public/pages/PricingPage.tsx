@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { PricingPlans } from '../components/PricingPlans';
 import { DevicesSection } from '../components/DevicesSection';
 
 export default function PricingPage() {
+  const { t } = useTranslation('public');
   return (
     <>
       <Seo
@@ -13,8 +15,8 @@ export default function PricingPage() {
       />
       <PageBanner
         variant="subscription"
-        title="Get the Early Advantage in Your Job Search with Aajiveka"
-        subtitle="We have exclusive plans in our pricing"
+        title={t('pricing.bannerTitle')}
+        subtitle={t('pricing.bannerSubtitle')}
       />
       <PricingPlans />
       <DevicesSection />

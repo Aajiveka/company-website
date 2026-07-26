@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
@@ -12,6 +13,7 @@ const OPENINGS = [
 ];
 
 export default function CareerPage() {
+  const { t } = useTranslation('public');
   return (
     <>
       <Seo
@@ -19,16 +21,16 @@ export default function CareerPage() {
         description="Join the Aajiveka team. Explore open positions and help us empower India's workforce through technology."
         path="/careers"
       />
-      <PageBanner variant="blog" title="Career with AAJIVEKA" subtitle="Join us in empowering India's workforce through technology." />
+      <PageBanner variant="blog" title={t('career.bannerTitle')} subtitle={t('career.bannerSubtitle')} />
 
       <section className="py-12 md:py-20">
         <div className="container max-w-4xl">
-          <h2 className="text-center">Current Openings</h2>
+          <h2 className="text-center">{t('career.currentOpenings')}</h2>
           <div className="mt-8 space-y-4">
             {OPENINGS.map((o) => (
               <div
                 key={o.role}
-                className="flex flex-col gap-3 rounded-xl bg-white p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-5 shadow-card sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <h5 className="font-heading text-lg font-semibold text-navy">{o.role}</h5>
@@ -38,7 +40,7 @@ export default function CareerPage() {
                 </div>
                 <Link to="/contact">
                   <Button variant="outline" size="sm">
-                    Apply Now
+                    {t('actions.applyNow', { ns: 'common' })}
                   </Button>
                 </Link>
               </div>

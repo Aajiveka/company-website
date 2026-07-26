@@ -27,6 +27,6 @@ export const ROLE_HOME: Record<RoleId, string> = {
   [Role.QC1]: '/recruitment/candidates',
   [Role.QC2]: '/recruitment/candidates',
   [Role.Client]: '/company/profile',
-  [Role.Admin]: '/company/profile',
+  [Role.Admin]: '/admin',
   [Role.Subscription]: '/pricing',
 };

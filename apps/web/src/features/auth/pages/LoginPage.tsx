@@ -2,7 +2,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getErrorMessage } from '@/lib/axios';
+import { isAxiosError } from 'axios';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
@@ -10,30 +11,35 @@ import { authApi } from '../auth.api';
 import { loginSchema, type LoginValues } from '../auth.types';
 import { ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
+import SocialLoginButtons from '../components/SocialLoginButtons';
 
 export default function LoginPage() {
   const { setSession } = useAuth();
   const { notify } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
   const from = (location.state as { from?: Location } | null)?.from?.pathname;
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginValues>({ resolver: zodResolver(loginSchema(tCommon)) });
 
   const mutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (session) => {
       setSession(session);
-      notify('Welcome back!', 'success');
-      // Mirror fnLogin_pass: land on the role home (or the originally requested page).
+      notify(t('login.welcomeBack'), 'success');
       navigate(from ?? ROLE_HOME[session.user.roleId], { replace: true });
     },
     onError: (err) => {
-      notify(getErrorMessage(err, 'Invalid username or password'), 'error');
+      const msg = isAxiosError(err)
+        ? (err.response?.data as { message?: string })?.message ?? t('login.invalidCredentials')
+        : t('login.somethingWrong');
+      notify(msg, 'error');
     },
   });
 
@@ -41,40 +47,39 @@ export default function LoginPage() {
     <>
     <Seo title="Login" description="Log in to your Aajiveka account to manage jobs, applications, and your career profile." path="/login" noIndex />
     <AuthShell
-      title="Login to your account"
-      subtitle="Candidates, Employers & Admins"
+      title={t('login.title')}
+      subtitle={t('login.subtitle')}
       footer={
         <>
-          Don&apos;t have an account?{' '}
+          {t('login.noAccount')}{' '}
           <Link to="/register" className="font-medium text-primary hover:underline">
-            Register now
+            {t('login.registerLink')}
           </Link>
         </>
       }
     >
+      <SocialLoginButtons mode="login" />
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
         <Input
-          label="Username or Email"
-          required
+          label={t('login.usernameOrEmail')}
           autoComplete="username"
           error={errors.userName?.message}
           {...register('userName')}
         />
         <Input
-          label="Password"
+          label={t('login.password')}
           type="password"
-          required
           autoComplete="current-password"
           error={errors.password?.message}
           {...register('password')}
         />
         <div className="text-right">
           <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-            Forgot password?
+            {t('login.forgotPassword')}
           </Link>
         </div>
         <Button type="submit" className="w-full" isLoading={mutation.isPending}>
-          Login
+          {t('login.loginButton')}
         </Button>
       </form>
     </AuthShell>

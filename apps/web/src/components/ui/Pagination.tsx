@@ -17,36 +17,35 @@ export function Pagination({ page, pageCount, onChange }: PaginationProps) {
     pages.push(p);
   }
 
-  const btn = 'flex h-10 min-w-10 items-center justify-center rounded-lg border px-2 text-sm transition sm:h-9 sm:min-w-9';
+  const btn = 'flex h-10 min-w-10 items-center justify-center rounded-lg border px-2 text-sm transition sm:h-9 sm:min-w-9 dark:text-gray-200 focus-visible:ring-2 focus-visible:ring-primary/40';
 
   return (
     <nav className="flex items-center gap-1" aria-label="Pagination">
       <button
-        className={cn(btn, 'border-gray-200 disabled:opacity-40')}
+        className={cn(btn, 'border-gray-200 disabled:opacity-40 dark:border-gray-600')}
         onClick={() => onChange(page - 1)}
         disabled={page <= 1}
         aria-label="Previous page"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
-      {pages[0] > 1 && <span className="px-1 text-gray-400">…</span>}
+      {pages[0] > 1 && <span className="px-1 text-gray-400 dark:text-gray-500" aria-label="More pages">…</span>}
       {pages.map((p) => (
         <button
           key={p}
           onClick={() => onChange(p)}
           aria-current={p === page ? 'page' : undefined}
-          aria-label={`Page ${p}`}
           className={cn(
             btn,
-            p === page ? 'border-primary bg-primary text-white' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800',
+            p === page ? 'border-primary bg-primary text-white' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700',
           )}
         >
           {p}
         </button>
       ))}
-      {pages[pages.length - 1] < pageCount && <span className="px-1 text-gray-400">…</span>}
+      {pages[pages.length - 1] < pageCount && <span className="px-1 text-gray-400 dark:text-gray-500" aria-label="More pages">…</span>}
       <button
-        className={cn(btn, 'border-gray-200 disabled:opacity-40')}
+        className={cn(btn, 'border-gray-200 disabled:opacity-40 dark:border-gray-600')}
         onClick={() => onChange(page + 1)}
         disabled={page >= pageCount}
         aria-label="Next page"

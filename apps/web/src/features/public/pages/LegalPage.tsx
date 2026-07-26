@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Seo } from '@/components/Seo';
 
 interface Section {
@@ -200,13 +201,14 @@ const TERMS: Section[] = [
 
 /** Shared legal/content layout for Privacy Policy and Terms & Conditions. */
 export default function LegalPage({ variant }: { variant: 'privacy' | 'terms' }) {
+  const { t } = useTranslation('common');
   const isPrivacy = variant === 'privacy';
   const sections = isPrivacy ? PRIVACY : TERMS;
 
   return (
     <section className="pt-28 pb-16">
       <Seo
-        title={isPrivacy ? 'Privacy Policy' : 'Terms and Conditions'}
+        title={isPrivacy ? t('legal.privacyPolicy') : t('legal.termsAndConditions')}
         description={
           isPrivacy
             ? 'Read the Aajiveka privacy policy. Learn how we collect, use, and protect your personal information.'
@@ -215,10 +217,10 @@ export default function LegalPage({ variant }: { variant: 'privacy' | 'terms' })
         path={isPrivacy ? '/privacy-policy' : '/terms'}
       />
       <div className="container max-w-3xl">
-        <h1 className="font-heading text-3xl font-bold text-navy">
-          {isPrivacy ? 'Privacy Policy' : 'Terms and Conditions'}
+        <h1 className="font-heading text-2xl font-bold text-navy sm:text-3xl">
+          {isPrivacy ? t('legal.privacyPolicy') : t('legal.termsAndConditions')}
         </h1>
-        <p className="mt-2 text-sm text-gray-500">Last updated: July 2026</p>
+        <p className="mt-2 text-sm text-gray-500">{t('legal.lastUpdated', { date: 'July 2026' })}</p>
         <div className="mt-8 space-y-8">
           {sections.map((s) => (
             <div key={s.heading}>

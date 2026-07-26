@@ -2,18 +2,22 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Bell, Trash2 } from 'lucide-react';
-import { Badge, Breadcrumbs, Button, Card, Input, ListSkeleton, Select, useToast } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { AlertListSkeleton, Badge, Breadcrumbs, Button, Card, Input, Select, useToast } from '@/components/ui';
 import { useCreateJobAlert, useJobAlerts } from '../candidate.api';
 
-const schema = z.object({
-  keyword: z.string().min(2, 'Enter a keyword'),
-  location: z.string().min(2, 'Enter a location'),
+const schema = (t: TFunction) => z.object({
+  keyword: z.string().min(2, t('validation.enterKeyword')),
+  location: z.string().min(2, t('validation.enterLocation')),
   frequency: z.enum(['Daily', 'Weekly']),
 });
-type Values = z.infer<typeof schema>;
+type Values = z.infer<ReturnType<typeof schema>>;
 
 /** Candidate — job alerts (candidate-dashboard-job-alerts.aspx). */
 export default function JobAlertsPage() {
+  const { t } = useTranslation('jobs');
+  const { t: tCommon } = useTranslation('common');
   const { data: alerts, isLoading } = useJobAlerts();
   const create = useCreateJobAlert();
   const { notify } = useToast();
@@ -23,42 +27,42 @@ export default function JobAlertsPage() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { frequency: 'Daily' } });
+  } = useForm<Values>({ resolver: zodResolver(schema(tCommon)), defaultValues: { frequency: 'Daily' } });
 
   const onSubmit = (values: Values) =>
     create.mutate(values, {
       onSuccess: () => {
-        notify('Job alert created.', 'success');
+        notify(t('alerts.created'), 'success');
         reset({ keyword: '', location: '', frequency: 'Daily' });
       },
     });
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Breadcrumbs items={[{ label: 'Dashboard', to: '/candidate/profile' }, { label: 'Job Alerts' }]} />
-      <h1 className="mb-4 font-heading text-2xl font-bold text-navy">Job Alerts</h1>
+      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/candidate/profile' }, { label: t('alerts.heading') }]} />
+      <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{t('alerts.heading')}</h1>
 
       <Card className="mb-6">
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2 sm:items-end lg:grid-cols-4" noValidate>
-          <Input label="Keyword" required placeholder="e.g. React Developer" error={errors.keyword?.message} {...register('keyword')} />
-          <Input label="Location" required placeholder="e.g. Pune" error={errors.location?.message} {...register('location')} />
+          <Input label={t('alerts.keyword')} placeholder={t('alerts.keywordPlaceholder')} error={errors.keyword?.message} {...register('keyword')} />
+          <Input label={t('alerts.location')} placeholder={t('alerts.locationPlaceholder')} error={errors.location?.message} {...register('location')} />
           <Select
-            label="Frequency"
+            label={t('alerts.frequency')}
             options={[
-              { label: 'Daily', value: 'Daily' },
-              { label: 'Weekly', value: 'Weekly' },
+              { label: t('alerts.daily'), value: 'Daily' },
+              { label: t('alerts.weekly'), value: 'Weekly' },
             ]}
             {...register('frequency')}
           />
           <Button type="submit" isLoading={create.isPending}>
-            Create Alert
+            {t('alerts.createButton')}
           </Button>
         </form>
       </Card>
 
       <div className="space-y-3">
         {isLoading ? (
-          <ListSkeleton count={3} />
+          <AlertListSkeleton />
         ) : (
           (alerts ?? []).map((a) => (
             <Card key={a.alertId} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -74,7 +78,7 @@ export default function JobAlertsPage() {
               <div className="flex items-center gap-3">
                 <Badge tone="blue">{a.frequency}</Badge>
                 <button
-                  onClick={() => notify('Alert removed.', 'info')}
+                  onClick={() => notify(t('alerts.removed'), 'info')}
                   className="text-gray-400 hover:text-danger"
                   aria-label="Delete alert"
                 >

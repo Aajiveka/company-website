@@ -3,13 +3,15 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { compression } from 'vite-plugin-compression2';
 import path from 'node:path';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode: _mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    compression({ algorithms: ['gzip', 'brotliCompress'] }),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'image/favicon.svg', 'image/apple-touch-icon.png'],
@@ -28,6 +30,16 @@ export default defineConfig({
           { src: '/image/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
           { src: '/image/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        shortcuts: [
+          { name: 'Search Jobs', url: '/jobs', icons: [{ src: '/image/pwa-192x192.png', sizes: '192x192' }] },
+          { name: 'My Profile', url: '/candidate/profile', icons: [{ src: '/image/pwa-192x192.png', sizes: '192x192' }] },
+          { name: 'Applied Jobs', url: '/candidate/applied-jobs', icons: [{ src: '/image/pwa-192x192.png', sizes: '192x192' }] },
+        ],
+        share_target: {
+          action: '/jobs',
+          method: 'GET',
+          params: { title: 'q', text: 'q', url: 'q' },
+        },
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
@@ -47,6 +59,24 @@ export default defineConfig({
             options: {
               cacheName: 'api-cache',
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/api\/jobs\/\d+$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'job-details-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 3 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /\/locales\/.+\.json$/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'i18n-cache',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 7 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
@@ -86,8 +116,13 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'query-vendor': ['@tanstack/react-query', 'axios'],
+          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'i18n-vendor': ['i18next', 'react-i18next', 'i18next-http-backend', 'i18next-browser-languagedetector'],
+          'ui-vendor': ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          'pdf-vendor': ['html2canvas-pro', 'jspdf'],
+          'state-vendor': ['zustand'],
         },
       },
     },
   },
-});
+}));
