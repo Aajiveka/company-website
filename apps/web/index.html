@@ -10,6 +10,7 @@
       content="Aajiveka — India's next-gen job portal connecting talented professionals with top employers. Search jobs, build resumes, and advance your career."
     />
     <meta name="theme-color" content="#005985" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="canonical" href="https://aajiveka.com/" />
 
     <!-- Open Graph defaults (overridden per-page by React 19 meta hoisting) -->
@@ -47,5 +48,12 @@
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>

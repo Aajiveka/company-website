@@ -8,6 +8,7 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -79,6 +80,7 @@ export class FilesController {
   // ────────────────────────────────────────────────────────────────────────────
 
   @Post('resume')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Roles(Role.Subscriber)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
@@ -103,6 +105,7 @@ export class FilesController {
   }
 
   @Post('avatar')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Roles(Role.Subscriber)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')

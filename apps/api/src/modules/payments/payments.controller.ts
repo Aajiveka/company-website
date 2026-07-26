@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Headers, HttpCode, Param, Post, Req } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { Public } from '@/common/decorators/public.decorator';
@@ -30,6 +31,7 @@ export class PaymentsController {
   // ---------------------------------------------------------------------------
 
   @Post('create-order')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiBearerAuth()
   @Roles(Role.Subscriber)
   @ApiOperation({ summary: 'Create a Razorpay order for the selected plan' })
@@ -41,6 +43,7 @@ export class PaymentsController {
   }
 
   @Post('verify')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiBearerAuth()
   @Roles(Role.Subscriber)
   @ApiOperation({ summary: 'Verify Razorpay payment after checkout completes' })
@@ -87,6 +90,7 @@ export class PaymentsController {
   // ---------------------------------------------------------------------------
 
   @Post('orders')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiBearerAuth()
   @Roles(Role.Subscriber)
   @ApiOperation({ summary: 'Start a payment — returns the BillDesk redirect URL (legacy)' })

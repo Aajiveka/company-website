@@ -48,7 +48,8 @@ function sanitize(html: string): string {
         // Sanitize href to prevent javascript: urls
         if (el.tagName === 'A') {
           const href = el.getAttribute('href') ?? '';
-          if (href.trim().toLowerCase().startsWith('javascript:')) {
+          const normalizedHref = href.trim().toLowerCase();
+          if (normalizedHref.startsWith('javascript:') || normalizedHref.startsWith('data:')) {
             el.setAttribute('href', '#');
           }
           el.setAttribute('target', '_blank');
@@ -113,7 +114,7 @@ export default function RichTextEditor({
     }
     const el = editorRef.current;
     if (el && el.innerHTML !== value) {
-      el.innerHTML = value;
+      el.innerHTML = sanitize(value);
     }
   }, [value]);
 

@@ -74,6 +74,7 @@ model ClientContacts {
   contactPersonRole            String? @db.VarChar(50)            @map("ContactPersonRole")
 
   client                       ClientMstr                         @relation("ClientContactsToClientMstr", fields: [clientID], references: [clientID])
+  @@index([clientID])
   @@map("tblClientContacts")
 }
 
@@ -84,6 +85,8 @@ model ClientJobSkill {
 
   job                          ClientJobs                         @relation("ClientJobSkillToClientJobs", fields: [jobID], references: [jobID])
   skill                        MstrSkills                         @relation("ClientJobSkillToMstrSkills", fields: [skillID], references: [skillID])
+  @@index([jobID])
+  @@index([skillID])
   @@map("tblClientJobSkill")
 }
 
@@ -120,6 +123,12 @@ model ClientJobs {
   SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToClientJobs")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToClientJobs")
   SavedJob                     SavedJob[]                         @relation("SavedJobToClientJobs")
+  @@index([clientID])
+  @@index([statusID])
+  @@index([designationID])
+  @@index([jobCityID])
+  @@index([timestampIns])
+  @@index([industryTypeID])
   @@map("tblClientJobs")
 }
 
@@ -171,6 +180,9 @@ model ClientMstr {
   SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToClientMstr")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToClientMstr")
   branding                     CompanyBranding?                   @relation("CompanyBrandingToClientMstr")
+  @@index([cityID])
+  @@index([userID])
+  @@index([industryTypeID])
   @@map("tblClientMstr")
 }
 
@@ -196,6 +208,7 @@ model JobInterviewStatus {
 
   interviewMode                MstrInterviewMode?                 @relation("JobInterviewStatusToMstrInterviewMode", fields: [interviewModeID], references: [interviewModeID])
   jobSubscriberMap             JobSubscriberMapping?              @relation("JobInterviewStatusToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+  @@index([jobSubscriberMapID])
   @@map("tblJobInterviewStatus")
 }
 
@@ -218,6 +231,9 @@ model JobSubscriberMapping {
   JobSubscriberStatus          JobSubscriberStatus[]              @relation("JobSubscriberStatusToJobSubscriberMapping")
   SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToJobSubscriberMapping")
   ApplicantNote                ApplicantNote[]                    @relation("ApplicantNoteToJobSubscriberMapping")
+  @@index([jobID])
+  @@index([subscriberID])
+  @@index([jobMapStatusID])
   @@map("tblJobSubscriberMapping")
 }
 
@@ -248,6 +264,7 @@ model MstrCily {
   SubscriberCVDetails_CityID   SubscriberCVDetails[]              @relation("SubscriberCVDetails_CityID_To_MstrCily")
   SubscriberCVDetails_CurrentCityID SubscriberCVDetails[]              @relation("SubscriberCVDetails_CurrentCityID_To_MstrCily")
   SubscriberPrefferedLocations SubscriberPrefferedLocations[]     @relation("SubscriberPrefferedLocationsToMstrCily")
+  @@index([stateID])
   @@map("tblMstrCily")
 }
 
@@ -502,6 +519,7 @@ model SecMapUserRoles {
 
   role                         SecRoles                           @relation("SecMapUserRolesToSecRoles", fields: [roleId], references: [roleId])
   user                         SecUser                            @relation("SecMapUserRolesToSecUser", fields: [userID], references: [userID])
+  @@index([userID])
   @@map("tblSecMapUserRoles")
 }
 
@@ -591,6 +609,8 @@ model SecUser {
   subscriber                   SubscriberRegistration?            @relation("SecUserToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
 
   AuthPasswordReset            AuthPasswordReset[]                @relation("AuthPasswordResetToSecUser")
+  @@index([userName])
+  @@index([active])
   @@map("tblSecUser")
 }
 
@@ -611,6 +631,7 @@ model SecUserLogin {
   nodeType                     Int?                               @map("NodeType")
 
   user                         SecUser?                           @relation("SecUserLoginToSecUser", fields: [userID], references: [userID])
+  @@index([userID])
   @@map("tblSecUserLogin")
 }
 
@@ -659,6 +680,9 @@ model SubscriberCVDetails {
   skill                        MstrSkills?                        @relation("SubscriberCVDetailsToMstrSkills", fields: [skillID], references: [skillID])
   subFunction                  MstrSubFunctions?                  @relation("SubscriberCVDetailsToMstrSubFunctions", fields: [subFunctionID], references: [subFunctionID])
   subscriber                   SubscriberRegistration             @relation("SubscriberCVDetailsToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  @@index([skillID])
+  @@index([currentCityID])
+  @@index([industryTypeID])
   @@map("tblSubscriberCVDetails")
 }
 
@@ -701,6 +725,7 @@ model SubscriberEducation {
   courseType                   MstrCourseType?                    @relation("SubscriberEducationToMstrCourseType", fields: [courseTypeID], references: [courseTypeID])
   degree                       MstrEducationDegree?               @relation("SubscriberEducationToMstrEducationDegree", fields: [degreeID], references: [degreeID])
   subscriber                   SubscriberRegistration             @relation("SubscriberEducationToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  @@index([subscriberID])
   @@map("tblSubscriberEducation")
 }
 
@@ -724,6 +749,7 @@ model SubscriberEmployer {
   designation                  MstrDesignation?                   @relation("SubscriberEmployerToMstrDesignation", fields: [designationID], references: [designationID])
   employeeType                 MstrEmpType?                       @relation("SubscriberEmployerToMstrEmpType", fields: [employeeTypeID], references: [employeeTypeID])
   subscriber                   SubscriberRegistration?            @relation("SubscriberEmployerToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  @@index([subscriberID])
   @@map("tblSubscriberEmployer")
 }
 
@@ -742,6 +768,7 @@ model SubscriberJobStatusLatest {
   jobMapStatus                 MstrJobMappingStatus?              @relation("SubscriberJobStatusLatestToMstrJobMappingStatus", fields: [jobMapStatusID], references: [jobMapStatusID])
   jobSubscriberMap             JobSubscriberMapping?              @relation("SubscriberJobStatusLatestToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
   subscriber                   SubscriberRegistration             @relation("SubscriberJobStatusLatestToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  @@index([jobSubscriberMapID])
   @@map("tblSubscriberJobStatusLatest")
 }
 
@@ -829,6 +856,7 @@ model SubscriberStatusHistory {
   status                       MstrStatus?                        @relation("SubscriberStatusHistoryToMstrStatus", fields: [statusID], references: [statusID])
   subscriber                   SubscriberRegistration?            @relation("SubscriberStatusHistoryToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
   user                         SecUser?                           @relation("SubscriberStatusHistoryToSecUser", fields: [userID], references: [userID])
+  @@index([subscriberID])
   @@map("tblSubscriberStatusHistory")
 }
 
@@ -1022,6 +1050,8 @@ model BlogPost {
   createdAt                    DateTime                           @default(now()) @db.Timestamp(6) @map("CreatedAt")
   publishedAt                  DateTime?                          @db.Timestamp(6) @map("PublishedAt")
   updatedAt                    DateTime?                          @db.Timestamp(6) @map("UpdatedAt")
+  @@index([status])
+  @@index([createdAt])
   @@map("tblBlogPost")
 }
 
@@ -1033,6 +1063,7 @@ model SavedSearch {
   query                        String?                            @map("Query")
   filters                      String?                            @map("Filters")  // JSON string
   createdAt                    DateTime                           @default(now()) @db.Timestamp(6) @map("CreatedAt")
+  @@index([subscriberID])
   @@map("tblSavedSearch")
 }
 

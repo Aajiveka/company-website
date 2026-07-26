@@ -1,0 +1,26 @@
+{
+  "name": "Aajiveka — Your Ultimate Career Partner",
+  "short_name": "Aajiveka",
+  "description": "India's next-gen job portal connecting talented professionals with top employers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#005985",
+  "icons": [
+    {
+      "src": "/image/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/image/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "en",
+  "dir": "ltr"
+}
