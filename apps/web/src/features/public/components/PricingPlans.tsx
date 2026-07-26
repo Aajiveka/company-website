@@ -90,13 +90,32 @@ export function PricingPlans() {
   return (
     <div className="container py-12">
       {/* Tier tabs */}
-      <div className="mx-auto mb-10 flex max-w-2xl flex-col gap-2 rounded-full bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-1.5 shadow-card sm:flex-row">
+      <div
+        role="tablist"
+        aria-label={t('labels.pricingTiers', { defaultValue: 'Pricing tiers' })}
+        className="mx-auto mb-10 flex max-w-2xl flex-col gap-2 rounded-full bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-1.5 shadow-card sm:flex-row"
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const idx = tiers.findIndex((tt) => tt.id === activeId);
+            setTierId(tiers[(idx + 1) % tiers.length].id);
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const idx = tiers.findIndex((tt) => tt.id === activeId);
+            setTierId(tiers[(idx - 1 + tiers.length) % tiers.length].id);
+          }
+        }}
+      >
         {tiers.map((t) => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={t.id === activeId}
+            aria-controls={`tier-panel-${t.id}`}
+            tabIndex={t.id === activeId ? 0 : -1}
             onClick={() => setTierId(t.id)}
             className={cn(
-              'flex-1 rounded-full px-2 py-2 text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm',
+              'flex-1 rounded-full px-2 py-2 text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm focus-visible:ring-2 focus-visible:ring-primary/40',
               t.id === activeId ? 'bg-primary text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700',
             )}
           >
@@ -106,7 +125,7 @@ export function PricingPlans() {
       </div>
 
       {/* Plan cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div role="tabpanel" id={`tier-panel-${activeId}`} aria-label={tier.label} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {tier.plans.map((plan) => (
           <div
             key={plan.key}

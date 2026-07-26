@@ -54,11 +54,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               key={id}
               className={cn('flex items-start gap-2 rounded-lg border p-3 text-sm shadow-lg', colors[kind])}
               role="alert"
-              aria-live="polite"
             >
               <Icon className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
               <span className="flex-1">{message}</span>
-              <button onClick={() => remove(id)} aria-label="Dismiss">
+              <button onClick={() => remove(id)} aria-label="Dismiss" className="rounded focus-visible:ring-2 focus-visible:ring-primary/40">
                 <X className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
               </button>
             </div>

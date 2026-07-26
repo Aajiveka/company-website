@@ -7,6 +7,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Breadcrumbs, Button, Card, CvManagerSkeleton, Input, Select, useToast } from '@/components/ui';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import {
   useCvEditProfile,
   useCvMasters,
@@ -56,10 +57,12 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
   const update = useUpdatePersonal();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<PersonalValues>({
+  const { register, handleSubmit, setValue, formState: { errors, isDirty } } = useForm<PersonalValues>({
     resolver: zodResolver(personalSchema(tCommon)),
     defaultValues: { ...data, email: data.email ?? '', cityId: data.cityId ?? undefined },
   });
+
+  useUnsavedChanges(isDirty);
 
   // Cascading state → city
   const initState = data.cityId ? masters?.cities.find((c) => c.id === data.cityId)?.stateId ?? '' : '';
@@ -150,7 +153,7 @@ function ProfessionalSection({
   const update = useUpdateProfessional();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfessionalValues>({
+  const { register, handleSubmit, setValue, formState: { errors, isDirty } } = useForm<ProfessionalValues>({
     resolver: zodResolver(professionalSchema),
     defaultValues: {
       subFunctionId: data.subFunctionId ?? undefined,
@@ -163,6 +166,8 @@ function ProfessionalSection({
       flgReadyToRelocate: data.flgReadyToRelocate,
     },
   });
+  useUnsavedChanges(isDirty);
+
   const [preferredCityIds, setPreferredCityIds] = useState<number[]>(data.preferredCityIds);
   const [tagsText, setTagsText] = useState(data.tagNames.join(', '));
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { CalendarCheck, Check, StickyNote, X } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Badge, Breadcrumbs, Button, statusTone, Table, useToast, type Column } from '@/components/ui';
+import { Badge, Breadcrumbs, Button, ConfirmDialog, statusTone, Table, useToast, type Column } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useApplicants, useBulkDecideApplicants, useDecideApplicant, type ApplicantRow } from '../client.api';
 import { ApplicantNotesModal } from '../components/ApplicantNotesModal';
@@ -17,8 +17,10 @@ export default function ApplicantsPage() {
   const bulkDecide = useBulkDecideApplicants();
   const { notify } = useToast();
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
   const [interviewTarget, setInterviewTarget] = useState<{ id: number; name: string } | null>(null);
   const [notesTarget, setNotesTarget] = useState<{ id: number; name: string } | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null);
 
   const actionableRows = (data ?? []).filter((r) => r.jobStatus === 'Applied' || r.jobStatus === 'Mapped');
   const allSelected = actionableRows.length > 0 && actionableRows.every((r) => selected.has(r.jobSubscriberMapId));
@@ -112,7 +114,7 @@ export default function ApplicantsPage() {
                 <Check className="h-3.5 w-3.5" /> {t('applicants.shortlist')}
               </button>
               <button
-                onClick={() => act(r.jobSubscriberMapId, 'Rejected')}
+                onClick={() => setRejectTarget({ id: r.jobSubscriberMapId, name: r.fullName })}
                 className="inline-flex items-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100"
               >
                 <X className="h-3.5 w-3.5" /> {t('applicants.reject')}
@@ -159,7 +161,7 @@ export default function ApplicantsPage() {
             <Button
               size="sm"
               variant="danger"
-              onClick={() => bulkAct('Rejected')}
+              onClick={() => setBulkRejectOpen(true)}
               disabled={bulkDecide.isPending}
             >
               <X className="mr-1 h-3.5 w-3.5" /> {t('bulk.bulkReject')}
@@ -202,6 +204,42 @@ export default function ApplicantsPage() {
           candidateName={notesTarget.name}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!rejectTarget}
+        title={t('applicants.rejectTitle', { defaultValue: 'Reject Applicant' })}
+        message={t('applicants.rejectWarning', {
+          name: rejectTarget?.name,
+          defaultValue: `Are you sure you want to reject ${rejectTarget?.name}?`,
+        })}
+        confirmLabel={t('applicants.reject', { defaultValue: 'Reject' })}
+        variant="danger"
+        onConfirm={() => {
+          if (rejectTarget) {
+            act(rejectTarget.id, 'Rejected');
+            setRejectTarget(null);
+          }
+        }}
+        onCancel={() => setRejectTarget(null)}
+        isLoading={decide.isPending}
+      />
+
+      <ConfirmDialog
+        isOpen={bulkRejectOpen}
+        title={t('bulk.bulkRejectTitle', { defaultValue: 'Bulk Reject' })}
+        message={t('bulk.bulkRejectWarning', {
+          count: selected.size,
+          defaultValue: `Are you sure you want to reject ${selected.size} applicant(s)?`,
+        })}
+        confirmLabel={t('bulk.bulkReject')}
+        variant="danger"
+        onConfirm={() => {
+          bulkAct('Rejected');
+          setBulkRejectOpen(false);
+        }}
+        onCancel={() => setBulkRejectOpen(false)}
+        isLoading={bulkDecide.isPending}
+      />
     </div>
   );
 }

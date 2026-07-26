@@ -19,3 +19,7 @@ export { Skeleton, CardSkeleton, ProfileSkeleton, CompanyProfileSkeleton, Docume
 export { Dropdown } from './Dropdown';
 export { HierarchicalSelect } from './HierarchicalSelect';
 export { Autocomplete } from './Autocomplete';
+export { ConfirmDialog } from './ConfirmDialog';
+export type { ConfirmDialogProps } from './ConfirmDialog';
+export { ErrorSummary } from './ErrorSummary';
+export type { ErrorSummaryProps } from './ErrorSummary';

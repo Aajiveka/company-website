@@ -5,8 +5,9 @@ import { z } from 'zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Breadcrumbs, Button, Card, FormSkeleton, Input, Select, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, ErrorSummary, FormSkeleton, Input, Select, useToast } from '@/components/ui';
 import RichTextEditor from '@/components/RichTextEditor';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { useCompanyJobs, useCompanyMasters, usePostJob, useUpdateJob } from '../client.api';
 
 const schema = (t: TFunction) => z.object({
@@ -39,8 +40,10 @@ export default function JobPostPage() {
     reset,
     setValue,
     control,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<Values>({ resolver: zodResolver(schema(tCommon)) });
+
+  useUnsavedChanges(isDirty);
 
   const job = isEdit ? jobs?.find((j) => String(j.jobId) === id) : undefined;
 
@@ -89,6 +92,7 @@ export default function JobPostPage() {
       ) : (
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <ErrorSummary errors={errors} heading={tCommon('validation.errorSummary', 'Please fix the following errors:')} />
           <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label={t('jobPost.designation')}

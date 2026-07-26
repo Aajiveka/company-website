@@ -85,7 +85,7 @@ function ToolbarButton({ icon, label, isActive, onClick }: ToolbarButtonProps) {
         onClick();
       }}
       className={cn(
-        'rounded p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600',
+        'rounded p-1.5 text-gray-600 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-gray-400 dark:hover:bg-gray-600',
         isActive && 'bg-gray-200 text-primary dark:bg-gray-600 dark:text-primary',
       )}
     >
@@ -163,7 +163,7 @@ export default function RichTextEditor({
   return (
     <div className={cn('rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden', className)}>
       {/* Toolbar */}
-      <div className="flex flex-wrap gap-0.5 border-b border-gray-200 bg-gray-50 px-2 py-1.5 dark:border-gray-600 dark:bg-gray-700">
+      <div role="toolbar" aria-label="Formatting options" className="flex flex-wrap gap-0.5 border-b border-gray-200 bg-gray-50 px-2 py-1.5 dark:border-gray-600 dark:bg-gray-700">
         <ToolbarButton
           command="bold"
           icon={<Bold className="h-4 w-4" />}
@@ -222,6 +222,7 @@ export default function RichTextEditor({
           contentEditable
           role="textbox"
           aria-multiline
+          aria-label={placeholder}
           className="w-full bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-primary/30 dark:bg-gray-700 dark:text-gray-200"
           style={{ minHeight }}
           onInput={handleInput}

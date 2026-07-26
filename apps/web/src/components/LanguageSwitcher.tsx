@@ -11,7 +11,7 @@ export function LanguageSwitcher() {
     <button
       type="button"
       onClick={() => i18n.changeLanguage(next)}
-      className="flex items-center gap-1 rounded-full border border-white/40 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-white/15 sm:text-sm"
+      className="flex items-center gap-1 rounded-full border border-white/40 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white/60 sm:text-sm"
       aria-label={`Switch language to ${label}`}
     >
       <Globe className="h-3.5 w-3.5" aria-hidden />

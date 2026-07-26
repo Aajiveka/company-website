@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Button, Input, useToast } from '@/components/ui';
+import { Button, ErrorSummary, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
@@ -79,6 +79,7 @@ export default function RegisterPage() {
       {!pending && <SocialLoginButtons mode="register" />}
       {!pending ? (
         <form key="register-form" onSubmit={handleSubmit((v) => registerMutation.mutate(v))} className="space-y-4" noValidate>
+          <ErrorSummary errors={errors} heading={tCommon('validation.errorSummary', 'Please fix the following errors:')} />
           <Input label={t('register.fullName')} error={errors.fullName?.message} {...register('fullName')} />
           <Input label={t('register.email')} type="email" error={errors.email?.message} {...register('email')} />
           <Input

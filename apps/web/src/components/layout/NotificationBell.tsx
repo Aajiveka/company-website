@@ -111,7 +111,7 @@ export function NotificationBell() {
     [notifications, seenAt],
   );
 
-  // Click-outside
+  // Click-outside and Escape key
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: MouseEvent) => {
@@ -119,8 +119,15 @@ export function NotificationBell() {
         setIsOpen(false);
       }
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [isOpen]);
 
   // Mark seen when opening
@@ -140,8 +147,9 @@ export function NotificationBell() {
     <div ref={containerRef} className="relative">
       <button
         onClick={toggle}
-        className="relative rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+        className="relative rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-gray-300 dark:hover:bg-gray-700"
         aria-label={t('notifications.bell')}
+        aria-haspopup="true"
         aria-expanded={isOpen}
       >
         <Bell className="h-5 w-5" />
@@ -160,7 +168,7 @@ export function NotificationBell() {
             {notifications.length > 0 && (
               <button
                 onClick={markSeen}
-                className="text-xs font-medium text-primary hover:underline"
+                className="text-xs font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
               >
                 {t('notifications.markAllRead')}
               </button>
@@ -208,7 +216,7 @@ export function NotificationBell() {
             <div className="border-t border-gray-100 px-4 py-2 dark:border-gray-700">
               <button
                 onClick={() => { setIsOpen(false); navigate('/candidate/applied-jobs'); }}
-                className="w-full text-center text-xs font-medium text-primary hover:underline"
+                className="w-full rounded text-center text-xs font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {t('notifications.viewAll')}
               </button>

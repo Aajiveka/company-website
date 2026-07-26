@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Copy, Pencil, Plus, XCircle } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Badge, Breadcrumbs, Button, Modal, statusTone, Table, useToast, type Column } from '@/components/ui';
+import { Badge, Breadcrumbs, Button, ConfirmDialog, statusTone, Table, useToast, type Column } from '@/components/ui';
 import { useCompanyJobs, useDeactivateJob, useDuplicateJob } from '../client.api';
 import type { JobListing } from '../client.types';
 
@@ -87,21 +87,16 @@ export default function ManageJobsPage() {
       </div>
       <Table columns={columns} data={data ?? []} rowKey={(j) => j.jobId} isLoading={isLoading} emptyMessage={t('manageJobs.noJobs')} />
 
-      <Modal open={!!confirmJob} onClose={() => setConfirmJob(null)} title={t('manageJobs.closeTitle')}>
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            {t('manageJobs.closeWarning', { designation: confirmJob?.designation, city: confirmJob?.city })}
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmJob(null)}>
-              {t('common:actions.cancel')}
-            </Button>
-            <Button variant="danger" size="sm" disabled={deactivate.isPending} onClick={onConfirmDeactivate}>
-              {t('manageJobs.closeButton')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <ConfirmDialog
+        isOpen={!!confirmJob}
+        title={t('manageJobs.closeTitle')}
+        message={t('manageJobs.closeWarning', { designation: confirmJob?.designation, city: confirmJob?.city })}
+        confirmLabel={t('manageJobs.closeButton')}
+        variant="danger"
+        onConfirm={onConfirmDeactivate}
+        onCancel={() => setConfirmJob(null)}
+        isLoading={deactivate.isPending}
+      />
     </div>
   );
 }

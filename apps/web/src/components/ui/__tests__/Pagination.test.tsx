@@ -13,8 +13,8 @@ describe('Pagination', () => {
 
   it('highlights current page with aria-current', () => {
     render(<Pagination page={2} pageCount={5} onChange={vi.fn()} />);
-    expect(screen.getByText('2')).toHaveAttribute('aria-current', 'true');
-    expect(screen.getByText('1')).toHaveAttribute('aria-current', 'false');
+    expect(screen.getByText('2')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('1')).not.toHaveAttribute('aria-current');
   });
 
   it('calls onChange with correct page number on click', () => {

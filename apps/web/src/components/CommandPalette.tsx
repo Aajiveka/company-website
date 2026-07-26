@@ -142,6 +142,9 @@ export default function CommandPalette() {
     return (
       <button
         key={item.id}
+        id={`cp-item-${item.id}`}
+        role="option"
+        aria-selected={isActive}
         data-active={isActive}
         className={cn(
           'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors',
@@ -173,7 +176,12 @@ export default function CommandPalette() {
       />
 
       {/* Palette container */}
-      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('commandPalette.placeholder')}
+        className="relative z-10 w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+      >
         {/* Search input */}
         <div className="flex items-center gap-3 border-b border-gray-200 px-4 dark:border-gray-700">
           <Search className="h-4 w-4 shrink-0 text-gray-400" />
@@ -184,6 +192,10 @@ export default function CommandPalette() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onInputKeyDown}
             placeholder={t('commandPalette.placeholder')}
+            aria-label={t('commandPalette.placeholder')}
+            aria-autocomplete="list"
+            aria-controls="command-palette-list"
+            aria-activedescendant={filtered.length > 0 ? `cp-item-${filtered[activeIndex]?.id}` : undefined}
             className="h-12 w-full border-0 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400 dark:text-gray-100 dark:placeholder:text-gray-500"
           />
           <kbd className="hidden shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 sm:inline dark:bg-gray-700 dark:text-gray-400">
@@ -192,7 +204,7 @@ export default function CommandPalette() {
         </div>
 
         {/* Results */}
-        <div ref={listRef} className="max-h-80 overflow-y-auto p-2">
+        <div ref={listRef} id="command-palette-list" role="listbox" className="max-h-80 overflow-y-auto p-2">
           {filtered.length === 0 && (
             <p className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
               {t('commandPalette.noResults')}

@@ -46,7 +46,7 @@ export function Footer() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60"
                   >
                     <Icon className="h-4 w-4" />
                   </a>
@@ -55,9 +55,15 @@ export function Footer() {
             </ul>
           </div>
 
-          <FooterColumn links={columnA} />
-          <FooterColumn links={columnB} />
-          <FooterColumn links={columnC} />
+          <nav aria-label="Footer links">
+            <FooterColumn links={columnA} />
+          </nav>
+          <nav aria-label="More links">
+            <FooterColumn links={columnB} />
+          </nav>
+          <nav aria-label="Legal">
+            <FooterColumn links={columnC} />
+          </nav>
         </div>
         <div className="mt-10 border-t border-white/15 pt-6 text-center text-sm text-white/80">
           {t('footer.copyright', { year: new Date().getFullYear() })}
@@ -72,7 +78,7 @@ function FooterColumn({ links }: { links: { label: string; to: string }[] }) {
     <ul className="space-y-2">
       {links.map((l) => (
         <li key={l.to}>
-          <Link to={l.to} className="text-white/90 transition hover:text-white">
+          <Link to={l.to} className="rounded text-white/90 transition hover:text-white focus-visible:ring-2 focus-visible:ring-white/60">
             {l.label}
           </Link>
         </li>

@@ -1,10 +1,10 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { Check, X, UserCircle2 } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Breadcrumbs, useToast } from '@/components/ui';
+import { Breadcrumbs, ConfirmDialog, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { api } from '@/lib/axios';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
@@ -36,7 +36,7 @@ function normalizeStatus(status: string): string {
 
 function ApplicantCard({ applicant, onAction, onDragStart, onDragEnd, columnId, index }: {
   applicant: ApplicantRow;
-  onAction: (id: number, decision: 'Shortlisted' | 'Rejected') => void;
+  onAction: (id: number, decision: 'Shortlisted' | 'Rejected', name?: string) => void;
   onDragStart: (itemId: string, columnId: string, index: number) => void;
   onDragEnd: () => void;
   columnId: string;
@@ -76,7 +76,7 @@ function ApplicantCard({ applicant, onAction, onDragStart, onDragEnd, columnId, 
           )}
           {canReject && (
             <button
-              onClick={() => onAction(applicant.jobSubscriberMapId, 'Rejected')}
+              onClick={() => onAction(applicant.jobSubscriberMapId, 'Rejected', applicant.fullName)}
               className="flex items-center gap-1 rounded bg-red-50 px-2 py-1 text-[10px] font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"
             >
               <X className="h-3 w-3" /> Reject
@@ -146,12 +146,35 @@ export default function PipelineBoardPage() {
     onReorder: handleReorder,
   });
 
-  const onAction = (id: number, decision: 'Shortlisted' | 'Rejected') => {
+  const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null);
+
+  const onAction = (id: number, decision: 'Shortlisted' | 'Rejected', name?: string) => {
+    if (decision === 'Rejected' && name) {
+      setRejectTarget({ id, name });
+      return;
+    }
     decide.mutate(
       { jobSubscriberMapId: id, decision },
       {
         onSuccess: () => notify(decision === 'Shortlisted' ? t('applicants.shortlisted') : t('applicants.rejected'), 'success'),
         onError: (e) => notify(isAxiosError(e) ? e.response?.data?.message ?? t('applicants.somethingWrong') : t('applicants.somethingWrong'), 'error'),
+      },
+    );
+  };
+
+  const confirmReject = () => {
+    if (!rejectTarget) return;
+    decide.mutate(
+      { jobSubscriberMapId: rejectTarget.id, decision: 'Rejected' },
+      {
+        onSuccess: () => {
+          notify(t('applicants.rejected'), 'success');
+          setRejectTarget(null);
+        },
+        onError: (e) => {
+          notify(isAxiosError(e) ? e.response?.data?.message ?? t('applicants.somethingWrong') : t('applicants.somethingWrong'), 'error');
+          setRejectTarget(null);
+        },
       },
     );
   };
@@ -207,6 +230,20 @@ export default function PipelineBoardPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!rejectTarget}
+        title={t('applicants.rejectTitle', { defaultValue: 'Reject Applicant' })}
+        message={t('applicants.rejectWarning', {
+          name: rejectTarget?.name,
+          defaultValue: `Are you sure you want to reject ${rejectTarget?.name}?`,
+        })}
+        confirmLabel={t('applicants.reject', { defaultValue: 'Reject' })}
+        variant="danger"
+        onConfirm={confirmReject}
+        onCancel={() => setRejectTarget(null)}
+        isLoading={decide.isPending}
+      />
     </div>
   );
 }

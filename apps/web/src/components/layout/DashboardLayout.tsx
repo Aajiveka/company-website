@@ -49,7 +49,7 @@ export function DashboardLayout() {
       <header className="fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 md:h-16 lg:pl-64 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center gap-3">
           <button
-            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden dark:text-gray-300 dark:hover:bg-gray-700"
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden dark:text-gray-300 dark:hover:bg-gray-700"
             onClick={() => setSidebarOpen((o) => !o)}
             aria-label={t('toggleMenu')}
           >
