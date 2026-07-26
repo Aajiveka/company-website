@@ -20,8 +20,8 @@ interface RazorpayCheckoutProps {
     razorpay_payment_id: string;
     razorpay_signature: string;
   }) => void;
-  /** Called when checkout is dismissed or payment fails. */
-  onFailure: (error?: { code?: string; description?: string; reason?: string }) => void;
+  /** Called when checkout is dismissed or payment fails. The `retry` flag indicates whether retrying is advisable. */
+  onFailure: (error?: { code?: string; description?: string; reason?: string; retry?: boolean }) => void;
   /** Optional prefill data. */
   prefill?: { name?: string; email?: string; contact?: string };
 }
@@ -47,6 +47,7 @@ declare global {
     Razorpay?: new (options: Record<string, unknown>) => {
       open: () => void;
       close: () => void;
+      on: (event: string, handler: (response: Record<string, unknown>) => void) => void;
     };
   }
 }
@@ -77,12 +78,22 @@ export function RazorpayCheckout({
     try {
       await loadRazorpayScript();
     } catch {
-      onFailure({ description: 'Could not load payment gateway. Please try again.' });
+      onFailure({
+        code: 'SCRIPT_LOAD_ERROR',
+        description: 'Could not load the payment gateway. Please check your internet connection and try again.',
+        reason: 'network',
+        retry: true,
+      });
       return;
     }
 
     if (!window.Razorpay) {
-      onFailure({ description: 'Payment gateway is not available.' });
+      onFailure({
+        code: 'GATEWAY_UNAVAILABLE',
+        description: 'Payment gateway is not available. This may be due to a browser extension blocking scripts. Please disable ad-blockers and try again.',
+        reason: 'blocked',
+        retry: true,
+      });
       return;
     }
 
@@ -102,7 +113,12 @@ export function RazorpayCheckout({
       },
       modal: {
         ondismiss: () => {
-          onFailure({ description: 'Payment was cancelled.' });
+          onFailure({
+            code: 'PAYMENT_CANCELLED',
+            description: 'Payment was cancelled. You can try again whenever you are ready.',
+            reason: 'dismissed',
+            retry: true,
+          });
         },
         escape: true,
         confirm_close: true,
@@ -114,6 +130,29 @@ export function RazorpayCheckout({
     };
 
     const rzp = new window.Razorpay(options);
+
+    rzp.on('payment.failed', (resp: Record<string, unknown>) => {
+      const meta = (resp.error ?? {}) as Record<string, string>;
+      const code = meta.code ?? 'PAYMENT_FAILED';
+      const reason = meta.reason ?? 'unknown';
+      const desc = meta.description ?? 'Payment could not be completed.';
+
+      // Provide user-friendly descriptions for common failure reasons
+      let userMessage: string;
+      switch (reason) {
+        case 'payment_cancelled':
+          userMessage = 'You cancelled the payment. You can try again whenever you are ready.';
+          break;
+        case 'payment_failed':
+          userMessage = `Payment failed: ${desc}. Please try with a different payment method or contact your bank.`;
+          break;
+        default:
+          userMessage = `Payment failed: ${desc}. Please try again or use a different payment method.`;
+      }
+
+      onFailure({ code, description: userMessage, reason, retry: true });
+    });
+
     rzp.open();
   }, [orderId, amount, currency, planName, keyId, onSuccess, onFailure, prefill]);
 

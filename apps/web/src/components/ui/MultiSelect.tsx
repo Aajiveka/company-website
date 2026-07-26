@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Search, X } from 'lucide-react';
 
 export interface MultiSelectOption {
@@ -25,12 +26,14 @@ export function MultiSelect({
   options,
   value,
   onChange,
-  placeholder = 'Select...',
+  placeholder,
   label,
   error,
   className = '',
   maxDisplay = 5,
 }: MultiSelectProps) {
+  const { t } = useTranslation('common');
+  const resolvedPlaceholder = placeholder ?? t('multiSelect.placeholder');
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -108,7 +111,7 @@ export function MultiSelect({
       >
         <div className="flex flex-1 flex-wrap items-center gap-1">
           {value.length === 0 ? (
-            <span className="text-gray-400 dark:text-gray-500">{placeholder}</span>
+            <span className="text-gray-400 dark:text-gray-500">{resolvedPlaceholder}</span>
           ) : (
             <>
               {displayedChips.map((item) => (
@@ -123,7 +126,7 @@ export function MultiSelect({
                       e.stopPropagation();
                       remove(item.value);
                     }}
-                    className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20"
+                    className="ml-0.5 rounded-full p-1 sm:p-0.5 min-h-[28px] min-w-[28px] sm:min-h-0 sm:min-w-0 flex items-center justify-center hover:bg-primary/20"
                     aria-label={`Remove ${item.label}`}
                   >
                     <X className="h-3 w-3" />
@@ -132,7 +135,7 @@ export function MultiSelect({
               ))}
               {overflowCount > 0 && (
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  +{overflowCount} more
+                  {t('multiSelect.more', { count: overflowCount })}
                 </span>
               )}
             </>
@@ -145,7 +148,7 @@ export function MultiSelect({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
+        <div className="absolute left-0 top-full z-50 mt-1 w-full max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
           {/* Search */}
           <div className="border-b border-gray-100 p-2 dark:border-gray-700">
             <div className="flex items-center gap-2 rounded-md border border-gray-200 px-2 dark:border-gray-600">
@@ -155,7 +158,8 @@ export function MultiSelect({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search..."
+                aria-label="Search options"
+                placeholder={t('multiSelect.search')}
                 className="h-8 w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-gray-200 dark:placeholder:text-gray-500"
               />
             </div>
@@ -165,7 +169,7 @@ export function MultiSelect({
           <ul role="listbox" className="max-h-48 overflow-y-auto py-1">
             {filtered.length === 0 ? (
               <li className="px-3 py-2 text-center text-sm text-gray-400 dark:text-gray-500">
-                No options found
+                {t('multiSelect.noOptions')}
               </li>
             ) : (
               filtered.map((option) => {
@@ -175,7 +179,7 @@ export function MultiSelect({
                     key={option.value}
                     role="option"
                     aria-selected={checked}
-                    className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="flex cursor-pointer items-center gap-2.5 px-3 py-2.5 sm:py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-gray-700"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       toggle(option.value);
@@ -206,13 +210,14 @@ export function MultiSelect({
           {/* Footer with count */}
           {value.length > 0 && (
             <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2 dark:border-gray-700">
-              <span className="text-xs text-gray-500 dark:text-gray-400">{value.length} selected</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{t('multiSelect.selected', { count: value.length })}</span>
               <button
                 type="button"
                 onClick={() => onChange([])}
                 className="text-xs text-primary hover:underline"
+                aria-label="Clear all selections"
               >
-                Clear all
+                {t('multiSelect.clearAll')}
               </button>
             </div>
           )}

@@ -493,7 +493,47 @@
     "exportPdf": "PDF निर्यात",
     "exporting": "निर्यात हो रहा है…",
     "exported": "रिपोर्ट निर्यात हो गई।",
-    "exportFailed": "रिपोर्ट निर्यात नहीं हो सकी।"
+    "exportFailed": "रिपोर्ट निर्यात नहीं हो सकी।",
+    "totalUsers": "कुल उपयोगकर्ता",
+    "totalJobs": "कुल नौकरियाँ",
+    "totalApplications": "कुल आवेदन",
+    "totalRevenue": "कुल राजस्व",
+    "recentSignups": "हाल के साइनअप",
+    "topDesignations": "शीर्ष पदनाम",
+    "topCities": "शीर्ष शहर",
+    "loading": "लोड हो रहा है...",
+    "liveData": "लाइव डेटा",
+    "tabs": {
+      "overview": "अवलोकन",
+      "users": "उपयोगकर्ता",
+      "jobs": "नौकरियाँ",
+      "applications": "आवेदन",
+      "revenue": "राजस्व"
+    },
+    "usersReport": "उपयोगकर्ता रिपोर्ट",
+    "usersReportDesc": "CSV के रूप में पूरी प्लेटफ़ॉर्म उपयोगकर्ता सूची निर्यात करें। साइन-अप अवधि के अनुसार फ़िल्टर करने के लिए तिथि सीमा का उपयोग करें।",
+    "exportUsers": "उपयोगकर्ता निर्यात करें",
+    "jobsReport": "नौकरी रिपोर्ट",
+    "jobsReportDesc": "पदनाम, कंपनी, CTC और स्थिति सहित सभी नौकरियाँ निर्यात करें।",
+    "exportJobs": "नौकरियाँ निर्यात करें",
+    "applicationsReport": "आवेदन रिपोर्ट",
+    "applicationsReportDesc": "उम्मीदवार विवरण और स्थिति सहित सभी नौकरी आवेदन निर्यात करें।",
+    "exportApplications": "आवेदन निर्यात करें",
+    "revenueReport": "भुगतान / राजस्व रिपोर्ट",
+    "revenueReportDesc": "सदस्य विवरण, योजना जानकारी और निपटान स्थिति सहित सभी भुगतान ऑर्डर निर्यात करें।",
+    "exportPayments": "भुगतान निर्यात करें"
+  },
+  "export": {
+    "exporting": "निर्यात हो रहा है..."
+  },
+  "dateRange": {
+    "last7days": "पिछले 7 दिन",
+    "last30days": "पिछले 30 दिन",
+    "thisMonth": "इस महीने",
+    "lastMonth": "पिछला महीना",
+    "thisYear": "इस वर्ष",
+    "from": "से",
+    "to": "तक"
   },
   "sourcing": {
     "heading": "उम्मीदवार सोर्सिंग",

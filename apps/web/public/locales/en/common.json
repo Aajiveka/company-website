@@ -312,5 +312,32 @@
     "privacyPolicy": "Privacy Policy",
     "termsAndConditions": "Terms and Conditions",
     "lastUpdated": "Last updated: {{date}}"
+  },
+  "fileUpload": {
+    "dragDrop": "Drag & drop files here",
+    "clickBrowse": "or click to browse",
+    "maxSize": "\"{{name}}\" exceeds {{size}}",
+    "invalidType": "\"{{name}}\" is not an accepted file type",
+    "removeFile": "Remove file"
+  },
+  "imageCropper": {
+    "preview": "Preview",
+    "cancel": "Cancel",
+    "cropSave": "Crop & Save"
+  },
+  "multiSelect": {
+    "placeholder": "Select...",
+    "search": "Search...",
+    "noOptions": "No options found",
+    "more": "+{{count}} more",
+    "selected": "{{count}} selected",
+    "clearAll": "Clear all"
+  },
+  "payment": {
+    "error": {
+      "loadFailed": "Could not load payment gateway. Please try again.",
+      "unavailable": "Payment gateway is not available."
+    },
+    "cancelled": "Payment was cancelled."
   }
 }

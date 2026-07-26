@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, type DragEvent, type ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, Image, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -66,6 +67,7 @@ export function FileUpload({
   progress,
   className,
 }: FileUploadProps) {
+  const { t } = useTranslation('common');
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [selected, setSelected] = useState<SelectedFile[]>([]);
@@ -80,11 +82,11 @@ export function FileUpload({
 
       for (const file of files) {
         if (!matchesAccept(file, accept)) {
-          rejected.push(`"${file.name}" is not an accepted file type`);
+          rejected.push(t('fileUpload.invalidType', { name: file.name }));
           continue;
         }
         if (maxSize && file.size > maxSize) {
-          rejected.push(`"${file.name}" exceeds ${formatBytes(maxSize)}`);
+          rejected.push(t('fileUpload.maxSize', { name: file.name, size: formatBytes(maxSize) }));
           continue;
         }
         valid.push(file);
@@ -95,7 +97,7 @@ export function FileUpload({
         error: rejected.length > 0 ? rejected.join('. ') : null,
       };
     },
-    [accept, maxSize],
+    [accept, maxSize, t],
   );
 
   const processFiles = useCallback(
@@ -158,6 +160,7 @@ export function FileUpload({
       <div
         role="button"
         tabIndex={0}
+        aria-label="Drop files here or click to browse"
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -172,7 +175,7 @@ export function FileUpload({
           }
         }}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition',
+          'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 sm:p-8 transition',
           'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:focus:ring-offset-gray-900',
           dragOver
             ? 'border-primary bg-primary/5 dark:bg-primary/10'
@@ -181,12 +184,12 @@ export function FileUpload({
           isUploading && 'pointer-events-none opacity-60',
         )}
       >
-        <Upload className="mb-2 h-8 w-8 text-gray-400 dark:text-gray-500" />
+        <Upload className="mb-2 h-6 w-6 sm:h-8 sm:w-8 text-gray-400 dark:text-gray-500" />
         <p className="text-sm font-medium text-navy dark:text-gray-200">
-          Drag & drop files here
+          {t('fileUpload.dragDrop')}
         </p>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          or click to browse
+          {t('fileUpload.clickBrowse')}
         </p>
       </div>
 
@@ -197,6 +200,7 @@ export function FileUpload({
         multiple={multiple}
         className="hidden"
         onChange={handleInputChange}
+        aria-label={label ?? 'File upload'}
       />
 
       {hint && !displayError && (
@@ -209,7 +213,14 @@ export function FileUpload({
 
       {/* Progress bar */}
       {isUploading && typeof progress === 'number' && (
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+        <div
+          className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+          role="progressbar"
+          aria-valuenow={Math.min(100, Math.max(0, progress))}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Upload progress"
+        >
           <div
             className="h-full rounded-full bg-primary transition-all duration-300"
             style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
@@ -219,11 +230,11 @@ export function FileUpload({
 
       {/* Selected file previews */}
       {selected.length > 0 && (
-        <div className="space-y-2">
+        <ul className="space-y-2" aria-label="Selected files">
           {selected.map((item, i) => (
-            <div
+            <li
               key={`${item.file.name}-${i}`}
-              className="flex items-center gap-3 rounded-lg border border-gray-200 p-2 dark:border-gray-700"
+              className="flex items-center gap-2 sm:gap-3 rounded-lg border border-gray-200 p-2 dark:border-gray-700 max-w-full overflow-hidden"
             >
               {item.preview ? (
                 <img
@@ -255,15 +266,15 @@ export function FileUpload({
                     e.stopPropagation();
                     removeFile(i);
                   }}
-                  className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                  aria-label="Remove file"
+                  className="rounded p-2 sm:p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                  aria-label={t('fileUpload.removeFile')}
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

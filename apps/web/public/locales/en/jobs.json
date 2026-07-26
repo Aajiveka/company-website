@@ -164,5 +164,17 @@
     "loading": "Loading alerts…",
     "created": "Job alert created.",
     "removed": "Alert removed."
+  },
+  "savedSearches": {
+    "saveCurrentSearch": "Save current search",
+    "saveSearchTitle": "Save Search",
+    "searchName": "Search name",
+    "searchNamePlaceholder": "e.g. Remote React jobs in Bangalore",
+    "cancel": "Cancel",
+    "save": "Save",
+    "title": "Saved Searches ({{count}})",
+    "savedDate": "Saved {{date}}",
+    "noFilters": "No filters",
+    "emptyState": "No saved searches yet. Run a search and save it for quick access."
   }
 }

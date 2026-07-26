@@ -1,7 +1,13 @@
 # Aajiveka
 
+[![CI](https://github.com/Aajiveka/company-website/actions/workflows/ci.yml/badge.svg)](https://github.com/Aajiveka/company-website/actions/workflows/ci.yml)
+[![Deploy](https://github.com/Aajiveka/company-website/actions/workflows/deploy.yml/badge.svg)](https://github.com/Aajiveka/company-website/actions/workflows/deploy.yml)
+
 Recruitment / ATS platform. A rebuild of **AajivikaPortal** (ASP.NET Web Forms + SQL Server),
 working from the legacy backup and reference sources.
+
+> **[Contributing Guide](CONTRIBUTING.md)** -- local setup, conventions, and PR process.
+> **[Deployment Guide](deploy/DEPLOYMENT.md)** -- secrets, storage, payments, and the legacy data migration.
 
 | | |
 |---|---|

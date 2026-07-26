@@ -94,6 +94,10 @@ vi.mock('../components/JobSearchBar', () => ({
   JobSearchBar: () => <div data-testid="job-search-bar" />,
 }));
 
+vi.mock('@/features/candidates/components/SavedSearches', () => ({
+  SavedSearches: () => <div data-testid="saved-searches" />,
+}));
+
 vi.mock('../components/JobFilters', () => ({
   JobFiltersPanel: () => <div data-testid="job-filters" />,
   DEFAULT_FILTERS: {

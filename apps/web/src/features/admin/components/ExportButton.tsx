@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, useToast } from '@/components/ui';
 import { api } from '@/lib/axios';
 
 interface ExportButtonProps {
@@ -30,6 +31,8 @@ export default function ExportButton({
   size = 'sm',
   variant = 'outline',
 }: ExportButtonProps) {
+  const { t } = useTranslation('dashboard');
+  const { notify } = useToast();
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
@@ -58,24 +61,24 @@ export default function ExportButton({
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Export failed:', err);
+    } catch {
+      notify('Export failed. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Button size={size} variant={variant} onClick={handleExport} disabled={loading}>
+    <Button size={size} variant={variant} onClick={handleExport} disabled={loading} className="w-full sm:w-auto">
       {loading ? (
         <span className="inline-flex items-center gap-1.5">
           <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          Exporting...
+          {t('export.exporting')}
         </span>
       ) : (
-        <span className="inline-flex items-center gap-1.5">
-          <Download className="h-3.5 w-3.5" />
-          {label}
+        <span className="inline-flex items-center gap-1.5 truncate">
+          <Download className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{label}</span>
         </span>
       )}
     </Button>

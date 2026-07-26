@@ -97,11 +97,20 @@ export function RangeSlider({
         />
         {/* Min handle */}
         <div
-          className="absolute top-2.5 -ml-2.5 h-5 w-5 cursor-grab rounded-full border-2 border-primary bg-white shadow-md transition-shadow hover:shadow-lg active:cursor-grabbing dark:bg-gray-800"
+          className="absolute top-2.5 -ml-2.5 h-5 w-5 cursor-grab rounded-full border-2 border-primary bg-white shadow-md transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/50 active:cursor-grabbing dark:bg-gray-800"
           style={{ left: `${minPercent}%` }}
           onPointerDown={handlePointerDown('min')}
           onMouseEnter={() => setHovering('min')}
           onMouseLeave={() => setHovering(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              onChange([Math.max(min, Math.min(value[0] - step, value[1])), value[1]]);
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              onChange([Math.min(value[0] + step, value[1]), value[1]]);
+            }
+          }}
           role="slider"
           aria-label={`${label ?? 'Range'} minimum`}
           aria-valuemin={min}
@@ -118,11 +127,20 @@ export function RangeSlider({
         </div>
         {/* Max handle */}
         <div
-          className="absolute top-2.5 -ml-2.5 h-5 w-5 cursor-grab rounded-full border-2 border-primary bg-white shadow-md transition-shadow hover:shadow-lg active:cursor-grabbing dark:bg-gray-800"
+          className="absolute top-2.5 -ml-2.5 h-5 w-5 cursor-grab rounded-full border-2 border-primary bg-white shadow-md transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/50 active:cursor-grabbing dark:bg-gray-800"
           style={{ left: `${maxPercent}%` }}
           onPointerDown={handlePointerDown('max')}
           onMouseEnter={() => setHovering('max')}
           onMouseLeave={() => setHovering(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              onChange([value[0], Math.max(value[0], value[1] - step)]);
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              onChange([value[0], Math.min(max, value[1] + step)]);
+            }
+          }}
           role="slider"
           aria-label={`${label ?? 'Range'} maximum`}
           aria-valuemin={value[0]}
@@ -136,6 +154,10 @@ export function RangeSlider({
               {formatValue(value[1])}
             </div>
           )}
+        </div>
+        {/* Screen-reader live region for current values */}
+        <div className="sr-only" aria-live="polite">
+          {formatValue(value[0])} to {formatValue(value[1])}
         </div>
       </div>
     </div>

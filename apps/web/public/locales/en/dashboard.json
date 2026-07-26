@@ -479,7 +479,7 @@
     "createdOn": "Created {{date}}"
   },
   "reports": {
-    "heading": "Reports & Export",
+    "heading": "Reports & Exports",
     "applicantReport": "Applicant Report",
     "applicantReportDesc": "Export all applicant data with status, contact details, and application dates.",
     "jobReport": "Job Performance Report",
@@ -493,7 +493,47 @@
     "exportPdf": "Export PDF",
     "exporting": "Exporting\u2026",
     "exported": "Report exported.",
-    "exportFailed": "Could not export report."
+    "exportFailed": "Could not export report.",
+    "totalUsers": "Total Users",
+    "totalJobs": "Total Jobs",
+    "totalApplications": "Total Applications",
+    "totalRevenue": "Total Revenue",
+    "recentSignups": "Recent Signups",
+    "topDesignations": "Top Designations",
+    "topCities": "Top Cities",
+    "loading": "Loading...",
+    "liveData": "Live data",
+    "tabs": {
+      "overview": "Overview",
+      "users": "Users",
+      "jobs": "Jobs",
+      "applications": "Applications",
+      "revenue": "Revenue"
+    },
+    "usersReport": "Users Report",
+    "usersReportDesc": "Export the full platform user list as CSV. Use the date range to filter by sign-up period.",
+    "exportUsers": "Export Users",
+    "jobsReport": "Jobs Report",
+    "jobsReportDesc": "Export all jobs with designation, company, CTC, and status.",
+    "exportJobs": "Export Jobs",
+    "applicationsReport": "Applications Report",
+    "applicationsReportDesc": "Export all job applications with candidate details and statuses.",
+    "exportApplications": "Export Applications",
+    "revenueReport": "Payments / Revenue Report",
+    "revenueReportDesc": "Export all payment orders with subscriber details, plan info, and settlement status.",
+    "exportPayments": "Export Payments"
+  },
+  "export": {
+    "exporting": "Exporting..."
+  },
+  "dateRange": {
+    "last7days": "Last 7 days",
+    "last30days": "Last 30 days",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "thisYear": "This year",
+    "from": "From",
+    "to": "To"
   },
   "sourcing": {
     "heading": "Candidate Sourcing",

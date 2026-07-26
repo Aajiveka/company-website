@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { AlertTriangle, Check, X } from 'lucide-react';
 import { Button } from './Button';
 import { cn } from '@/lib/cn';
 
@@ -21,11 +22,14 @@ interface CropRect {
 }
 
 export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropperProps) {
+  const { t } = useTranslation('common');
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [cropError, setCropError] = useState('');
   const [, setContainerSize] = useState({ width: 0, height: 0 });
   const [imgDisplay, setImgDisplay] = useState({ width: 0, height: 0, offsetX: 0, offsetY: 0 });
   const [crop, setCrop] = useState<CropRect>({ x: 0, y: 0, size: 50 });
@@ -164,7 +168,12 @@ export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropper
 
     canvas.toBlob(
       (blob) => {
-        if (blob) onCrop(blob);
+        if (blob) {
+          setCropError('');
+          onCrop(blob);
+        } else {
+          setCropError('Failed to generate cropped image. Please try a different image.');
+        }
       },
       'image/jpeg',
       0.9,
@@ -178,26 +187,38 @@ export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropper
       {/* Image with crop overlay */}
       <div
         ref={containerRef}
-        className="relative mx-auto h-80 w-full max-w-lg select-none overflow-hidden rounded-lg bg-gray-900"
+        className="relative mx-auto h-60 sm:h-80 w-full max-w-lg select-none overflow-hidden rounded-lg bg-gray-900"
       >
-        <img
-          ref={imgRef}
-          src={src}
-          alt="Crop source"
-          className="absolute h-full w-full object-contain"
-          onLoad={() => setImgLoaded(true)}
-          draggable={false}
-        />
+        {imgError ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-400">
+            <AlertTriangle className="h-10 w-10" />
+            <p className="text-sm font-medium">Failed to load image</p>
+            <p className="text-xs">The file may be corrupted or in an unsupported format.</p>
+          </div>
+        ) : (
+          <img
+            ref={imgRef}
+            src={src}
+            alt="Image to crop"
+            className="absolute h-full w-full object-contain"
+            onLoad={() => setImgLoaded(true)}
+            onError={() => setImgError(true)}
+            draggable={false}
+          />
+        )}
 
-        {imgLoaded && (
+        {imgLoaded && !imgError && (
           <>
             {/* Dimmed overlay */}
-            <div className="absolute inset-0 bg-black/50" style={{ clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${crop.x}px ${crop.y}px, ${crop.x}px ${crop.y + cropH}px, ${crop.x + crop.size}px ${crop.y + cropH}px, ${crop.x + crop.size}px ${crop.y}px, ${crop.x}px ${crop.y}px)` }} />
+            <div className="absolute inset-0 bg-black/50" aria-hidden="true" style={{ clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${crop.x}px ${crop.y}px, ${crop.x}px ${crop.y + cropH}px, ${crop.x + crop.size}px ${crop.y + cropH}px, ${crop.x + crop.size}px ${crop.y}px, ${crop.x}px ${crop.y}px)` }} />
 
             {/* Crop rectangle */}
             <div
+              role="application"
+              aria-label="Crop area. Use arrow keys to move."
+              tabIndex={0}
               className={cn(
-                'absolute border-2 border-white',
+                'absolute border-2 border-white focus:outline-none focus:ring-2 focus:ring-primary/70',
                 dragging ? 'cursor-grabbing' : 'cursor-grab',
               )}
               style={{
@@ -209,6 +230,20 @@ export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropper
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
+              onKeyDown={(e) => {
+                const step = 5;
+                let dx = 0;
+                let dy = 0;
+                switch (e.key) {
+                  case 'ArrowLeft': dx = -step; break;
+                  case 'ArrowRight': dx = step; break;
+                  case 'ArrowUp': dy = -step; break;
+                  case 'ArrowDown': dy = step; break;
+                  default: return;
+                }
+                e.preventDefault();
+                setCrop((prev) => clampCrop({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+              }}
             >
               {/* Corner indicators */}
               <div className="absolute -left-1 -top-1 h-3 w-3 border-l-2 border-t-2 border-white" />
@@ -221,27 +256,33 @@ export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropper
       </div>
 
       {/* Preview + actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <p className="text-sm font-medium text-navy dark:text-gray-200">Preview</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <p className="text-sm font-medium text-navy dark:text-gray-200">{t('imageCropper.preview')}</p>
           <canvas
             ref={previewCanvasRef}
-            className="h-16 w-16 rounded-full border-2 border-gray-200 object-cover dark:border-gray-600"
+            role="img"
+            aria-label="Crop preview"
+            className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-gray-200 object-cover dark:border-gray-600"
             style={{ aspectRatio: `${aspect}` }}
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onCancel}>
             <X className="mr-1 h-4 w-4" />
-            Cancel
+            {t('imageCropper.cancel')}
           </Button>
-          <Button type="button" size="sm" onClick={handleConfirm}>
+          <Button type="button" size="sm" onClick={handleConfirm} disabled={imgError || !imgLoaded}>
             <Check className="mr-1 h-4 w-4" />
-            Crop & Save
+            {t('imageCropper.cropSave')}
           </Button>
         </div>
       </div>
+
+      {cropError && (
+        <p className="text-center text-sm text-red-600 dark:text-red-400">{cropError}</p>
+      )}
     </div>
   );
 }

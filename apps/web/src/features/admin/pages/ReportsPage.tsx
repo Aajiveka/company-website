@@ -55,28 +55,42 @@ interface BarChartItem {
   value: number;
 }
 
-function BarChart({ items, color = 'bg-primary' }: { items: BarChartItem[]; color?: string }) {
+function BarChart({ items, color = 'bg-primary', chartLabel }: { items: BarChartItem[]; color?: string; chartLabel?: string }) {
   const max = Math.max(...items.map((i) => i.value), 1);
   return (
-    <div className="flex items-end gap-1.5" style={{ height: 180 }}>
-      {items.map((item) => {
-        const pct = (item.value / max) * 100;
-        return (
-          <div key={item.label} className="group relative flex flex-1 flex-col items-center" style={{ height: '100%' }}>
-            <div className="flex flex-1 w-full items-end">
-              <div
-                className={`w-full rounded-t-sm ${color} transition-all duration-300`}
-                style={{ height: `${Math.max(pct, 2)}%`, minHeight: 2 }}
-              />
+    <div>
+      <div role="img" aria-label={chartLabel ?? 'Bar chart'} className="flex items-end gap-0.5 sm:gap-1.5" style={{ height: 180 }}>
+        {items.map((item) => {
+          const pct = (item.value / max) * 100;
+          return (
+            <div key={item.label} className="group relative flex flex-1 flex-col items-center" style={{ height: '100%' }}>
+              <div className="flex flex-1 w-full items-end">
+                <div
+                  className={`w-full rounded-t-sm ${color} transition-all duration-300`}
+                  style={{ height: `${Math.max(pct, 2)}%`, minHeight: 2 }}
+                />
+              </div>
+              {/* Tooltip */}
+              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900">
+                {item.value}
+              </div>
+              <span className="mt-1 text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-full">{item.label}</span>
             </div>
-            {/* Tooltip */}
-            <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900">
-              {item.value}
-            </div>
-            <span className="mt-1 text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-full">{item.label}</span>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      {/* Visually-hidden data table for screen readers */}
+      <table className="sr-only">
+        <caption>{chartLabel ?? 'Chart data'}</caption>
+        <thead>
+          <tr><th>Label</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.label}><td>{item.label}</td><td>{item.value}</td></tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -113,7 +127,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: string;
       <div className="mb-3 flex items-center justify-between">
         <div className={`inline-flex rounded-lg p-2 ${color}`}>{icon}</div>
       </div>
-      <p className="text-2xl font-bold text-navy dark:text-white">{value}</p>
+      <p className="text-xl sm:text-2xl font-bold text-navy dark:text-white">{value}</p>
       <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
     </div>
   );
@@ -124,6 +138,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: string;
 /* ------------------------------------------------------------------ */
 
 function OverviewTab({ data }: { data: PlatformStats }) {
+  const { t } = useTranslation('dashboard');
   const signupItems: BarChartItem[] = (data.recentSignups ?? []).map((s) => ({
     label: new Date(s.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
     value: s.count,
@@ -142,27 +157,27 @@ function OverviewTab({ data }: { data: PlatformStats }) {
   return (
     <div className="space-y-6">
       {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Total Users"
+          label={t('reports.totalUsers')}
           value={data.totalCandidates.toLocaleString()}
           icon={<Users className="h-5 w-5" />}
           color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
         />
         <StatCard
-          label="Total Jobs"
+          label={t('reports.totalJobs')}
           value={data.totalJobs.toLocaleString()}
           icon={<Briefcase className="h-5 w-5" />}
           color="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
         />
         <StatCard
-          label="Total Applications"
+          label={t('reports.totalApplications')}
           value={data.totalApplications.toLocaleString()}
           icon={<FileText className="h-5 w-5" />}
           color="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
         />
         <StatCard
-          label="Total Revenue"
+          label={t('reports.totalRevenue')}
           value={formatCurrency(data.totalRevenue)}
           icon={<DollarSign className="h-5 w-5" />}
           color="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
@@ -172,21 +187,21 @@ function OverviewTab({ data }: { data: PlatformStats }) {
       {/* Charts */}
       {signupItems.length > 0 && (
         <Card>
-          <h3 className="mb-4 text-base font-semibold text-navy dark:text-white">Recent Signups</h3>
-          <BarChart items={signupItems} color="bg-teal-500" />
+          <h3 className="mb-4 text-base font-semibold text-navy dark:text-white">{t('reports.recentSignups')}</h3>
+          <BarChart items={signupItems} color="bg-teal-500" chartLabel="Recent signups chart" />
         </Card>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {designationItems.length > 0 && (
           <Card>
-            <h3 className="mb-4 text-base font-semibold text-navy dark:text-white">Top Designations</h3>
+            <h3 className="mb-4 text-base font-semibold text-navy dark:text-white">{t('reports.topDesignations')}</h3>
             <HorizontalBars items={designationItems} color="bg-blue-500" />
           </Card>
         )}
         {cityItems.length > 0 && (
           <Card>
-            <h3 className="mb-4 text-base font-semibold text-navy dark:text-white">Top Cities</h3>
+            <h3 className="mb-4 text-base font-semibold text-navy dark:text-white">{t('reports.topCities')}</h3>
             <HorizontalBars items={cityItems} color="bg-amber-500" />
           </Card>
         )}
@@ -196,19 +211,20 @@ function OverviewTab({ data }: { data: PlatformStats }) {
 }
 
 function UsersTab({ dateRange }: { dateRange: DateRange }) {
+  const { t } = useTranslation('dashboard');
   return (
     <Card>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-navy dark:text-white">Users Report</h3>
+          <h3 className="text-lg font-semibold text-navy dark:text-white">{t('reports.usersReport')}</h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Export the full platform user list as CSV. Use the date range to filter by sign-up period.
+            {t('reports.usersReportDesc')}
           </p>
         </div>
         <ExportButton
           endpoint="/exports/users"
           filename={`users-${dateRange.from}-${dateRange.to}`}
-          label="Export Users"
+          label={t('reports.exportUsers')}
           filters={{ from: dateRange.from, to: dateRange.to }}
         />
       </div>
@@ -217,19 +233,20 @@ function UsersTab({ dateRange }: { dateRange: DateRange }) {
 }
 
 function JobsTab({ dateRange }: { dateRange: DateRange }) {
+  const { t } = useTranslation('dashboard');
   return (
     <Card>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-navy dark:text-white">Jobs Report</h3>
+          <h3 className="text-lg font-semibold text-navy dark:text-white">{t('reports.jobsReport')}</h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Export all jobs with designation, company, CTC, and status.
+            {t('reports.jobsReportDesc')}
           </p>
         </div>
         <ExportButton
           endpoint="/exports/jobs"
           filename={`jobs-${dateRange.from}-${dateRange.to}`}
-          label="Export Jobs"
+          label={t('reports.exportJobs')}
           filters={{ from: dateRange.from, to: dateRange.to }}
         />
       </div>
@@ -238,19 +255,20 @@ function JobsTab({ dateRange }: { dateRange: DateRange }) {
 }
 
 function ApplicationsTab({ dateRange }: { dateRange: DateRange }) {
+  const { t } = useTranslation('dashboard');
   return (
     <Card>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-navy dark:text-white">Applications Report</h3>
+          <h3 className="text-lg font-semibold text-navy dark:text-white">{t('reports.applicationsReport')}</h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Export all job applications with candidate details and statuses.
+            {t('reports.applicationsReportDesc')}
           </p>
         </div>
         <ExportButton
           endpoint="/exports/applications"
           filename={`applications-${dateRange.from}-${dateRange.to}`}
-          label="Export Applications"
+          label={t('reports.exportApplications')}
           filters={{ from: dateRange.from, to: dateRange.to }}
         />
       </div>
@@ -259,19 +277,20 @@ function ApplicationsTab({ dateRange }: { dateRange: DateRange }) {
 }
 
 function RevenueTab({ dateRange }: { dateRange: DateRange }) {
+  const { t } = useTranslation('dashboard');
   return (
     <Card>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-navy dark:text-white">Payments / Revenue Report</h3>
+          <h3 className="text-lg font-semibold text-navy dark:text-white">{t('reports.revenueReport')}</h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Export all payment orders with subscriber details, plan info, and settlement status.
+            {t('reports.revenueReportDesc')}
           </p>
         </div>
         <ExportButton
           endpoint="/exports/payments"
           filename={`payments-${dateRange.from}-${dateRange.to}`}
-          label="Export Payments"
+          label={t('reports.exportPayments')}
           filters={{ from: dateRange.from, to: dateRange.to }}
         />
       </div>
@@ -283,13 +302,15 @@ function RevenueTab({ dateRange }: { dateRange: DateRange }) {
 /*  Main page                                                         */
 /* ------------------------------------------------------------------ */
 
-const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
-  { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
-  { key: 'users', label: 'Users', icon: <Users className="h-4 w-4" /> },
-  { key: 'jobs', label: 'Jobs', icon: <Briefcase className="h-4 w-4" /> },
-  { key: 'applications', label: 'Applications', icon: <FileText className="h-4 w-4" /> },
-  { key: 'revenue', label: 'Revenue', icon: <DollarSign className="h-4 w-4" /> },
-];
+const TAB_ICONS: Record<Tab, React.ReactNode> = {
+  overview: <BarChart3 className="h-4 w-4" />,
+  users: <Users className="h-4 w-4" />,
+  jobs: <Briefcase className="h-4 w-4" />,
+  applications: <FileText className="h-4 w-4" />,
+  revenue: <DollarSign className="h-4 w-4" />,
+};
+
+const TAB_KEYS: Tab[] = ['overview', 'users', 'jobs', 'applications', 'revenue'];
 
 export default function ReportsPage() {
   const { t } = useTranslation('dashboard');
@@ -323,30 +344,34 @@ export default function ReportsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: 'Reports' }]} />
+      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('reports.heading') }]} />
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="flex items-center gap-2 font-heading text-2xl font-bold text-navy dark:text-white">
           <BarChart3 className="h-6 w-6" />
-          Reports &amp; Exports
+          {t('reports.heading')}
         </h1>
-        <Badge tone="blue">{isLoading ? 'Loading...' : 'Live data'}</Badge>
+        <Badge tone="blue">{isLoading ? t('reports.loading') : t('reports.liveData')}</Badge>
       </div>
 
       {/* Tabs */}
-      <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-800">
-        {TABS.map((tab) => (
+      <div role="tablist" aria-label="Report sections" className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-800">
+        {TAB_KEYS.map((key) => (
           <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
-              activeTab === tab.key
+            key={key}
+            role="tab"
+            aria-selected={activeTab === key}
+            aria-controls={`tabpanel-${key}`}
+            id={`tab-${key}`}
+            onClick={() => setActiveTab(key)}
+            className={`inline-flex items-center gap-1 sm:gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 sm:px-3 text-xs sm:text-sm font-medium transition ${
+              activeTab === key
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
             }`}
           >
-            {tab.icon}
-            {tab.label}
+            {TAB_ICONS[key]}
+            {t(`reports.tabs.${key}`)}
           </button>
         ))}
       </div>
@@ -359,11 +384,13 @@ export default function ReportsPage() {
       )}
 
       {/* Tab panels */}
-      {activeTab === 'overview' && <OverviewTab data={stats} />}
-      {activeTab === 'users' && <UsersTab dateRange={dateRange} />}
-      {activeTab === 'jobs' && <JobsTab dateRange={dateRange} />}
-      {activeTab === 'applications' && <ApplicationsTab dateRange={dateRange} />}
-      {activeTab === 'revenue' && <RevenueTab dateRange={dateRange} />}
+      <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
+        {activeTab === 'overview' && <OverviewTab data={stats} />}
+        {activeTab === 'users' && <UsersTab dateRange={dateRange} />}
+        {activeTab === 'jobs' && <JobsTab dateRange={dateRange} />}
+        {activeTab === 'applications' && <ApplicationsTab dateRange={dateRange} />}
+        {activeTab === 'revenue' && <RevenueTab dateRange={dateRange} />}
+      </div>
     </div>
   );
 }

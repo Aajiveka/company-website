@@ -17,6 +17,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Button, Card, JobDetailSkeleton, useToast } from '@/components/ui';
 import { Seo, SITE_URL } from '@/components/Seo';
+import { JobSchema } from '@/components/JobSchema';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/features/auth/auth.store';
 import { useSavedJobIds, useSaveJob, useUnsaveJob } from '@/features/candidates/candidate.api';
@@ -100,48 +101,15 @@ export default function JobDetailPage() {
   return (
     <section className="py-12 md:py-16">
       {job && (
-        <Seo
-          title={`${job.designation} at ${job.company}`}
-          description={`Apply for ${job.designation} at ${job.company}. ${job.city ? `Location: ${job.city}.` : ''} Find your next career opportunity on Aajiveka.`}
-          path={`/jobs/${id}`}
-          ogImage={job.companyLogo || undefined}
-          jsonLd={{
-            '@context': 'https://schema.org',
-            '@type': 'JobPosting',
-            title: job.designation,
-            description: job.description ?? `${job.designation} at ${job.company}`,
-            datePosted: job.postedOn,
-            hiringOrganization: {
-              '@type': 'Organization',
-              name: job.company,
-            },
-            jobLocation: {
-              '@type': 'Place',
-              address: {
-                '@type': 'PostalAddress',
-                addressLocality: job.city,
-                addressCountry: 'IN',
-              },
-            },
-            baseSalary: {
-              '@type': 'MonetaryAmount',
-              currency: 'INR',
-              value: {
-                '@type': 'QuantitativeValue',
-                minValue: job.minCtc,
-                maxValue: job.maxCtc,
-                unitText: 'YEAR',
-              },
-            },
-            employmentType: job.employmentType?.toUpperCase().replace(/\s+/g, '_'),
-            experienceRequirements: {
-              '@type': 'OccupationalExperienceRequirements',
-              monthsOfExperience: job.minExp * 12,
-            },
-            skills: job.skills.length > 0 ? job.skills.join(', ') : undefined,
-            url: shareUrl,
-          }}
-        />
+        <>
+          <Seo
+            title={`${job.designation} at ${job.company}`}
+            description={`Apply for ${job.designation} at ${job.company}. ${job.city ? `Location: ${job.city}.` : ''} Find your next career opportunity on Aajiveka.`}
+            path={`/jobs/${id}`}
+            ogImage={job.companyLogo || undefined}
+          />
+          <JobSchema job={job} path={`/jobs/${id}`} />
+        </>
       )}
       <div className="container max-w-3xl">
         <Breadcrumbs items={[{ label: t('detail.breadcrumbJobs'), to: '/jobs' }, { label: t('detail.breadcrumbDetails') }]} />

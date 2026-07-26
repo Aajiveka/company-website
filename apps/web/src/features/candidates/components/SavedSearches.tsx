@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Bookmark, Search, Trash2, Plus } from 'lucide-react';
-import { Button, Card, Modal } from '@/components/ui';
+import { Button, Card, Modal, useToast } from '@/components/ui';
 import type { SavedSearch } from '@/features/jobs/jobs.types';
 
 const SAVED_SEARCHES_KEY = 'aajiveka_saved_searches';
@@ -15,8 +16,14 @@ function loadSavedSearches(): SavedSearch[] {
   }
 }
 
-function persistSavedSearches(searches: SavedSearch[]) {
-  localStorage.setItem(SAVED_SEARCHES_KEY, JSON.stringify(searches));
+/** Persist searches to localStorage. Returns false if storage is unavailable. */
+function persistSavedSearches(searches: SavedSearch[]): boolean {
+  try {
+    localStorage.setItem(SAVED_SEARCHES_KEY, JSON.stringify(searches));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export interface SavedSearchesProps {
@@ -31,7 +38,9 @@ export interface SavedSearchesProps {
  * Data is stored in localStorage.
  */
 export function SavedSearches({ currentQuery = '', currentFilters = {} }: SavedSearchesProps) {
+  const { t } = useTranslation('jobs');
   const navigate = useNavigate();
+  const { notify } = useToast();
   const [searches, setSearches] = useState<SavedSearch[]>(() => loadSavedSearches());
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveName, setSaveName] = useState('');
@@ -50,19 +59,25 @@ export function SavedSearches({ currentQuery = '', currentFilters = {} }: SavedS
       createdAt: new Date().toISOString(),
     };
     const updated = [newSearch, ...searches];
+    if (!persistSavedSearches(updated)) {
+      notify('Could not save search. Storage may be full.', 'error');
+      return;
+    }
     setSearches(updated);
-    persistSavedSearches(updated);
     setSaveName('');
     setShowSaveModal(false);
-  }, [saveName, currentQuery, currentFilters, searches]);
+  }, [saveName, currentQuery, currentFilters, searches, notify]);
 
   const handleDelete = useCallback(
     (id: string) => {
       const updated = searches.filter((s) => s.id !== id);
+      if (!persistSavedSearches(updated)) {
+        notify('Could not update saved searches.', 'error');
+        return;
+      }
       setSearches(updated);
-      persistSavedSearches(updated);
     },
-    [searches],
+    [searches, notify],
   );
 
   const handleApply = useCallback(
@@ -123,7 +138,7 @@ export function SavedSearches({ currentQuery = '', currentFilters = {} }: SavedS
       parts.push(`Min CTC: ${(Number(filters.minCtc) / 100_000).toFixed(1)} LPA`);
     }
     if (filters.postedWithin) parts.push(`Posted: ${filters.postedWithin}`);
-    return parts.join(' | ') || 'No filters';
+    return parts.join(' | ') || t('savedSearches.noFilters');
   };
 
   return (
@@ -132,25 +147,26 @@ export function SavedSearches({ currentQuery = '', currentFilters = {} }: SavedS
       {hasCurrentSearch && (
         <button
           onClick={() => setShowSaveModal(true)}
-          className="mb-4 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary transition hover:bg-primary/10"
+          aria-label="Save current search"
+          className="mb-4 flex min-h-[44px] items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary transition hover:bg-primary/10"
         >
           <Plus className="h-4 w-4" />
-          Save current search
+          {t('savedSearches.saveCurrentSearch')}
         </button>
       )}
 
       {/* Save modal */}
-      <Modal open={showSaveModal} onClose={() => setShowSaveModal(false)} title="Save Search">
+      <Modal open={showSaveModal} onClose={() => setShowSaveModal(false)} title={t('savedSearches.saveSearchTitle')}>
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Search name
+              {t('savedSearches.searchName')}
             </label>
             <input
               type="text"
               value={saveName}
               onChange={(e) => setSaveName(e.target.value)}
-              placeholder="e.g. Remote React jobs in Bangalore"
+              placeholder={t('savedSearches.searchNamePlaceholder')}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
               autoFocus
               onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
@@ -166,10 +182,10 @@ export function SavedSearches({ currentQuery = '', currentFilters = {} }: SavedS
               variant="outline"
               onClick={() => setShowSaveModal(false)}
             >
-              Cancel
+              {t('savedSearches.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={!saveName.trim()}>
-              Save
+              {t('savedSearches.save')}
             </Button>
           </div>
         </div>
@@ -180,14 +196,17 @@ export function SavedSearches({ currentQuery = '', currentFilters = {} }: SavedS
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-navy dark:text-white">
             <Bookmark className="h-4 w-4" />
-            Saved Searches ({searches.length})
+            {t('savedSearches.title', { count: searches.length })}
           </h3>
+          <ul className="space-y-3" aria-label="Saved searches">
           {searches.map((search) => (
-            <Card key={search.id} className="group relative">
-              <div className="flex items-start justify-between gap-3">
+            <li key={search.id}>
+            <Card className="group relative">
+              <div className="flex items-start justify-between gap-2 sm:gap-3">
                 <button
                   onClick={() => handleApply(search)}
-                  className="flex-1 text-left"
+                  aria-label={`Apply saved search: ${search.name}`}
+                  className="min-w-0 flex-1 text-left"
                 >
                   <h4 className="text-sm font-medium text-navy group-hover:text-primary dark:text-white">
                     {search.name}
@@ -198,31 +217,33 @@ export function SavedSearches({ currentQuery = '', currentFilters = {} }: SavedS
                       &quot;{search.query}&quot;
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  <p className="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
                     {filterSummary(search.filters)}
                   </p>
                   <p className="mt-1 text-xs text-gray-400">
-                    Saved {formatDate(search.createdAt)}
+                    {t('savedSearches.savedDate', { date: formatDate(search.createdAt) })}
                   </p>
                 </button>
                 <button
                   onClick={() => handleDelete(search.id)}
-                  className="rounded p-1.5 text-gray-400 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-red-900/20"
+                  className="rounded p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-gray-400 opacity-100 sm:opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-red-900/20"
                   aria-label={`Delete ${search.name}`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </Card>
+            </li>
           ))}
+          </ul>
         </div>
       )}
 
       {searches.length === 0 && !hasCurrentSearch && (
-        <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center dark:border-gray-700">
+        <div className="rounded-lg border border-dashed border-gray-200 p-4 sm:p-6 text-center dark:border-gray-700">
           <Bookmark className="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600" />
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            No saved searches yet. Run a search and save it for quick access.
+            {t('savedSearches.emptyState')}
           </p>
         </div>
       )}

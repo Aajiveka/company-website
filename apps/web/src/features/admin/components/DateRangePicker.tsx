@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface DateRange {
   from: string;
@@ -50,15 +51,51 @@ interface Preset {
  * Supports dark mode via Tailwind dark: classes.
  */
 export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
+  const { t } = useTranslation('dashboard');
+  const [validationHint, setValidationHint] = useState('');
+
+  // Auto-clear the validation hint after a brief display
+  useEffect(() => {
+    if (!validationHint) return;
+    const timer = window.setTimeout(() => setValidationHint(''), 3000);
+    return () => clearTimeout(timer);
+  }, [validationHint]);
+
+  const handleFromChange = useCallback(
+    (from: string) => {
+      if (value.to && from > value.to) {
+        // Auto-correct: set "to" equal to the new "from"
+        onChange({ from, to: from });
+        setValidationHint('"From" was after "To" — adjusted "To" to match.');
+      } else {
+        onChange({ ...value, from });
+      }
+    },
+    [value, onChange],
+  );
+
+  const handleToChange = useCallback(
+    (to: string) => {
+      if (value.from && to < value.from) {
+        // Auto-correct: set "from" equal to the new "to"
+        onChange({ from: to, to });
+        setValidationHint('"To" was before "From" — adjusted "From" to match.');
+      } else {
+        onChange({ ...value, to });
+      }
+    },
+    [value, onChange],
+  );
+
   const presets: Preset[] = useMemo(
     () => [
-      { label: 'Last 7 days', from: daysAgoStr(7), to: todayStr() },
-      { label: 'Last 30 days', from: daysAgoStr(30), to: todayStr() },
-      { label: 'This month', from: firstOfMonth(), to: todayStr() },
-      { label: 'Last month', from: firstOfLastMonth(), to: lastOfLastMonth() },
-      { label: 'This year', from: firstOfYear(), to: todayStr() },
+      { label: t('dateRange.last7days'), from: daysAgoStr(7), to: todayStr() },
+      { label: t('dateRange.last30days'), from: daysAgoStr(30), to: todayStr() },
+      { label: t('dateRange.thisMonth'), from: firstOfMonth(), to: todayStr() },
+      { label: t('dateRange.lastMonth'), from: firstOfLastMonth(), to: lastOfLastMonth() },
+      { label: t('dateRange.thisYear'), from: firstOfYear(), to: todayStr() },
     ],
-    [],
+    [t],
   );
 
   const isPresetActive = useCallback(
@@ -69,27 +106,31 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:flex-wrap">
       {/* Date inputs */}
-      <div className="flex items-end gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:items-end">
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-            From
+            {t('dateRange.from')}
           </label>
           <input
             type="date"
             value={value.from}
-            onChange={(e) => onChange({ ...value, from: e.target.value })}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            onChange={(e) => handleFromChange(e.target.value)}
+            max={value.to || undefined}
+            aria-label="Start date"
+            className="w-full rounded-lg border border-gray-200 bg-white px-2 py-2 sm:px-3 text-sm text-navy outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-            To
+            {t('dateRange.to')}
           </label>
           <input
             type="date"
             value={value.to}
-            onChange={(e) => onChange({ ...value, to: e.target.value })}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-navy outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            min={value.from || undefined}
+            onChange={(e) => handleToChange(e.target.value)}
+            aria-label="End date"
+            className="w-full rounded-lg border border-gray-200 bg-white px-2 py-2 sm:px-3 text-sm text-navy outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
         </div>
       </div>
@@ -101,7 +142,8 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
             key={p.label}
             type="button"
             onClick={() => onChange({ from: p.from, to: p.to })}
-            className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
+            aria-pressed={isPresetActive(p)}
+            className={`rounded-md px-2 py-1.5 sm:px-2.5 text-xs font-medium transition ${
               isPresetActive(p)
                 ? 'bg-primary text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
@@ -111,6 +153,10 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
           </button>
         ))}
       </div>
+
+      {validationHint && (
+        <p className="text-xs text-amber-600 dark:text-amber-400">{validationHint}</p>
+      )}
     </div>
   );
 }

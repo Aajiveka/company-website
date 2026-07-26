@@ -164,5 +164,17 @@
     "loading": "अलर्ट लोड हो रहे हैं…",
     "created": "नौकरी अलर्ट बनाया गया।",
     "removed": "अलर्ट हटाया गया।"
+  },
+  "savedSearches": {
+    "saveCurrentSearch": "वर्तमान खोज सहेजें",
+    "saveSearchTitle": "खोज सहेजें",
+    "searchName": "खोज का नाम",
+    "searchNamePlaceholder": "जैसे बैंगलोर में रिमोट React नौकरियाँ",
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "title": "सहेजी गई खोजें ({{count}})",
+    "savedDate": "{{date}} को सहेजा गया",
+    "noFilters": "कोई फ़िल्टर नहीं",
+    "emptyState": "अभी तक कोई सहेजी गई खोज नहीं। खोज करें और त्वरित एक्सेस के लिए सहेजें।"
   }
 }

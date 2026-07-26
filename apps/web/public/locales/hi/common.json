@@ -312,5 +312,32 @@
     "privacyPolicy": "गोपनीयता नीति",
     "termsAndConditions": "नियम और शर्तें",
     "lastUpdated": "अंतिम अपडेट: {{date}}"
+  },
+  "fileUpload": {
+    "dragDrop": "फ़ाइलें यहाँ खींचें और छोड़ें",
+    "clickBrowse": "या ब्राउज़ करने के लिए क्लिक करें",
+    "maxSize": "\"{{name}}\" {{size}} से अधिक है",
+    "invalidType": "\"{{name}}\" स्वीकृत फ़ाइल प्रकार नहीं है",
+    "removeFile": "फ़ाइल हटाएं"
+  },
+  "imageCropper": {
+    "preview": "पूर्वावलोकन",
+    "cancel": "रद्द करें",
+    "cropSave": "क्रॉप और सहेजें"
+  },
+  "multiSelect": {
+    "placeholder": "चुनें...",
+    "search": "खोजें...",
+    "noOptions": "कोई विकल्प नहीं मिला",
+    "more": "+{{count}} और",
+    "selected": "{{count}} चयनित",
+    "clearAll": "सब हटाएं"
+  },
+  "payment": {
+    "error": {
+      "loadFailed": "भुगतान गेटवे लोड नहीं हो सका। कृपया पुनः प्रयास करें।",
+      "unavailable": "भुगतान गेटवे उपलब्ध नहीं है।"
+    },
+    "cancelled": "भुगतान रद्द कर दिया गया।"
   }
 }
