@@ -55,7 +55,7 @@ export function DashboardLayout() {
           >
             <MenuIcon className="h-5 w-5" />
           </button>
-          <img src="/image/logo.svg" alt="Aajiveka" className="h-9 w-auto lg:hidden" />
+          <img src="/image/logo.svg" alt="Aajiveka" className="h-9 w-auto lg:hidden" width={80} height={36} decoding="async" />
         </div>
         <div className="flex items-center gap-2">
           <NotificationBell />

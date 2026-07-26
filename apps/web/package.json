@@ -15,7 +15,9 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
-    "analyze": "vite build --mode analyze"
+    "analyze": "vite build --mode analyze",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

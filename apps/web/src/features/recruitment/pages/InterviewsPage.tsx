@@ -47,34 +47,34 @@ export default function InterviewsPage() {
   const onSchedule = (values: ScheduleValues) =>
     schedule.mutate(values, {
       onSuccess: () => {
-        notify('Interview scheduled.', 'success');
+        notify(tCommon('recruitment.interviewScheduled'), 'success');
         setOpen(false);
         reset();
       },
       onError: (e) =>
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not schedule this interview' : 'Could not schedule this interview', 'error'),
+        notify(isAxiosError(e) ? e.response?.data?.message ?? tCommon('recruitment.couldNotSchedule') : tCommon('recruitment.couldNotSchedule'), 'error'),
     });
 
   const act = (interviewStatusId: number, status: 'Completed' | 'Cancelled') =>
     updateStatus.mutate(
       { interviewStatusId, status },
-      { onSuccess: () => notify(`Interview marked ${status.toLowerCase()}.`, status === 'Completed' ? 'success' : 'info') },
+      { onSuccess: () => notify(status === 'Completed' ? tCommon('recruitment.interviewMarkedCompleted') : tCommon('recruitment.interviewMarkedCancelled'), status === 'Completed' ? 'success' : 'info') },
     );
 
   const columns: Column<InterviewRow>[] = [
-    { key: 'candidate', header: 'Candidate' },
-    { key: 'designation', header: 'Designation' },
-    { key: 'company', header: 'Company' },
-    { key: 'mode', header: 'Mode', render: (r) => <Badge tone={modeTone[r.mode]}>{r.mode}</Badge> },
-    { key: 'scheduledAt', header: 'Scheduled' },
+    { key: 'candidate', header: tCommon('labels.candidate') },
+    { key: 'designation', header: tCommon('labels.designation') },
+    { key: 'company', header: tCommon('labels.company') },
+    { key: 'mode', header: tCommon('recruitment.mode'), render: (r) => <Badge tone={modeTone[r.mode]}>{r.mode}</Badge> },
+    { key: 'scheduledAt', header: tCommon('labels.posted') },
     {
       key: 'status',
-      header: 'Status',
+      header: tCommon('labels.status'),
       render: (r) => <Badge tone={r.status === 'Completed' ? 'green' : r.status === 'Cancelled' ? 'red' : 'blue'}>{r.status}</Badge>,
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: tCommon('labels.actions'),
       render: (r) =>
         r.status === 'Scheduled' ? (
           <div className="flex gap-2">
@@ -82,13 +82,13 @@ export default function InterviewsPage() {
               onClick={() => act(r.interviewStatusId, 'Completed')}
               className="inline-flex items-center gap-1 rounded-lg bg-green-50 dark:bg-green-900/20 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-100"
             >
-              <Check className="h-3.5 w-3.5" /> Complete
+              <Check className="h-3.5 w-3.5" /> {tCommon('actions.complete')}
             </button>
             <button
               onClick={() => act(r.interviewStatusId, 'Cancelled')}
               className="inline-flex items-center gap-1 rounded-lg bg-red-50 dark:bg-red-900/20 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100"
             >
-              <X className="h-3.5 w-3.5" /> Cancel
+              <X className="h-3.5 w-3.5" /> {tCommon('actions.cancel')}
             </button>
           </div>
         ) : (
@@ -99,20 +99,20 @@ export default function InterviewsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: 'Recruitment', to: '/recruitment/candidates' }, { label: 'Interviews' }]} />
+      <Breadcrumbs items={[{ label: tCommon('recruitment'), to: '/recruitment/candidates' }, { label: tCommon('recruitment.interviews') }]} />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-heading text-2xl font-bold text-navy">Interviews</h1>
+        <h1 className="font-heading text-2xl font-bold text-navy">{tCommon('recruitment.interviews')}</h1>
         <Button size="sm" onClick={() => setOpen(true)}>
-          Schedule Interview
+          {tCommon('recruitment.scheduleInterview')}
         </Button>
       </div>
-      <Table columns={columns} data={data ?? []} rowKey={(r) => r.interviewId} isLoading={isLoading} emptyMessage="No interviews scheduled." />
+      <Table columns={columns} data={data ?? []} rowKey={(r) => r.interviewId} isLoading={isLoading} emptyMessage={tCommon('recruitment.noInterviews')} />
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Schedule Interview">
+      <Modal open={open} onClose={() => setOpen(false)} title={tCommon('recruitment.scheduleInterview')}>
         <form onSubmit={handleSubmit(onSchedule)} className="space-y-4" noValidate>
           <Select
-            label="Candidate"
-            placeholder="Select a mapped application…"
+            label={tCommon('recruitment.candidateLabel')}
+            placeholder={tCommon('recruitment.selectMappedApp')}
             options={(eligible ?? []).map((e) => ({
               label: `${e.candidate} — ${e.designation} (${e.company})`,
               value: e.jobSubscriberMapId,
@@ -121,20 +121,20 @@ export default function InterviewsPage() {
             {...register('jobSubscriberMapId')}
           />
           <Select
-            label="Mode"
-            placeholder="Select…"
+            label={tCommon('recruitment.mode')}
+            placeholder={tCommon('labels.select')}
             options={(modes ?? []).map((m) => ({ label: m.label, value: m.id }))}
             error={errors.interviewModeId?.message}
             {...register('interviewModeId')}
           />
-          <Input label="Date & Time" type="datetime-local" error={errors.interviewTime?.message} {...register('interviewTime')} />
-          <Input label="Location (optional)" {...register('location')} />
+          <Input label={tCommon('recruitment.dateTime')} type="datetime-local" error={errors.interviewTime?.message} {...register('interviewTime')} />
+          <Input label={tCommon('recruitment.locationOptional')} {...register('location')} />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
-              Cancel
+              {tCommon('actions.cancel')}
             </Button>
             <Button type="submit" size="sm" isLoading={schedule.isPending}>
-              Schedule
+              {tCommon('actions.schedule')}
             </Button>
           </div>
         </form>

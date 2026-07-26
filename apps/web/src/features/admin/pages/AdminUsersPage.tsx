@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Search, ShieldCheck, ShieldOff, Trash2, UserCog, Users } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   Badge,
   Breadcrumbs,
@@ -12,6 +13,7 @@ import {
   Pagination,
   Select,
   useToast,
+  VirtualList,
   type BadgeTone,
   type Column,
 } from '@/components/ui';
@@ -50,6 +52,8 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
+  const debouncedSearch = useDebounce(search);
+
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [roleTarget, setRoleTarget] = useState<AdminUser | null>(null);
   const [newRole, setNewRole] = useState<string>('');
@@ -57,12 +61,12 @@ export default function AdminUsersPage() {
   const [deactivateTarget, setDeactivateTarget] = useState<AdminUser | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users', search, roleFilter, statusFilter],
+    queryKey: ['admin', 'users', debouncedSearch, roleFilter, statusFilter],
     queryFn: () =>
       api
         .get<AdminUser[]>('/admin/users', {
           params: {
-            ...(search ? { q: search } : {}),
+            ...(debouncedSearch ? { q: debouncedSearch } : {}),
             ...(roleFilter ? { roleId: Number(roleFilter) } : {}),
             ...(statusFilter ? { isActive: statusFilter === 'active' } : {}),
           },
@@ -70,16 +74,19 @@ export default function AdminUsersPage() {
         .then((r) => r.data),
   });
 
-  // Client-side pagination
+  const useVirtualized = (data?.length ?? 0) > 50;
+
+  // Client-side pagination (used when data <= 50 rows)
   const paginatedData = useMemo(() => {
     const all = data ?? [];
+    if (useVirtualized) return { items: all, total: all.length, pageCount: 1 };
     const start = (page - 1) * PAGE_SIZE;
     return {
       items: all.slice(start, start + PAGE_SIZE),
       total: all.length,
       pageCount: Math.max(1, Math.ceil(all.length / PAGE_SIZE)),
     };
-  }, [data, page]);
+  }, [data, page, useVirtualized]);
 
   const toggleActive = useMutation({
     mutationFn: ({ userId, isActive }: { userId: number; isActive: boolean }) =>
@@ -233,7 +240,7 @@ export default function AdminUsersPage() {
 
       {/* Header */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="flex items-center gap-2 font-heading text-2xl font-bold text-navy">
+        <h1 className="flex items-center gap-2 font-heading text-2xl font-bold text-navy dark:text-white">
           <Users className="h-6 w-6" />
           {t('adminUsers.heading')}
           {data && (
@@ -311,48 +318,72 @@ export default function AdminUsersPage() {
               ))}
             </tr>
           </thead>
-          <tbody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
-                  {columns.map((c, ci) => {
-                    const widths = ['w-3/4', 'w-1/2', 'w-2/3', 'w-5/6', 'w-1/3'];
-                    return (
-                      <td key={c.key} className="px-3 py-2.5 sm:px-4 sm:py-3">
-                        <div className={`h-4 animate-pulse rounded bg-gray-200 dark:bg-gray-600 ${widths[(i + ci) % widths.length]}`} />
+          {!useVirtualized && (
+            <tbody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
+                    {columns.map((c, ci) => {
+                      const widths = ['w-3/4', 'w-1/2', 'w-2/3', 'w-5/6', 'w-1/3'];
+                      return (
+                        <td key={c.key} className="px-3 py-2.5 sm:px-4 sm:py-3">
+                          <div className={`h-4 animate-pulse rounded bg-gray-200 dark:bg-gray-600 ${widths[(i + ci) % widths.length]}`} />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              ) : paginatedData.items.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length} className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                    {t('adminUsers.noUsers')}
+                  </td>
+                </tr>
+              ) : (
+                paginatedData.items.map((row) => (
+                  <tr
+                    key={row.userId}
+                    className={`border-b border-gray-100 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
+                      selected.has(row.userId) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                    }`}
+                  >
+                    {columns.map((c) => (
+                      <td key={c.key} className={`px-3 py-2.5 sm:px-4 sm:py-3 ${c.className ?? ''}`}>
+                        {c.render ? c.render(row) : String((row as unknown as Record<string, unknown>)[c.key] ?? '')}
                       </td>
-                    );
-                  })}
-                </tr>
-              ))
-            ) : paginatedData.items.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
-                  {t('adminUsers.noUsers')}
-                </td>
-              </tr>
-            ) : (
-              paginatedData.items.map((row) => (
-                <tr
-                  key={row.userId}
-                  className={`border-b border-gray-100 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
-                    selected.has(row.userId) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-                  }`}
-                >
-                  {columns.map((c) => (
-                    <td key={c.key} className={`px-3 py-2.5 sm:px-4 sm:py-3 ${c.className ?? ''}`}>
-                      {c.render ? c.render(row) : String((row as unknown as Record<string, unknown>)[c.key] ?? '')}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          )}
         </table>
+        {useVirtualized && !isLoading && (
+          <VirtualList
+            items={paginatedData.items}
+            itemHeight={48}
+            overscan={8}
+            className="max-h-[600px]"
+            renderItem={(row) => (
+              <div
+                key={row.userId}
+                className={`flex border-b border-gray-100 text-sm transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
+                  selected.has(row.userId) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                }`}
+              >
+                {columns.map((c) => (
+                  <div key={c.key} className={`flex-1 px-3 py-2.5 sm:px-4 sm:py-3 ${c.className ?? ''}`}>
+                    {c.render ? c.render(row) : String((row as unknown as Record<string, unknown>)[c.key] ?? '')}
+                  </div>
+                ))}
+              </div>
+            )}
+          />
+        )}
       </div>
 
-      {/* Pagination */}
-      {paginatedData.pageCount > 1 && (
+      {/* Pagination (hidden when virtualized) */}
+      {!useVirtualized && paginatedData.pageCount > 1 && (
         <div className="mt-4 flex justify-center">
           <Pagination page={page} pageCount={paginatedData.pageCount} onChange={setPage} />
         </div>

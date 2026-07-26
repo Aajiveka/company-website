@@ -35,14 +35,14 @@ export default function AboutPage() {
             <h2>{t('about.missionHeading')}</h2>
             <p className="mt-4 text-gray-600 dark:text-gray-300">{t('about.missionText')}</p>
           </div>
-          <img src="/image/mission.webp" alt={t('about.missionHeading')} className="w-full rounded-lg" loading="lazy" />
+          <img src="/image/mission.webp" alt={t('about.missionHeading')} className="w-full rounded-lg" loading="lazy" decoding="async" />
         </div>
       </section>
 
       {/* Vision */}
       <section className="pb-8">
         <div className="container grid items-center gap-8 md:grid-cols-2">
-          <img src="/image/vision.webp" alt={t('about.visionHeading')} className="w-full rounded-lg md:order-1" loading="lazy" />
+          <img src="/image/vision.webp" alt={t('about.visionHeading')} className="w-full rounded-lg md:order-1" loading="lazy" decoding="async" />
           <div className="md:order-2 md:pl-10">
             <h2>{t('about.visionHeading')}</h2>
             <p className="mt-4 text-gray-600 dark:text-gray-300">{t('about.visionText')}</p>
@@ -62,7 +62,7 @@ export default function AboutPage() {
               <Value title={t('about.customerCentricity')} text={t('about.customerCentricityText')} />
               <Value title={t('about.collaboration')} text={t('about.collaborationText')} />
             </div>
-            <img src="/image/value.webp" alt={t('about.valueHeading')} className="w-full" loading="lazy" />
+            <img src="/image/value.webp" alt={t('about.valueHeading')} className="w-full" loading="lazy" decoding="async" />
             <div className="space-y-5">
               <Value title={t('about.innovation')} text={t('about.innovationText')} />
               <Value title={t('about.transparency')} text={t('about.transparencyText')} />
@@ -78,7 +78,7 @@ export default function AboutPage() {
           <div className="space-y-4">
             {CHOOSE.map((c) => (
               <div key={c.icon} className="flex items-start gap-4 rounded-xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 p-4 shadow-card sm:p-5">
-                <img src={c.icon} alt="" className="h-12 w-12 flex-shrink-0" loading="lazy" />
+                <img src={c.icon} alt="" className="h-12 w-12 flex-shrink-0" loading="lazy" decoding="async" />
                 <p className="text-sm text-gray-600 dark:text-gray-300">{c.text}</p>
               </div>
             ))}
@@ -104,7 +104,7 @@ export default function AboutPage() {
             {INDUSTRY.map((c) => (
               <div key={c.title} className="rounded-xl bg-white/5 p-4 sm:p-6">
                 <div className="mb-2 flex items-center gap-3">
-                  <img src={c.icon} alt="" className="h-8 w-8" loading="lazy" />
+                  <img src={c.icon} alt="" className="h-8 w-8" loading="lazy" decoding="async" />
                   <h6 className="font-heading text-lg font-semibold">{c.title}</h6>
                 </div>
                 <p className="text-sm text-white/80">{c.text}</p>

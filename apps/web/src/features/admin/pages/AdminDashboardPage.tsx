@@ -45,7 +45,7 @@ function HorizontalBar({ items, maxValue }: { items: BarItem[]; maxValue: number
         <div key={item.label}>
           <div className="mb-1 flex items-center justify-between text-sm">
             <span className="truncate text-gray-600 dark:text-gray-300">{item.label}</span>
-            <span className="ml-2 shrink-0 font-semibold text-navy">{item.value}</span>
+            <span className="ml-2 shrink-0 font-semibold text-navy dark:text-white">{item.value}</span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
             <div
@@ -83,7 +83,7 @@ function StatCard({
           </span>
         )}
       </div>
-      <p className="text-2xl font-bold text-navy sm:text-3xl">{value}</p>
+      <p className="text-2xl font-bold text-navy dark:text-white sm:text-3xl">{value}</p>
       <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
     </div>
   );
@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('admin.heading') }]} />
-      <h1 className="mb-6 font-heading text-2xl font-bold text-navy">{t('admin.heading')}</h1>
+      <h1 className="mb-6 font-heading text-2xl font-bold text-navy dark:text-white">{t('admin.heading')}</h1>
 
       {isLoading ? (
         <div className="space-y-6">
@@ -177,7 +177,7 @@ export default function AdminDashboardPage() {
           </Card>
         </div>
       ) : !data ? (
-        <Card><p className="text-sm text-gray-500">{t('admin.noData')}</p></Card>
+        <Card><p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.noData')}</p></Card>
       ) : (
         <div className="space-y-6">
           {/* Overview stat cards */}
@@ -213,7 +213,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.totalRevenue')}</p>
-                <p className="mt-1 text-3xl font-bold text-navy">{formatCurrency(data.totalRevenue)}</p>
+                <p className="mt-1 text-3xl font-bold text-navy dark:text-white">{formatCurrency(data.totalRevenue)}</p>
               </div>
               <div className="rounded-lg bg-green-50 p-3 text-green-600 dark:bg-green-900/20 dark:text-green-400">
                 <IndianRupee className="h-6 w-6" />
@@ -224,25 +224,25 @@ export default function AdminDashboardPage() {
           {/* Charts */}
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
-              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy">
+              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy dark:text-white">
                 <BarChart3 className="h-5 w-5 text-primary" />
                 {t('admin.topDesignations')}
               </h3>
               {topDesignations.items.length > 0 ? (
                 <HorizontalBar items={topDesignations.items} maxValue={topDesignations.maxValue} />
               ) : (
-                <p className="text-sm text-gray-500">{t('admin.noData')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.noData')}</p>
               )}
             </Card>
             <Card>
-              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy">
+              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy dark:text-white">
                 <BarChart3 className="h-5 w-5 text-amber-500" />
                 {t('admin.topCities')}
               </h3>
               {topCities.items.length > 0 ? (
                 <HorizontalBar items={topCities.items} maxValue={topCities.maxValue} />
               ) : (
-                <p className="text-sm text-gray-500">{t('admin.noData')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.noData')}</p>
               )}
             </Card>
           </div>
@@ -250,7 +250,7 @@ export default function AdminDashboardPage() {
           {/* Signup trend */}
           {signupTrend.items.length > 0 && (
             <Card>
-              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy">
+              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy dark:text-white">
                 <TrendingUp className="h-5 w-5 text-green-500" />
                 {t('admin.recentSignups')}
               </h3>
@@ -260,7 +260,7 @@ export default function AdminDashboardPage() {
 
           {/* Recent activity feed */}
           <Card>
-            <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy">
+            <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy dark:text-white">
               <Clock className="h-5 w-5 text-gray-500" />
               {t('admin.recentActivity')}
             </h3>
@@ -298,7 +298,7 @@ export default function AdminDashboardPage() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">{t('admin.noData')}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.noData')}</p>
             )}
           </Card>
         </div>

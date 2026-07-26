@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Bookmark, Briefcase, Building2, IndianRupee, MapPin, Scale } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,7 @@ const PAGE_SIZE = 10;
 
 const lpa = (rupees: number) => (rupees / 100_000).toFixed(1).replace(/\.0$/, '');
 
-function JobCard({ job, isSaved, onToggleSave, isCompared, onToggleCompare }: {
+const JobCard = memo(function JobCard({ job, isSaved, onToggleSave, isCompared, onToggleCompare }: {
   job: PublicJob; isSaved: boolean; onToggleSave: () => void;
   isCompared: boolean; onToggleCompare: () => void;
 }) {
@@ -80,7 +80,7 @@ function JobCard({ job, isSaved, onToggleSave, isCompared, onToggleCompare }: {
       </Card>
     </Link>
   );
-}
+});
 
 /** Parse a search param as an integer, returning undefined if missing/invalid. */
 const intParam = (params: URLSearchParams, key: string) => {

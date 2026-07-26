@@ -160,9 +160,9 @@ export default function HelpPage() {
           {filteredFaqs.length === 0 ? (
             <Card className="text-center">
               <div className="flex flex-col items-center gap-3 py-8">
-                <HelpCircle className="h-10 w-10 text-gray-300" aria-hidden />
-                <p className="text-navy">{t('help.noResults')}</p>
-                <p className="text-sm text-gray-500">{t('help.noResultsHint')}</p>
+                <HelpCircle className="h-10 w-10 text-gray-300 dark:text-gray-600" aria-hidden />
+                <p className="text-navy dark:text-white">{t('help.noResults')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('help.noResultsHint')}</p>
               </div>
             </Card>
           ) : (
@@ -185,7 +185,7 @@ export default function HelpPage() {
           {/* Contact support card */}
           <Card className="mt-10">
             <div className="text-center">
-              <h2 className="font-heading text-xl font-semibold text-navy">
+              <h2 className="font-heading text-xl font-semibold text-navy dark:text-white">
                 {t('help.contactHeading')}
               </h2>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">

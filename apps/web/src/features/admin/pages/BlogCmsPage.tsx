@@ -258,7 +258,7 @@ export default function BlogCmsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="flex items-center gap-2 font-heading text-2xl font-bold text-navy">
+          <h1 className="flex items-center gap-2 font-heading text-2xl font-bold text-navy dark:text-white">
             <FileText className="h-6 w-6" />
             {t('blogCms.heading')}
           </h1>
@@ -279,7 +279,7 @@ export default function BlogCmsPage() {
 
       {editing ? (
         <Card>
-          <h2 className="mb-4 text-lg font-semibold text-navy">
+          <h2 className="mb-4 text-lg font-semibold text-navy dark:text-white">
             {editing === 'new' ? t('blogCms.createPost') : t('blogCms.editPost')}
           </h2>
           <PostEditor
@@ -330,8 +330,8 @@ export default function BlogCmsPage() {
             </div>
           ) : filteredPosts.length === 0 ? (
             <Card className="text-center">
-              <FileText className="mx-auto h-10 w-10 text-gray-300" />
-              <p className="mt-3 text-navy">{t('blogCms.noPosts')}</p>
+              <FileText className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
+              <p className="mt-3 text-navy dark:text-white">{t('blogCms.noPosts')}</p>
             </Card>
           ) : (
             <div className="space-y-3">
@@ -350,13 +350,13 @@ export default function BlogCmsPage() {
                     )}
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate font-medium text-navy">{post.title}</h3>
+                        <h3 className="truncate font-medium text-navy dark:text-white">{post.title}</h3>
                         <Badge tone={post.status === 'Published' ? 'green' : 'amber'}>{post.status}</Badge>
                         {post.category && (
                           <Badge tone="blue">{post.category}</Badge>
                         )}
                       </div>
-                      <p className="mt-0.5 text-xs text-gray-500">
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                         /{post.slug} &middot; {post.author} &middot; {new Date(post.createdAt).toLocaleDateString()}
                         {post.publishedAt && (
                           <> &middot; Published {new Date(post.publishedAt).toLocaleDateString()}</>

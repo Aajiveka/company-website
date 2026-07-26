@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from 'react';
+import { memo, useMemo, useCallback, useState } from 'react';
 import { Check, X, UserCircle2 } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { Link } from 'react-router-dom';
@@ -34,7 +34,7 @@ function normalizeStatus(status: string): string {
   return status;
 }
 
-function ApplicantCard({ applicant, onAction, onDragStart, onDragEnd, columnId, index }: {
+const ApplicantCard = memo(function ApplicantCard({ applicant, onAction, onDragStart, onDragEnd, columnId, index }: {
   applicant: ApplicantRow;
   onAction: (id: number, decision: 'Shortlisted' | 'Rejected', name?: string) => void;
   onDragStart: (itemId: string, columnId: string, index: number) => void;
@@ -86,7 +86,7 @@ function ApplicantCard({ applicant, onAction, onDragStart, onDragEnd, columnId, 
       )}
     </div>
   );
-}
+});
 
 export default function PipelineBoardPage() {
   const { t } = useTranslation('dashboard');

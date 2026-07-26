@@ -63,4 +63,32 @@ test.describe('Dark Mode Toggle', () => {
       page.getByRole('button', { name: /switch to light mode/i }),
     ).toBeVisible();
   });
+
+  test('dark mode persists across page navigation', async ({ page }) => {
+    // Activate dark mode on the home page.
+    await page.getByRole('button', { name: /switch to dark mode/i }).click();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+
+    // Navigate to another page.
+    await page.goto('/jobs');
+    await expect(page.locator('html')).toHaveClass(/dark/);
+
+    // Navigate to yet another page.
+    await page.goto('/about');
+    await expect(page.locator('html')).toHaveClass(/dark/);
+  });
+
+  test('toggling back to light mode removes dark class', async ({ page }) => {
+    // Go dark first.
+    await page.getByRole('button', { name: /switch to dark mode/i }).click();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+
+    // Toggle back to light.
+    await page.getByRole('button', { name: /switch to light mode/i }).click();
+    await expect(page.locator('html')).not.toHaveClass(/dark/);
+
+    // localStorage should reflect light mode.
+    const stored = await page.evaluate(() => localStorage.getItem('theme'));
+    expect(stored).not.toBe('dark');
+  });
 });

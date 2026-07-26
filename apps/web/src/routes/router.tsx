@@ -12,6 +12,20 @@ import AnalyticsProvider from '@/components/AnalyticsProvider';
 const HomePage = lazy(() => import('@/features/home/HomePage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
+
+// Prefetch critical route chunks on idle so they're ready when the user navigates.
+const prefetchRoutes = () => {
+  void import('@/features/home/HomePage');
+  void import('@/features/jobs/pages/JobSearchPage');
+  void import('@/features/auth/pages/LoginPage');
+};
+if (typeof window !== 'undefined') {
+  if ('requestIdleCallback' in window) {
+    (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(prefetchRoutes);
+  } else {
+    setTimeout(prefetchRoutes, 2000);
+  }
+}
 const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
 const CandidateProfilePage = lazy(() => import('@/features/candidates/pages/CandidateProfilePage'));

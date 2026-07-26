@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import { text } from 'express';
 import { AppModule } from './app.module';
 import { env } from './config/env';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +17,8 @@ async function bootstrap() {
   app.use('/api/payments/webhook', text({ type: '*/*' }));
   app.use(helmet());
   app.enableCors({ origin: env.CORS_ORIGIN, credentials: true });
+
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({

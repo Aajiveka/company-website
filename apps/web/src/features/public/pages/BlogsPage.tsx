@@ -40,7 +40,7 @@ export default function BlogsPage() {
             {posts.map((post) => (
               <article key={post.slug} className="overflow-hidden rounded-2xl bg-white dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 shadow-card">
                 <Link to={`/blogs/${post.slug}`}>
-                  <img src={post.image} alt={post.title} className="h-52 w-full object-cover" loading="lazy" />
+                  <img src={post.image} alt={post.title} className="h-52 w-full object-cover" loading="lazy" decoding="async" />
                 </Link>
                 <div className="p-4 sm:p-6">
                   <p className="text-xs text-gray-400">{post.date}</p>

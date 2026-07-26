@@ -1,14 +1,8 @@
 import { Briefcase, FileX2, GraduationCap, Users, type LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Card, Skeleton } from '@/components/ui';
 import { useQC1Stats } from '../recruitment.api';
 import type { QC1Stats } from '../recruitment.types';
-
-const CARDS: { key: keyof QC1Stats; label: string; icon: LucideIcon; color: string }[] = [
-  { key: 'total', label: 'Registrations', icon: Users, color: 'text-primary bg-primary/10' },
-  { key: 'cvMissing', label: 'CV not uploaded', icon: FileX2, color: 'text-amber-600 bg-amber-50' },
-  { key: 'educationMissing', label: 'Education missing', icon: GraduationCap, color: 'text-red-600 bg-red-50' },
-  { key: 'employmentMissing', label: 'Employment missing', icon: Briefcase, color: 'text-purple-600 bg-purple-50' },
-];
 
 /**
  * QC1 dashboard (dashboard-QC1.aspx / spQC1GetDashboardData).
@@ -19,12 +13,20 @@ const CARDS: { key: keyof QC1Stats; label: string; icon: LucideIcon; color: stri
  * every one of them rendered blank.
  */
 export default function QC1DashboardPage() {
+  const { t } = useTranslation('common');
   const { data, isLoading } = useQC1Stats();
+
+  const CARDS: { key: keyof QC1Stats; label: string; icon: LucideIcon; color: string }[] = [
+    { key: 'total', label: t('recruitment.registrations'), icon: Users, color: 'text-primary bg-primary/10' },
+    { key: 'cvMissing', label: t('recruitment.cvNotUploaded'), icon: FileX2, color: 'text-amber-600 bg-amber-50' },
+    { key: 'educationMissing', label: t('recruitment.educationMissing'), icon: GraduationCap, color: 'text-red-600 bg-red-50' },
+    { key: 'employmentMissing', label: t('recruitment.employmentMissing'), icon: Briefcase, color: 'text-purple-600 bg-purple-50' },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: 'Recruitment' }, { label: 'QC Dashboard' }]} />
-      <h1 className="mb-6 font-heading text-2xl font-bold text-navy">QC1 Dashboard</h1>
+      <Breadcrumbs items={[{ label: t('recruitment') }, { label: t('sidebar.qcDashboard') }]} />
+      <h1 className="mb-6 font-heading text-2xl font-bold text-navy">{t('recruitment.qcDashboard')}</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {CARDS.map(({ key, label, icon: Icon, color }) => (

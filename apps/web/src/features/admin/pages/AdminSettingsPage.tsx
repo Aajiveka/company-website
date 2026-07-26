@@ -172,7 +172,7 @@ export default function AdminSettingsPage() {
       <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('adminSettings.heading') }]} />
 
       <div className="flex items-center gap-2">
-        <Settings className="h-6 w-6 text-navy" />
+        <Settings className="h-6 w-6 text-navy dark:text-white" />
         <h1 className="font-heading text-2xl font-bold text-navy dark:text-gray-100">
           {t('adminSettings.heading')}
         </h1>

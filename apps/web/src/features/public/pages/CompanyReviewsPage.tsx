@@ -87,7 +87,7 @@ function DistributionBar({
   const pct = max > 0 ? (count / max) * 100 : 0;
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="w-3 text-right text-gray-500">{star}</span>
+      <span className="w-3 text-right text-gray-500 dark:text-gray-400">{star}</span>
       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
       <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
         <div
@@ -95,7 +95,7 @@ function DistributionBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-8 text-right text-xs text-gray-500">{count}</span>
+      <span className="w-8 text-right text-xs text-gray-500 dark:text-gray-400">{count}</span>
     </div>
   );
 }
@@ -191,7 +191,7 @@ export default function CompanyReviewsPage() {
         <div className="container mx-auto max-w-4xl">
           {/* Header */}
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <h1 className="font-heading text-2xl font-bold text-navy">
+            <h1 className="font-heading text-2xl font-bold text-navy dark:text-white">
               {t('companyReviews.heading')}
             </h1>
             <Button onClick={() => setShowModal(true)}>
@@ -212,11 +212,11 @@ export default function CompanyReviewsPage() {
                 <Card className="mb-8">
                   <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
                     <div className="text-center sm:pr-8">
-                      <p className="font-heading text-5xl font-bold text-navy">
+                      <p className="font-heading text-5xl font-bold text-navy dark:text-white">
                         {summary.averageRating.toFixed(1)}
                       </p>
                       <Stars value={Math.round(summary.averageRating)} size="md" />
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {t('companyReviews.totalReviews', { count: summary.totalReviews })}
                       </p>
                     </div>
@@ -236,7 +236,7 @@ export default function CompanyReviewsPage() {
 
               {/* Sort */}
               <div className="mb-6 flex items-center justify-between">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {t('companyReviews.showingReviews', { count: data?.total ?? 0 })}
                 </p>
                 <select
@@ -259,9 +259,9 @@ export default function CompanyReviewsPage() {
               {reviews.length === 0 ? (
                 <Card className="text-center">
                   <div className="flex flex-col items-center gap-3 py-8">
-                    <Star className="h-10 w-10 text-gray-300" aria-hidden />
-                    <p className="text-navy">{t('companyReviews.noReviews')}</p>
-                    <p className="text-sm text-gray-500">{t('companyReviews.beFirst')}</p>
+                    <Star className="h-10 w-10 text-gray-300 dark:text-gray-600" aria-hidden />
+                    <p className="text-navy dark:text-white">{t('companyReviews.noReviews')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('companyReviews.beFirst')}</p>
                   </div>
                 </Card>
               ) : (
@@ -271,16 +271,16 @@ export default function CompanyReviewsPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <Stars value={review.rating} size="sm" />
-                          <h3 className="mt-2 font-semibold text-navy">{review.title}</h3>
+                          <h3 className="mt-2 font-semibold text-navy dark:text-white">{review.title}</h3>
                         </div>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
                           {formatDate(review.createdAt)}
                         </span>
                       </div>
 
                       <div className="mt-4 grid gap-4 sm:grid-cols-2">
                         <div>
-                          <p className="text-xs font-medium uppercase text-green-600">
+                          <p className="text-xs font-medium uppercase text-green-600 dark:text-green-400">
                             {t('companyReviews.pros')}
                           </p>
                           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
@@ -288,7 +288,7 @@ export default function CompanyReviewsPage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs font-medium uppercase text-red-500">
+                          <p className="text-xs font-medium uppercase text-red-500 dark:text-red-400">
                             {t('companyReviews.cons')}
                           </p>
                           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
@@ -298,7 +298,7 @@ export default function CompanyReviewsPage() {
                       </div>
 
                       <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-gray-700">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                           <User className="h-4 w-4" aria-hidden />
                           {review.anonymous
                             ? t('companyReviews.anonymous')
@@ -347,7 +347,7 @@ export default function CompanyReviewsPage() {
         >
           {/* Rating */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-navy">
+            <label className="mb-1 block text-sm font-medium text-navy dark:text-gray-200">
               {t('companyReviews.yourRating')}
             </label>
             <Stars value={formRating} onChange={setFormRating} size="md" />
@@ -355,7 +355,7 @@ export default function CompanyReviewsPage() {
 
           {/* Title */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-navy">
+            <label className="mb-1 block text-sm font-medium text-navy dark:text-gray-200">
               {t('companyReviews.reviewTitle')}
             </label>
             <Input
@@ -368,7 +368,7 @@ export default function CompanyReviewsPage() {
 
           {/* Pros */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-navy">
+            <label className="mb-1 block text-sm font-medium text-navy dark:text-gray-200">
               {t('companyReviews.pros')}
             </label>
             <textarea
@@ -383,7 +383,7 @@ export default function CompanyReviewsPage() {
 
           {/* Cons */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-navy">
+            <label className="mb-1 block text-sm font-medium text-navy dark:text-gray-200">
               {t('companyReviews.cons')}
             </label>
             <textarea

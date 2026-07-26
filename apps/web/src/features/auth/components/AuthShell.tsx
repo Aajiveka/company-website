@@ -16,7 +16,7 @@ export function AuthShell({
     <section className="hero-banner flex min-h-screen items-center justify-center px-4 py-24">
       <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-8 dark:bg-gray-800">
         <Link to="/" className="mb-6 block text-center">
-          <img src="/image/logo.svg" alt="Aajiveka" className="mx-auto h-12 sm:h-14" />
+          <img src="/image/logo.svg" alt="Aajiveka" className="mx-auto h-12 sm:h-14" width={120} height={56} decoding="async" />
         </Link>
         <h1 className="text-center font-heading text-xl font-bold text-navy sm:text-2xl">{title}</h1>
         {subtitle && <p className="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}

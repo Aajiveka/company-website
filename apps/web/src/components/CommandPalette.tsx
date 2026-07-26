@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   Search,
   Home,
@@ -63,11 +64,13 @@ export default function CommandPalette() {
     [t, go],
   );
 
+  const debouncedQuery = useDebounce(query, 150);
+
   const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
+    const q = debouncedQuery.toLowerCase().trim();
     if (!q) return items;
     return items.filter((item) => item.label.toLowerCase().includes(q));
-  }, [query, items]);
+  }, [debouncedQuery, items]);
 
   const pages = useMemo(() => filtered.filter((i) => i.section === 'pages'), [filtered]);
   const actions = useMemo(() => filtered.filter((i) => i.section === 'actions'), [filtered]);
@@ -233,13 +236,13 @@ export default function CommandPalette() {
         {/* Footer hint */}
         <div className="flex items-center justify-center gap-4 border-t border-gray-200 px-4 py-2 text-xs text-gray-400 dark:border-gray-700 dark:text-gray-500">
           <span className="flex items-center gap-1">
-            <kbd className="rounded bg-gray-100 px-1 py-0.5 dark:bg-gray-700">&uarr;&darr;</kbd> navigate
+            <kbd className="rounded bg-gray-100 px-1 py-0.5 dark:bg-gray-700">&uarr;&darr;</kbd> {t('commandPalette.navigate')}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="rounded bg-gray-100 px-1 py-0.5 dark:bg-gray-700">&crarr;</kbd> select
+            <kbd className="rounded bg-gray-100 px-1 py-0.5 dark:bg-gray-700">&crarr;</kbd> {t('commandPalette.select')}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="rounded bg-gray-100 px-1 py-0.5 dark:bg-gray-700">esc</kbd> close
+            <kbd className="rounded bg-gray-100 px-1 py-0.5 dark:bg-gray-700">esc</kbd> {t('commandPalette.close')}
           </span>
         </div>
       </div>

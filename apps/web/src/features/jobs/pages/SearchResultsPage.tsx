@@ -180,16 +180,16 @@ export default function SearchResultsPage() {
           ) : !query ? (
             <Card className="text-center">
               <div className="flex flex-col items-center gap-3 py-8">
-                <Search className="h-10 w-10 text-gray-300" aria-hidden />
-                <p className="text-navy">{t('search.enterQuery')}</p>
+                <Search className="h-10 w-10 text-gray-300 dark:text-gray-600" aria-hidden />
+                <p className="text-navy dark:text-white">{t('search.enterQuery')}</p>
               </div>
             </Card>
           ) : total === 0 ? (
             <Card className="text-center">
               <div className="flex flex-col items-center gap-3 py-8">
-                <Search className="h-10 w-10 text-gray-300" aria-hidden />
-                <p className="text-navy">{t('search.noResults')}</p>
-                <p className="text-sm text-gray-500">{t('search.tryDifferentQuery')}</p>
+                <Search className="h-10 w-10 text-gray-300 dark:text-gray-600" aria-hidden />
+                <p className="text-navy dark:text-white">{t('search.noResults')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('search.tryDifferentQuery')}</p>
               </div>
             </Card>
           ) : (
@@ -200,7 +200,7 @@ export default function SearchResultsPage() {
                   {(data?.jobs.rows ?? []).map((job) => (
                     <Link key={job.jobId} to={`/jobs/${job.jobId}`} className="block">
                       <Card className="transition hover:shadow-md">
-                        <h3 className="font-heading text-lg font-semibold text-navy">
+                        <h3 className="font-heading text-lg font-semibold text-navy dark:text-white">
                           {job.designation}
                         </h3>
                         <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
@@ -237,10 +237,10 @@ export default function SearchResultsPage() {
                             <Building2 className="h-6 w-6 text-primary" aria-hidden />
                           </div>
                           <div>
-                            <h3 className="font-heading text-lg font-semibold text-navy">
+                            <h3 className="font-heading text-lg font-semibold text-navy dark:text-white">
                               {company.name}
                             </h3>
-                            <p className="text-sm text-gray-500">{company.industry}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{company.industry}</p>
                           </div>
                         </div>
                         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600 dark:text-gray-300">
@@ -269,10 +269,10 @@ export default function SearchResultsPage() {
                           <User className="h-6 w-6 text-gray-400" aria-hidden />
                         </div>
                         <div>
-                          <h3 className="font-heading text-base font-semibold text-navy">
+                          <h3 className="font-heading text-base font-semibold text-navy dark:text-white">
                             {candidate.name}
                           </h3>
-                          <p className="text-sm text-gray-500">{candidate.designation}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{candidate.designation}</p>
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600 dark:text-gray-300">

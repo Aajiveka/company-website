@@ -54,6 +54,9 @@ export default function HomePage() {
           src="/image/slider_laptop.webp"
           alt=""
           aria-hidden="true"
+          width={519}
+          height={400}
+          decoding="async"
           className="pointer-events-none absolute bottom-0 right-[4%] z-0 hidden w-[38%] max-w-[519px] object-contain md:block lg:right-[8%]"
         />
         <div className="container relative z-10">
@@ -83,7 +86,7 @@ export default function HomePage() {
               <p className="mt-4 text-gray-600 dark:text-gray-300">{t('story.text1')}</p>
               <p className="mt-3 text-gray-600 dark:text-gray-300">{t('story.text2')}</p>
             </div>
-            <img src="/image/story.webp" alt="Our story" className="w-full rounded-lg" loading="lazy" />
+            <img src="/image/story.webp" alt="Our story" className="w-full rounded-lg" loading="lazy" decoding="async" style={{ aspectRatio: '16/9' }} />
           </div>
           <div className="mt-6 text-center">
             <h3 className="font-heading text-2xl font-semibold text-primary">
@@ -109,6 +112,8 @@ export default function HomePage() {
                 alt=""
                 className="w-full"
                 loading="lazy"
+                decoding="async"
+                style={{ aspectRatio: '16/9' }}
               />
             ))}
           </div>
@@ -130,7 +135,7 @@ export default function HomePage() {
                 key={key}
                 className="rounded-xl bg-white p-6 shadow-[0px_4px_40px_rgba(43,89,255,0.08)] transition hover:-translate-y-1 dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700"
               >
-                <img src={SERVICE_ICONS[i]} alt="" className="mx-auto h-16" loading="lazy" />
+                <img src={SERVICE_ICONS[i]} alt="" className="mx-auto h-16" width={64} height={64} loading="lazy" decoding="async" />
                 <h5 className="mb-2 mt-3 font-heading text-lg font-semibold text-navy">
                   {t(`service.${key}`)}
                 </h5>

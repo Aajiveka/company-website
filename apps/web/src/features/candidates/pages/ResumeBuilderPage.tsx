@@ -25,6 +25,7 @@ function moveItem<T>(arr: T[], from: number, to: number): T[] {
 }
 
 function ResumeSection({ id, data, template }: { id: SectionId; data: CvEditProfile; template: Template }) {
+  const { t } = useTranslation('common');
   const accentColor = template === 'modern' ? 'text-primary' : template === 'classic' ? 'text-navy' : 'text-gray-800';
   const borderColor = template === 'modern' ? 'border-primary' : template === 'classic' ? 'border-navy' : 'border-gray-400';
 
@@ -39,7 +40,7 @@ function ResumeSection({ id, data, template }: { id: SectionId; data: CvEditProf
             {data.personal.address && <span>{data.personal.address}</span>}
           </div>
           {data.professional && data.professional.totalExp > 0 && (
-            <p className="mt-1 text-sm text-gray-500">{data.professional.totalExp} years experience</p>
+            <p className="mt-1 text-sm text-gray-500">{t('resume.yearsExperience', { count: data.professional.totalExp })}</p>
           )}
         </div>
       ) : null;
@@ -48,7 +49,7 @@ function ResumeSection({ id, data, template }: { id: SectionId; data: CvEditProf
       if (!data.professional?.tagNames?.length) return null;
       return (
         <div className="mb-5">
-          <h2 className={cn('mb-2 border-b-2 pb-1 text-base font-semibold uppercase tracking-wide', accentColor, borderColor)}>Skills</h2>
+          <h2 className={cn('mb-2 border-b-2 pb-1 text-base font-semibold uppercase tracking-wide', accentColor, borderColor)}>{t('resume.skills')}</h2>
           <div className="flex flex-wrap gap-2">
             {data.professional.tagNames.map((s) => (
               <span key={s} className={cn(
@@ -64,13 +65,13 @@ function ResumeSection({ id, data, template }: { id: SectionId; data: CvEditProf
       if (!data.employment.length) return null;
       return (
         <div className="mb-5">
-          <h2 className={cn('mb-2 border-b-2 pb-1 text-base font-semibold uppercase tracking-wide', accentColor, borderColor)}>Experience</h2>
+          <h2 className={cn('mb-2 border-b-2 pb-1 text-base font-semibold uppercase tracking-wide', accentColor, borderColor)}>{t('resume.experience')}</h2>
           <div className="space-y-3">
             {data.employment.map((e) => (
               <div key={e.subscriberEmployerId}>
-                <p className="font-medium text-gray-800">{e.designationId ? `Role #${e.designationId}` : 'Role'}</p>
+                <p className="font-medium text-gray-800">{e.designationId ? `${t('resume.role')} #${e.designationId}` : t('resume.role')}</p>
                 <p className="text-sm text-gray-600">{e.employer}</p>
-                <p className="text-xs text-gray-400">{e.joiningDate} — {e.flgCurrent ? 'Present' : e.releavingDate}</p>
+                <p className="text-xs text-gray-400">{e.joiningDate} — {e.flgCurrent ? t('resume.present') : e.releavingDate}</p>
                 {e.jobDescr && <p className="mt-1 text-xs text-gray-500">{e.jobDescr}</p>}
               </div>
             ))}
@@ -82,12 +83,12 @@ function ResumeSection({ id, data, template }: { id: SectionId; data: CvEditProf
       if (!data.education.length) return null;
       return (
         <div className="mb-5">
-          <h2 className={cn('mb-2 border-b-2 pb-1 text-base font-semibold uppercase tracking-wide', accentColor, borderColor)}>Education</h2>
+          <h2 className={cn('mb-2 border-b-2 pb-1 text-base font-semibold uppercase tracking-wide', accentColor, borderColor)}>{t('resume.education')}</h2>
           <div className="space-y-2">
             {data.education.map((e) => (
               <div key={e.subscriberEducationId}>
-                <p className="font-medium text-gray-800">{e.degreeId ? `Degree #${e.degreeId}` : 'Degree'}</p>
-                <p className="text-xs text-gray-500">{e.courseTypeId ? `Course #${e.courseTypeId}` : 'Course'}</p>
+                <p className="font-medium text-gray-800">{e.degreeId ? `${t('resume.degree')} #${e.degreeId}` : t('resume.degree')}</p>
+                <p className="text-xs text-gray-500">{e.courseTypeId ? `${t('resume.course')} #${e.courseTypeId}` : t('resume.course')}</p>
               </div>
             ))}
           </div>
@@ -98,7 +99,7 @@ function ResumeSection({ id, data, template }: { id: SectionId; data: CvEditProf
       if (!data.certificates.length) return null;
       return (
         <div className="mb-5">
-          <h2 className={cn('mb-2 border-b-2 pb-1 text-base font-semibold uppercase tracking-wide', accentColor, borderColor)}>Certificates</h2>
+          <h2 className={cn('mb-2 border-b-2 pb-1 text-base font-semibold uppercase tracking-wide', accentColor, borderColor)}>{t('resume.certificates')}</h2>
           <ul className="list-inside list-disc space-y-1 text-sm text-gray-700">
             {data.certificates.map((c) => (
               <li key={c.subscriberCertificateId}>{c.certificateName}</li>
@@ -223,7 +224,7 @@ export default function ResumeBuilderPage() {
               {sections.map((sec) => (
                 <ResumeSection key={sec} id={sec} data={data} template={template} />
               ))}
-              <p className="mt-8 text-center text-[10px] text-gray-300">Generated on Aajiveka — aajiveka.com</p>
+              <p className="mt-8 text-center text-[10px] text-gray-300">{t('resume.generatedOn')}</p>
             </div>
           </Card>
         </div>

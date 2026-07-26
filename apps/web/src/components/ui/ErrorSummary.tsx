@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { FieldErrors } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Alert } from './Alert';
 
 export interface ErrorSummaryProps {
@@ -43,10 +44,12 @@ function flattenErrors(
  */
 export function ErrorSummary({
   errors,
-  heading = 'Please fix the following errors:',
+  heading,
   labels,
   className,
 }: ErrorSummaryProps) {
+  const { t } = useTranslation('common');
+  const resolvedHeading = heading ?? t('validation.fixErrors');
   const ref = useRef<HTMLDivElement>(null);
   const items = flattenErrors(errors);
 
@@ -65,11 +68,11 @@ export function ErrorSummary({
       ref={ref}
       tabIndex={-1}
       role="alert"
-      aria-label={heading}
+      aria-label={resolvedHeading}
       className={className}
     >
       <Alert variant="error">
-        <p className="mb-1 font-medium">{heading}</p>
+        <p className="mb-1 font-medium">{resolvedHeading}</p>
         <ul className="list-disc space-y-0.5 pl-4">
           {items.map(({ field, message }) => (
             <li key={field}>

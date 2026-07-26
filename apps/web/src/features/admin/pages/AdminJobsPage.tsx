@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Briefcase, CheckCircle2, Eye, FileText, Search, XCircle } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +13,7 @@ import {
   Pagination,
   Select,
   useToast,
+  VirtualList,
   type Column,
 } from '@/components/ui';
 import { api } from '@/lib/axios';
@@ -39,6 +41,7 @@ export default function AdminJobsPage() {
   const qc = useQueryClient();
 
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search);
   const [statusFilter, setStatusFilter] = useState('');
   const [companyFilter, setCompanyFilter] = useState('');
   const [page, setPage] = useState(1);
@@ -47,12 +50,12 @@ export default function AdminJobsPage() {
   const [rejectTarget, setRejectTarget] = useState<PendingJob | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'jobs', search, statusFilter, companyFilter],
+    queryKey: ['admin', 'jobs', debouncedSearch, statusFilter, companyFilter],
     queryFn: () =>
       api
         .get<PendingJob[]>('/admin/jobs', {
           params: {
-            ...(search ? { q: search } : {}),
+            ...(debouncedSearch ? { q: debouncedSearch } : {}),
             ...(statusFilter ? { status: statusFilter } : {}),
             ...(companyFilter ? { company: companyFilter } : {}),
           },
@@ -67,16 +70,19 @@ export default function AdminJobsPage() {
     return unique.map((c) => ({ label: c, value: c }));
   }, [data]);
 
-  // Client-side pagination
+  const useVirtualized = (data?.length ?? 0) > 50;
+
+  // Client-side pagination (used when data <= 50 rows)
   const paginatedData = useMemo(() => {
     const all = data ?? [];
+    if (useVirtualized) return { items: all, total: all.length, pageCount: 1 };
     const start = (page - 1) * PAGE_SIZE;
     return {
       items: all.slice(start, start + PAGE_SIZE),
       total: all.length,
       pageCount: Math.max(1, Math.ceil(all.length / PAGE_SIZE)),
     };
-  }, [data, page]);
+  }, [data, page, useVirtualized]);
 
   // Job stats summary
   const stats = useMemo(() => {
@@ -239,28 +245,28 @@ export default function AdminJobsPage() {
 
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
-        <Briefcase className="h-6 w-6 text-navy" />
-        <h1 className="font-heading text-2xl font-bold text-navy">{t('adminJobs.heading')}</h1>
+        <Briefcase className="h-6 w-6 text-navy dark:text-white" />
+        <h1 className="font-heading text-2xl font-bold text-navy dark:text-white">{t('adminJobs.heading')}</h1>
       </div>
 
       {/* Stats bar */}
       {!isLoading && data && (
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Card className="!p-3 text-center">
-            <p className="text-2xl font-bold text-navy">{stats.total}</p>
-            <p className="text-xs text-gray-500">{t('adminJobs.totalJobs')}</p>
+            <p className="text-2xl font-bold text-navy dark:text-white">{stats.total}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('adminJobs.totalJobs')}</p>
           </Card>
           <Card className="!p-3 text-center">
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.active}</p>
-            <p className="text-xs text-gray-500">{t('adminJobs.activeJobs')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('adminJobs.activeJobs')}</p>
           </Card>
           <Card className="!p-3 text-center">
             <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
-            <p className="text-xs text-gray-500">{t('adminJobs.pendingJobs')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('adminJobs.pendingJobs')}</p>
           </Card>
           <Card className="!p-3 text-center">
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalApps}</p>
-            <p className="text-xs text-gray-500">{t('adminJobs.totalApplications')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('adminJobs.totalApplications')}</p>
           </Card>
         </div>
       )}
@@ -332,48 +338,72 @@ export default function AdminJobsPage() {
               ))}
             </tr>
           </thead>
-          <tbody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
-                  {columns.map((c, ci) => {
-                    const widths = ['w-3/4', 'w-1/2', 'w-2/3', 'w-5/6', 'w-1/3'];
-                    return (
-                      <td key={c.key} className="px-3 py-2.5 sm:px-4 sm:py-3">
-                        <div className={`h-4 animate-pulse rounded bg-gray-200 dark:bg-gray-600 ${widths[(i + ci) % widths.length]}`} />
+          {!useVirtualized && (
+            <tbody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
+                    {columns.map((c, ci) => {
+                      const widths = ['w-3/4', 'w-1/2', 'w-2/3', 'w-5/6', 'w-1/3'];
+                      return (
+                        <td key={c.key} className="px-3 py-2.5 sm:px-4 sm:py-3">
+                          <div className={`h-4 animate-pulse rounded bg-gray-200 dark:bg-gray-600 ${widths[(i + ci) % widths.length]}`} />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              ) : paginatedData.items.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length} className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                    {t('adminJobs.noJobs')}
+                  </td>
+                </tr>
+              ) : (
+                paginatedData.items.map((row) => (
+                  <tr
+                    key={row.jobId}
+                    className={`border-b border-gray-100 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
+                      selected.has(row.jobId) ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
+                    }`}
+                  >
+                    {columns.map((c) => (
+                      <td key={c.key} className={`px-3 py-2.5 sm:px-4 sm:py-3 ${c.className ?? ''}`}>
+                        {c.render ? c.render(row) : String((row as unknown as Record<string, unknown>)[c.key] ?? '')}
                       </td>
-                    );
-                  })}
-                </tr>
-              ))
-            ) : paginatedData.items.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
-                  {t('adminJobs.noJobs')}
-                </td>
-              </tr>
-            ) : (
-              paginatedData.items.map((row) => (
-                <tr
-                  key={row.jobId}
-                  className={`border-b border-gray-100 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
-                    selected.has(row.jobId) ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
-                  }`}
-                >
-                  {columns.map((c) => (
-                    <td key={c.key} className={`px-3 py-2.5 sm:px-4 sm:py-3 ${c.className ?? ''}`}>
-                      {c.render ? c.render(row) : String((row as unknown as Record<string, unknown>)[c.key] ?? '')}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          )}
         </table>
+        {useVirtualized && !isLoading && (
+          <VirtualList
+            items={paginatedData.items}
+            itemHeight={48}
+            overscan={8}
+            className="max-h-[600px]"
+            renderItem={(row) => (
+              <div
+                key={row.jobId}
+                className={`flex border-b border-gray-100 text-sm transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
+                  selected.has(row.jobId) ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
+                }`}
+              >
+                {columns.map((c) => (
+                  <div key={c.key} className={`flex-1 px-3 py-2.5 sm:px-4 sm:py-3 ${c.className ?? ''}`}>
+                    {c.render ? c.render(row) : String((row as unknown as Record<string, unknown>)[c.key] ?? '')}
+                  </div>
+                ))}
+              </div>
+            )}
+          />
+        )}
       </div>
 
-      {/* Pagination */}
-      {paginatedData.pageCount > 1 && (
+      {/* Pagination (hidden when virtualized) */}
+      {!useVirtualized && paginatedData.pageCount > 1 && (
         <div className="mt-4 flex justify-center">
           <Pagination page={page} pageCount={paginatedData.pageCount} onChange={setPage} />
         </div>

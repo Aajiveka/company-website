@@ -23,3 +23,4 @@ export { ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps } from './ConfirmDialog';
 export { ErrorSummary } from './ErrorSummary';
 export type { ErrorSummaryProps } from './ErrorSummary';
+export { VirtualList } from './VirtualList';

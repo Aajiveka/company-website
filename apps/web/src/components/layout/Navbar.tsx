@@ -31,7 +31,7 @@ export function Navbar() {
       <nav aria-label="Main" className="container flex items-center justify-between px-3 py-3 sm:px-4">
         <div className="flex items-center gap-3">
           <Link to="/" className="shrink-0">
-            <img src="/image/logo.svg" alt="Aajiveka" className="h-12 w-auto sm:h-16" />
+            <img src="/image/logo.svg" alt="Aajiveka" className="h-12 w-auto sm:h-16" width={120} height={64} decoding="async" />
           </Link>
           <span className="hidden font-bold text-white md:inline">
             {t('nav.tollFree')} <span className="font-normal">{t('nav.tollFreeNumber')}</span>

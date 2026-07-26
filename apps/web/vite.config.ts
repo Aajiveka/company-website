@@ -112,6 +112,8 @@ export default defineConfig(({ mode: _mode }) => ({
           'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
           'i18n-vendor': ['i18next', 'react-i18next', 'i18next-http-backend', 'i18next-browser-languagedetector'],
           'ui-vendor': ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          'pdf-vendor': ['html2canvas-pro', 'jspdf'],
+          'state-vendor': ['zustand'],
         },
       },
     },

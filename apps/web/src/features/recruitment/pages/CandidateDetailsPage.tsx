@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Briefcase, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import { isAxiosError } from 'axios';
+import { useTranslation } from 'react-i18next';
 import { Badge, Breadcrumbs, Button, Card, ProfileSkeleton, Modal, Select, statusTone } from '@/components/ui';
 import { useToast } from '@/components/ui';
 import {
@@ -15,6 +16,7 @@ import {
 
 /** QC/Client — full candidate detail view (candidate-details.aspx). */
 export default function CandidateDetailsPage() {
+  const { t } = useTranslation('common');
   const { id = '' } = useParams();
   const { data, isLoading } = useCandidateDetail(id);
   const decide = useDecideCandidate(id);
@@ -31,21 +33,21 @@ export default function CandidateDetailsPage() {
 
   const act = (decision: 'Approved' | 'Rejected') =>
     decide.mutate(decision, {
-      onSuccess: () => notify(`Candidate ${decision.toLowerCase()}.`, decision === 'Approved' ? 'success' : 'info'),
+      onSuccess: () => notify(decision === 'Approved' ? t('recruitment.candidateApproved') : t('recruitment.candidateRejected'), decision === 'Approved' ? 'success' : 'info'),
       onError: (e) =>
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Something went wrong' : 'Something went wrong', 'error'),
+        notify(isAxiosError(e) ? e.response?.data?.message ?? t('errors.somethingWrong') : t('errors.somethingWrong'), 'error'),
     });
 
   const onAssign = () => {
     if (!selectedJobId) return;
     assignJob.mutate(Number(selectedJobId), {
       onSuccess: () => {
-        notify('Candidate assigned to job.', 'success');
+        notify(t('recruitment.candidateAssigned'), 'success');
         setAssignOpen(false);
         setSelectedJobId('');
       },
       onError: (e) =>
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not assign this job' : 'Could not assign this job', 'error'),
+        notify(isAxiosError(e) ? e.response?.data?.message ?? t('recruitment.couldNotAssign') : t('recruitment.couldNotAssign'), 'error'),
     });
   };
 
@@ -58,18 +60,18 @@ export default function CandidateDetailsPage() {
     if (!selectedDocTypes.length) return;
     assignDocs.mutate(selectedDocTypes, {
       onSuccess: () => {
-        notify('Documents assigned to candidate.', 'success');
+        notify(t('recruitment.documentsAssigned'), 'success');
         setDocsOpen(false);
         setSelectedDocTypes([]);
       },
       onError: (e) =>
-        notify(isAxiosError(e) ? e.response?.data?.message ?? 'Could not assign documents' : 'Could not assign documents', 'error'),
+        notify(isAxiosError(e) ? e.response?.data?.message ?? t('recruitment.couldNotAssignDocs') : t('recruitment.couldNotAssignDocs'), 'error'),
     });
   };
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Breadcrumbs items={[{ label: 'Candidates', to: '/recruitment/candidates' }, { label: 'Candidate Details' }]} />
+      <Breadcrumbs items={[{ label: t('recruitment.candidates'), to: '/recruitment/candidates' }, { label: t('recruitment.candidateDetails') }]} />
 
       {isLoading || !data ? (
         <ProfileSkeleton />
@@ -100,24 +102,24 @@ export default function CandidateDetailsPage() {
               {data.registrationStatus === 'Pending' && (
                 <>
                   <Button variant="outline" size="sm" disabled={decide.isPending} onClick={() => act('Approved')}>
-                    Approve CV
+                    {t('recruitment.approveCV')}
                   </Button>
                   <Button variant="danger" size="sm" disabled={decide.isPending} onClick={() => act('Rejected')}>
-                    Reject
+                    {t('actions.reject')}
                   </Button>
                 </>
               )}
               <Button variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
-                Assign Job
+                {t('recruitment.assignJob')}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setDocsOpen(true)}>
-                Assign Documents
+                {t('recruitment.assignDocuments')}
               </Button>
             </div>
           </Card>
 
           <Card>
-            <h2 className="mb-3 text-lg">Skills</h2>
+            <h2 className="mb-3 text-lg">{t('recruitment.skills')}</h2>
             <div className="flex flex-wrap gap-2">
               {data.skills.map((s) => (
                 <span key={s} className="rounded-full bg-brand-soft px-3 py-1 text-sm text-primary">{s}</span>
@@ -127,7 +129,7 @@ export default function CandidateDetailsPage() {
 
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
-              <h2 className="mb-4 flex items-center gap-2 text-lg"><Briefcase className="h-5 w-5 text-primary" /> Experience</h2>
+              <h2 className="mb-4 flex items-center gap-2 text-lg"><Briefcase className="h-5 w-5 text-primary" /> {t('recruitment.experience')}</h2>
               <ul className="space-y-4">
                 {data.experience.map((e, i) => (
                   <li key={i} className="border-l-2 border-brand-soft pl-3">
@@ -139,7 +141,7 @@ export default function CandidateDetailsPage() {
               </ul>
             </Card>
             <Card>
-              <h2 className="mb-4 flex items-center gap-2 text-lg"><GraduationCap className="h-5 w-5 text-primary" /> Education</h2>
+              <h2 className="mb-4 flex items-center gap-2 text-lg"><GraduationCap className="h-5 w-5 text-primary" /> {t('recruitment.education')}</h2>
               <ul className="space-y-4">
                 {data.education.map((e, i) => (
                   <li key={i} className="border-l-2 border-brand-soft pl-3">
@@ -154,27 +156,27 @@ export default function CandidateDetailsPage() {
         </div>
       )}
 
-      <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title="Assign Job">
+      <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title={t('recruitment.assignJob')}>
         <div className="space-y-4">
           <Select
-            label="Job opening"
-            placeholder="Select a job…"
+            label={t('recruitment.jobOpening')}
+            placeholder={t('recruitment.selectJob')}
             options={(jobOptions ?? []).map((j) => ({ label: `${j.designation} — ${j.company}`, value: j.jobId }))}
             value={selectedJobId}
             onChange={(e) => setSelectedJobId(e.target.value)}
           />
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setAssignOpen(false)}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button size="sm" disabled={!selectedJobId || assignJob.isPending} onClick={onAssign}>
-              Assign
+              {t('actions.assign')}
             </Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={docsOpen} onClose={() => setDocsOpen(false)} title="Assign Required Documents">
+      <Modal open={docsOpen} onClose={() => setDocsOpen(false)} title={t('recruitment.assignRequiredDocs')}>
         <div className="space-y-4">
           <div className="space-y-2">
             {(documentTypes ?? []).map((d) => (
@@ -191,10 +193,10 @@ export default function CandidateDetailsPage() {
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setDocsOpen(false)}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button size="sm" disabled={!selectedDocTypes.length || assignDocs.isPending} onClick={onAssignDocs}>
-              Assign
+              {t('actions.assign')}
             </Button>
           </div>
         </div>

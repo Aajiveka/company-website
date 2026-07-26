@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import CommandPalette from '@/components/CommandPalette';
@@ -87,23 +87,29 @@ describe('CommandPalette', () => {
   });
 
   it('filters items by query', () => {
+    vi.useFakeTimers();
     renderPalette();
     act(() => {
       fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
     });
     const input = screen.getByPlaceholderText('commandPalette.placeholder');
     fireEvent.change(input, { target: { value: 'nav.home' } });
+    act(() => { vi.advanceTimersByTime(300); });
     expect(screen.getByText('nav.home')).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('shows no results message when query matches nothing', () => {
+    vi.useFakeTimers();
     renderPalette();
     act(() => {
       fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
     });
     const input = screen.getByPlaceholderText('commandPalette.placeholder');
     fireEvent.change(input, { target: { value: 'xyznonexistent' } });
+    act(() => { vi.advanceTimersByTime(300); });
     expect(screen.getByText('commandPalette.noResults')).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('navigates on Enter key', () => {

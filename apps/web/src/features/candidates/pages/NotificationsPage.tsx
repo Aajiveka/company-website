@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -64,6 +64,54 @@ const typeTone = (type: Notification['type']): BadgeTone => {
   }
 };
 
+/* ---------- notification item ---------- */
+const NotificationItem = memo(function NotificationItem({
+  notification,
+  onMarkRead,
+  formatDate,
+}: {
+  notification: Notification;
+  onMarkRead: (n: Notification) => void;
+  formatDate: (iso: string) => string;
+}) {
+  const n = notification;
+  return (
+    <button
+      onClick={() => onMarkRead(n)}
+      className={cn(
+        'flex w-full items-start gap-3 rounded-xl p-4 text-left shadow-card transition',
+        n.read
+          ? 'bg-white dark:bg-gray-800'
+          : 'bg-primary/5 ring-1 ring-primary/20 dark:bg-primary/10',
+      )}
+    >
+      <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+        {typeIcon(n.type)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3
+            className={cn(
+              'text-sm font-semibold',
+              n.read ? 'text-navy dark:text-white' : 'text-primary',
+            )}
+          >
+            {n.title}
+          </h3>
+          <Badge tone={typeTone(n.type)}>
+            {n.type}
+          </Badge>
+          {!n.read && (
+            <span className="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
+          )}
+        </div>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{n.message}</p>
+        <p className="mt-1.5 text-xs text-gray-400">{formatDate(n.createdAt)}</p>
+      </div>
+    </button>
+  );
+});
+
 /* ---------- component ---------- */
 export default function NotificationsPage() {
   const { t } = useTranslation('dashboard');
@@ -113,7 +161,7 @@ export default function NotificationsPage() {
     [markRead],
   );
 
-  const formatDate = (iso: string) => {
+  const formatDate = useCallback((iso: string) => {
     const d = new Date(iso);
     return d.toLocaleDateString(undefined, {
       day: 'numeric',
@@ -122,7 +170,7 @@ export default function NotificationsPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, []);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -135,7 +183,7 @@ export default function NotificationsPage() {
 
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold text-navy">
+        <h1 className="font-heading text-2xl font-bold text-navy dark:text-white">
           {t('notificationsPage.heading')}
         </h1>
         <Button
@@ -185,49 +233,21 @@ export default function NotificationsPage() {
         /* Empty state */
         <Card className="text-center">
           <div className="flex flex-col items-center gap-3 py-8">
-            <BellOff className="h-12 w-12 text-gray-300" aria-hidden />
-            <p className="text-navy">{t('notificationsPage.empty')}</p>
-            <p className="text-sm text-gray-500">{t('notificationsPage.emptyHint')}</p>
+            <BellOff className="h-12 w-12 text-gray-300 dark:text-gray-600" aria-hidden />
+            <p className="text-navy dark:text-white">{t('notificationsPage.empty')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('notificationsPage.emptyHint')}</p>
           </div>
         </Card>
       ) : (
         /* Notifications list */
         <div className="space-y-3">
           {allNotifications.map((n) => (
-            <button
+            <NotificationItem
               key={n.id}
-              onClick={() => handleMarkRead(n)}
-              className={cn(
-                'flex w-full items-start gap-3 rounded-xl p-4 text-left shadow-card transition',
-                n.read
-                  ? 'bg-white dark:bg-gray-800'
-                  : 'bg-primary/5 ring-1 ring-primary/20 dark:bg-primary/10',
-              )}
-            >
-              <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                {typeIcon(n.type)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3
-                    className={cn(
-                      'text-sm font-semibold',
-                      n.read ? 'text-navy' : 'text-primary',
-                    )}
-                  >
-                    {n.title}
-                  </h3>
-                  <Badge tone={typeTone(n.type)}>
-                    {t(`notificationsPage.type_${n.type}`)}
-                  </Badge>
-                  {!n.read && (
-                    <span className="ml-auto h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{n.message}</p>
-                <p className="mt-1.5 text-xs text-gray-400">{formatDate(n.createdAt)}</p>
-              </div>
-            </button>
+              notification={n}
+              onMarkRead={handleMarkRead}
+              formatDate={formatDate}
+            />
           ))}
 
           {/* Load more */}

@@ -36,7 +36,7 @@ export function Footer() {
       <div className="container">
         <div className="grid gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <img src="/image/logo.svg" alt="Aajiveka" className="w-24 sm:w-32" />
+            <img src="/image/logo.svg" alt="Aajiveka" className="w-24 sm:w-32" width={128} height={48} loading="lazy" decoding="async" />
             <h6 className="mt-4 font-normal">{t('footer.followUs')}</h6>
             <ul className="mt-2 flex gap-3">
               {socials.map(({ href, Icon, label }) => (
