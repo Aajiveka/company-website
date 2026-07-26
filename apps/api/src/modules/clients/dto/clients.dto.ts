@@ -135,3 +135,31 @@ export class ApplicantDecisionDto {
   @IsIn(['Shortlisted', 'Rejected'])
   decision!: 'Shortlisted' | 'Rejected';
 }
+
+export class UpdateBrandingDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  tagline?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  coverImageUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  culture?: string;
+
+  @ApiPropertyOptional({ description: 'JSON string of benefits array' })
+  @IsOptional()
+  @IsString()
+  benefits?: string;
+}
+
+export class ApplicantNoteDto {
+  @ApiProperty()
+  @IsString()
+  note!: string;
+}

@@ -33,6 +33,14 @@ export class JobsController {
     return this.jobs.suggestions(query);
   }
 
+  @Get('recommended')
+  @Roles(Role.Subscriber)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Recommended jobs for the signed-in candidate' })
+  recommended(@CurrentUser() user: RequestUser) {
+    return this.jobs.recommended(user.userId);
+  }
+
   @Public()
   @Get()
   @ApiOperation({ summary: 'Search public job openings' })

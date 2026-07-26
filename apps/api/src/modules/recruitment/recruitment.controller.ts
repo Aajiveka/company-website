@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -12,6 +12,7 @@ import {
   ReviewDocumentDto,
   ScheduleInterviewDto,
   UpdateInterviewStatusDto,
+  UpdatePipelineDto,
 } from './dto/recruitment.dto';
 
 @ApiTags('recruitment')
@@ -129,5 +130,15 @@ export class RecruitmentController {
     @Body() dto: AssignDocumentsDto,
   ) {
     return this.recruitment.assignDocuments(user.userId, id, dto.documentTypeIds);
+  }
+
+  @Patch('pipeline/:id')
+  @ApiOperation({ summary: 'Update pipeline stage for an application' })
+  updatePipeline(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: UpdatePipelineDto,
+  ) {
+    return this.recruitment.updatePipelineStage(user.userId, id, dto);
   }
 }

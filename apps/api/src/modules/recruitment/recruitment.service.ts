@@ -9,6 +9,7 @@ import type {
   ReviewDocumentDto,
   ScheduleInterviewDto,
   UpdateInterviewStatusDto,
+  UpdatePipelineDto,
 } from './dto/recruitment.dto';
 
 /** tblSubscriberRegistration.flgstatus: 0 = pending QC1 decision, 1 = approved, 2 = rejected. */
@@ -387,6 +388,25 @@ export class RecruitmentService {
       entityId: subscriberId,
       detail: { documentTypeIds },
     });
+    return { ok: true };
+  }
+
+  /** Update the pipeline stage (jobMapStatusID) for a job-subscriber mapping. */
+  async updatePipelineStage(userId: number, jobSubscriberMapId: number, dto: UpdatePipelineDto) {
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+    });
+    if (!mapping) throw new NotFoundException('Application not found');
+
+    await this.db.jobSubscriberMapping.update({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      data: {
+        jobMapStatusID: dto.stageId,
+        timestampUpd: new Date(),
+        loginIDUpd: userId,
+      },
+    });
+
     return { ok: true };
   }
 

@@ -223,3 +223,41 @@ export class ChangePasswordDto {
   @MinLength(8, { message: 'New password must be at least 8 characters' })
   newPassword!: string;
 }
+
+export class UpdateNotificationPrefsDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  emailAlerts?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  pushAlerts?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  smsAlerts?: boolean;
+
+  @ApiPropertyOptional({ enum: ['Daily', 'Weekly', 'Instant'] })
+  @IsOptional()
+  @IsIn(['Daily', 'Weekly', 'Instant'])
+  jobAlertFrequency?: 'Daily' | 'Weekly' | 'Instant';
+}
+
+export class CreateSavedSearchDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  query?: string;
+
+  @ApiPropertyOptional({ description: 'Arbitrary filter object, stored as JSON' })
+  @IsOptional()
+  filters?: Record<string, unknown>;
+}

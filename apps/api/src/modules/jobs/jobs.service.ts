@@ -504,4 +504,10 @@ export class JobsService {
     const subscriberId = await this.candidates.subscriberIdFor(userId);
     return this.applications.apply(subscriberId, jobId, userId);
   }
+
+  /** Recommended jobs for the signed-in candidate, based on skills, city, and industry. */
+  async recommended(userId: number) {
+    const subscriberId = await this.candidates.subscriberIdFor(userId);
+    return this.candidates.recommendations(subscriberId);
+  }
 }

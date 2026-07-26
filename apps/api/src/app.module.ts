@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -21,6 +21,9 @@ import { redisProvider } from '@/modules/auth/redis.provider';
 import { EmailModule } from '@/common/email/email.module';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { RequestLoggerMiddleware } from '@/common/middleware/request-logger.middleware';
+import { AdminModule } from '@/modules/admin/admin.module';
+import { CompaniesModule } from '@/modules/companies/companies.module';
 
 @Module({
   imports: [
@@ -40,6 +43,8 @@ import { RolesGuard } from '@/common/guards/roles.guard';
     FilesModule,
     ExportsModule,
     PaymentsModule,
+    AdminModule,
+    CompaniesModule,
   ],
   controllers: [HealthController],
   providers: [
@@ -50,4 +55,8 @@ import { RolesGuard } from '@/common/guards/roles.guard';
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+  }
+}

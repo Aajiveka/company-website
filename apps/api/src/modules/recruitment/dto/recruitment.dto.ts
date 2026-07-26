@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayNotEmpty, IsArray, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class CandidatesQueryDto {
   @ApiPropertyOptional({ description: 'Match on the candidate’s full name' })
@@ -87,4 +87,10 @@ export class UpdateInterviewStatusDto {
   @IsOptional()
   @IsString()
   comments?: string;
+}
+
+export class UpdatePipelineDto {
+  @ApiProperty({ description: 'tblMstrJobMappingStatus.JobMapStatusID' })
+  @IsNumber()
+  stageId!: number;
 }

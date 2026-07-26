@@ -3,9 +3,11 @@ import argon2 from 'argon2';
 import { PrismaService } from '@/prisma/prisma.service';
 import { StorageService } from '@/modules/storage/storage.service';
 import { AuditService } from '@/modules/audit/audit.service';
-import { SubscriberStatus } from '@/shared/status';
+import { SubscriberStatus, JOB_STATUS_ACTIVE } from '@/shared/status';
 import type {
   CreateJobAlertDto,
+  CreateSavedSearchDto,
+  UpdateNotificationPrefsDto,
   UpdatePersonalDto,
   UpdateProfessionalDto,
   UpsertCertificateDto,
@@ -658,5 +660,353 @@ export class CandidatesService {
       },
     });
     return { message: 'Password changed successfully' };
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // NEW ENDPOINTS
+  // ────────────────────────────────────────────────────────────────────────────
+
+  /** Dashboard summary for the candidate. */
+  async dashboard(subscriberId: number) {
+    const [appliedCount, savedCount, interviewMappings, cv, tags, education, employers] = await Promise.all([
+      this.db.jobSubscriberMapping.count({ where: { subscriberID: subscriberId } }),
+      this.db.savedJob.count({ where: { subscriberID: subscriberId } }),
+      this.db.jobSubscriberMapping.findMany({
+        where: { subscriberID: subscriberId },
+        select: {
+          JobInterviewStatus: { select: { interviewStatusID: true }, take: 1 },
+        },
+      }),
+      this.db.subscriberCVDetails.findUnique({
+        where: { subscriberID: subscriberId },
+        select: {
+          fullName: true,
+          emailID: true,
+          mobileNo1: true,
+          dOB: true,
+          gender: true,
+          addressLine1: true,
+          cityID: true,
+          skillID: true,
+          subFunctionID: true,
+          totalExp: true,
+          currentCTC: true,
+          industryTypeID: true,
+          photoName: true,
+        },
+      }),
+      this.db.subscriberTags.count({ where: { subscriberID: subscriberId } }),
+      this.db.subscriberEducation.count({ where: { subscriberID: subscriberId } }),
+      this.db.subscriberEmployer.count({ where: { subscriberID: subscriberId } }),
+    ]);
+
+    const interviewCount = interviewMappings.filter((m) => m.JobInterviewStatus.length > 0).length;
+
+    // Profile completion: check key fields
+    let filled = 0;
+    const total = 10;
+    if (cv) {
+      if (cv.fullName?.trim()) filled++;
+      if (cv.emailID?.trim()) filled++;
+      if (cv.mobileNo1?.trim()) filled++;
+      if (cv.dOB) filled++;
+      if (cv.gender?.trim()) filled++;
+      if (cv.cityID) filled++;
+      if (cv.subFunctionID) filled++;
+      if (cv.totalExp != null) filled++;
+    }
+    if (tags > 0) filled++;
+    if (education > 0 || employers > 0) filled++;
+
+    const profileCompletion = Math.round((filled / total) * 100);
+
+    return { appliedCount, savedCount, interviewCount, profileCompletion };
+  }
+
+  /** Get notification preferences, returning defaults if none stored. */
+  async notificationPrefs(subscriberId: number) {
+    const defaults = { emailAlerts: true, pushAlerts: true, smsAlerts: false, jobAlertFrequency: 'Daily' as const };
+    try {
+      const row = await (this.db as any).notificationPreference.findUnique({
+        where: { subscriberID: subscriberId },
+      });
+      if (!row) return defaults;
+      return {
+        emailAlerts: row.emailAlerts ?? defaults.emailAlerts,
+        pushAlerts: row.pushAlerts ?? defaults.pushAlerts,
+        smsAlerts: row.smsAlerts ?? defaults.smsAlerts,
+        jobAlertFrequency: row.jobAlertFrequency ?? defaults.jobAlertFrequency,
+      };
+    } catch {
+      // Table may not exist yet if migration hasn't run — return defaults gracefully.
+      return defaults;
+    }
+  }
+
+  /** Upsert notification preferences. */
+  async updateNotificationPrefs(subscriberId: number, dto: UpdateNotificationPrefsDto) {
+    try {
+      await (this.db as any).notificationPreference.upsert({
+        where: { subscriberID: subscriberId },
+        create: {
+          subscriberID: subscriberId,
+          emailAlerts: dto.emailAlerts ?? true,
+          pushAlerts: dto.pushAlerts ?? true,
+          smsAlerts: dto.smsAlerts ?? false,
+          jobAlertFrequency: dto.jobAlertFrequency ?? 'Daily',
+        },
+        update: {
+          ...(dto.emailAlerts !== undefined && { emailAlerts: dto.emailAlerts }),
+          ...(dto.pushAlerts !== undefined && { pushAlerts: dto.pushAlerts }),
+          ...(dto.smsAlerts !== undefined && { smsAlerts: dto.smsAlerts }),
+          ...(dto.jobAlertFrequency !== undefined && { jobAlertFrequency: dto.jobAlertFrequency }),
+        },
+      });
+    } catch {
+      // Table may not exist yet — fail gracefully rather than crashing the API.
+      throw new BadRequestException('Notification preferences are not available yet');
+    }
+    return { ok: true };
+  }
+
+  /** List saved searches for the candidate. */
+  async savedSearches(subscriberId: number) {
+    try {
+      const rows = await (this.db as any).savedSearch.findMany({
+        where: { subscriberID: subscriberId },
+        orderBy: { createdAt: 'desc' },
+      });
+      return rows.map((r: any) => ({
+        id: Number(r.id),
+        name: r.name,
+        query: r.query ?? null,
+        filters: r.filters ? JSON.parse(r.filters) : null,
+        createdAt: r.createdAt?.toISOString() ?? null,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /** Create a saved search. */
+  async createSavedSearch(subscriberId: number, dto: CreateSavedSearchDto) {
+    try {
+      const row = await (this.db as any).savedSearch.create({
+        data: {
+          subscriberID: subscriberId,
+          name: dto.name,
+          query: dto.query ?? null,
+          filters: dto.filters ? JSON.stringify(dto.filters) : null,
+        },
+      });
+      return {
+        id: Number(row.id),
+        name: row.name,
+        query: row.query ?? null,
+        filters: row.filters ? JSON.parse(row.filters) : null,
+        createdAt: row.createdAt?.toISOString() ?? null,
+      };
+    } catch {
+      throw new BadRequestException('Saved searches are not available yet');
+    }
+  }
+
+  /** Delete a saved search, verifying ownership. */
+  async deleteSavedSearch(subscriberId: number, id: number) {
+    try {
+      const deleted = await (this.db as any).savedSearch.deleteMany({
+        where: { id, subscriberID: subscriberId },
+      });
+      if (deleted.count === 0) {
+        throw new NotFoundException('Saved search not found');
+      }
+    } catch (e) {
+      if (e instanceof NotFoundException) throw e;
+      throw new BadRequestException('Saved searches are not available yet');
+    }
+    return { ok: true };
+  }
+
+  /** Recommended jobs based on candidate skills, city, and industry. */
+  async recommendations(subscriberId: number) {
+    const [cv, tags] = await Promise.all([
+      this.db.subscriberCVDetails.findUnique({
+        where: { subscriberID: subscriberId },
+        select: { cityID: true, industryTypeID: true },
+      }),
+      this.db.subscriberTags.findMany({
+        where: { subscriberID: subscriberId },
+        include: { tag: { select: { tagName: true } } },
+      }),
+    ]);
+
+    // Build OR conditions: match by skills (tag names), city, or industry.
+    const orConditions: any[] = [];
+
+    const tagNames = tags.map((t) => t.tag?.tagName).filter(Boolean);
+    if (tagNames.length) {
+      orConditions.push({
+        ClientJobSkill: {
+          some: { skill: { descr: { in: tagNames, mode: 'insensitive' } } },
+        },
+      });
+    }
+    if (cv?.cityID) {
+      orConditions.push({ jobCityID: cv.cityID });
+    }
+    if (cv?.industryTypeID) {
+      orConditions.push({ industryTypeID: cv.industryTypeID });
+    }
+
+    // If we have nothing to match on, return empty.
+    if (orConditions.length === 0) {
+      return { rows: [], total: 0 };
+    }
+
+    const where = {
+      statusID: JOB_STATUS_ACTIVE,
+      OR: orConditions,
+    };
+
+    const [rows, total] = await Promise.all([
+      this.db.clientJobs.findMany({
+        where,
+        take: 20,
+        orderBy: { timestampIns: 'desc' },
+        include: {
+          client: { select: { clientName: true } },
+          jobCity: { select: { descr: true } },
+          designation: { select: { descr: true } },
+          industryType: { select: { industryType: true } },
+          employeeType: { select: { descr: true } },
+          workMode: { select: { descr: true } },
+        },
+      }),
+      this.db.clientJobs.count({ where }),
+    ]);
+
+    return {
+      rows: rows.map((j) => ({
+        jobId: Number(j.jobID),
+        designation: j.designation?.descr ?? '',
+        company: j.client?.clientName ?? '',
+        industry: j.industryType?.industryType ?? '',
+        city: j.jobCity?.descr ?? '',
+        workMode: j.workMode?.descr ?? '',
+        employmentType: j.employeeType?.descr ?? '',
+        minExp: j.minExp ?? 0,
+        minCtc: j.minCTC,
+        maxCtc: j.maxCTC,
+        postedOn: j.timestampIns.toISOString().slice(0, 10),
+      })),
+      total,
+    };
+  }
+
+  /** Activity timeline from audit log and recent applications. */
+  async activity(userId: number, subscriberId: number) {
+    const [auditRows, applications] = await Promise.all([
+      this.db.auditLog.findMany({
+        where: { userID: userId },
+        orderBy: { timestampIns: 'desc' },
+        take: 20,
+      }),
+      this.db.jobSubscriberMapping.findMany({
+        where: { subscriberID: subscriberId },
+        orderBy: { mapDate: 'desc' },
+        take: 10,
+        include: {
+          job: { include: { designation: { select: { descr: true } } } },
+        },
+      }),
+    ]);
+
+    const activities: Array<{ id: number; type: string; description: string; timestamp: string }> = [];
+
+    for (const a of auditRows) {
+      activities.push({
+        id: Number(a.auditID),
+        type: a.action,
+        description: a.action.replace(/\./g, ' ').replace(/_/g, ' '),
+        timestamp: a.timestampIns.toISOString(),
+      });
+    }
+
+    for (const app of applications) {
+      activities.push({
+        id: Number(app.jobSubscriberMapID),
+        type: 'job.applied',
+        description: `Applied to ${app.job?.designation?.descr ?? 'a job'}`,
+        timestamp: app.mapDate?.toISOString() ?? '',
+      });
+    }
+
+    // Sort by timestamp descending
+    activities.sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1));
+
+    return { activities: activities.slice(0, 30) };
+  }
+
+  /** Upload resume — stores in CVPath on subscriberCVDetails. */
+  async uploadResume(userId: number, subscriberId: number, file: Express.Multer.File) {
+    // Use documentTypeId = 1 for resumes (first document type in master table)
+    const resumeDocType = await this.db.mstrDocuments.findFirst({
+      where: { documentName: { contains: 'Resume', mode: 'insensitive' } },
+      select: { documentID: true },
+    });
+    const docTypeId = resumeDocType ? Number(resumeDocType.documentID) : 1;
+
+    const stored = await this.storage.upload(docTypeId, userId, file);
+
+    await this.db.subscriberCVDetails.update({
+      where: { subscriberID: subscriberId },
+      data: { cVPath: stored.key },
+    });
+
+    await this.audit.record({
+      userId,
+      action: 'candidate.resume_uploaded',
+      entity: 'SubscriberCVDetails',
+      entityId: subscriberId,
+      detail: { key: stored.key },
+    });
+
+    return { url: await this.storage.url(stored.key), fileName: file.originalname };
+  }
+
+  /** Delete resume reference from candidate CV. */
+  async deleteResume(subscriberId: number) {
+    await this.db.subscriberCVDetails.update({
+      where: { subscriberID: subscriberId },
+      data: { cVPath: null },
+    });
+    return { ok: true };
+  }
+
+  /** Upload avatar photo and update photoName on subscriberCVDetails. */
+  async uploadAvatar(userId: number, subscriberId: number, file: Express.Multer.File) {
+    // Use documentTypeId = 1 for avatars too (just need a folder); find a photo doc type if available
+    const photoDocType = await this.db.mstrDocuments.findFirst({
+      where: { documentName: { contains: 'Photo', mode: 'insensitive' } },
+      select: { documentID: true },
+    });
+    const docTypeId = photoDocType ? Number(photoDocType.documentID) : 1;
+
+    const stored = await this.storage.upload(docTypeId, userId, file);
+
+    await this.db.subscriberCVDetails.update({
+      where: { subscriberID: subscriberId },
+      data: { photoName: stored.key },
+    });
+
+    await this.audit.record({
+      userId,
+      action: 'candidate.avatar_uploaded',
+      entity: 'SubscriberCVDetails',
+      entityId: subscriberId,
+      detail: { key: stored.key },
+    });
+
+    return { url: await this.storage.url(stored.key) };
   }
 }

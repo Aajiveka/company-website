@@ -170,6 +170,7 @@ model ClientMstr {
   MstrPerson                   MstrPerson[]                       @relation("MstrPersonToClientMstr")
   SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToClientMstr")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToClientMstr")
+  branding                     CompanyBranding?                   @relation("CompanyBrandingToClientMstr")
   @@map("tblClientMstr")
 }
 
@@ -216,6 +217,7 @@ model JobSubscriberMapping {
   JobInterviewStatus           JobInterviewStatus[]               @relation("JobInterviewStatusToJobSubscriberMapping")
   JobSubscriberStatus          JobSubscriberStatus[]              @relation("JobSubscriberStatusToJobSubscriberMapping")
   SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToJobSubscriberMapping")
+  ApplicantNote                ApplicantNote[]                    @relation("ApplicantNoteToJobSubscriberMapping")
   @@map("tblJobSubscriberMapping")
 }
 
@@ -991,4 +993,80 @@ model Subscription {
 
   @@index([subscriberID])
   @@map("tblSubscription")
+}
+
+// ---------------------------------------------------------------------------
+// New models for Admin + Extended features
+// ---------------------------------------------------------------------------
+
+/// Key/value store for admin platform settings.
+model PlatformSetting {
+  key                          String                             @id @map("Key")
+  value                        String                             @map("Value")
+  updatedAt                    DateTime                           @default(now()) @db.Timestamp(6) @map("UpdatedAt")
+  updatedBy                    Int?                               @map("UpdatedBy")
+  @@map("tblPlatformSettings")
+}
+
+/// Blog CMS posts.
+model BlogPost {
+  postId                       Int                                @id @default(autoincrement()) @map("PostID")
+  title                        String                             @map("Title")
+  slug                         String                             @unique @map("Slug")
+  excerpt                      String?                            @map("Excerpt")
+  body                         String                             @map("Body")
+  imageUrl                     String?                            @map("ImageUrl")
+  category                     String                             @default("general") @map("Category")
+  status                       String                             @default("Draft") @map("Status")
+  author                       String?                            @map("Author")
+  createdAt                    DateTime                           @default(now()) @db.Timestamp(6) @map("CreatedAt")
+  publishedAt                  DateTime?                          @db.Timestamp(6) @map("PublishedAt")
+  updatedAt                    DateTime?                          @db.Timestamp(6) @map("UpdatedAt")
+  @@map("tblBlogPost")
+}
+
+/// Server-side saved searches for candidates.
+model SavedSearch {
+  id                           Int                                @id @default(autoincrement()) @map("SavedSearchID")
+  subscriberID                 Int                                @map("SubscriberID")
+  name                         String                             @map("Name")
+  query                        String?                            @map("Query")
+  filters                      String?                            @map("Filters")  // JSON string
+  createdAt                    DateTime                           @default(now()) @db.Timestamp(6) @map("CreatedAt")
+  @@map("tblSavedSearch")
+}
+
+/// Candidate notification preferences.
+model NotificationPreference {
+  subscriberID                 Int                                @id @map("SubscriberID")
+  emailAlerts                  Boolean                            @default(true) @map("EmailAlerts")
+  pushAlerts                   Boolean                            @default(true) @map("PushAlerts")
+  smsAlerts                    Boolean                            @default(false) @map("SmsAlerts")
+  jobAlertFrequency            String                             @default("Daily") @map("JobAlertFrequency")
+  @@map("tblNotificationPreference")
+}
+
+/// Notes on applicants by employers.
+model ApplicantNote {
+  noteId                       Int                                @id @default(autoincrement()) @map("NoteID")
+  jobSubscriberMapID           BigInt                             @map("JobSubscriberMapID")
+  note                         String                             @map("Note")
+  createdAt                    DateTime                           @default(now()) @db.Timestamp(6) @map("CreatedAt")
+  updatedBy                    Int?                               @map("UpdatedBy")
+
+  mapping                      JobSubscriberMapping               @relation("ApplicantNoteToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+  @@map("tblApplicantNote")
+}
+
+/// Employer branding data.
+model CompanyBranding {
+  clientID                     BigInt                             @id @map("ClientID")
+  tagline                      String?                            @map("Tagline")
+  coverImageUrl                String?                            @map("CoverImageUrl")
+  culture                      String?                            @map("Culture")
+  benefits                     String?                            @map("Benefits")   // JSON string
+  updatedAt                    DateTime?                          @db.Timestamp(6) @map("UpdatedAt")
+
+  client                       ClientMstr                         @relation("CompanyBrandingToClientMstr", fields: [clientID], references: [clientID])
+  @@map("tblCompanyBranding")
 }

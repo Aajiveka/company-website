@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -11,8 +12,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
+import { Roles } from '@/common/decorators/roles.decorator';
+import { Role } from '@/shared/roles';
 import { StorageService } from '@/modules/storage/storage.service';
 import { AuditService } from '@/modules/audit/audit.service';
+import { CandidatesService } from '@/modules/candidates/candidates.service';
 
 @ApiTags('files')
 @ApiBearerAuth()
@@ -21,6 +25,7 @@ export class FilesController {
   constructor(
     private readonly storage: StorageService,
     private readonly audit: AuditService,
+    private readonly candidates: CandidatesService,
   ) {}
 
   @Post('upload/:documentTypeId')
@@ -67,5 +72,49 @@ export class FilesController {
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(body);
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Resume and avatar uploads for candidates
+  // ────────────────────────────────────────────────────────────────────────────
+
+  @Post('resume')
+  @Roles(Role.Subscriber)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
+  })
+  @ApiOperation({ summary: 'Upload resume for the signed-in candidate' })
+  async uploadResume(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: RequestUser,
+  ) {
+    const subscriberId = await this.candidates.subscriberIdFor(user.userId);
+    return this.candidates.uploadResume(user.userId, subscriberId, file);
+  }
+
+  @Delete('resume')
+  @Roles(Role.Subscriber)
+  @ApiOperation({ summary: 'Delete the signed-in candidate\'s resume reference' })
+  async deleteResume(@CurrentUser() user: RequestUser) {
+    const subscriberId = await this.candidates.subscriberIdFor(user.userId);
+    return this.candidates.deleteResume(subscriberId);
+  }
+
+  @Post('avatar')
+  @Roles(Role.Subscriber)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
+  })
+  @ApiOperation({ summary: 'Upload profile photo for the signed-in candidate' })
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: RequestUser,
+  ) {
+    const subscriberId = await this.candidates.subscriberIdFor(user.userId);
+    return this.candidates.uploadAvatar(user.userId, subscriberId, file);
   }
 }
