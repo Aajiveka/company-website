@@ -354,7 +354,7 @@ export class ClientsService {
 
     const findId = <T extends Record<string, unknown> & { descr?: string | null }>(list: T[], name: string, idField: string): number | null => {
       const match = list.find((item) => (item.descr ?? '').toLowerCase().trim() === name.toLowerCase().trim());
-      return match ? match[idField] : null;
+      return match ? (match[idField] as number | null) : null;
     };
 
     let imported = 0;
