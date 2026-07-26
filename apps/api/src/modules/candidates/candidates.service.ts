@@ -841,7 +841,7 @@ export class CandidatesService {
     ]);
 
     // Build OR conditions: match by skills (tag names), city, or industry.
-    const orConditions: any[] = [];
+    const orConditions: Record<string, unknown>[] = [];
 
     const tagNames = tags.map((t) => t.tag?.tagName).filter(Boolean);
     if (tagNames.length) {

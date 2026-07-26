@@ -12,8 +12,6 @@ test.describe('Responsive Design', () => {
   test('mobile viewport shows mobile nav', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/');
-    // Mobile bottom nav should be visible on small screens
-    const mobileNav = page.locator('nav.fixed.bottom-0, [class*="bottom-0"]');
     // Just check the page loads without error
     await expect(page.locator('body')).toBeVisible();
   });
@@ -28,10 +26,6 @@ test.describe('Responsive Design', () => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto('/');
 
-    // On mobile, a hamburger / menu button should be visible
-    const hamburger = page.locator(
-      'button[aria-label*="menu" i], button[aria-label*="Menu" i], [data-testid="mobile-menu"], button:has(svg.lucide-menu)',
-    );
     // Either a hamburger is visible or the nav is collapsed — page should still load without overflow
     await expect(page.locator('body')).toBeVisible({ timeout: 10_000 });
   });

@@ -35,6 +35,7 @@ export interface FilterValues {
   postedWithin: '' | '24h' | '7d' | '30d';
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_FILTERS: FilterValues = {
   workMode: '',
   employmentType: '',

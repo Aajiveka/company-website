@@ -27,12 +27,6 @@ const CANDIDATE_PROFILE = {
   ],
 };
 
-const DASHBOARD_STATS = {
-  appliedJobs: 12,
-  savedJobs: 5,
-  profileViews: 48,
-  interviews: 3,
-};
 
 async function setupCandidateMocks(page: import('@playwright/test').Page) {
   // Set refresh token so the auth bootstrap calls /auth/me

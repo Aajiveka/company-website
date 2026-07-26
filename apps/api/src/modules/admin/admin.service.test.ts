@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
 // @ts-nocheck — heavy mocking makes strict types impractical in test files
 import { describe, it, beforeEach, mock } from 'node:test';
 import { strict as assert } from 'node:assert';
