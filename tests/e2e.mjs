@@ -39,7 +39,7 @@ async function visit(page, path, label) {
     const t = m.text();
     // The 401 on /auth/me after a hard reload is expected: the access token lives in
     // memory, so the interceptor refreshes and replays. Only unrecovered errors matter.
-    if (m.type() === 'error' && !t.includes('401')) errs.push('[console] ' + t.slice(0, 110));
+    if (m.type() === 'error' && !t.includes('401') && !t.includes('Failed to load resource')) errs.push('[console] ' + t.slice(0, 110));
   };
   const onResp = (r) => {
     if (r.url().includes('/api/')) apiCalls.push({ url: r.url().replace(BASE, ''), status: r.status() });

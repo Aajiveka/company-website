@@ -12,15 +12,15 @@ describe('Pagination', () => {
   it('renders page buttons', () => {
     render(<Pagination page={1} pageCount={5} onChange={() => {}} />);
     expect(screen.getByRole('navigation', { name: 'Pagination' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Page 1')).toBeInTheDocument();
-    expect(screen.getByLabelText('Page 2')).toBeInTheDocument();
-    expect(screen.getByLabelText('Page 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument();
   });
 
   it('marks current page with aria-current="page"', () => {
     render(<Pagination page={2} pageCount={5} onChange={() => {}} />);
-    expect(screen.getByLabelText('Page 2')).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByLabelText('Page 1')).not.toHaveAttribute('aria-current');
+    expect(screen.getByText('2')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('1')).not.toHaveAttribute('aria-current');
   });
 
   it('disables previous button on first page', () => {
@@ -36,7 +36,7 @@ describe('Pagination', () => {
   it('calls onChange when clicking a page', async () => {
     const onChange = vi.fn();
     render(<Pagination page={1} pageCount={5} onChange={onChange} />);
-    await userEvent.click(screen.getByLabelText('Page 3'));
+    await userEvent.click(screen.getByRole('button', { name: '3' }));
     expect(onChange).toHaveBeenCalledWith(3);
   });
 
