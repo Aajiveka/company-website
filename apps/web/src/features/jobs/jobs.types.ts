@@ -100,6 +100,7 @@ export interface JobFilters {
   states: string[];
   locations: string[];
   cityByState: Record<string, string[]>;
+  roleByFunction: Record<string, string[]>;
   workModes: string[];
   employmentTypes: string[];
   skills: string[];

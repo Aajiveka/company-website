@@ -104,17 +104,23 @@ export default function HomePage() {
             <p>{t('philosophy.text1')}</p>
             <p>{t('philosophy.text2')}</p>
           </div>
-          <div className="my-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:my-12 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((n) => (
-              <img
+          <div className="my-8 grid grid-cols-2 gap-4 md:my-12 md:gap-6 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((n, i) => (
+              <div
                 key={n}
-                src={`/image/philosophy${n}.webp`}
-                alt=""
-                className="w-full"
-                loading="lazy"
-                decoding="async"
-                style={{ aspectRatio: '16/9' }}
-              />
+                className={`group overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                  i % 2 === 1 ? 'lg:mt-10' : ''
+                }`}
+              >
+                <img
+                  src={`/image/philosophy${n}.webp`}
+                  alt=""
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
+                  style={{ aspectRatio: '3/4' }}
+                />
+              </div>
             ))}
           </div>
           <div className="max-w-4xl space-y-3 text-navy/80">

@@ -59,7 +59,7 @@ export class JobsService {
       return this.filtersCache.data;
     }
 
-    const [designations, industries, states, cities, workModes, empTypes, skills] = await Promise.all([
+    const [designations, industries, states, cities, workModes, empTypes, skills, functions] = await Promise.all([
       this.db.mstrDesignation.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
       this.db.mstrIndustryType.findMany({
         select: { industryType: true },
@@ -70,6 +70,10 @@ export class JobsService {
       this.db.mstrWorkMode.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
       this.db.mstrEmpType.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
       this.db.mstrSkills.findMany({ select: { descr: true }, orderBy: { descr: 'asc' } }),
+      this.db.mstrFunctions.findMany({
+        select: { descr: true, MstrSubFunctions: { select: { descr: true }, orderBy: { descr: 'asc' } } },
+        orderBy: { descr: 'asc' },
+      }),
     ]);
     const clean = (xs: (string | null)[]) => xs.filter((d): d is string => !!d?.trim());
     const result = {
@@ -79,6 +83,11 @@ export class JobsService {
       locations: clean(cities.map((c) => c.descr)),
       cityByState: Object.fromEntries(
         states.map((s) => [s.descr ?? '', clean(cities.filter((c) => c.stateID === s.stateID).map((c) => c.descr))]),
+      ),
+      roleByFunction: Object.fromEntries(
+        functions
+          .filter((f) => f.descr?.trim())
+          .map((f) => [f.descr!, clean(f.MstrSubFunctions.map((sf) => sf.descr))]),
       ),
       workModes: clean(workModes.map((w) => w.descr)),
       employmentTypes: clean(empTypes.map((e) => e.descr)),
