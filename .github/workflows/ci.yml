@@ -33,7 +33,8 @@ jobs:
         run: npx vitest run
         working-directory: apps/web
       - name: Lint (web)
-        run: npx eslint apps/web/src --max-warnings=3
+        run: npx eslint src --max-warnings=3
+        working-directory: apps/web
       # E2E tests require a running dev server — skip for now (see e2e-mock / e2e jobs below)
 
   e2e-mock:
