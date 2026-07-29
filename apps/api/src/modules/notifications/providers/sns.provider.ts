@@ -12,7 +12,7 @@ export class SnsSmsProvider implements SmsProvider {
   async send(message: SmsMessage): Promise<void> {
     const phone = message.to.startsWith('+') ? message.to : `+91${message.to}`;
 
-    await this.client.send(
+    const result = await this.client.send(
       new PublishCommand({
         Message: message.text,
         PhoneNumber: phone,
@@ -43,6 +43,11 @@ export class SnsSmsProvider implements SmsProvider {
       }),
     );
 
-    this.logger.log(`sms sent to ${phone} via SNS`);
+    // A MessageId means SNS ACCEPTED the message — not that the handset received it. Carrier
+    // rejections (SMS sandbox, missing India DLT registration) never surface here; they land in
+    // the CloudWatch group sns/<region>/<account-id>/DirectPublishToPhoneNumber/Failure, and only
+    // if delivery status logging is on. Logging "sent" here once hid three such failures behind a
+    // success line, so this says "accepted" and records the id you need to correlate with them.
+    this.logger.log(`sms accepted by SNS for ${phone} (messageId=${result.MessageId})`);
   }
 }
