@@ -52,7 +52,7 @@ const schema = z.object({
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
 
   // Notification drivers. 'log' writes to stdout (dev default); the real drivers need credentials.
-  SMS_DRIVER: z.enum(['twofactor', 'sns', 'log']).default('log'),
+  SMS_DRIVER: z.enum(['twofactor', 'sns', 'msg91', 'log']).default('log'),
   EMAIL_DRIVER: z.enum(['smtp', 'ses', 'log']).default('log'),
 
   // AWS SNS (SMS_DRIVER=sns)
@@ -65,6 +65,10 @@ const schema = z.object({
 
   // 2Factor.in (SMS_DRIVER=twofactor)
   TWOFACTOR_API_KEY: z.string().optional(),
+
+  // MSG91 (SMS_DRIVER=msg91) — auth key + DLT-approved OTP template id from the MSG91 panel.
+  MSG91_AUTH_KEY: z.string().optional(),
+  MSG91_TEMPLATE_ID: z.string().optional(),
 
   // SMTP (EMAIL_DRIVER=smtp)
   SMTP_HOST: z.string().optional(),
