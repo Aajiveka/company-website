@@ -28,9 +28,16 @@ function App() {
 
 async function bootstrap() {
   // Start the MSW mock API until the real SQL Server-backed API is reachable.
+  // If service-worker registration is unavailable (e.g. blocked in an e2e spec
+  // that mocks the network itself), fall back to rendering without MSW rather
+  // than crashing the bootstrap and leaving a blank page.
   if (env.useMocks) {
-    const { worker } = await import('./mocks/browser');
-    await worker.start({ onUnhandledRequest: 'bypass' });
+    try {
+      const { worker } = await import('./mocks/browser');
+      await worker.start({ onUnhandledRequest: 'bypass' });
+    } catch (err) {
+      console.warn('[mocks] MSW worker did not start; continuing without it', err);
+    }
   }
 
   ReactDOM.createRoot(document.getElementById('root')!).render(

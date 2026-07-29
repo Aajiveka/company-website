@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 
+// These specs mock the network with page.route(), which requires MSW's service
+// worker to be OFF. Blocking it makes the app fall back to the real network layer
+// where Playwright's route handlers apply. (See bootstrap fallback in src/main.tsx.)
+test.use({ serviceWorkers: 'block' });
+
 /**
  * Admin Dashboard — verifies stat cards, activity feed, and sub-page navigation
  * for /admin, /admin/users, and /admin/jobs.
