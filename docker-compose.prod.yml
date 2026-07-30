@@ -16,7 +16,11 @@ services:
       DATABASE_URL: "postgresql://${POSTGRES_USER:-aajiveka}:${POSTGRES_PASSWORD}@${RDS_HOST:?set RDS_HOST in .env}:5432/${POSTGRES_DB:-aajiveka}?schema=public&sslmode=require&uselibpqcompat=true"
       STORAGE_DRIVER: s3
       SMS_DRIVER: sns
-      EMAIL_DRIVER: ses
+      # Was hardcoded to `ses`, which made the driver unswitchable without editing this file.
+      # SES is also sandboxed on this account: it refuses any recipient that is not a verified
+      # identity, so registration OTPs to real candidates failed after the API had already
+      # returned 201 and shown the code-entry screen.
+      EMAIL_DRIVER: ${EMAIL_DRIVER:-smtp}
       SES_FROM_EMAIL: ${SES_FROM_EMAIL:-noreply@ajiveka.co.in}
       SNS_SENDER_ID: ${SNS_SENDER_ID:-}
       SNS_DLT_ENTITY_ID: ${SNS_DLT_ENTITY_ID:-}

@@ -32,7 +32,10 @@ export class EmailService {
    */
   async sendMail(to: string, subject: string, html: string): Promise<void> {
     await this.notifications.sendEmail({ to, subject, text: stripHtml(html), html });
-    this.logger.debug(`Queued email to ${to}: ${subject}`);
+    // Recipient only — never the subject. A one-time code reads naturally as a subject
+    // ("123456 is your Aajiveka verification code"), and logging it put live OTPs in plain
+    // text in the container logs, which defeats storing only their hash in Redis.
+    this.logger.debug(`Queued email to ${to}`);
   }
 
   /** Welcome email after successful registration. */

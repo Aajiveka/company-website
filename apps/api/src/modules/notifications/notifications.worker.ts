@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Inject, Logger } from '@nestjs/common';
 import type { Job } from 'bullmq';
 import {
@@ -36,5 +36,23 @@ export class NotificationsWorker extends WorkerHost {
       default:
         this.logger.warn(`unknown job "${job.name}"`);
     }
+  }
+
+  /**
+   * Without this a delivery failure was completely silent: process() throws so BullMQ can
+   * retry, and once the attempts ran out the job sat in the `failed` set with nothing in the
+   * application log. A registration OTP that never arrives looked identical to one that did —
+   * the only way to find out was reading Redis by hand.
+   */
+  @OnWorkerEvent('failed')
+  onFailed(job: Job<EmailMessage | SmsMessage> | undefined, err: Error) {
+    const to = (job?.data as { to?: string } | undefined)?.to ?? 'unknown recipient';
+    const attempts = job?.attemptsMade ?? 0;
+    const max = job?.opts?.attempts ?? 0;
+    const exhausted = attempts >= max;
+    // Recipient and reason only — the payload carries the OTP and must never be logged.
+    const message = `${job?.name ?? 'job'} to ${to} failed (attempt ${attempts}/${max}): ${err.message}`;
+    if (exhausted) this.logger.error(`GIVING UP — ${message}`);
+    else this.logger.warn(message);
   }
 }
