@@ -15,6 +15,17 @@ export class TwoFactorSmsProvider implements SmsProvider {
     const url = `https://2factor.in/API/V1/${env.TWOFACTOR_API_KEY}/SMS/${message.to}/${otpSegment}`;
     const res = await fetch(url, { method: 'GET' });
     if (!res.ok) throw new Error(`2Factor responded ${res.status}`);
-    this.logger.log(`sms sent to ${message.to}`);
+
+    // 2Factor reports application-level failures — bad API key, unroutable number, template
+    // mismatch — as HTTP 200 with {"Status":"Error"}. Trusting res.ok alone logs a success for a
+    // message that was never delivered, so the body is the only honest signal. Throwing hands the
+    // job back to BullMQ, which is right even for permanent errors: a loud retry beats a silent lie.
+    const body = (await res.json().catch(() => null)) as { Status?: string; Details?: string } | null;
+    if (body?.Status !== 'Success') {
+      throw new Error(`2Factor rejected the send: ${body?.Details ?? 'unreadable response body'}`);
+    }
+
+    // Details carries 2Factor's session id on success — the reference to quote in support tickets.
+    this.logger.log(`sms accepted by 2Factor for ${message.to} (ref=${body.Details})`);
   }
 }

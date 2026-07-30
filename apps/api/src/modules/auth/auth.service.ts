@@ -1,14 +1,27 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import argon2 from 'argon2';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { env } from '@/config/env';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
-import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { EmailService } from '@/common/email/email.service';
 import { Role, type RoleId } from '@/shared/roles';
-import { OtpService } from './otp.service';
+import {
+  OtpService,
+  OTP_MAX_ATTEMPTS,
+  OTP_RESEND_COOLDOWN_SECONDS,
+  OTP_TTL_SECONDS,
+} from './otp.service';
 
 /**
  * tblPMstNodeTypes: NodeType 100 = "Subscriber", DetTable "tblsubscribers".
@@ -26,6 +39,34 @@ const NODE_TYPE_SUBSCRIBER = 100;
 /** tblMstrStatus 1 = "Account created" — the first step of the candidate journey. */
 const STATUS_ACCOUNT_CREATED = 1;
 
+/** Namespace for the registration OTP in Redis. */
+const REGISTER_PURPOSE = 'register:email';
+
+/**
+ * A signup waiting on its emailed code. Held in Redis under the OTP, never in Postgres, so an
+ * abandoned registration expires instead of leaving rows behind.
+ *
+ * `passwordHash` is Argon2id — hashed in register(), before the record is written, so the
+ * plaintext password exists only for the duration of that one request.
+ */
+interface PendingRegistration {
+  fullName: string;
+  email: string;
+  mobile: string;
+  countryCode: string;
+  passwordHash: string;
+  ipAddress?: string;
+}
+
+/**
+ * Addresses are compared and stored lowercased. The domain is case-insensitive by spec and
+ * every mailbox provider this serves treats the local part that way too, so folding here stops
+ * `A@x.com` and `a@x.com` from becoming two accounts.
+ */
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 /** The tblSecUser columns login needs — shared so the username and email lookups return the same shape. */
 const SECUSER_LOGIN_SELECT = {
   userID: true,
@@ -41,6 +82,15 @@ export interface AuthUser {
   fullName: string;
   email: string;
   roleId: RoleId;
+  /**
+   * Whether the candidate has finished the onboarding wizard. The web app redirects a falsy
+   * value straight back to /candidate/onboarding, so this must be present on every session —
+   * login, refresh and /me alike — or the candidate is trapped there.
+   *
+   * Always true for non-candidates: the wizard is candidate-only and they must never be
+   * bounced into it.
+   */
+  isOnboarded: boolean;
 }
 
 export interface TokenPayload {
@@ -54,11 +104,12 @@ export interface TokenPayload {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly otp: OtpService,
-    private readonly notifications: NotificationsService,
     private readonly emailService: EmailService,
     private readonly audit: AuditService,
   ) {}
@@ -202,182 +253,333 @@ export class AuthService {
   }
 
   /* ------------------------------------------------------------------ *
-   * Registration + OTP.
+   * Registration + email OTP.
    *
-   * These lived only in the legacy C# (CommonController.SendOtp / VerifyOtp), which the
-   * rebuild deliberately did not recover. They are a FRESH DESIGN, not a port — behaviour
+   * This lived only in the legacy C# (CommonController.SendOtp / VerifyOtp), which the
+   * rebuild deliberately did not recover. It is a FRESH DESIGN, not a port — behaviour
    * may differ from the old site and should be reviewed before go-live.
    *
-   * Registration is mobile-first, because tblSubscriberRegistration is:
-   * (SubscriberID, RegistrationCountryCode, RegistrationMobileNo, RegistrationIPNo,
-   *  RegistrationDateTime, flgCVUploaded, flgstatus). There is no email or name on it —
-   * those live on tblSubscriberCVDetails, which the candidate fills in afterwards.
+   * The candidate identity is spread across three tables, none of which is a single "users"
+   * row: tblSubscriberRegistration holds (mobile, country code, IP, timestamp),
+   * tblSubscriberCVDetails holds (full name, email, verification flag), and tblSecUser holds
+   * the login and the Argon2id password hash. All of them are written in one transaction at
+   * verification time.
+   *
+   * Nothing is written to Postgres before the code is proved. The pending registration —
+   * including the already-hashed password — waits in Redis under the OTP, so an abandoned
+   * signup expires on its own and leaves no half-built account and no unverified row
+   * squatting on an address that someone else may legitimately own.
    * ------------------------------------------------------------------ */
 
-  /** Step 1: create the registration (unverified) and send an OTP to the mobile. */
-  async register(input: { mobile: string; countryCode?: string; ipAddress?: string }) {
-    const existing = await this.db.subscriberRegistration.findFirst({
-      where: { registrationMobileNo: input.mobile },
-      select: { subscriberID: true },
-    });
+  /** Step 1: hold the registration in Redis and email a code. Nothing is persisted yet. */
+  async register(input: {
+    fullName: string;
+    email: string;
+    mobile: string;
+    password: string;
+    countryCode?: string;
+    ipAddress?: string;
+  }) {
+    const email = normalizeEmail(input.email);
+    await this.assertEmailAvailable(email);
+    await this.assertMobileAvailable(input.mobile);
 
-    const subscriber =
-      existing ??
-      // spSubscriberRegistration does not just insert the registration — it also creates the
-      // CV row and seeds the status history. Skipping those left a candidate whose profile
-      // 404'd on their very first login.
-      (await this.db.$transaction(async (tx) => {
-        const reg = await tx.subscriberRegistration.create({
-          data: {
-            registrationMobileNo: input.mobile,
-            registrationCountryCode: (input.countryCode ?? '+91').replace('+', ''),
-            registrationIPNo: input.ipAddress ?? '',
-            registrationDateTime: new Date(),
-            flgCVUploaded: 0,
-            flgstatus: 0,
-          },
-          select: { subscriberID: true },
-        });
-        await tx.subscriberCVDetails.create({
-          data: {
-            subscriberID: reg.subscriberID,
-            mobileNo1: input.mobile,
-            timestampIns: new Date(),
-            loginIDIns: 0,
-          },
-        });
-        await tx.subscriberStatusHistory.create({
-          data: {
-            subscriberID: reg.subscriberID,
-            statusID: STATUS_ACCOUNT_CREATED,
-            timestampIns: new Date(),
-          },
-        });
-        return reg;
-      }));
+    // Cooldown is keyed by EMAIL, not by the registration handle below — otherwise re-posting
+    // the form mints a fresh handle each time and every one of them sends another message to
+    // the same inbox.
+    const wait = await this.otp.claimSend(REGISTER_PURPOSE, email);
+    if (wait > 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: `A code was already sent to ${email}. Please wait ${wait}s before requesting another.`,
+          retryAfterSeconds: wait,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
 
-    const code = await this.otp.issue('register', input.mobile);
-    await this.notifications.sendSms({
-      to: input.mobile,
-      text: `Your Aajiveka verification code is ${code}. It expires in 10 minutes.`,
-      otp: code,
-    });
+    // Hashed here, at the edge, so the plaintext password never reaches the pending store.
+    const passwordHash = await argon2.hash(input.password, { type: argon2.argon2id });
+    const pending: PendingRegistration = {
+      fullName: input.fullName.trim(),
+      email,
+      mobile: input.mobile,
+      countryCode: (input.countryCode ?? '+91').replace('+', ''),
+      passwordHash,
+      ipAddress: input.ipAddress,
+    };
+
+    /**
+     * The handle is a fresh 256-bit secret rather than the email address, and it is what
+     * verify/resend address. If the OTP were keyed by email alone, anyone could re-post the
+     * form for an address they do not own, overwrite the pending password with their own, and
+     * wait for the real owner — who is holding a genuine code — to submit it. Keying on an
+     * unguessable handle keeps each attempt bound to the browser that started it.
+     */
+    const registrationToken = randomBytes(32).toString('hex');
+    const code = await this.otp.issue(REGISTER_PURPOSE, registrationToken, pending);
+
+    try {
+      await this.emailService.sendEmailOtp(email, {
+        fullName: pending.fullName,
+        code,
+        expiresIn: '10 minutes',
+      });
+    } catch (err) {
+      // Enqueueing failed, so no code is coming. Free the cooldown and say so plainly instead
+      // of parking the candidate on a verification screen forever. The cause is logged, not
+      // returned — a broker hostname or credential error is not the caller's business.
+      this.logger.error(`Failed to queue registration OTP for ${email}`, err as Error);
+      await this.otp.releaseSend(REGISTER_PURPOSE, email);
+      throw new ServiceUnavailableException(
+        'We could not send the verification email just now. Please try again in a moment.',
+      );
+    }
+
     await this.audit.record({
-      action: existing ? 'register.otp_resent' : 'register.started',
+      action: 'register.otp_sent',
       entity: 'SubscriberRegistration',
-      entityId: Number(subscriber.subscriberID),
       ipAddress: input.ipAddress,
     });
 
-    // The same response either way, so the endpoint cannot be used to discover which
-    // mobile numbers are already registered. Outside production we also return the code so it
-    // can be entered without a live SMS gateway — never leaked in production.
-    return { otpRequired: true, ...(env.NODE_ENV !== 'production' ? { devCode: code } : {}) };
+    return {
+      otpRequired: true,
+      registrationToken,
+      email,
+      expiresInSeconds: OTP_TTL_SECONDS,
+      resendAfterSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+      maxAttempts: OTP_MAX_ATTEMPTS,
+      // Outside production the code comes back in the response so registration works without
+      // live SMTP credentials. Never leaked in production.
+      ...(env.NODE_ENV !== 'production' ? { devCode: code } : {}),
+    };
   }
 
-  /** Step 2: verify the OTP, create the login, and return a session. */
-  async verifyOtp(
-    mobile: string,
-    code: string,
-    profile?: { fullName?: string; email?: string; password?: string },
-  ) {
-    const ok = await this.otp.verify('register', mobile, code);
-    if (!ok) throw new BadRequestException('Incorrect code');
+  /** Step 2: prove the code, create the account in one transaction, and return a session. */
+  async verifyEmailOtp(registrationToken: string, code: string, ipAddress?: string) {
+    const result = await this.otp.verify<PendingRegistration>(
+      REGISTER_PURPOSE,
+      registrationToken,
+      code,
+    );
 
-    const subscriber = await this.db.subscriberRegistration.findFirst({
-      where: { registrationMobileNo: mobile },
-      select: { subscriberID: true },
-    });
-    if (!subscriber) throw new BadRequestException('No registration found for this number');
-
-    // A verified registration gets a login. There is no password yet — the account is
-    // reachable only through OTP until the candidate sets one.
-    //
-    // Every login in this schema hangs off a person node: tblSecUser.NodeID points at
-    // tblMstrPerson.PersonNodeID with NodeType 100, and tblSecMapUserRoles repeats that
-    // node. So the person row has to be created alongside the user, in one transaction.
-    let user = await this.db.secUser.findFirst({
-      where: { userName: mobile },
-      select: { userID: true, userName: true, nodeID: true },
-    });
-    if (!user) {
-      user = await this.db.$transaction(async (tx) => {
-        const created = await tx.secUser.create({
-          data: {
-            userName: mobile,
-            password: null,
-            active: '1',
-            pwdStatus: 0,
-            // For a subscriber, NodeID IS the SubscriberID — see NODE_TYPE_SUBSCRIBER above.
-            nodeID: subscriber.subscriberID,
-            nodeType: NODE_TYPE_SUBSCRIBER,
-            subscriberID: subscriber.subscriberID,
-          },
-          select: { userID: true, userName: true, nodeID: true },
-        });
-        await tx.secMapUserRoles.create({
-          data: {
-            userID: created.userID,
-            roleId: Role.Subscriber,
-            userNodeId: subscriber.subscriberID,
-            userNodeType: NODE_TYPE_SUBSCRIBER,
-          },
-        });
-        return created;
-      });
+    if (!result.ok) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message:
+            result.attemptsRemaining > 0
+              ? `Incorrect code. ${result.attemptsRemaining} attempt${result.attemptsRemaining === 1 ? '' : 's'} remaining.`
+              : // The record survives until the NEXT guess destroys it, so telling them
+                // "incorrect" alone would strand them on a screen that can no longer succeed.
+                'Incorrect code. No attempts remaining — request a new code.',
+          attemptsRemaining: result.attemptsRemaining,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
-    // Persist the profile captured on the full registration form. Done here — the moment the
-    // account exists — so identityFor() below returns the saved name/email in the session.
-    if (profile?.fullName || profile?.email) {
-      await this.db.subscriberCVDetails.update({
-        where: { subscriberID: subscriber.subscriberID },
+    const pending = result.payload;
+    if (!pending) {
+      // The code was right but the payload is gone — only reachable if the record was written
+      // by an older build. Nothing to create from, so restart rather than guess.
+      throw new BadRequestException('This registration has expired. Please sign up again.');
+    }
+
+    // Re-checked inside the write, not just at step 1: two registrations for the same address
+    // can both be in flight, and the minutes spent waiting for a code are ample time for the
+    // other one to land.
+    await this.assertEmailAvailable(pending.email);
+    await this.assertMobileAvailable(pending.mobile);
+
+    // spSubscriberRegistration did not just insert the registration — it also created the CV
+    // row and seeded the status history. Skipping those left a candidate whose profile 404'd
+    // on their very first login. All five writes are one transaction: a partial account is
+    // worse than no account.
+    const { subscriberId, userId } = await this.db.$transaction(async (tx) => {
+      const now = new Date();
+      const reg = await tx.subscriberRegistration.create({
         data: {
-          ...(profile.fullName ? { fullName: profile.fullName } : {}),
-          ...(profile.email ? { emailID: profile.email } : {}),
-          timestampUpd: new Date(),
+          registrationMobileNo: pending.mobile,
+          registrationCountryCode: pending.countryCode,
+          registrationIPNo: pending.ipAddress ?? ipAddress ?? '',
+          registrationDateTime: now,
+          flgCVUploaded: 0,
+          // Left at 0, matching what the legacy proc wrote. Verification state is carried by
+          // EmailVerified rather than overloading a flag whose other values are undocumented.
+          flgstatus: 0,
+        },
+        select: { subscriberID: true },
+      });
+
+      await tx.subscriberCVDetails.create({
+        data: {
+          subscriberID: reg.subscriberID,
+          fullName: pending.fullName,
+          emailID: pending.email,
+          emailVerified: true,
+          emailVerifiedAt: now,
+          mobileNo1: pending.mobile,
+          timestampIns: now,
+          loginIDIns: 0,
         },
       });
-    }
-    if (profile?.password) {
-      // Same hashing as candidates.service.changePassword; pwdStatus 1 = user set their own password.
-      await this.db.secUser.update({
-        where: { userID: user.userID },
+
+      await tx.subscriberStatusHistory.create({
         data: {
-          password: await argon2.hash(profile.password, { type: argon2.argon2id }),
+          subscriberID: reg.subscriberID,
+          statusID: STATUS_ACCOUNT_CREATED,
+          timestampIns: now,
+        },
+      });
+
+      // UserName is the mobile for candidates — login() resolves an email through
+      // tblSubscriberCVDetails, so both identifiers reach this account.
+      const created = await tx.secUser.create({
+        data: {
+          userName: pending.mobile,
+          password: pending.passwordHash,
+          active: '1',
+          // 1 = the user chose this password themselves (not a generated one).
           pwdStatus: 1,
+          // For a subscriber, NodeID IS the SubscriberID — see NODE_TYPE_SUBSCRIBER above.
+          nodeID: reg.subscriberID,
+          nodeType: NODE_TYPE_SUBSCRIBER,
+          subscriberID: reg.subscriberID,
+        },
+        select: { userID: true },
+      });
+
+      // Role comes from the mapping table, which is what login() reads.
+      await tx.secMapUserRoles.create({
+        data: {
+          userID: created.userID,
+          roleId: Role.Subscriber,
+          userNodeId: reg.subscriberID,
+          userNodeType: NODE_TYPE_SUBSCRIBER,
         },
       });
-    }
+
+      return { subscriberId: reg.subscriberID, userId: created.userID };
+    });
 
     const authUser: AuthUser = {
-      userId: Number(user.userID),
-      userName: user.userName ?? mobile,
-      ...(await this.identityFor(
-        { ...user, subscriberID: subscriber.subscriberID },
-        Role.Subscriber,
-      )),
+      userId: Number(userId),
+      userName: pending.mobile,
+      fullName: pending.fullName,
+      email: pending.email,
       roleId: Role.Subscriber,
+      // Brand-new account: the wizard is the next thing they see.
+      isOnboarded: false,
     };
+
     await this.audit.record({
       userId: authUser.userId,
       action: 'register.verified',
       entity: 'SubscriberRegistration',
-      entityId: Number(subscriber.subscriberID),
+      entityId: Number(subscriberId),
+      ipAddress,
     });
 
-    // Send welcome email (fire-and-forget — registration must not fail if the email queue is down).
-    if (authUser.email) {
-      this.emailService
-        .sendWelcome(authUser.email, {
-          fullName: authUser.fullName,
-          profileUrl: `${env.APP_URL}/profile`,
-        })
-        .catch(() => {}); // swallowed — delivery is retried by the queue worker
-    }
+    // Fire-and-forget — a working account must not depend on the welcome mail going out.
+    this.emailService
+      .sendWelcome(authUser.email, {
+        fullName: authUser.fullName,
+        profileUrl: `${env.APP_URL}/profile`,
+      })
+      .catch(() => {}); // swallowed — delivery is retried by the queue worker
 
     const t = await this.issueTokens(authUser);
     return { user: authUser, accessToken: t.accessToken, refreshToken: t.refreshToken };
+  }
+
+  /**
+   * Re-send the code for an in-flight registration. Issues a NEW code — the old one stops
+   * working — and resets the attempt counter, which is bounded by the send cooldown rather
+   * than by the counter itself.
+   */
+  async resendEmailOtp(registrationToken: string) {
+    const pending = await this.otp.peekPayload<PendingRegistration>(
+      REGISTER_PURPOSE,
+      registrationToken,
+    );
+    if (!pending) {
+      throw new BadRequestException('This registration has expired. Please sign up again.');
+    }
+
+    const wait = await this.otp.claimSend(REGISTER_PURPOSE, pending.email);
+    if (wait > 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: `Please wait ${wait}s before requesting another code.`,
+          retryAfterSeconds: wait,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const code = await this.otp.issue(REGISTER_PURPOSE, registrationToken, pending);
+    try {
+      await this.emailService.sendEmailOtp(pending.email, {
+        fullName: pending.fullName,
+        code,
+        expiresIn: '10 minutes',
+      });
+    } catch (err) {
+      this.logger.error(`Failed to queue registration OTP resend for ${pending.email}`, err as Error);
+      await this.otp.releaseSend(REGISTER_PURPOSE, pending.email);
+      throw new ServiceUnavailableException(
+        'We could not send the verification email just now. Please try again in a moment.',
+      );
+    }
+
+    await this.audit.record({ action: 'register.otp_resent', entity: 'SubscriberRegistration' });
+
+    return {
+      otpRequired: true,
+      email: pending.email,
+      expiresInSeconds: OTP_TTL_SECONDS,
+      resendAfterSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+      maxAttempts: OTP_MAX_ATTEMPTS,
+      ...(env.NODE_ENV !== 'production' ? { devCode: code } : {}),
+    };
+  }
+
+  /**
+   * Rejects an address that already has a VERIFIED account. Unverified legacy rows do not
+   * block a signup — the address was never proved, so refusing it would let an unproved row
+   * lock out the person who actually owns the mailbox.
+   *
+   * This does tell an anonymous caller whether an address is registered. That is the accepted
+   * trade for a signup form that can explain itself; the endpoint is rate-limited and every
+   * call is audited. If enumeration resistance is ever ranked higher than the error message,
+   * this is the single place to change.
+   */
+  private async assertEmailAvailable(email: string) {
+    const taken = await this.db.subscriberCVDetails.findFirst({
+      where: { emailID: { equals: email, mode: 'insensitive' }, emailVerified: true },
+      select: { subscriberID: true },
+    });
+    if (taken) {
+      throw new ConflictException(
+        'An account already exists for this email address. Please log in instead.',
+      );
+    }
+  }
+
+  /** UserName is the mobile, and tblSecUser.UserName must stay unique for login to resolve. */
+  private async assertMobileAvailable(mobile: string) {
+    const taken = await this.db.secUser.findFirst({
+      where: { userName: mobile },
+      select: { userID: true },
+    });
+    if (taken) {
+      throw new ConflictException(
+        'An account already exists for this mobile number. Please log in instead.',
+      );
+    }
   }
 
   /* ------------------------------------------------------------------ *
@@ -482,17 +684,18 @@ export class AuthService {
   private async identityFor(
     user: { userID: bigint; userName: string | null; nodeID: bigint | null; subscriberID: bigint | null },
     roleId: RoleId,
-  ): Promise<{ fullName: string; email: string }> {
+  ): Promise<{ fullName: string; email: string; isOnboarded: boolean }> {
     if (roleId === Role.Subscriber) {
       const cv = user.subscriberID
         ? await this.db.subscriberCVDetails.findUnique({
             where: { subscriberID: user.subscriberID },
-            select: { fullName: true, emailID: true, mobileNo1: true },
+            select: { fullName: true, emailID: true, mobileNo1: true, onboardedAt: true },
           })
         : null;
       return {
         fullName: cv?.fullName?.trim() || cv?.mobileNo1 || user.userName || '',
         email: cv?.emailID ?? '',
+        isOnboarded: cv?.onboardedAt != null,
       };
     }
 
@@ -505,6 +708,7 @@ export class AuthService {
     return {
       fullName: person?.descr?.trim() || user.userName || '',
       email: person?.emailID ?? '',
+      isOnboarded: true,
     };
   }
 

@@ -283,6 +283,7 @@ model MstrCourse {
   educationTypeID              Int                                @map("EducationTypeID")  // FK -> MstrEducationType (confirmed)
 
   educationType                MstrEducationType                  @relation("MstrCourseToMstrEducationType", fields: [educationTypeID], references: [educationTypeID])
+  SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToMstrCourse")
   @@map("tblMstrCourse")
 }
 
@@ -291,7 +292,6 @@ model MstrCourseType {
   descr                        String @db.VarChar(100)            @map("Descr")
   highestSeq                   Int @db.SmallInt                   @map("HighestSeq")
 
-  SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToMstrCourseType")
   @@map("tblMstrCourseType")
 }
 
@@ -342,7 +342,6 @@ model MstrEducationDegree {
   educationTypeID              Int                                @map("EducationTypeID")  // FK -> MstrEducationType (confirmed)
 
   educationType                MstrEducationType                  @relation("MstrEducationDegreeToMstrEducationType", fields: [educationTypeID], references: [educationTypeID])
-  SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToMstrEducationDegree")
   @@map("tblMstrEducationDegree")
 }
 
@@ -354,6 +353,7 @@ model MstrEducationType {
   ClientJobs_EducationType     ClientJobs_EducationType[]         @relation("ClientJobs_EducationTypeToMstrEducationType")
   MstrCourse                   MstrCourse[]                       @relation("MstrCourseToMstrEducationType")
   MstrEducationDegree          MstrEducationDegree[]              @relation("MstrEducationDegreeToMstrEducationType")
+  SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToMstrEducationType")
   @@map("tblMstrEducationType")
 }
 
@@ -655,6 +655,16 @@ model SubscriberCVDetails {
   addressLine1                 String? @db.VarChar(500)           @map("AddressLine1")
   mobileNo1                    String @db.VarChar(15)             @map("MobileNo1")
   emailID                      String? @db.VarChar(100)           @map("EmailID")
+  /// Set when the address in EmailID was proved by an emailed OTP. Registration cannot
+  /// complete without it, but rows migrated from the legacy database predate verification
+  /// entirely, so it is false there rather than retroactively trusted.
+  emailVerified                Boolean @default(false)            @map("EmailVerified")
+  emailVerifiedAt              DateTime? @db.Timestamp(6)         @map("EmailVerifiedAt")
+  /// When the candidate finished the onboarding wizard. NULL means "not yet", which is what
+  /// ProtectedRoute redirects on. Stored rather than kept in the client session, because the
+  /// redirect is evaluated on every load and a client-only flag sent the candidate back to
+  /// step one on their next login.
+  onboardedAt                  DateTime? @db.Timestamp(6)         @map("OnboardedAt")
   dOB                          DateTime? @db.Date                 @map("DOB")
   gender                       String? @db.Char(10)               @map("Gender")
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
@@ -683,6 +693,11 @@ model SubscriberCVDetails {
   @@index([skillID])
   @@index([currentCityID])
   @@index([industryTypeID])
+  /// Registration checks this column on every signup. Non-unique on purpose: the column is
+  /// nullable and inherited from the legacy import, so a UNIQUE constraint could fail to
+  /// apply against existing rows. Uniqueness of *verified* addresses is enforced in
+  /// AuthService.assertEmailAvailable instead.
+  @@index([emailID])
   @@map("tblSubscriberCVDetails")
 }
 
@@ -715,15 +730,24 @@ model SubscriberCertificate {
 model SubscriberEducation {
   subscriberEducationID        BigInt                             @id @default(autoincrement()) @map("SubscriberEducationID")
   subscriberID                 BigInt                             @map("SubscriberID")  // FK -> SubscriberRegistration (confirmed)
-  courseTypeID                 Int?                               @map("CourseTypeID")  // FK -> MstrCourseType (dirty)
-  degreeID                     Int?                               @map("DegreeID")  // FK -> MstrEducationDegree (dirty)
+  /// Despite the column name this is a COURSE id, not a course-type id: spSubscriberCVGetDetails
+  /// joins `tblMstrCourse AS b ON a.CourseTypeID = b.DegreeID`, and spSubscriberCVUpdate_Education
+  /// writes it from a variable named @CoureID. The extraction's guess of MstrCourseType was
+  /// flagged "dirty" and is wrong — that table has no rows and no dumped source, so honouring it
+  /// made every Course selection fail the foreign key.
+  courseTypeID                 Int?                               @map("CourseTypeID")  // FK -> MstrCourse (confirmed via procs)
+  /// The education LEVEL, not a course. candidate-profile.aspx binds this dropdown from
+  /// tblMstrEducationType (fnBindDegreeDropdown reads EducationTypeID/Descr) and writes the
+  /// chosen EducationTypeID straight into this column. The extraction guessed
+  /// MstrEducationDegree — a byte-identical copy of MstrCourse — and flagged it "dirty".
+  degreeID                     Int?                               @map("DegreeID")  // FK -> MstrEducationType (confirmed via candidate-profile.aspx)
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDIns                   BigInt                             @map("LoginIDIns")
   loginIDUpd                   BigInt?                            @map("loginIDUpd")
 
-  courseType                   MstrCourseType?                    @relation("SubscriberEducationToMstrCourseType", fields: [courseTypeID], references: [courseTypeID])
-  degree                       MstrEducationDegree?               @relation("SubscriberEducationToMstrEducationDegree", fields: [degreeID], references: [degreeID])
+  course                       MstrCourse?                        @relation("SubscriberEducationToMstrCourse", fields: [courseTypeID], references: [degreeID])
+  degree                       MstrEducationType?                 @relation("SubscriberEducationToMstrEducationType", fields: [degreeID], references: [educationTypeID])
   subscriber                   SubscriberRegistration             @relation("SubscriberEducationToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
   @@index([subscriberID])
   @@map("tblSubscriberEducation")

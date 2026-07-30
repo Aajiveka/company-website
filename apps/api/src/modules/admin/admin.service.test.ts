@@ -2,7 +2,6 @@
 // @ts-nocheck — heavy mocking makes strict types impractical in test files
 import { describe, it, beforeEach, mock } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -35,14 +34,19 @@ function resetAllMocks() {
 }
 
 async function buildService(): Promise<AdminService> {
-  const mod = await Test.createTestingModule({
-    providers: [
-      AdminService,
-      { provide: PrismaService, useValue: mockPrisma },
-      { provide: AuditService, useValue: mockAudit },
-    ],
-  }).compile();
-  return mod.get(AdminService);
+  /**
+   * Constructed directly rather than through Test.createTestingModule.
+   *
+   * Nest resolves constructor dependencies from `emitDecoratorMetadata`, which esbuild — and
+   * therefore the tsx runner this suite uses — does not emit. Every injection came back
+   * undefined, so these tests all failed on `this.prisma.client` before reaching an assertion.
+   * Passing the mocks positionally sidesteps the container entirely; AdminService has no
+   * lifecycle hooks, so there is nothing the container was contributing.
+   */
+  return new AdminService(
+    mockPrisma as unknown as PrismaService,
+    mockAudit as unknown as AuditService,
+  );
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────

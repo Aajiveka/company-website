@@ -10,6 +10,7 @@ import { SesEmailProvider } from './providers/ses.provider';
 import { SmtpEmailProvider } from './providers/smtp.provider';
 import { SnsSmsProvider } from './providers/sns.provider';
 import { TwoFactorSmsProvider } from './providers/twofactor.provider';
+import { Msg91SmsProvider } from './providers/msg91.provider';
 import { EMAIL_PROVIDER, NOTIFICATIONS_QUEUE, SMS_PROVIDER } from './notifications.types';
 
 const logger = new Logger('NotificationsModule');
@@ -33,6 +34,9 @@ const logger = new Logger('NotificationsModule');
           case 'twofactor':
             logger.log('SMS driver: 2Factor.in');
             return new TwoFactorSmsProvider();
+          case 'msg91':
+            logger.log('SMS driver: MSG91');
+            return new Msg91SmsProvider();
           default:
             logger.warn('SMS_DRIVER=log — SMS will be logged, not sent');
             return log;

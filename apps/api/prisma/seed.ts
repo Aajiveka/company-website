@@ -39,10 +39,13 @@ const ORDER = [
   'tblMstrWorkMode',
   'tblMstrGender',
   'tblMstrEducationType',
-  // Same real rows the extraction dumped as tblMstrCourse.psv — tblMstrCourse and
-  // tblMstrEducationDegree are identically-shaped legacy duplicates, and
-  // tblSubscriberEducation.DegreeID is the one that actually FKs to MstrEducationDegree.
+  // tblMstrCourse and tblMstrEducationDegree hold byte-identical rows — the extraction dumped
+  // the same eight courses twice. Both are still loaded, because tblSubscriberEducation points
+  // at BOTH: DegreeID -> MstrEducationDegree, and CourseTypeID -> MstrCourse (despite its name;
+  // spSubscriberCVGetDetails joins `tblMstrCourse AS b ON a.CourseTypeID = b.DegreeID`).
+  // Skipping tblMstrCourse as a mere duplicate left the CV editor's Course dropdown empty.
   'tblMstrEducationDegree',
+  'tblMstrCourse',
   'tblMstrDocumentType',
   'tblMstrDocuments',
   'tblMstrJobMappingStatus',

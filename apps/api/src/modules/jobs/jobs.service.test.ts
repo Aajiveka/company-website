@@ -2,7 +2,6 @@
 // @ts-nocheck — heavy mocking makes strict types impractical in test files
 import { describe, it, beforeEach, mock } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { Test } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -18,6 +17,9 @@ const mockDb = {
   mstrWorkMode: { findMany: mock.fn() },
   mstrEmpType: { findMany: mock.fn() },
   mstrSkills: { findMany: mock.fn() },
+  // Backs filters().roleByFunction. Absent until now, which made filters() throw on
+  // `undefined.findMany` — hidden because the whole suite was failing on DI first.
+  mstrFunctions: { findMany: mock.fn() },
   clientJobs: { findMany: mock.fn(), findUnique: mock.fn(), count: mock.fn() },
 };
 
@@ -38,15 +40,20 @@ function resetAllMocks() {
 }
 
 async function buildService(): Promise<JobsService> {
-  const mod = await Test.createTestingModule({
-    providers: [
-      JobsService,
-      { provide: PrismaService, useValue: mockPrisma },
-      { provide: CandidatesService, useValue: mockCandidates },
-      { provide: JobApplicationsService, useValue: mockApplications },
-    ],
-  }).compile();
-  return mod.get(JobsService);
+  /**
+   * Constructed directly rather than through Test.createTestingModule.
+   *
+   * Nest resolves constructor dependencies from `emitDecoratorMetadata`, which esbuild — and
+   * therefore the tsx runner this suite uses — does not emit. Every injection came back
+   * undefined, so these tests all failed on `this.prisma.client` before reaching an assertion.
+   * Passing the mocks positionally sidesteps the container entirely; JobsService has no
+   * lifecycle hooks, so there is nothing the container was contributing.
+   */
+  return new JobsService(
+    mockPrisma as unknown as PrismaService,
+    mockCandidates as unknown as CandidatesService,
+    mockApplications as unknown as JobApplicationsService,
+  );
 }
 
 // ── Sample data ─────────────────────────────────────────────────────────────
@@ -91,6 +98,9 @@ describe('JobsService', () => {
       mockDb.mstrWorkMode.findMany.mock.mockImplementation(async () => [{ descr: 'Remote' }]);
       mockDb.mstrEmpType.findMany.mock.mockImplementation(async () => [{ descr: 'Full-time' }]);
       mockDb.mstrSkills.findMany.mock.mockImplementation(async () => [{ descr: 'JavaScript' }]);
+      mockDb.mstrFunctions.findMany.mock.mockImplementation(async () => [
+        { descr: 'Engineering', MstrSubFunctions: [{ descr: 'Backend' }, { descr: 'Frontend' }] },
+      ]);
 
       const result = await svc.filters();
       assert.deepEqual(result.designations, ['Engineer']);
@@ -98,6 +108,9 @@ describe('JobsService', () => {
       assert.deepEqual(result.locations, ['Mumbai']);
       assert.deepEqual(result.workModes, ['Remote']);
       assert.deepEqual(result.skills, ['JavaScript']);
+      // Groups sub-functions under their parent function — the shape the search dropdown reads.
+      assert.deepEqual(result.roleByFunction, { Engineering: ['Backend', 'Frontend'] });
+      assert.deepEqual(result.cityByState, { Maharashtra: ['Mumbai'] });
     });
 
     it('filters out null and empty values', async () => {
@@ -108,9 +121,15 @@ describe('JobsService', () => {
       mockDb.mstrWorkMode.findMany.mock.mockImplementation(async () => []);
       mockDb.mstrEmpType.findMany.mock.mockImplementation(async () => []);
       mockDb.mstrSkills.findMany.mock.mockImplementation(async () => []);
+      // A function whose name is blank must not become an empty-string key in roleByFunction.
+      mockDb.mstrFunctions.findMany.mock.mockImplementation(async () => [
+        { descr: '  ', MstrSubFunctions: [{ descr: 'Orphan' }] },
+        { descr: 'Sales', MstrSubFunctions: [{ descr: null }, { descr: 'Field Sales' }] },
+      ]);
 
       const result = await svc.filters();
       assert.deepEqual(result.designations, ['Valid']);
+      assert.deepEqual(result.roleByFunction, { Sales: ['Field Sales'] });
     });
   });
 

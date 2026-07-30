@@ -3,7 +3,7 @@ import argon2 from 'argon2';
 import { PrismaService } from '@/prisma/prisma.service';
 import { StorageService } from '@/modules/storage/storage.service';
 import { AuditService } from '@/modules/audit/audit.service';
-import { SubscriberStatus, JOB_STATUS_ACTIVE } from '@/shared/status';
+import { JobMapStatus, SubscriberStatus, JOB_STATUS_ACTIVE } from '@/shared/status';
 import type {
   CreateJobAlertDto,
   CreateSavedSearchDto,
@@ -14,6 +14,75 @@ import type {
   UpsertEducationDto,
   UpsertEmploymentDto,
 } from './dto/candidates.dto';
+
+/* ------------------------------------------------------------------ *
+ * Activity timeline
+ * ------------------------------------------------------------------ */
+
+/** The event vocabulary the timeline UI renders — kept in step with ActivityTimelinePage. */
+type ActivityEventType =
+  | 'applied'
+  | 'shortlisted'
+  | 'interview_scheduled'
+  | 'interview_completed'
+  | 'selected'
+  | 'rejected'
+  | 'document_uploaded'
+  | 'profile_updated';
+
+interface ActivityEvent {
+  eventId: number;
+  type: ActivityEventType;
+  title: string;
+  description: string;
+  /** ISO 8601. */
+  timestamp: string;
+  jobTitle?: string;
+  company?: string;
+}
+
+const ACTIVITY_PAGE_SIZE = 20;
+/** Per-source ceiling before merging, so one very active candidate cannot load unbounded rows. */
+const ACTIVITY_SOURCE_LIMIT = 200;
+
+/**
+ * Primary keys are unique only within their own table, so each source gets its own numeric
+ * range. The client uses eventId as a React key; colliding ids would drop rows from the list.
+ */
+const ID_BASE = {
+  application: 1_000_000_000,
+  status: 2_000_000_000,
+  interview: 3_000_000_000,
+  document: 4_000_000_000,
+  profile: 5_000_000_000,
+} as const;
+
+/**
+ * tblMstrJobMappingStatus -> timeline vocabulary. MAPPED is deliberately absent: the
+ * application row itself already yields the `applied` event, so mapping it here too would
+ * show every application twice.
+ */
+const STATUS_EVENT_TYPE: Record<number, ActivityEventType | undefined> = {
+  [JobMapStatus.SHORTLISTED]: 'shortlisted',
+  [JobMapStatus.INTERVIEW_SCHEDULED]: 'interview_scheduled',
+  [JobMapStatus.SELECTED]: 'selected',
+  [JobMapStatus.REJECTED]: 'rejected',
+  [JobMapStatus.INTERVIEW_ATTENDED]: 'interview_completed',
+  [JobMapStatus.RESCHEDULE_REQUESTED]: 'interview_scheduled',
+  [JobMapStatus.RESCHEDULED]: 'interview_scheduled',
+  [JobMapStatus.INTERVIEW_NOT_ATTENDED]: 'interview_completed',
+};
+
+const STATUS_TITLE: Record<ActivityEventType, string> = {
+  applied: 'Application submitted',
+  shortlisted: 'Shortlisted',
+  interview_scheduled: 'Interview scheduled',
+  interview_completed: 'Interview completed',
+  selected: 'Selected',
+  rejected: 'Not selected',
+  document_uploaded: 'Document uploaded',
+  profile_updated: 'Profile updated',
+};
 
 /**
  * The subscriber (candidate) side.
@@ -76,7 +145,7 @@ export class CandidatesService {
       }),
       this.db.subscriberEducation.findMany({
         where: { subscriberID: subscriberId },
-        include: { degree: { select: { degreeName: true } } },
+        include: { degree: { select: { descr: true } } },
         orderBy: { subscriberEducationID: 'asc' },
       }),
       this.db.subscriberEmployer.findMany({
@@ -101,7 +170,7 @@ export class CandidatesService {
       photoUrl: cv.photoName?.trim() ? `/files/${cv.photoName}` : null,
       skills: tags.map((t) => t.tag?.tagName ?? '').filter(Boolean),
       education: education.map((e) => ({
-        degree: e.degree?.degreeName ?? '',
+        degree: e.degree?.descr ?? '',
         institute: '', // tblSubscriberEducation records no institute — the column does not exist.
         year: date(e.timestampIns).slice(0, 4),
       })),
@@ -114,16 +183,40 @@ export class CandidatesService {
     };
   }
 
+  /**
+   * Records that the candidate finished the onboarding wizard.
+   *
+   * Idempotent: the first timestamp wins, so re-running the wizard later does not rewrite when
+   * they actually completed it.
+   */
+  async completeOnboarding(subscriberId: number) {
+    await this.db.subscriberCVDetails.updateMany({
+      where: { subscriberID: subscriberId, onboardedAt: null },
+      data: { onboardedAt: new Date(), timestampUpd: new Date() },
+    });
+    return { isOnboarded: true };
+  }
+
   /** id-backed lookup lists for the CV editor — every axis on tblSubscriberCVDetails is an FK, not free text. */
   async cvMasters() {
-    const [states, cities, subFunctions, industries, skills, courseTypes, degrees, designations, empTypes] = await Promise.all([
+    const [states, cities, subFunctions, industries, skills, courses, degrees, designations, empTypes] = await Promise.all([
       this.db.mstrState.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrCily.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrSubFunctions.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrIndustryType.findMany({ orderBy: { industryType: 'asc' } }),
       this.db.mstrSkills.findMany({ orderBy: { descr: 'asc' } }),
-      this.db.mstrCourseType.findMany({ orderBy: { descr: 'asc' } }),
-      this.db.mstrEducationDegree.findMany({ orderBy: { degreeName: 'asc' } }),
+      // Course list. tblMstrCourse, NOT tblMstrCourseType: foreign-keys.psv guesses the latter
+      // but flags it "dirty", and the legacy procs settle it — spSubscriberCVGetDetails joins
+      // `tblMstrCourse AS b ON a.CourseTypeID = b.DegreeID`, and spSubscriberCVUpdate_Education
+      // writes CourseTypeID from a variable it calls @CoureID. tblMstrCourseType has no rows and
+      // no extracted source anywhere, so reading it left the Course dropdown permanently empty.
+      this.db.mstrCourse.findMany({ orderBy: { degreeName: 'asc' } }),
+      // Degree list = education LEVELS (10th, 12th, Graduation, Post Graduation), which is what
+      // candidate-profile.aspx binds: fnBindDegreeDropdown reads EducationTypeID/Descr, i.e.
+      // tblMstrEducationType. tblMstrEducationDegree is a byte-identical copy of tblMstrCourse
+      // and is the COURSE list, not the degree list — using it made both dropdowns show the
+      // same eight courses.
+      this.db.mstrEducationType.findMany({ orderBy: { highestSeq: 'asc' } }),
       this.db.mstrDesignation.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrEmpType.findMany({ orderBy: { descr: 'asc' } }),
     ]);
@@ -134,8 +227,10 @@ export class CandidatesService {
       subFunctions: subFunctions.map((s) => opt(s.subFunctionID, s.descr)),
       industries: industries.map((i) => opt(i.industryTypeID, i.industryType)),
       skills: skills.map((s) => opt(s.skillID, s.descr)),
-      courseTypes: courseTypes.map((c) => opt(c.courseTypeID, c.descr)),
-      educationDegrees: degrees.map((d) => opt(d.degreeID, d.degreeName)),
+      // Courses carry their level so the UI can cascade: picking a degree filters the courses,
+      // exactly as fnDegree() does in candidate-profile.aspx.
+      courses: courses.map((c) => ({ ...opt(c.degreeID, c.degreeName), degreeId: c.educationTypeID })),
+      degrees: degrees.map((d) => opt(d.educationTypeID, d.descr)),
       designations: designations.map((d) => opt(d.designationID, d.descr)),
       employmentTypes: empTypes.map((e) => opt(e.employeeTypeID, e.descr)),
     };
@@ -903,48 +998,178 @@ export class CandidatesService {
     };
   }
 
-  /** Activity timeline from audit log and recent applications. */
-  async activity(userId: number, subscriberId: number) {
-    const [auditRows, applications] = await Promise.all([
-      this.db.auditLog.findMany({
-        where: { userID: userId },
-        orderBy: { timestampIns: 'desc' },
-        take: 20,
-      }),
+  /**
+   * Activity timeline for the signed-in candidate.
+   *
+   * Built from the domain tables rather than the audit log: the audit log records what the
+   * SYSTEM did (auth.login, register.verified) keyed by user id, which is neither interesting
+   * to a candidate nor expressible in the eight event types the timeline renders. Applications,
+   * status transitions, interviews and document uploads are the things that actually happened
+   * to them.
+   *
+   * Paged by offset. The events are merged from five sources and re-sorted, so there is no
+   * single column a keyset cursor could walk; `cursor` is therefore the index to resume from,
+   * which is what the client round-trips as nextCursor.
+   */
+  async activity(subscriberId: number, cursor = 0, pageSize = ACTIVITY_PAGE_SIZE) {
+    const [applications, statusRows, interviews, documents, cv] = await Promise.all([
       this.db.jobSubscriberMapping.findMany({
         where: { subscriberID: subscriberId },
         orderBy: { mapDate: 'desc' },
-        take: 10,
+        take: ACTIVITY_SOURCE_LIMIT,
         include: {
-          job: { include: { designation: { select: { descr: true } } } },
+          job: {
+            include: {
+              designation: { select: { descr: true } },
+              client: { select: { clientName: true } },
+            },
+          },
         },
+      }),
+      this.db.jobSubscriberStatus.findMany({
+        where: { jobSubscriberMap: { subscriberID: subscriberId } },
+        orderBy: { mappedTimestamp: 'desc' },
+        take: ACTIVITY_SOURCE_LIMIT,
+        include: {
+          jobSubscriberMap: {
+            include: {
+              job: {
+                include: {
+                  designation: { select: { descr: true } },
+                  client: { select: { clientName: true } },
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.db.jobInterviewStatus.findMany({
+        where: { jobSubscriberMap: { subscriberID: subscriberId } },
+        orderBy: { interviewScheduledOn: 'desc' },
+        take: ACTIVITY_SOURCE_LIMIT,
+        include: {
+          interviewMode: { select: { descr: true } },
+          jobSubscriberMap: {
+            include: {
+              job: {
+                include: {
+                  designation: { select: { descr: true } },
+                  client: { select: { clientName: true } },
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.db.candidateDocumentUploaded.findMany({
+        where: { subscriberID: subscriberId },
+        orderBy: { timestampIns: 'desc' },
+        take: ACTIVITY_SOURCE_LIMIT,
+        include: { documentType: { select: { documentType: true } } },
+      }),
+      this.db.subscriberCVDetails.findUnique({
+        where: { subscriberID: subscriberId },
+        select: { timestampIns: true, timestampUpd: true },
       }),
     ]);
 
-    const activities: Array<{ id: number; type: string; description: string; timestamp: string }> = [];
+    const events: ActivityEvent[] = [];
+    const jobOf = (job?: { designation?: { descr: string | null } | null; client?: { clientName: string | null } | null } | null) => ({
+      jobTitle: job?.designation?.descr ?? undefined,
+      company: job?.client?.clientName ?? undefined,
+    });
 
-    for (const a of auditRows) {
-      activities.push({
-        id: Number(a.auditID),
-        type: a.action,
-        description: a.action.replace(/\./g, ' ').replace(/_/g, ' '),
-        timestamp: a.timestampIns.toISOString(),
+    for (const a of applications) {
+      if (!a.mapDate) continue;
+      const { jobTitle, company } = jobOf(a.job);
+      events.push({
+        // Ids are namespaced per source table: the primary keys are only unique within their
+        // own table, and the client uses eventId as a list key.
+        eventId: ID_BASE.application + Number(a.jobSubscriberMapID),
+        type: 'applied',
+        title: 'Application submitted',
+        description: `You applied for ${jobTitle ?? 'a job'}${company ? ` at ${company}` : ''}.`,
+        timestamp: a.mapDate.toISOString(),
+        jobTitle,
+        company,
       });
     }
 
-    for (const app of applications) {
-      activities.push({
-        id: Number(app.jobSubscriberMapID),
-        type: 'job.applied',
-        description: `Applied to ${app.job?.designation?.descr ?? 'a job'}`,
-        timestamp: app.mapDate?.toISOString() ?? '',
+    for (const st of statusRows) {
+      const type = STATUS_EVENT_TYPE[st.jobMapStatusID ?? -1];
+      // Skip "Mapped" — the application itself already produced an `applied` event — and any
+      // status this timeline has no vocabulary for.
+      if (!type || !st.mappedTimestamp) continue;
+      const { jobTitle, company } = jobOf(st.jobSubscriberMap?.job);
+      events.push({
+        eventId: ID_BASE.status + Number(st.statusID),
+        type,
+        title: STATUS_TITLE[type],
+        description:
+          st.comments?.trim() ||
+          `${STATUS_TITLE[type]} for ${jobTitle ?? 'a job'}${company ? ` at ${company}` : ''}.`,
+        timestamp: st.mappedTimestamp.toISOString(),
+        jobTitle,
+        company,
       });
     }
 
-    // Sort by timestamp descending
-    activities.sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1));
+    for (const iv of interviews) {
+      const when = iv.interviewTime ?? iv.interviewScheduledOn;
+      if (!when) continue;
+      const { jobTitle, company } = jobOf(iv.jobSubscriberMap?.job);
+      const mode = iv.interviewMode?.descr;
+      // Past interviews read as completed, upcoming ones as scheduled.
+      const done = when.getTime() < Date.now();
+      events.push({
+        eventId: ID_BASE.interview + Number(iv.interviewStatusID),
+        type: done ? 'interview_completed' : 'interview_scheduled',
+        title: done ? 'Interview completed' : 'Interview scheduled',
+        description:
+          `${done ? 'Interview held' : 'Interview scheduled'} for ${jobTitle ?? 'a job'}` +
+          `${company ? ` at ${company}` : ''}${mode ? ` (${mode})` : ''}.`,
+        timestamp: (iv.interviewScheduledOn ?? when).toISOString(),
+        jobTitle,
+        company,
+      });
+    }
 
-    return { activities: activities.slice(0, 30) };
+    for (const d of documents) {
+      if (!d.timestampIns) continue;
+      events.push({
+        eventId: ID_BASE.document + Number(d.docUploadID),
+        type: 'document_uploaded',
+        title: 'Document uploaded',
+        description: `You uploaded ${d.documentType?.documentType ?? 'a document'}.`,
+        timestamp: d.timestampIns.toISOString(),
+      });
+    }
+
+    // One profile event, from the CV row's own audit columns. There is no per-field history
+    // table, so this is the most that can honestly be reported.
+    const profileAt = cv?.timestampUpd ?? cv?.timestampIns;
+    if (profileAt) {
+      events.push({
+        eventId: ID_BASE.profile + subscriberId,
+        type: 'profile_updated',
+        title: cv?.timestampUpd ? 'Profile updated' : 'Profile created',
+        description: cv?.timestampUpd
+          ? 'You updated your profile details.'
+          : 'Your profile was created.',
+        timestamp: profileAt.toISOString(),
+      });
+    }
+
+    events.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+    const from = Math.max(0, cursor);
+    const page = events.slice(from, from + pageSize);
+    const next = from + pageSize;
+    return {
+      data: page,
+      // Omitted on the last page so the client stops asking.
+      ...(next < events.length ? { nextCursor: next } : {}),
+    };
   }
 
   /** Upload resume — stores in CVPath on subscriberCVDetails. */

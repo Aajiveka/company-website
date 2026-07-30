@@ -52,7 +52,7 @@ const schema = z.object({
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
 
   // Notification drivers. 'log' writes to stdout (dev default); the real drivers need credentials.
-  SMS_DRIVER: z.enum(['twofactor', 'sns', 'log']).default('log'),
+  SMS_DRIVER: z.enum(['twofactor', 'sns', 'msg91', 'log']).default('log'),
   EMAIL_DRIVER: z.enum(['smtp', 'ses', 'log']).default('log'),
 
   // AWS SNS (SMS_DRIVER=sns)
@@ -66,11 +66,32 @@ const schema = z.object({
   // 2Factor.in (SMS_DRIVER=twofactor)
   TWOFACTOR_API_KEY: z.string().optional(),
 
-  // SMTP (EMAIL_DRIVER=smtp)
+  // MSG91 (SMS_DRIVER=msg91) — auth key + DLT-approved OTP template id from the MSG91 panel.
+  MSG91_AUTH_KEY: z.string().optional(),
+  MSG91_TEMPLATE_ID: z.string().optional(),
+
+  // SMTP (EMAIL_DRIVER=smtp). For Google Workspace / Gmail: host smtp.gmail.com, port 587,
+  // SMTP_USER = the full workspace address, SMTP_PASSWORD = a 16-char App Password (Google
+  // rejects the account password once 2FA is on).
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
+  /**
+   * TLS mode. Left unset it is derived from the port — 465 is implicit TLS, everything else
+   * (587) starts plaintext and upgrades via STARTTLS. Only set this to override that.
+   */
+  SMTP_SECURE: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
+  /**
+   * Envelope From. Gmail rewrites a From that is not the authenticated user (or one of its
+   * verified aliases), so this defaults to SMTP_USER rather than inventing an address that
+   * would fail DMARC.
+   */
+  SMTP_FROM: z.string().optional(),
+  SMTP_FROM_NAME: z.string().default('Aajiveka'),
 });
 
 const parsed = schema.safeParse(process.env);
