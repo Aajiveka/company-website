@@ -100,15 +100,24 @@ export const CV_MASTERS = {
     { id: 2, label: 'Node.js' },
     { id: 3, label: 'SQL' },
   ],
-  courseTypes: [
-    { id: 1, label: 'Full Time' },
-    { id: 2, label: 'Part Time' },
-    { id: 3, label: 'Distance' },
+  // Mirrors tblMstrEducationType — the "Degree" dropdown is education LEVEL, per
+  // reference/MainProject/candidate-profile.aspx (fnBindDegreeDropdown).
+  degrees: [
+    { id: 1, label: '10th' },
+    { id: 2, label: '12th' },
+    { id: 3, label: 'Gradution' },
+    { id: 4, label: 'Post Graduation' },
   ],
-  educationDegrees: [
-    { id: 1, label: 'B.E. Computer Science' },
-    { id: 2, label: 'HSC' },
-    { id: 3, label: 'M.Tech' },
+  // Mirrors tblMstrCourse; degreeId is EducationTypeID, which fnDegree() filters on.
+  courses: [
+    { id: 8, label: '10th', degreeId: 1 },
+    { id: 9, label: '12th', degreeId: 2 },
+    { id: 1, label: 'Bachelor of Computer Applications', degreeId: 3 },
+    { id: 2, label: 'Bachelor of Arts', degreeId: 3 },
+    { id: 4, label: 'Bachelor of Commerce', degreeId: 3 },
+    { id: 5, label: 'Masters of Computer Applications', degreeId: 4 },
+    { id: 6, label: 'Masters of Arts', degreeId: 4 },
+    { id: 7, label: 'Masters of Commerce', degreeId: 4 },
   ],
   designations: [
     { id: 1, label: 'Software Engineer' },

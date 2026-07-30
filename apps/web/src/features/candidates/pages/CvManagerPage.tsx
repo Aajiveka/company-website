@@ -327,17 +327,21 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
       <div className="space-y-3">
         {list.map((row, i) => (
           <div key={row.subscriberEducationId || `new-${i}`} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+            {/* Degree then Course, the Course list filtered by the chosen level — the same
+                pairing candidate-profile.aspx builds with fnBindDegreeDropdown/fnDegree. */}
             <Select
-              placeholder={`${t('cv.courseType')}…`}
-              options={opts(masters?.courseTypes)}
-              value={row.courseTypeId ?? ''}
-              onChange={(e) => update(i, { courseTypeId: Number(e.target.value) })}
+              placeholder={t('cv.selectDegree')}
+              options={opts(masters?.degrees)}
+              value={row.degreeId ?? ''}
+              // Clear the course too: it belonged to the previous level's list.
+              onChange={(e) => update(i, { degreeId: Number(e.target.value), courseTypeId: undefined })}
             />
             <Select
-              placeholder={`${t('cv.degree')}…`}
-              options={opts(masters?.educationDegrees)}
-              value={row.degreeId ?? ''}
-              onChange={(e) => update(i, { degreeId: Number(e.target.value) })}
+              placeholder={t('cv.selectCourse')}
+              options={opts((masters?.courses ?? []).filter((c) => c.degreeId === row.degreeId))}
+              disabled={!row.degreeId}
+              value={row.courseTypeId ?? ''}
+              onChange={(e) => update(i, { courseTypeId: Number(e.target.value) })}
             />
             <Button type="button" size="sm" onClick={() => save(row, i)} isLoading={upsert.isPending}>
               {t('common:actions.save')}

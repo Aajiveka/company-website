@@ -2,13 +2,17 @@
 // @ts-nocheck — heavy mocking makes strict types impractical in test files
 import { describe, it, beforeEach, mock } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { Test } from '@nestjs/testing';
-import { UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { OtpService } from './otp.service';
-import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { EmailService } from '@/common/email/email.service';
 import { AuditService } from '@/modules/audit/audit.service';
 
@@ -27,9 +31,18 @@ const mockDb = {
 
 const mockPrisma = { get client() { return mockDb; } };
 const mockJwt = { signAsync: mock.fn(), verifyAsync: mock.fn() };
-const mockOtp = { issue: mock.fn(), verify: mock.fn() };
-const mockNotifications = { sendSms: mock.fn() };
-const mockEmail = { sendWelcome: mock.fn(), sendPasswordReset: mock.fn() };
+const mockOtp = {
+  issue: mock.fn(),
+  verify: mock.fn(),
+  claimSend: mock.fn(),
+  releaseSend: mock.fn(),
+  peekPayload: mock.fn(),
+};
+const mockEmail = {
+  sendWelcome: mock.fn(),
+  sendPasswordReset: mock.fn(),
+  sendEmailOtp: mock.fn(),
+};
 const mockAudit = { record: mock.fn(), recordLogin: mock.fn(), recordLogout: mock.fn() };
 
 // Helpers
@@ -39,7 +52,8 @@ function resetAllMocks() {
     for (const fn of Object.values(table)) (fn as ReturnType<typeof mock.fn>).mock.resetCalls();
   }
   for (const fn of [mockJwt.signAsync, mockJwt.verifyAsync, mockOtp.issue, mockOtp.verify,
-    mockNotifications.sendSms, mockEmail.sendWelcome, mockEmail.sendPasswordReset,
+    mockOtp.claimSend, mockOtp.releaseSend, mockOtp.peekPayload,
+    mockEmail.sendWelcome, mockEmail.sendPasswordReset, mockEmail.sendEmailOtp,
     mockAudit.record, mockAudit.recordLogin, mockAudit.recordLogout]) {
     fn.mock.resetCalls();
   }
@@ -55,18 +69,22 @@ async function buildService(): Promise<AuthService> {
     validHash = await argon2.hash('correct-password', { type: argon2.argon2id });
   }
 
-  const mod = await Test.createTestingModule({
-    providers: [
-      AuthService,
-      { provide: PrismaService, useValue: mockPrisma },
-      { provide: JwtService, useValue: mockJwt },
-      { provide: OtpService, useValue: mockOtp },
-      { provide: NotificationsService, useValue: mockNotifications },
-      { provide: EmailService, useValue: mockEmail },
-      { provide: AuditService, useValue: mockAudit },
-    ],
-  }).compile();
-  return mod.get(AuthService);
+  /**
+   * Constructed directly rather than through Test.createTestingModule.
+   *
+   * Nest resolves constructor dependencies from `emitDecoratorMetadata`, which esbuild — and
+   * therefore the tsx runner this suite uses — does not emit. Every injection came back
+   * undefined, so all 42 tests failed on `this.prisma.client` before reaching an assertion.
+   * Passing the mocks positionally sidesteps the container entirely; AuthService has no
+   * lifecycle hooks, so there is nothing the container was contributing.
+   */
+  return new AuthService(
+    mockPrisma as unknown as PrismaService,
+    mockJwt as unknown as JwtService,
+    mockOtp as unknown as OtpService,
+    mockEmail as unknown as EmailService,
+    mockAudit as unknown as AuditService,
+  );
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -85,7 +103,10 @@ describe('AuthService', () => {
     mockDb.secActiveSessions.deleteMany.mock.mockImplementation(async () => ({}));
     mockEmail.sendWelcome.mock.mockImplementation(async () => {});
     mockEmail.sendPasswordReset.mock.mockImplementation(async () => {});
-    mockNotifications.sendSms.mock.mockImplementation(async () => {});
+    mockEmail.sendEmailOtp.mock.mockImplementation(async () => {});
+    // 0 = not on cooldown, which is the normal case for a fresh registration.
+    mockOtp.claimSend.mock.mockImplementation(async () => 0);
+    mockOtp.releaseSend.mock.mockImplementation(async () => {});
     svc = await buildService();
   });
 
@@ -179,49 +200,216 @@ describe('AuthService', () => {
 
   // ── register ──
 
+  const FORM = {
+    fullName: 'New Candidate',
+    email: 'new@example.com',
+    mobile: '9999999999',
+    password: 'a-long-enough-password',
+  };
+
+  /** Nothing taken: neither the email nor the mobile resolves to an existing account. */
+  function noExistingAccount() {
+    mockDb.subscriberCVDetails.findFirst.mock.mockImplementation(async () => null);
+    mockDb.secUser.findFirst.mock.mockImplementation(async () => null);
+  }
+
   describe('register()', () => {
-    it('creates subscriber and sends OTP for new mobile', async () => {
-      mockDb.subscriberRegistration.findFirst.mock.mockImplementation(async () => null);
-      mockDb.subscriberRegistration.create.mock.mockImplementation(async () => ({ subscriberID: 42n }));
-      mockDb.subscriberCVDetails.create.mock.mockImplementation(async () => ({}));
-      mockDb.subscriberStatusHistory.create.mock.mockImplementation(async () => ({}));
+    it('emails an OTP and writes NOTHING to the database', async () => {
+      noExistingAccount();
       mockOtp.issue.mock.mockImplementation(async () => '123456');
 
-      const result = await svc.register({ mobile: '9999999999' });
+      const result = await svc.register(FORM);
+
       assert.equal(result.otpRequired, true);
-      assert.equal(mockNotifications.sendSms.mock.callCount(), 1);
+      assert.match(result.registrationToken, /^[a-f0-9]{64}$/);
+      assert.equal(result.email, 'new@example.com');
+      assert.equal(mockEmail.sendEmailOtp.mock.callCount(), 1);
+      // The account is created at verification, not here.
+      assert.equal(mockDb.$transaction.mock.callCount(), 0);
+      assert.equal(mockDb.subscriberRegistration.create.mock.callCount(), 0);
     });
 
-    it('resends OTP for existing mobile without creating new registration', async () => {
-      mockDb.subscriberRegistration.findFirst.mock.mockImplementation(async () => ({ subscriberID: 7n }));
-      mockOtp.issue.mock.mockImplementation(async () => '654321');
+    it('stores the password already hashed, never in plaintext', async () => {
+      noExistingAccount();
+      mockOtp.issue.mock.mockImplementation(async () => '123456');
 
-      const result = await svc.register({ mobile: '9999999999' });
-      assert.equal(result.otpRequired, true);
-      // Should NOT have called $transaction (no new registration)
+      await svc.register(FORM);
+
+      const payload = mockOtp.issue.mock.calls[0].arguments[2];
+      assert.ok(payload.passwordHash.startsWith('$argon2id$'));
+      assert.equal(payload.password, undefined);
+      assert.ok(!JSON.stringify(payload).includes(FORM.password));
+    });
+
+    it('lowercases the email so casing cannot fork an account', async () => {
+      noExistingAccount();
+      mockOtp.issue.mock.mockImplementation(async () => '123456');
+
+      const result = await svc.register({ ...FORM, email: '  New@Example.COM ' });
+      assert.equal(result.email, 'new@example.com');
+    });
+
+    it('rejects an email that already has a verified account', async () => {
+      mockDb.subscriberCVDetails.findFirst.mock.mockImplementation(async () => ({ subscriberID: 5n }));
+      mockDb.secUser.findFirst.mock.mockImplementation(async () => null);
+
+      await assert.rejects(() => svc.register(FORM), ConflictException);
+      assert.equal(mockEmail.sendEmailOtp.mock.callCount(), 0);
+    });
+
+    it('rejects a mobile that already has a login', async () => {
+      mockDb.subscriberCVDetails.findFirst.mock.mockImplementation(async () => null);
+      mockDb.secUser.findFirst.mock.mockImplementation(async () => ({ userID: 1n }));
+
+      await assert.rejects(() => svc.register(FORM), ConflictException);
+      assert.equal(mockEmail.sendEmailOtp.mock.callCount(), 0);
+    });
+
+    it('refuses to send again while the cooldown is running', async () => {
+      noExistingAccount();
+      mockOtp.claimSend.mock.mockImplementation(async () => 42);
+
+      await assert.rejects(
+        () => svc.register(FORM),
+        (err: HttpException) => err.getStatus() === 429,
+      );
+      assert.equal(mockEmail.sendEmailOtp.mock.callCount(), 0);
+    });
+
+    it('releases the cooldown when the email cannot be queued', async () => {
+      noExistingAccount();
+      mockOtp.issue.mock.mockImplementation(async () => '123456');
+      mockEmail.sendEmailOtp.mock.mockImplementation(async () => {
+        throw new Error('queue down');
+      });
+
+      await assert.rejects(() => svc.register(FORM), ServiceUnavailableException);
+      // Otherwise a broker blip locks the address out for a full minute.
+      assert.equal(mockOtp.releaseSend.mock.callCount(), 1);
+    });
+  });
+
+  // ── verifyEmailOtp ──
+
+  describe('verifyEmailOtp()', () => {
+    const TOKEN = 'f'.repeat(64);
+    const PENDING = {
+      fullName: 'New Candidate',
+      email: 'new@example.com',
+      mobile: '9999999999',
+      countryCode: '91',
+      passwordHash: '$argon2id$fake',
+    };
+
+    function pendingVerifies() {
+      mockOtp.verify.mock.mockImplementation(async () => ({ ok: true, payload: PENDING }));
+      noExistingAccount();
+      mockDb.subscriberRegistration.create.mock.mockImplementation(async () => ({ subscriberID: 10n }));
+      mockDb.subscriberCVDetails.create.mock.mockImplementation(async () => ({}));
+      mockDb.subscriberStatusHistory.create.mock.mockImplementation(async () => ({}));
+      mockDb.secUser.create.mock.mockImplementation(async () => ({ userID: 20n }));
+      mockDb.secMapUserRoles.create.mock.mockImplementation(async () => ({}));
+    }
+
+    it('creates the account and issues tokens on the correct code', async () => {
+      pendingVerifies();
+
+      const result = await svc.verifyEmailOtp(TOKEN, '123456');
+
+      assert.ok(result.accessToken);
+      assert.equal(result.user.userId, 20);
+      assert.equal(result.user.email, 'new@example.com');
+      assert.equal(result.user.fullName, 'New Candidate');
+      // Registration, CV, status history, login and role mapping in one transaction.
+      assert.equal(mockDb.$transaction.mock.callCount(), 1);
+    });
+
+    it('marks the email verified and stores the hash from the pending record', async () => {
+      pendingVerifies();
+
+      await svc.verifyEmailOtp(TOKEN, '123456');
+
+      const cv = mockDb.subscriberCVDetails.create.mock.calls[0].arguments[0].data;
+      assert.equal(cv.emailVerified, true);
+      assert.ok(cv.emailVerifiedAt instanceof Date);
+      assert.equal(cv.emailID, 'new@example.com');
+
+      const user = mockDb.secUser.create.mock.calls[0].arguments[0].data;
+      assert.equal(user.password, PENDING.passwordHash);
+      assert.equal(user.pwdStatus, 1);
+    });
+
+    it('reports remaining attempts on a wrong code and creates nothing', async () => {
+      mockOtp.verify.mock.mockImplementation(async () => ({ ok: false, attemptsRemaining: 3 }));
+
+      await assert.rejects(
+        () => svc.verifyEmailOtp(TOKEN, '000000'),
+        (err: HttpException) => {
+          const body = err.getResponse() as { attemptsRemaining: number; message: string };
+          return (
+            err.getStatus() === 400 &&
+            body.attemptsRemaining === 3 &&
+            body.message.includes('3 attempts remaining')
+          );
+        },
+      );
+      assert.equal(mockDb.$transaction.mock.callCount(), 0);
+    });
+
+    it('rejects when the email was claimed while the code was in flight', async () => {
+      mockOtp.verify.mock.mockImplementation(async () => ({ ok: true, payload: PENDING }));
+      // Someone else finished registering this address during the 10-minute window.
+      mockDb.subscriberCVDetails.findFirst.mock.mockImplementation(async () => ({ subscriberID: 99n }));
+
+      await assert.rejects(() => svc.verifyEmailOtp(TOKEN, '123456'), ConflictException);
       assert.equal(mockDb.$transaction.mock.callCount(), 0);
     });
   });
 
-  // ── verifyOtp ──
+  // ── resendEmailOtp ──
 
-  describe('verifyOtp()', () => {
-    it('creates user and issues tokens on correct code', async () => {
-      mockOtp.verify.mock.mockImplementation(async () => true);
-      mockDb.subscriberRegistration.findFirst.mock.mockImplementation(async () => ({ subscriberID: 10n }));
-      mockDb.secUser.findFirst.mock.mockImplementation(async () => null);
-      mockDb.secUser.create.mock.mockImplementation(async () => ({ userID: 20n, userName: '9999999999', nodeID: 10n }));
-      mockDb.secMapUserRoles.create.mock.mockImplementation(async () => ({}));
-      mockDb.subscriberCVDetails.findUnique.mock.mockImplementation(async () => ({ fullName: 'New', emailID: '', mobileNo1: '9999999999' }));
+  describe('resendEmailOtp()', () => {
+    const TOKEN = 'f'.repeat(64);
+    const PENDING = {
+      fullName: 'New Candidate',
+      email: 'new@example.com',
+      mobile: '9999999999',
+      countryCode: '91',
+      passwordHash: '$argon2id$fake',
+    };
 
-      const result = await svc.verifyOtp('9999999999', '123456');
-      assert.ok(result.accessToken);
-      assert.equal(result.user.userId, 20);
+    it('issues a fresh code reusing the pending record', async () => {
+      mockOtp.peekPayload.mock.mockImplementation(async () => PENDING);
+      mockOtp.issue.mock.mockImplementation(async () => '654321');
+
+      const result = await svc.resendEmailOtp(TOKEN);
+
+      assert.equal(result.email, 'new@example.com');
+      assert.equal(mockEmail.sendEmailOtp.mock.callCount(), 1);
+      // Re-issued under the same handle, carrying the same payload forward.
+      assert.equal(mockOtp.issue.mock.calls[0].arguments[1], TOKEN);
+      assert.deepEqual(mockOtp.issue.mock.calls[0].arguments[2], PENDING);
     });
 
-    it('throws BadRequestException on wrong code', async () => {
-      mockOtp.verify.mock.mockImplementation(async () => false);
-      await assert.rejects(() => svc.verifyOtp('9999999999', '000000'), BadRequestException);
+    it('429s with the remaining wait while on cooldown', async () => {
+      mockOtp.peekPayload.mock.mockImplementation(async () => PENDING);
+      mockOtp.claimSend.mock.mockImplementation(async () => 17);
+
+      await assert.rejects(
+        () => svc.resendEmailOtp(TOKEN),
+        (err: HttpException) => {
+          const body = err.getResponse() as { retryAfterSeconds: number };
+          return err.getStatus() === 429 && body.retryAfterSeconds === 17;
+        },
+      );
+      assert.equal(mockEmail.sendEmailOtp.mock.callCount(), 0);
+    });
+
+    it('rejects an unknown or expired handle', async () => {
+      mockOtp.peekPayload.mock.mockImplementation(async () => null);
+
+      await assert.rejects(() => svc.resendEmailOtp(TOKEN), BadRequestException);
+      assert.equal(mockEmail.sendEmailOtp.mock.callCount(), 0);
     });
   });
 

@@ -9,6 +9,7 @@ import {
   LoginDto,
   RefreshDto,
   RegisterDto,
+  ResendOtpDto,
   ResetPasswordDto,
   VerifyOtpDto,
 } from './dto/auth.dto';
@@ -55,27 +56,60 @@ export class AuthController {
   @Public()
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Start registration — creates the record and texts an OTP' })
-  @ApiResponse({ status: 201, description: 'OTP sent to the provided mobile number' })
-  @ApiResponse({ status: 429, description: 'Too many registration attempts' })
+  @ApiOperation({
+    summary: 'Start registration — validates the form and emails a 6-digit OTP',
+    description:
+      'Nothing is written to the database here. The registration waits in Redis for 10 minutes ' +
+      'and is created only once /auth/verify-otp proves the code. Returns a registrationToken ' +
+      'that verify and resend address.',
+  })
+  @ApiResponse({ status: 201, description: 'OTP emailed; registrationToken returned' })
+  @ApiResponse({ status: 400, description: 'Validation failed' })
+  @ApiResponse({ status: 409, description: 'Email or mobile already registered' })
+  @ApiResponse({ status: 429, description: 'Too many registration attempts, or resend cooldown active' })
+  @ApiResponse({ status: 503, description: 'Verification email could not be queued' })
   register(@Body() dto: RegisterDto, @Ip() ip: string) {
-    return this.auth.register({ mobile: dto.mobile, countryCode: dto.countryCode, ipAddress: ip });
+    return this.auth.register({
+      fullName: dto.fullName,
+      email: dto.email,
+      mobile: dto.mobile,
+      password: dto.password,
+      countryCode: dto.countryCode,
+      ipAddress: ip,
+    });
   }
 
   @Public()
   @Post('verify-otp')
   @HttpCode(200)
+  // Deliberately tighter than the per-attempt limit the OTP itself enforces (5 guesses against
+  // one code). This bounds a caller cycling *many* registrations to brute-force any one of them.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Verify the emailed OTP, create the account, and receive a session' })
+  @ApiResponse({ status: 200, description: 'Verified — account created and session returned' })
+  @ApiResponse({ status: 400, description: 'Incorrect, expired, or exhausted OTP' })
+  @ApiResponse({ status: 409, description: 'Email or mobile was claimed while the code was in flight' })
+  @ApiResponse({ status: 429, description: 'Too many verification attempts' })
+  verifyOtp(@Body() dto: VerifyOtpDto, @Ip() ip: string) {
+    return this.auth.verifyEmailOtp(dto.registrationToken, dto.code, ip);
+  }
+
+  @Public()
+  @Post('resend-otp')
+  @HttpCode(200)
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Verify the OTP and receive a session' })
-  @ApiResponse({ status: 200, description: 'OTP verified — session created' })
-  @ApiResponse({ status: 400, description: 'Invalid or expired OTP' })
-  @ApiResponse({ status: 429, description: 'Too many OTP attempts' })
-  verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.auth.verifyOtp(dto.mobile, dto.code, {
-      fullName: dto.fullName,
-      email: dto.email,
-      password: dto.password,
-    });
+  @ApiOperation({
+    summary: 'Re-send the registration OTP',
+    description:
+      'Issues a new code and invalidates the previous one. Subject to a 60-second per-address ' +
+      'cooldown, which responds 429 with retryAfterSeconds.',
+  })
+  @ApiResponse({ status: 200, description: 'A new OTP was emailed' })
+  @ApiResponse({ status: 400, description: 'No registration in flight for this token' })
+  @ApiResponse({ status: 429, description: 'Cooldown still active — see retryAfterSeconds' })
+  @ApiResponse({ status: 503, description: 'Verification email could not be queued' })
+  resendOtp(@Body() dto: ResendOtpDto) {
+    return this.auth.resendEmailOtp(dto.registrationToken);
   }
 
   @Public()

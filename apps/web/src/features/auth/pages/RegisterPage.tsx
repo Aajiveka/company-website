@@ -9,10 +9,16 @@ import { Button, ErrorSummary, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
-import { registerSchema, type RegisterValues } from '../auth.types';
+import {
+  registerSchema,
+  type AuthSession,
+  type RegisterValues,
+  type RegistrationChallenge,
+} from '../auth.types';
 import { Role, ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
 import SocialLoginButtons from '../components/SocialLoginButtons';
+import OtpVerification from '../components/OtpVerification';
 
 const apiMessage = (err: unknown, fallback: string) =>
   isAxiosError(err) ? ((err.response?.data as { message?: string })?.message ?? fallback) : fallback;
@@ -26,8 +32,10 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const { t } = useTranslation('auth');
   const { t: tCommon } = useTranslation('common');
-  const [pending, setPending] = useState<RegisterValues | null>(null);
-  const [code, setCode] = useState('');
+  // Set once /auth/register accepts the form — it is the handle for the pending signup, which
+  // the server holds. The form values themselves are deliberately dropped: the password does
+  // not linger in component state while the user reads their email.
+  const [challenge, setChallenge] = useState<RegistrationChallenge | null>(null);
 
   const {
     register,
@@ -37,36 +45,29 @@ export default function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (res, values) => {
-      setPending(values);
-      if (res.devCode) {
-        setCode(res.devCode);
-        notify(`Dev OTP: ${res.devCode}`, 'info');
-      } else {
-        notify(t('register.otpSent'), 'success');
-      }
+    onSuccess: (res) => {
+      setChallenge(res);
+      notify(t('register.otpSent'), 'success');
+      if (res.devCode) notify(`Dev OTP: ${res.devCode}`, 'info');
     },
     onError: (err) => notify(apiMessage(err, t('register.registrationFailed')), 'error'),
   });
 
-  const otpMutation = useMutation({
-    mutationFn: authApi.verifyOtp,
-    onSuccess: (session) => {
-      setSession(session);
-      notify(t('register.accountCreated'), 'success');
-      // New candidates go to onboarding wizard; other roles go to their default dashboard
-      const home = session.user.roleId === Role.Subscriber ? '/candidate/onboarding' : ROLE_HOME[session.user.roleId];
-      navigate(home, { replace: true });
-    },
-    onError: (err) => notify(apiMessage(err, t('register.invalidOtp')), 'error'),
-  });
+  const onVerified = (session: AuthSession) => {
+    setSession(session);
+    notify(t('register.accountCreated'), 'success');
+    // New candidates go to onboarding wizard; other roles go to their default dashboard
+    const home =
+      session.user.roleId === Role.Subscriber ? '/candidate/onboarding' : ROLE_HOME[session.user.roleId];
+    navigate(home, { replace: true });
+  };
 
   return (
     <>
     <Seo title="Register" description="Create your free Aajiveka account. Sign up as a candidate to search jobs, build your resume, and get matched with top employers." path="/register" noIndex />
     <AuthShell
-      title={pending ? t('register.otpTitle') : t('register.title')}
-      subtitle={pending ? t('register.otpSubtitle', { mobile: pending.mobile }) : t('register.subtitle')}
+      title={challenge ? t('otp.heading') : t('register.title')}
+      subtitle={challenge ? undefined : t('register.subtitle')}
       footer={
         <>
           {t('register.alreadyRegistered')}{' '}
@@ -76,59 +77,57 @@ export default function RegisterPage() {
         </>
       }
     >
-      {!pending && <SocialLoginButtons mode="register" />}
-      {!pending ? (
+      {!challenge && <SocialLoginButtons mode="register" />}
+      {!challenge ? (
         <form key="register-form" onSubmit={handleSubmit((v) => registerMutation.mutate(v))} className="space-y-4" noValidate>
           <ErrorSummary errors={errors} heading={tCommon('validation.errorSummary', 'Please fix the following errors:')} />
-          <Input label={t('register.fullName')} error={errors.fullName?.message} {...register('fullName')} />
-          <Input label={t('register.email')} type="email" error={errors.email?.message} {...register('email')} />
+          <Input
+            label={t('register.fullName')}
+            autoComplete="name"
+            error={errors.fullName?.message}
+            {...register('fullName')}
+          />
+          <Input
+            label={t('register.email')}
+            type="email"
+            autoComplete="email"
+            error={errors.email?.message}
+            {...register('email')}
+          />
           <Input
             label={t('register.mobileNumber')}
             inputMode="numeric"
+            autoComplete="tel-national"
             placeholder={t('register.mobilePlaceholder')}
             error={errors.mobile?.message}
             {...register('mobile')}
           />
-          <Input label={t('register.password')} type="password" error={errors.password?.message} {...register('password')} />
+          {/* new-password, not password: stops a manager autofilling the saved credential for
+              this site into what is meant to be a brand-new one, and prompts it to offer to
+              generate and store one instead. */}
+          <Input
+            label={t('register.password')}
+            type="password"
+            autoComplete="new-password"
+            error={errors.password?.message}
+            {...register('password')}
+          />
           <Button type="submit" className="w-full" isLoading={registerMutation.isPending}>
             {t('register.registerButton')}
           </Button>
         </form>
       ) : (
-        <form
-          key="otp-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            otpMutation.mutate({
-              mobile: pending.mobile,
-              code,
-              fullName: pending.fullName,
-              email: pending.email,
-              password: pending.password,
-            });
-          }}
-          className="space-y-4"
-        >
-          <Input
-            label={t('register.otpLabel')}
-            inputMode="numeric"
-            maxLength={6}
-            placeholder={t('register.otpPlaceholder')}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
-          <Button type="submit" className="w-full" isLoading={otpMutation.isPending}>
-            {t('register.verifyButton')}
-          </Button>
-          <button
-            type="button"
-            onClick={() => registerMutation.mutate(pending)}
-            className="block w-full text-center text-sm text-primary hover:underline"
-            disabled={registerMutation.isPending}
-          >
-            {t('register.resendCode')}
-          </button>
-        </form>
+        <OtpVerification
+          email={challenge.email}
+          registrationToken={challenge.registrationToken}
+          resendAfterSeconds={challenge.resendAfterSeconds}
+          expiresInSeconds={challenge.expiresInSeconds}
+          initialCode={challenge.devCode}
+          onVerified={onVerified}
+          // Discards the handle, so going back means filling the form in again. The password
+          // was never kept client-side, so there is nothing to restore it from.
+          onBack={() => setChallenge(null)}
+        />
       )}
     </AuthShell>
     </>

@@ -107,14 +107,21 @@ export interface CvCityOption extends CvMasterOption {
   stateId: number;
 }
 
+/** A course carries its education level, so picking a degree can filter the course list. */
+export interface CvCourseOption extends CvMasterOption {
+  degreeId: number;
+}
+
 export interface CvMasters {
   states: CvMasterOption[];
   cities: CvCityOption[];
   subFunctions: CvMasterOption[];
   industries: CvMasterOption[];
   skills: CvMasterOption[];
-  courseTypes: CvMasterOption[];
-  educationDegrees: CvMasterOption[];
+  /** Education levels — the "Degree" dropdown (10th, 12th, Graduation, Post Graduation). */
+  degrees: CvMasterOption[];
+  /** Courses, each tagged with the degree level it belongs to so the UI can cascade. */
+  courses: CvCourseOption[];
   designations: CvMasterOption[];
   employmentTypes: CvMasterOption[];
 }

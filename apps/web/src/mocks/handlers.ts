@@ -52,6 +52,13 @@ import {
 
 const BASE = '/api';
 
+/**
+ * Signups awaiting their emailed code, standing in for the API's Redis store. Module-level so
+ * it survives between the register and verify calls of one flow; specs that need a clean slate
+ * should reset the worker rather than reach in here.
+ */
+const pendingRegistrations = new Map<string, { fullName: string; email: string }>();
+
 // Resolve the "current user" from the mock bearer token (mock-access-<id>).
 function userFromAuth(request: Request) {
   const auth = request.headers.get('Authorization') ?? '';
@@ -99,28 +106,96 @@ export const handlers = [
     return HttpResponse.json({ message: 'Your password has been updated.' });
   }),
 
-  // Mobile-first OTP registration. Mock accepts any 10-digit mobile; the code is always 123456,
-  // surfaced as devCode to mirror the backend's dev behaviour.
+  // Email-OTP registration. The mock holds the pending signup in a map keyed by the same kind
+  // of opaque handle the API returns, so the frontend exercises the real three-call shape:
+  // register -> (resend) -> verify. The code is always 123456, surfaced as devCode to mirror
+  // the backend's non-production behaviour.
   http.post(`${BASE}/auth/register`, async ({ request }) => {
-    const { mobile } = (await request.json()) as { mobile: string };
-    if (!/^\d{10}$/.test(mobile ?? '')) {
-      return HttpResponse.json({ message: 'Mobile must be 10 digits' }, { status: 400 });
-    }
-    return HttpResponse.json({ otpRequired: true, devCode: '123456' });
-  }),
-  http.post(`${BASE}/auth/verify-otp`, async ({ request }) => {
-    const { code, fullName, email } = (await request.json()) as {
-      mobile: string;
-      code: string;
+    const body = (await request.json()) as {
       fullName?: string;
       email?: string;
+      mobile?: string;
+      password?: string;
     };
-    if (code !== '123456') return HttpResponse.json({ message: 'Incorrect code' }, { status: 400 });
-    // Reflect the profile captured on the full form (mirrors the real backend persisting it).
+    if (!body.fullName || body.fullName.length < 2) {
+      return HttpResponse.json({ message: 'Enter your full name' }, { status: 400 });
+    }
+    if (!body.email?.includes('@')) {
+      return HttpResponse.json({ message: 'Enter a valid email address' }, { status: 400 });
+    }
+    if (!/^\d{10}$/.test(body.mobile ?? '')) {
+      return HttpResponse.json({ message: 'Mobile must be 10 digits' }, { status: 400 });
+    }
+    if ((body.password ?? '').length < 8) {
+      return HttpResponse.json({ message: 'Password must be at least 8 characters' }, { status: 400 });
+    }
+    // Lets a spec drive the already-registered branch without any shared state.
+    if (body.email.startsWith('taken@')) {
+      return HttpResponse.json(
+        { message: 'An account already exists for this email address. Please log in instead.' },
+        { status: 409 },
+      );
+    }
+
+    const registrationToken = 'a'.repeat(64);
+    pendingRegistrations.set(registrationToken, {
+      fullName: body.fullName,
+      email: body.email.toLowerCase(),
+    });
+    return HttpResponse.json({
+      otpRequired: true,
+      registrationToken,
+      email: body.email.toLowerCase(),
+      expiresInSeconds: 600,
+      resendAfterSeconds: 60,
+      maxAttempts: 5,
+      devCode: '123456',
+    });
+  }),
+
+  http.post(`${BASE}/auth/resend-otp`, async ({ request }) => {
+    const { registrationToken } = (await request.json()) as { registrationToken?: string };
+    const pending = registrationToken ? pendingRegistrations.get(registrationToken) : undefined;
+    if (!pending) {
+      return HttpResponse.json(
+        { message: 'This registration has expired. Please sign up again.' },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json({
+      otpRequired: true,
+      email: pending.email,
+      expiresInSeconds: 600,
+      resendAfterSeconds: 60,
+      maxAttempts: 5,
+      devCode: '123456',
+    });
+  }),
+
+  http.post(`${BASE}/auth/verify-otp`, async ({ request }) => {
+    const { registrationToken, code } = (await request.json()) as {
+      registrationToken?: string;
+      code?: string;
+    };
+    const pending = registrationToken ? pendingRegistrations.get(registrationToken) : undefined;
+    if (!pending) {
+      return HttpResponse.json(
+        { message: 'This registration has expired. Please sign up again.' },
+        { status: 400 },
+      );
+    }
+    if (code !== '123456') {
+      return HttpResponse.json(
+        { message: 'Incorrect code. 4 attempts remaining.', attemptsRemaining: 4 },
+        { status: 400 },
+      );
+    }
+    pendingRegistrations.delete(registrationToken!);
+    // Reflect the profile captured on the form (mirrors the real backend persisting it).
     const session = makeSession(DEMO_USERS[0]);
     return HttpResponse.json({
       ...session,
-      user: { ...session.user, fullName: fullName ?? session.user.fullName, email: email ?? session.user.email },
+      user: { ...session.user, fullName: pending.fullName, email: pending.email },
     });
   }),
 

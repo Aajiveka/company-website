@@ -70,11 +70,28 @@ const schema = z.object({
   MSG91_AUTH_KEY: z.string().optional(),
   MSG91_TEMPLATE_ID: z.string().optional(),
 
-  // SMTP (EMAIL_DRIVER=smtp)
+  // SMTP (EMAIL_DRIVER=smtp). For Google Workspace / Gmail: host smtp.gmail.com, port 587,
+  // SMTP_USER = the full workspace address, SMTP_PASSWORD = a 16-char App Password (Google
+  // rejects the account password once 2FA is on).
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
+  /**
+   * TLS mode. Left unset it is derived from the port — 465 is implicit TLS, everything else
+   * (587) starts plaintext and upgrades via STARTTLS. Only set this to override that.
+   */
+  SMTP_SECURE: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
+  /**
+   * Envelope From. Gmail rewrites a From that is not the authenticated user (or one of its
+   * verified aliases), so this defaults to SMTP_USER rather than inventing an address that
+   * would fail DMARC.
+   */
+  SMTP_FROM: z.string().optional(),
+  SMTP_FROM_NAME: z.string().default('Aajiveka'),
 });
 
 const parsed = schema.safeParse(process.env);

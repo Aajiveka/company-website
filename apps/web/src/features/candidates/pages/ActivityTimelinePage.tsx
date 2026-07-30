@@ -219,7 +219,10 @@ export default function ActivityTimelinePage() {
   });
 
   const allEvents = useMemo(
-    () => data?.pages.flatMap((p) => p.data) ?? [],
+    // `p.data ?? []` matters: flatMap only flattens arrays, so a page missing `data` used to
+    // contribute a literal `undefined` to the list, and groupByDate then died on
+    // `undefined.timestamp` — taking the whole page down to the error boundary.
+    () => data?.pages.flatMap((p) => p?.data ?? []).filter(Boolean) ?? [],
     [data],
   );
 

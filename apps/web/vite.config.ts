@@ -1,16 +1,59 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { compression } from 'vite-plugin-compression2';
 import path from 'node:path';
 
+/**
+ * Serves a self-destroying service worker at /sw.js during `vite dev`.
+ *
+ * vite-plugin-pwa generates no service worker in dev (its useRegisterSW is a no-op there), so
+ * nothing registers one — but a service worker installed by a PRODUCTION build survives in the
+ * browser until it is explicitly unregistered, and localhost is the same origin as the preview
+ * build. That leftover keeps serving its own cached app shell, which is why HMR then reports
+ * "failed to connect to websocket": the page in front of you did not come from the dev server.
+ *
+ * Without this, the leftover cannot even fix itself. Its update check fetches /sw.js, Vite's SPA
+ * fallback answers with index.html as text/html, the update is rejected for an unsupported MIME
+ * type, and the stale worker stays active indefinitely. Answering with a real script that
+ * unregisters and clears caches turns that dead end into automatic recovery on the next load.
+ */
+function devServiceWorkerReaper(): Plugin {
+  const body = `// Dev-only: retires any service worker left behind by a production build.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    await self.registration.unregister();
+    await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
+    // Reload open tabs so they come from the dev server instead of the dead cache.
+    for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url);
+  })());
+});
+`;
+  return {
+    name: 'dev-service-worker-reaper',
+    apply: 'serve',
+    configureServer(server) {
+      // Registered here so it runs ahead of Vite's SPA html-fallback middleware, which would
+      // otherwise answer /sw.js with index.html.
+      server.middlewares.use('/sw.js', (_req, res) => {
+        res.setHeader('Content-Type', 'application/javascript');
+        // Never let the reaper itself be cached, or it cannot be replaced later.
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(body);
+      });
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode: _mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    devServiceWorkerReaper(),
     compression({ algorithms: ['gzip', 'brotliCompress'] }),
     VitePWA({
       registerType: 'prompt',

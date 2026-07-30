@@ -22,6 +22,10 @@ import type { Request, Response } from 'express';
  *   "path": "/api/auth/login"
  * }
  * ```
+ *
+ * A thrower may attach extra machine-readable keys to the exception body (for example
+ * `retryAfterSeconds` on a 429); those are merged into the response alongside the fields
+ * above, which always win on a name clash.
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -35,6 +39,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let statusCode: number;
     let message: string | string[];
     let error: string;
+    /**
+     * Machine-readable fields the thrower attached alongside the message — e.g.
+     * `retryAfterSeconds` on a 429, or `attemptsRemaining` on a rejected OTP. Without this
+     * they were silently dropped here, leaving clients to parse them back out of English
+     * prose.
+     */
+    let extra: Record<string, unknown> = {};
 
     if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
@@ -47,6 +58,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const obj = body as Record<string, unknown>;
         message = (obj.message as string | string[]) ?? exception.message;
         error = (obj.error as string) ?? exception.name;
+        extra = Object.fromEntries(
+          Object.entries(obj).filter(([k]) => !['statusCode', 'message', 'error'].includes(k)),
+        );
       } else {
         message = exception.message;
         error = exception.name;
@@ -62,6 +76,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     res.status(statusCode).json({
+      ...extra,
       statusCode,
       message,
       error,

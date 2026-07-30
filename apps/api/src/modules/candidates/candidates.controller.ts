@@ -8,11 +8,12 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/shared/roles';
@@ -40,6 +41,19 @@ export class CandidatesController {
   @ApiOperation({ summary: 'The signed-in candidate\'s CV (spSubscriberGetCVToDisplay)' })
   async profile(@CurrentUser() user: RequestUser) {
     return this.candidates.profile(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Post('me/complete-onboarding')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Mark the onboarding wizard finished',
+    description:
+      'Until this is set, ProtectedRoute redirects the candidate back to /candidate/onboarding ' +
+      'on every navigation. Idempotent — the first completion timestamp is kept.',
+  })
+  @ApiResponse({ status: 200, description: 'Onboarding recorded as complete' })
+  async completeOnboarding(@CurrentUser() user: RequestUser) {
+    return this.candidates.completeOnboarding(await this.candidates.subscriberIdFor(user.userId));
   }
 
   @Get('me/cv-masters')
@@ -219,8 +233,23 @@ export class CandidatesController {
   }
 
   @Get('me/activity')
-  @ApiOperation({ summary: 'Activity timeline (audit log + recent applications)' })
-  async activity(@CurrentUser() user: RequestUser) {
-    return this.candidates.activity(user.userId, await this.candidates.subscriberIdFor(user.userId));
+  @ApiOperation({
+    summary: 'Activity timeline — applications, status changes, interviews, documents',
+    description:
+      'Returns { data, nextCursor }. nextCursor is an offset into the merged, date-sorted event ' +
+      'list and is omitted on the last page. Pass it back as ?cursor= to fetch the next page.',
+  })
+  @ApiQuery({ name: 'cursor', required: false, type: Number, description: 'Offset from a previous nextCursor' })
+  @ApiResponse({ status: 200, description: 'A page of timeline events, newest first' })
+  async activity(
+    @CurrentUser() user: RequestUser,
+    // Query params arrive as strings; an absent or junk cursor means "start at the beginning".
+    @Query('cursor') cursor?: string,
+  ) {
+    const from = Number(cursor);
+    return this.candidates.activity(
+      await this.candidates.subscriberIdFor(user.userId),
+      Number.isFinite(from) && from > 0 ? from : 0,
+    );
   }
 }

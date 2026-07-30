@@ -142,30 +142,27 @@ describe('registerSchema', () => {
 
 describe('verifyOtpSchema', () => {
   const schema = verifyOtpSchema(t);
+  // Verification addresses the pending registration by its 256-bit handle, not by mobile —
+  // see AuthService.register for why an email/mobile key is not safe to verify against.
+  const token = 'a'.repeat(64);
 
-  it('accepts valid 6-digit OTP', () => {
-    const result = schema.safeParse({ mobile: '9876543210', code: '123456' });
-    expect(result.success).toBe(true);
+  it('accepts a valid handle and 6-digit code', () => {
+    expect(schema.safeParse({ registrationToken: token, code: '123456' }).success).toBe(true);
   });
 
   it('rejects non-6-digit code', () => {
-    expect(schema.safeParse({ mobile: '9876543210', code: '12345' }).success).toBe(false);
-    expect(schema.safeParse({ mobile: '9876543210', code: '1234567' }).success).toBe(false);
-    expect(schema.safeParse({ mobile: '9876543210', code: 'abcdef' }).success).toBe(false);
+    expect(schema.safeParse({ registrationToken: token, code: '12345' }).success).toBe(false);
+    expect(schema.safeParse({ registrationToken: token, code: '1234567' }).success).toBe(false);
+    expect(schema.safeParse({ registrationToken: token, code: 'abcdef' }).success).toBe(false);
   });
 
-  it('rejects invalid mobile', () => {
-    expect(schema.safeParse({ mobile: '123', code: '123456' }).success).toBe(false);
+  it('rejects a malformed registration token', () => {
+    expect(schema.safeParse({ registrationToken: 'not-a-token', code: '123456' }).success).toBe(false);
+    expect(schema.safeParse({ registrationToken: 'A'.repeat(64), code: '123456' }).success).toBe(false);
+    expect(schema.safeParse({ registrationToken: 'a'.repeat(63), code: '123456' }).success).toBe(false);
   });
 
-  it('allows optional fields', () => {
-    const result = schema.safeParse({
-      mobile: '9876543210',
-      code: '123456',
-      fullName: 'Test',
-      email: 'test@test.com',
-      password: 'pass1234',
-    });
-    expect(result.success).toBe(true);
+  it('rejects a missing token', () => {
+    expect(schema.safeParse({ code: '123456' }).success).toBe(false);
   });
 });

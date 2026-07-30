@@ -47,25 +47,37 @@ export const resetSchema = (t: TFunction) =>
     });
 export type ResetValues = z.infer<ReturnType<typeof resetSchema>>;
 
-// Full registration form. The backend's /auth/register only takes the mobile (it texts an
-// OTP); the name/email/password are carried to /auth/verify-otp, which persists them when the
-// account is created.
+// Full registration form. The whole form goes to /auth/register, which emails a 6-digit code
+// and holds the registration server-side; the account is created by /auth/verify-otp. Bounds
+// mirror the API DTO so the same input is rejected in both places.
 export const registerSchema = (t: TFunction) =>
   z.object({
-    fullName: z.string().min(2, t('validation.enterFullName')),
-    email: z.string().email(t('validation.validEmail')),
+    fullName: z.string().min(2, t('validation.enterFullName')).max(100),
+    email: z.string().email(t('validation.validEmail')).max(100),
     mobile: z.string().regex(/^\d{10}$/, t('validation.mobile10Digits')),
-    password: z.string().min(8, t('validation.min8Chars')),
+    password: z.string().min(8, t('validation.min8Chars')).max(72),
   });
 export type RegisterValues = z.infer<ReturnType<typeof registerSchema>>;
 
-// OTP verification step — carries the profile so it is saved at account creation.
+/**
+ * What /auth/register hands back. `registrationToken` is the handle for verify and resend —
+ * the pending signup lives on the server, so this is the only thing the client needs to keep.
+ * `devCode` is present only outside production.
+ */
+export interface RegistrationChallenge {
+  otpRequired: boolean;
+  registrationToken: string;
+  email: string;
+  expiresInSeconds: number;
+  resendAfterSeconds: number;
+  maxAttempts: number;
+  devCode?: string;
+}
+
+// OTP verification step — addresses the registration by its handle, never by email.
 export const verifyOtpSchema = (t: TFunction) =>
   z.object({
-    mobile: z.string().regex(/^\d{10}$/),
+    registrationToken: z.string().regex(/^[a-f0-9]{64}$/),
     code: z.string().regex(/^\d{6}$/, t('validation.otpCode')),
-    fullName: z.string().optional(),
-    email: z.string().optional(),
-    password: z.string().optional(),
   });
 export type VerifyOtpValues = z.infer<ReturnType<typeof verifyOtpSchema>>;

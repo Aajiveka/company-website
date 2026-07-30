@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight, GraduationCap, Briefcase, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Button, Card, Input, Select, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import {
@@ -17,29 +18,73 @@ import {
 import type { CvPersonal, CvProfessional } from '../candidate.types';
 
 const STEPS = ['personal', 'professional', 'education', 'complete'] as const;
-const personalSchema = z.object({
-  fullName: z.string().min(2),
-  email: z.string().email().optional().or(z.literal('')),
-  mobile: z.string().min(10),
-  dob: z.string().optional(),
-  gender: z.enum(['M', 'F']),
-  address: z.string().optional(),
-  cityId: z.coerce.number().optional(),
-});
 
-const professionalSchema = z.object({
-  subFunctionId: z.coerce.number().optional(),
-  skillId: z.coerce.number().optional(),
-  totalExp: z.coerce.number().min(0),
-  currentCtc: z.coerce.number().optional(),
-  industryTypeId: z.coerce.number().optional(),
-  tagNames: z.string().optional(),
-});
+/**
+ * An unselected <select> submits '', and `z.coerce.number()` turns that into 0 — a number that
+ * passes `.optional()` and reaches the API as a real foreign key. Mapping '' back to undefined
+ * keeps "nothing chosen" distinct from "chose the row with id 0".
+ */
+const blankToUndefined = (v: unknown) => (v === '' || v === null ? undefined : v);
 
-const educationSchema = z.object({
-  courseTypeId: z.coerce.number().min(1),
-  degreeId: z.coerce.number().min(1),
-});
+/** An optional dropdown id: absent when nothing is picked, never 0. */
+const optionalId = z.preprocess(blankToUndefined, z.coerce.number().int().positive().optional());
+
+/**
+ * An optional free-text field that must be OMITTED when blank rather than sent as ''.
+ * class-validator's @IsOptional() only skips undefined and null, so an empty string still
+ * reaches @IsDateString()/@IsEmail() and 400s — which is why leaving Date of Birth alone made
+ * the first step of onboarding impossible to submit.
+ */
+const optionalText = z.preprocess(blankToUndefined, z.string().optional());
+
+/**
+ * A required dropdown id. Every failure — nothing selected, or the 0 that '' used to coerce
+ * to — reports the same sentence. Without an explicit message Zod falls back to its own
+ * ("Number must be greater than or equal to 1"), which is what a candidate was being shown
+ * for the sole mistake of not opening the dropdown.
+ */
+const requiredId = (message: string) =>
+  z.preprocess(
+    blankToUndefined,
+    z.coerce
+      .number({ required_error: message, invalid_type_error: message })
+      .int(message)
+      .positive(message),
+  );
+
+const personalSchema = (t: TFunction) =>
+  z.object({
+    fullName: z.string().min(2, t('validation.enterFullName')),
+    email: z.preprocess(blankToUndefined, z.string().email(t('validation.validEmail')).optional()),
+    mobile: z.string().min(10, t('validation.mobile10Digits')),
+    dob: optionalText,
+    gender: z.enum(['M', 'F'], {
+      required_error: t('validation.selectGender'),
+      invalid_type_error: t('validation.selectGender'),
+    }),
+    address: optionalText,
+    cityId: optionalId,
+  });
+
+const professionalSchema = (t: TFunction) =>
+  z.object({
+    subFunctionId: optionalId,
+    skillId: optionalId,
+    totalExp: z.coerce
+      .number({ invalid_type_error: t('validation.validExperience') })
+      .min(0, t('validation.validExperience')),
+    currentCtc: z.preprocess(blankToUndefined, z.coerce.number().min(0).optional()),
+    industryTypeId: optionalId,
+    tagNames: z.string().optional(),
+  });
+
+const educationSchema = (t: TFunction) =>
+  z.object({
+    // Degree drives the cascade, so it is the required one — and it is what UpsertEducationDto
+    // marks mandatory. Course stays optional there, so it stays optional here.
+    degreeId: requiredId(t('validation.selectDegree')),
+    courseTypeId: optionalId,
+  });
 
 function StepIndicator({ steps, current }: { steps: readonly string[]; current: number }) {
   const { t } = useTranslation('dashboard');
@@ -78,6 +123,8 @@ export function OnboardingWizard({ initialName, initialEmail, initialMobile, onC
   onComplete?: () => void;
 }) {
   const { t } = useTranslation('dashboard');
+  // The validation strings live in the common namespace, alongside every other form's.
+  const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const { notify } = useToast();
   const { data: masters } = useCvMasters();
@@ -90,22 +137,40 @@ export function OnboardingWizard({ initialName, initialEmail, initialMobile, onC
 
   const opts = (list?: { id: number; label: string }[]) => (list ?? []).map((o) => ({ label: o.label, value: o.id }));
 
+  // Rebuilt only when the language changes, so switching locale re-translates the messages.
+  const schemas = useMemo(
+    () => ({
+      personal: personalSchema(tCommon),
+      professional: professionalSchema(tCommon),
+      education: educationSchema(tCommon),
+    }),
+    [tCommon],
+  );
+
   // Personal form
-  const personalForm = useForm({ resolver: zodResolver(personalSchema), defaultValues: {
+  const personalForm = useForm({ resolver: zodResolver(schemas.personal), defaultValues: {
     fullName: initialName ?? '', email: initialEmail ?? '', mobile: initialMobile ?? '',
     dob: '', gender: 'M' as const, address: '', cityId: undefined,
   }});
 
   // Professional form
-  const professionalForm = useForm({ resolver: zodResolver(professionalSchema), defaultValues: {
+  const professionalForm = useForm({ resolver: zodResolver(schemas.professional), defaultValues: {
     subFunctionId: undefined, skillId: undefined, totalExp: 0, currentCtc: undefined,
     industryTypeId: undefined, tagNames: '',
   }});
 
   // Education form
-  const educationForm = useForm({ resolver: zodResolver(educationSchema), defaultValues: {
+  const educationForm = useForm({ resolver: zodResolver(schemas.education), defaultValues: {
     courseTypeId: undefined as unknown as number, degreeId: undefined as unknown as number,
   }});
+
+  // The Course list is a function of the chosen Degree — fnDegree() in candidate-profile.aspx
+  // keeps only the courses whose EducationTypeID equals the selected level.
+  const selectedDegreeId = Number(educationForm.watch('degreeId')) || 0;
+  const coursesForDegree = useMemo(
+    () => (masters?.courses ?? []).filter((c) => c.degreeId === selectedDegreeId),
+    [masters?.courses, selectedDegreeId],
+  );
 
   const errMsg = (e: unknown, fallback: string) =>
     isAxiosError(e) ? e.response?.data?.message ?? fallback : fallback;
@@ -202,19 +267,27 @@ export function OnboardingWizard({ initialName, initialEmail, initialMobile, onC
         <Card>
           <h2 className="mb-4 text-lg font-semibold text-navy">{t('cv.educationSection')}</h2>
           <form onSubmit={onEducationSubmit} className="space-y-4" noValidate>
-            <Select
-              label={t('cv.courseType')}
-              placeholder={t('common:labels.select')}
-              options={opts(masters?.courseTypes)}
-              error={educationForm.formState.errors.courseTypeId?.message}
-              {...educationForm.register('courseTypeId')}
-            />
+            {/* Degree first, then Course filtered by it — the order and the cascade both come
+                from candidate-profile.aspx, where ddlDegree's onchange calls fnDegree(this) to
+                rebuild ddlCourse from the courses matching that level. */}
             <Select
               label={t('cv.degree')}
-              placeholder={t('common:labels.select')}
-              options={opts(masters?.educationDegrees)}
+              placeholder={t('cv.selectDegree')}
+              options={opts(masters?.degrees)}
               error={educationForm.formState.errors.degreeId?.message}
-              {...educationForm.register('degreeId')}
+              {...educationForm.register('degreeId', {
+                // Changing the level invalidates whatever course was chosen under the old one.
+                onChange: () => educationForm.setValue('courseTypeId', undefined as never),
+              })}
+            />
+            <Select
+              label={t('cv.course')}
+              placeholder={t('cv.selectCourse')}
+              // Empty until a degree is picked, matching the reference's initial state.
+              options={opts(coursesForDegree)}
+              disabled={!selectedDegreeId}
+              error={educationForm.formState.errors.courseTypeId?.message}
+              {...educationForm.register('courseTypeId')}
             />
             <div className="flex justify-between">
               <Button type="button" variant="outline" onClick={() => setStepIdx(1)}>

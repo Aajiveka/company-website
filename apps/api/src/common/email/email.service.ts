@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { NotificationsService } from '@/modules/notifications/notifications.service';
 import { welcomeTemplate, type WelcomeEmailData } from './templates/welcome.template';
 import { passwordResetTemplate, type PasswordResetEmailData } from './templates/password-reset.template';
+import { emailOtpTemplate, type EmailOtpData } from './templates/email-otp.template';
 import { jobAlertTemplate, type JobAlertEmailData } from './templates/job-alert.template';
 import {
   applicationStatusTemplate,
@@ -37,6 +38,17 @@ export class EmailService {
   /** Welcome email after successful registration. */
   async sendWelcome(to: string, data: WelcomeEmailData): Promise<void> {
     await this.sendMail(to, 'Welcome to Aajiveka!', welcomeTemplate(data));
+  }
+
+  /**
+   * Email-verification OTP sent during registration.
+   *
+   * Deliberately NOT fire-and-forget at the call site: registration cannot report success
+   * unless the message is at least enqueued, otherwise the candidate is left staring at a
+   * code screen for a code nobody will ever send.
+   */
+  async sendEmailOtp(to: string, data: EmailOtpData): Promise<void> {
+    await this.sendMail(to, `${data.code} is your Aajiveka verification code`, emailOtpTemplate(data));
   }
 
   /** Password-reset email with a link. */
