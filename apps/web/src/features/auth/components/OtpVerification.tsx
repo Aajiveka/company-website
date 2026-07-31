@@ -69,6 +69,8 @@ export default function OtpVerification({
   const [expiresIn, setExpiresIn] = useState(expiresInSeconds);
   // Shown inline rather than only as a toast: the user is looking at the input, not the corner.
   const [error, setError] = useState<string | null>(null);
+  /** Set once a resend succeeds, so the screen can say the earlier code is dead. */
+  const [resent, setResent] = useState(false);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   const otp = digits.join('');
@@ -106,6 +108,12 @@ export default function OtpVerification({
     onSuccess: (challenge) => {
       notify(t('otp.resent'), 'success');
       setError(null);
+      // Resending REPLACES the code server-side, so anything from an earlier email stops
+      // working. Without saying so, someone who resends and then types the code from the
+      // first email gets "Incorrect code" while being certain they typed it correctly — and
+      // burns real attempts finding out. The toast alone is not enough: it disappears, and
+      // the second email may take longer to arrive than the toast lasts.
+      setResent(true);
       setCountdown(challenge.resendAfterSeconds);
       setExpiresIn(challenge.expiresInSeconds);
       setDigits(splitCode(challenge.devCode ?? ''));
@@ -176,6 +184,12 @@ export default function OtpVerification({
           {t('otp.sentTo', { email })}
         </span>
       </p>
+
+      {resent && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-center text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+          {t('otp.useLatest')}
+        </p>
+      )}
 
       <div className="flex gap-2" role="group" aria-label={t('otp.heading')}>
         {digits.map((digit, i) => (
