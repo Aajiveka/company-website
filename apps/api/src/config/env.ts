@@ -81,9 +81,18 @@ const schema = z.object({
    * TLS mode. Left unset it is derived from the port — 465 is implicit TLS, everything else
    * (587) starts plaintext and upgrades via STARTTLS. Only set this to override that.
    */
+  /**
+   * `.optional()` alone is not enough here. docker-compose passes unset variables through as
+   * `SMTP_SECURE: ${SMTP_SECURE:-}`, which reaches the process as an EMPTY STRING, not as
+   * undefined — and an empty string is not a member of the enum, so the whole environment
+   * failed to parse and the API refused to boot. Treat blank as "not set", the same way a
+   * missing variable behaves.
+   */
   SMTP_SECURE: z
-    .enum(['true', 'false'])
-    .optional()
+    .preprocess(
+      (v) => (v === '' || v === undefined ? undefined : v),
+      z.enum(['true', 'false']).optional(),
+    )
     .transform((v) => (v === undefined ? undefined : v === 'true')),
   /**
    * Envelope From. Gmail rewrites a From that is not the authenticated user (or one of its
