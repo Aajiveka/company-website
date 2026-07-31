@@ -167,6 +167,9 @@
     "yrs": "वर्ष",
     "perMonth": "प्रति माह",
     "select": "चुनें…",
+    "selectLocation": "स्थान चुनें",
+    "searchCountry": "देश या कोड खोजें",
+    "noMatches": "कोई मिलान नहीं",
     "selectStateFirst": "पहले राज्य चुनें"
   },
   "logout": "लॉगआउट",
@@ -262,6 +265,7 @@
     "fixErrors": "कृपया निम्नलिखित त्रुटियों को ठीक करें:",
     "min8Chars": "कम से कम 8 अक्षर",
     "mobile10Digits": "10 अंकों का मोबाइल नंबर दर्ज करें",
+    "mobileDigits": "एक मान्य मोबाइल नंबर दर्ज करें (4 से 15 अंक)",
     "otpCode": "6 अंकों का कोड दर्ज करें",
     "passwordRequired": "पासवर्ड आवश्यक है",
     "passwordsMismatch": "पासवर्ड मेल नहीं खाते",
@@ -333,7 +337,8 @@
     "noOptions": "कोई विकल्प नहीं मिला",
     "more": "+{{count}} और",
     "selected": "{{count}} चयनित",
-    "clearAll": "सब हटाएं"
+    "clearAll": "सब हटाएं",
+    "remove": "{{label}} हटाएं"
   },
   "payment": {
     "error": {

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Breadcrumbs, Button, Card, ErrorSummary, FormSkeleton, Input, Select, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, ErrorSummary, FormSkeleton, Input, LocationSelect, Select, useToast } from '@/components/ui';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import { useCompanyJobs, useCompanyMasters, usePostJob, useUpdateJob } from '../client.api';
@@ -38,7 +38,6 @@ export default function JobPostPage() {
     register,
     handleSubmit,
     reset,
-    setValue,
     control,
     formState: { errors, isDirty },
   } = useForm<Values>({ resolver: zodResolver(schema(tCommon)) });
@@ -47,16 +46,8 @@ export default function JobPostPage() {
 
   const job = isEdit ? jobs?.find((j) => String(j.jobId) === id) : undefined;
 
-  const [selectedStateId, setSelectedStateId] = useState<number | ''>('');
-  const filteredCities = useMemo(
-    () => (selectedStateId ? (masters?.cities ?? []).filter((c) => c.stateId === selectedStateId) : []),
-    [masters?.cities, selectedStateId],
-  );
-
   useEffect(() => {
     if (job && masters) {
-      const city = masters.cities.find((c) => c.id === job.cityId);
-      if (city) setSelectedStateId(city.stateId);
       reset({
         designationId: job.designationId,
         cityId: job.cityId,
@@ -101,23 +92,22 @@ export default function JobPostPage() {
               error={errors.designationId?.message}
               {...register('designationId')}
             />
-            <Select
-              label={t('jobPost.state')}
-              placeholder={t('common:labels.select')}
-              options={opts(masters?.states)}
-              value={selectedStateId}
-              onChange={(e) => {
-                setSelectedStateId(Number(e.target.value) || '');
-                setValue('cityId', 0);
-              }}
-            />
-            <Select
-              label={t('jobPost.districtCity')}
-              placeholder={selectedStateId ? t('common:labels.select') : t('common:labels.selectStateFirst')}
-              options={opts(filteredCities)}
-              error={errors.cityId?.message}
-              disabled={!selectedStateId}
-              {...register('cityId')}
+            <Controller
+              control={control}
+              name="cityId"
+              render={({ field }) => (
+                <LocationSelect
+                  label={t('jobPost.districtCity')}
+                  placeholder={tCommon('labels.selectLocation')}
+                  states={masters?.states}
+                  cities={masters?.cities}
+                  value={field.value}
+                  // 0, not null — the schema's min(1) is what reports "select a location".
+                  onChange={(cityId) => field.onChange(cityId ?? 0)}
+                  error={errors.cityId?.message}
+                  required
+                />
+              )}
             />
             <Select
               label={t('jobPost.workMode')}

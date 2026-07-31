@@ -343,7 +343,7 @@ function ProfileCompletion({ percent }: { percent: number | undefined }) {
       {percent !== undefined && safePercent < 100 && (
         <div className="mt-3">
           <Button variant="outline" size="sm" asChild>
-            <Link to="/candidate/cv">
+            <Link to="/candidate/cv-manager">
               {t('completion.completeProfile')}
             </Link>
           </Button>

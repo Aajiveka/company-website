@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Button, ErrorSummary, Input, useToast } from '@/components/ui';
+import { Button, ErrorSummary, Input, PhoneInput, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
+import { DEFAULT_COUNTRY_ISO2 } from '@/lib/countryCodes';
 import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
 import {
@@ -40,8 +41,15 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    control,
+    setValue,
+    watch,
+    trigger,
     formState: { errors },
-  } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema(tCommon)) });
+  } = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema(tCommon)),
+    defaultValues: { country: DEFAULT_COUNTRY_ISO2 },
+  });
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
@@ -94,13 +102,29 @@ export default function RegisterPage() {
             error={errors.email?.message}
             {...register('email')}
           />
-          <Input
-            label={t('register.mobileNumber')}
-            inputMode="numeric"
-            autoComplete="tel-national"
-            placeholder={t('register.mobilePlaceholder')}
-            error={errors.mobile?.message}
-            {...register('mobile')}
+          <Controller
+            control={control}
+            name="mobile"
+            render={({ field }) => (
+              <PhoneInput
+                label={t('register.mobileNumber')}
+                placeholder={t('register.mobilePlaceholder')}
+                searchPlaceholder={tCommon('labels.searchCountry')}
+                noMatchesText={tCommon('labels.noMatches')}
+                country={watch('country')}
+                onCountryChange={(iso2) => {
+                  setValue('country', iso2);
+                  // The length rule depends on the country, so switching it has to re-judge a
+                  // number that is already typed. trigger('mobile') rather than setValue's
+                  // shouldValidate: the rule is a schema-level refinement that reports on the
+                  // mobile path, and shouldValidate would only refresh the country's own error.
+                  if (field.value) void trigger('mobile');
+                }}
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                error={errors.mobile?.message}
+              />
+            )}
           />
           {/* new-password, not password: stops a manager autofilling the saved credential for
               this site into what is meant to be a brand-new one, and prompts it to offer to

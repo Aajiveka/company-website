@@ -828,7 +828,8 @@ model SubscriberPrefferedLocations {
 model SubscriberRegistration {
   subscriberID                 BigInt                             @id @default(autoincrement()) @map("SubscriberID")
   registrationCountryCode      String @db.VarChar(5)              @map("RegistrationCountryCode")
-  registrationMobileNo         String @db.VarChar(10)             @map("RegistrationMobileNo")
+  /// 15 = the E.164 ceiling. Was varchar(10) when signup was India-only.
+  registrationMobileNo         String @db.VarChar(15)             @map("RegistrationMobileNo")
   registrationIPNo             String @db.VarChar(50)             @map("RegistrationIPNo")
   registrationDateTime         DateTime @db.Timestamp(6)          @map("RegistrationDateTime")
   flgCVUploaded                Int @db.SmallInt                   @map("flgCVUploaded")

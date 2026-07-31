@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Button, Card, Input, Select, useToast } from '@/components/ui';
+import { Button, Card, Input, LocationSelect, Select, useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import {
   useCvMasters,
@@ -150,7 +150,7 @@ export function OnboardingWizard({ initialName, initialEmail, initialMobile, onC
   // Personal form
   const personalForm = useForm({ resolver: zodResolver(schemas.personal), defaultValues: {
     fullName: initialName ?? '', email: initialEmail ?? '', mobile: initialMobile ?? '',
-    dob: '', gender: 'M' as const, address: '', cityId: undefined,
+    dob: '', gender: 'M' as const, address: '', cityId: undefined as number | undefined,
   }});
 
   // Professional form
@@ -226,7 +226,14 @@ export function OnboardingWizard({ initialName, initialEmail, initialMobile, onC
               <Input label={t('cv.dob')} type="date" {...personalForm.register('dob')} />
               <Select label={t('cv.gender')} options={[{ label: t('cv.male'), value: 'M' }, { label: t('cv.female'), value: 'F' }]} {...personalForm.register('gender')} />
             </div>
-            <Select label={t('cv.districtCity')} placeholder={t('common:labels.select')} options={opts(masters?.cities)} {...personalForm.register('cityId')} />
+            <LocationSelect
+              label={t('cv.districtCity')}
+              placeholder={t('common:labels.selectLocation')}
+              states={masters?.states}
+              cities={masters?.cities}
+              value={personalForm.watch('cityId')}
+              onChange={(cityId) => personalForm.setValue('cityId', cityId ?? undefined, { shouldDirty: true })}
+            />
             <Input label={t('cv.address')} {...personalForm.register('address')} />
             <div className="flex justify-end">
               <Button type="submit" isLoading={updatePersonal.isPending}>

@@ -30,4 +30,32 @@ describe('Button', () => {
     const { container } = render(<Button isLoading>Save</Button>);
     expect(container.querySelector('.animate-spin')).toBeInTheDocument();
   });
+
+  // The spinner slot means Slot always receives a two-item children array — the `undefined`
+  // that `isLoading && …` leaves behind, plus the real child. React.Children.count keeps that
+  // undefined, so without Slottable this threw "Slot failed to slot onto its children" and
+  // took out every page rendering a Button asChild.
+  it('renders asChild as the child element, merging its classes', () => {
+    const { container } = render(
+      <Button asChild variant="outline">
+        <a href="/jobs/1">View details</a>
+      </Button>,
+    );
+    const link = screen.getByRole('link', { name: 'View details' });
+    expect(link).toHaveAttribute('href', '/jobs/1');
+    expect(link.className).not.toBe('');
+    // The <button> is replaced, not wrapped.
+    expect(container.querySelector('button')).toBeNull();
+  });
+
+  it('keeps the spinner alongside the child when asChild is loading', () => {
+    const { container } = render(
+      <Button asChild isLoading>
+        <a href="/jobs/1">View details</a>
+      </Button>,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveTextContent('View details');
+    expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+  });
 });

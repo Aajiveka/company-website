@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useAnchoredPanel } from './useAnchoredPanel';
 
 export interface HierarchicalSelectProps {
   groups: Record<string, string[]>;
@@ -23,38 +24,11 @@ export function HierarchicalSelect({
 }: HierarchicalSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [pos, setPos] = useState<{
-    left: number;
-    top: number;
-    width: number;
-    maxHeight: number;
-    openUp: boolean;
-  } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
-  // Position the portaled panel relative to the trigger, in viewport (fixed) coordinates.
-  // Using a portal + fixed positioning lets the dropdown escape any `overflow-hidden`
-  // ancestor (e.g. the hero section) that would otherwise clip it.
-  const updatePosition = useCallback(() => {
-    const trigger = triggerRef.current;
-    if (!trigger) return;
-    const rect = trigger.getBoundingClientRect();
-    const GAP = 4;
-    const MARGIN = 8;
-    const spaceBelow = window.innerHeight - rect.bottom - GAP - MARGIN;
-    const spaceAbove = rect.top - GAP - MARGIN;
-    const openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
-    const available = openUp ? spaceAbove : spaceBelow;
-    setPos({
-      left: rect.left,
-      top: openUp ? rect.top - GAP : rect.bottom + GAP,
-      width: rect.width,
-      maxHeight: Math.max(160, Math.min(320, available)),
-      openUp,
-    });
-  }, []);
+  const handleClose = useCallback(() => setIsOpen(false), []);
+  const { containerRef, panelRef, triggerRef, panelStyle, onPanelKeyDown, close } = useAnchoredPanel({
+    isOpen,
+    onClose: handleClose,
+  });
 
   // Reverse-lookup: leaf → group
   const leafToGroup = useMemo(() => {
@@ -74,34 +48,6 @@ export function HierarchicalSelect({
     return formatValue ? formatValue(value, group) : value;
   }, [value, leafToGroup, formatValue, placeholder]);
 
-  // Click-outside (the panel lives in a portal, so check it separately)
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (!containerRef.current?.contains(target) && !panelRef.current?.contains(target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [isOpen]);
-
-  // Track the trigger position while open so the fixed-position portal stays anchored.
-  useLayoutEffect(() => {
-    if (!isOpen) {
-      setPos(null);
-      return;
-    }
-    updatePosition();
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
-    return () => {
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [isOpen, updatePosition]);
-
   const toggleGroup = (group: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -113,42 +59,7 @@ export function HierarchicalSelect({
 
   const selectLeaf = (leaf: string, group: string) => {
     onChange(leaf, group);
-    setIsOpen(false);
-    triggerRef.current?.focus();
-  };
-
-  const groupKeys = Object.keys(groups);
-
-  // Collect all visible focusable items for arrow key navigation
-  const getFocusableItems = useCallback((): HTMLElement[] => {
-    if (!panelRef.current) return [];
-    return Array.from(panelRef.current.querySelectorAll<HTMLElement>('button'));
-  }, []);
-
-  const onPanelKeyDown = (e: React.KeyboardEvent) => {
-    const items = getFocusableItems();
-    if (items.length === 0) return;
-    const current = document.activeElement as HTMLElement;
-    const idx = items.indexOf(current);
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const next = idx < items.length - 1 ? idx + 1 : 0;
-      items[next].focus();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const prev = idx > 0 ? idx - 1 : items.length - 1;
-      items[prev].focus();
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      items[0].focus();
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      items[items.length - 1].focus();
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      triggerRef.current?.focus();
-    }
+    close();
   };
 
   // Keyboard on trigger
@@ -164,13 +75,7 @@ export function HierarchicalSelect({
     }
   };
 
-  // Focus first item when panel opens
-  useEffect(() => {
-    if (isOpen && panelRef.current) {
-      const first = panelRef.current.querySelector<HTMLElement>('button');
-      first?.focus();
-    }
-  }, [isOpen]);
+  const groupKeys = Object.keys(groups);
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -194,20 +99,13 @@ export function HierarchicalSelect({
       </button>
 
       {isOpen &&
-        pos &&
+        panelStyle &&
         createPortal(
           <div
             ref={panelRef}
             role="listbox"
             aria-label={ariaLabel}
-            style={{
-              position: 'fixed',
-              left: pos.left,
-              top: pos.top,
-              width: pos.width,
-              maxHeight: pos.maxHeight,
-              transform: pos.openUp ? 'translateY(-100%)' : undefined,
-            }}
+            style={panelStyle}
             className="z-50 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800"
             onKeyDown={onPanelKeyDown}
           >

@@ -51,12 +51,29 @@ export type ResetValues = z.infer<ReturnType<typeof resetSchema>>;
 // and holds the registration server-side; the account is created by /auth/verify-otp. Bounds
 // mirror the API DTO so the same input is rejected in both places.
 export const registerSchema = (t: TFunction) =>
-  z.object({
-    fullName: z.string().min(2, t('validation.enterFullName')).max(100),
-    email: z.string().email(t('validation.validEmail')).max(100),
-    mobile: z.string().regex(/^\d{10}$/, t('validation.mobile10Digits')),
-    password: z.string().min(8, t('validation.min8Chars')).max(72),
-  });
+  z
+    .object({
+      fullName: z.string().min(2, t('validation.enterFullName')).max(100),
+      email: z.string().email(t('validation.validEmail')).max(100),
+      /** ISO 3166-1 alpha-2. Picks the dial code; only the dial code is submitted. */
+      country: z.string().length(2),
+      // 4–15 is the E.164 envelope: no national number is shorter than four digits, and 15 is
+      // the standard's ceiling as well as the width of RegistrationMobileNo.
+      mobile: z.string().regex(/^\d{4,15}$/, t('validation.mobileDigits')),
+      password: z.string().min(8, t('validation.min8Chars')).max(72),
+    })
+    // India is the primary market and its numbers are always exactly ten digits, so a nine-digit
+    // typo should still be caught there rather than passed to the API. Everywhere else the
+    // range above is all we can assert without shipping per-country numbering plans.
+    .superRefine((v, ctx) => {
+      if (v.country === 'IN' && !/^\d{10}$/.test(v.mobile)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['mobile'],
+          message: t('validation.mobile10Digits'),
+        });
+      }
+    });
 export type RegisterValues = z.infer<ReturnType<typeof registerSchema>>;
 
 /**

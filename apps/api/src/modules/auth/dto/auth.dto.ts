@@ -48,9 +48,16 @@ export class RegisterDto {
   @MaxLength(100, { message: 'Email must be 100 characters or fewer' })
   email!: string;
 
+  /**
+   * The national number only — no country code, no separators. `countryCode` carries the rest.
+   *
+   * 4–15 digits is the E.164 envelope rather than India's fixed 10: the signup form offers every
+   * country's dial code, and national number lengths vary (UAE 9, US 10, Germany up to 11).
+   * 15 is both the standard's ceiling and the width of RegistrationMobileNo.
+   */
   @ApiProperty({ example: '9876543210', description: 'UserName on tblSecUser for candidates' })
   @IsString()
-  @Matches(/^[0-9]{10}$/, { message: 'Mobile must be 10 digits' })
+  @Matches(/^[0-9]{4,15}$/, { message: 'Mobile must be 4 to 15 digits' })
   mobile!: string;
 
   /**
@@ -65,10 +72,11 @@ export class RegisterDto {
   @MaxLength(72, { message: 'Password must be 72 characters or fewer' })
   password!: string;
 
-  @ApiPropertyOptional({ example: '+91' })
+  /** E.164 calling code, with or without '+'. Stored without it, in varchar(5). */
+  @ApiPropertyOptional({ example: '+91', default: '+91' })
   @IsOptional()
   @IsString()
-  @MaxLength(5)
+  @Matches(/^\+?[0-9]{1,4}$/, { message: 'Country code must be 1 to 4 digits' })
   countryCode?: string;
 }
 

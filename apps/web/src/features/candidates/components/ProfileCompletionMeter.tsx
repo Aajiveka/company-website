@@ -98,7 +98,7 @@ export function ProfileCompletionMeter() {
         {sections.map((sec) => (
           <li key={sec.key}>
             <Link
-              to="/candidate/cv"
+              to={`/candidate/cv-manager#cv-${sec.key}`}
               className={cn(
                 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-gray-700/50',
                 sec.done ? 'text-gray-500 dark:text-gray-400' : 'text-navy font-medium',

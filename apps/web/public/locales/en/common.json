@@ -167,6 +167,9 @@
     "yrs": "yrs",
     "perMonth": "Per Month",
     "select": "Select…",
+    "selectLocation": "Select Location",
+    "searchCountry": "Search country or code",
+    "noMatches": "No matches",
     "selectStateFirst": "Select state first"
   },
   "logout": "Logout",
@@ -262,6 +265,7 @@
     "fixErrors": "Please fix the following errors:",
     "min8Chars": "At least 8 characters",
     "mobile10Digits": "Enter a 10-digit mobile number",
+    "mobileDigits": "Enter a valid mobile number (4 to 15 digits)",
     "otpCode": "Enter the 6-digit code",
     "passwordRequired": "Password is required",
     "passwordsMismatch": "Passwords do not match",
@@ -333,7 +337,8 @@
     "noOptions": "No options found",
     "more": "+{{count}} more",
     "selected": "{{count}} selected",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "remove": "Remove {{label}}"
   },
   "payment": {
     "error": {

@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Slot } from '@radix-ui/react-slot';
+import { Slot, Slottable } from '@radix-ui/react-slot';
 import { type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -29,7 +29,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-        {children}
+        {/**
+         * Slottable, not a bare {children}. With `asChild`, Slot has to find exactly one
+         * element to merge its props onto — and it counts with React.Children.count, which
+         * does NOT drop the `undefined` that `isLoading && …` leaves behind when isLoading is
+         * unset. So the spinner slot alone made every `asChild` button hand Slot a two-item
+         * array and throw "Slot failed to slot onto its children".
+         *
+         * Slottable marks which child is the target, letting the spinner sit beside it. For a
+         * plain <button> it renders its children straight through, so both modes agree.
+         */}
+        <Slottable>{children}</Slottable>
       </Comp>
     );
   },

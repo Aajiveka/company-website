@@ -1,4 +1,5 @@
 import { api } from '@/lib/axios';
+import { COUNTRIES, DEFAULT_DIAL_CODE } from '@/lib/countryCodes';
 import type {
   AuthSession,
   AuthUser,
@@ -35,8 +36,15 @@ export const authApi = {
 
   // Posts the whole form. Nothing is persisted yet — the backend emails a 6-digit code and
   // holds the registration for 10 minutes, returning the handle that the two calls below use.
-  register: (values: RegisterValues) =>
-    api.post<RegistrationChallenge>('/auth/register', values).then((r) => r.data),
+  // The form tracks the country by ISO code so it can show the right flag; the API only wants
+  // the dial code, which is what RegistrationCountryCode stores.
+  register: ({ country, ...values }: RegisterValues) =>
+    api
+      .post<RegistrationChallenge>('/auth/register', {
+        ...values,
+        countryCode: COUNTRIES.find((c) => c.iso2 === country)?.dial ?? DEFAULT_DIAL_CODE,
+      })
+      .then((r) => r.data),
 
   // Verifies the emailed code, which is what actually creates the account, and returns a
   // full session. The profile was captured at register time and is persisted server-side.

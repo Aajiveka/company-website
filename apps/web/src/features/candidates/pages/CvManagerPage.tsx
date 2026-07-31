@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,7 +7,7 @@ import { isAxiosError } from 'axios';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { Breadcrumbs, Button, Card, CvManagerSkeleton, Input, Select, useToast } from '@/components/ui';
+import { Breadcrumbs, Button, Card, CvManagerSkeleton, Input, LocationMultiSelect, LocationSelect, Select, useToast } from '@/components/ui';
 import ResumeUpload from '../components/ResumeUpload';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import {
@@ -58,20 +59,12 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
   const update = useUpdatePersonal();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  const { register, handleSubmit, setValue, formState: { errors, isDirty } } = useForm<PersonalValues>({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isDirty } } = useForm<PersonalValues>({
     resolver: zodResolver(personalSchema(tCommon)),
     defaultValues: { ...data, email: data.email ?? '', cityId: data.cityId ?? undefined },
   });
 
   useUnsavedChanges(isDirty);
-
-  // Cascading state → city
-  const initState = data.cityId ? masters?.cities.find((c) => c.id === data.cityId)?.stateId ?? '' : '';
-  const [selectedStateId, setSelectedStateId] = useState<number | ''>(initState);
-  const filteredCities = useMemo(
-    () => (selectedStateId ? (masters?.cities ?? []).filter((c) => c.stateId === selectedStateId) : []),
-    [masters?.cities, selectedStateId],
-  );
 
   const onSubmit = (values: PersonalValues) =>
     update.mutate(
@@ -88,7 +81,7 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
     );
 
   return (
-    <Card>
+    <Card id="cv-personal" className="scroll-mt-20">
       <h2 className="mb-4 text-lg font-semibold text-navy">{t('cv.personalDetails')}</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -102,22 +95,13 @@ function PersonalSection({ data, masters }: { data: CvPersonal; masters?: CvMast
             error={errors.gender?.message}
             {...register('gender')}
           />
-          <Select
-            label={t('cv.state')}
-            placeholder={t('common:labels.select')}
-            options={opts(masters?.states)}
-            value={selectedStateId}
-            onChange={(e) => {
-              setSelectedStateId(Number(e.target.value) || '');
-              setValue('cityId', 0);
-            }}
-          />
-          <Select
+          <LocationSelect
             label={t('cv.districtCity')}
-            placeholder={selectedStateId ? t('common:labels.select') : t('common:labels.selectStateFirst')}
-            options={opts(filteredCities)}
-            disabled={!selectedStateId}
-            {...register('cityId')}
+            placeholder={tCommon('labels.selectLocation')}
+            states={masters?.states}
+            cities={masters?.cities}
+            value={watch('cityId')}
+            onChange={(cityId) => setValue('cityId', cityId ?? undefined, { shouldDirty: true })}
           />
         </div>
         <Input label={t('cv.address')} error={errors.address?.message} {...register('address')} />
@@ -154,7 +138,7 @@ function ProfessionalSection({
   const update = useUpdateProfessional();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  const { register, handleSubmit, setValue, formState: { errors, isDirty } } = useForm<ProfessionalValues>({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isDirty } } = useForm<ProfessionalValues>({
     resolver: zodResolver(professionalSchema),
     defaultValues: {
       subFunctionId: data.subFunctionId ?? undefined,
@@ -171,24 +155,6 @@ function ProfessionalSection({
 
   const [preferredCityIds, setPreferredCityIds] = useState<number[]>(data.preferredCityIds);
   const [tagsText, setTagsText] = useState(data.tagNames.join(', '));
-
-  // Cascading state → city for current city
-  const initCurrentState = data.currentCityId ? masters?.cities.find((c) => c.id === data.currentCityId)?.stateId ?? '' : '';
-  const [currentStateId, setCurrentStateId] = useState<number | ''>(initCurrentState);
-  const filteredCurrentCities = useMemo(
-    () => (currentStateId ? (masters?.cities ?? []).filter((c) => c.stateId === currentStateId) : []),
-    [masters?.cities, currentStateId],
-  );
-
-  // State filter for preferred locations
-  const [prefStateFilter, setPrefStateFilter] = useState<number | ''>('');
-  const filteredPrefCities = useMemo(
-    () => (prefStateFilter ? (masters?.cities ?? []).filter((c) => c.stateId === prefStateFilter) : (masters?.cities ?? [])),
-    [masters?.cities, prefStateFilter],
-  );
-
-  const toggleCity = (id: number) =>
-    setPreferredCityIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
 
   const onSubmit = (values: ProfessionalValues) =>
     update.mutate(
@@ -208,7 +174,7 @@ function ProfessionalSection({
     );
 
   return (
-    <Card>
+    <Card id="cv-professional" className="scroll-mt-20">
       <h2 className="mb-4 text-lg font-semibold text-navy">{t('cv.professionalDetails')}</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -217,22 +183,13 @@ function ProfessionalSection({
           <Select label={t('cv.primarySkill')} placeholder={t('common:labels.select')} options={opts(masters?.skills)} {...register('skillId')} />
           <Input label={t('cv.totalExperience')} type="number" error={errors.totalExp?.message} {...register('totalExp')} />
           <Input label={t('cv.currentCtc')} type="number" error={errors.currentCtc?.message} {...register('currentCtc')} />
-          <Select
-            label={t('cv.currentState')}
-            placeholder={t('common:labels.select')}
-            options={opts(masters?.states)}
-            value={currentStateId}
-            onChange={(e) => {
-              setCurrentStateId(Number(e.target.value) || '');
-              setValue('currentCityId', 0);
-            }}
-          />
-          <Select
+          <LocationSelect
             label={t('cv.currentDistrictCity')}
-            placeholder={currentStateId ? t('common:labels.select') : t('common:labels.selectStateFirst')}
-            options={opts(filteredCurrentCities)}
-            disabled={!currentStateId}
-            {...register('currentCityId')}
+            placeholder={t('common:labels.selectLocation')}
+            states={masters?.states}
+            cities={masters?.cities}
+            value={watch('currentCityId')}
+            onChange={(cityId) => setValue('currentCityId', cityId ?? undefined, { shouldDirty: true })}
           />
           <Input label={t('cv.noticePeriod')} type="number" error={errors.noticePeriod?.message} {...register('noticePeriod')} />
         </div>
@@ -240,28 +197,14 @@ function ProfessionalSection({
           <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30" {...register('flgReadyToRelocate')} />
           {t('cv.readyToRelocate')}
         </label>
-        <div>
-          <p className="mb-1.5 text-sm font-medium text-navy">{t('cv.preferredLocations')}</p>
-          <Select
-            placeholder={t('cv.allStates')}
-            options={opts(masters?.states)}
-            value={prefStateFilter}
-            onChange={(e) => setPrefStateFilter(Number(e.target.value) || '')}
-          />
-          <div className="mt-2 flex flex-wrap gap-3">
-            {filteredPrefCities.map((c) => (
-              <label key={c.id} className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={preferredCityIds.includes(c.id)}
-                  onChange={() => toggleCity(c.id)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30"
-                />
-                {c.label}
-              </label>
-            ))}
-          </div>
-        </div>
+        <LocationMultiSelect
+          label={t('cv.preferredLocations')}
+          placeholder={t('common:labels.selectLocation')}
+          states={masters?.states}
+          cities={masters?.cities}
+          value={preferredCityIds}
+          onChange={setPreferredCityIds}
+        />
         <Input label={t('cv.skillsCsv')} value={tagsText} onChange={(e) => setTagsText(e.target.value)} />
         <div className="flex justify-end">
           <Button type="submit" isLoading={update.isPending}>{t('common:actions.save')}</Button>
@@ -312,7 +255,7 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
   };
 
   return (
-    <Card>
+    <Card id="cv-education" className="scroll-mt-20">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-navy">{t('cv.educationSection')}</h2>
         <Button
@@ -418,7 +361,7 @@ function EmploymentSection({ rows, masters }: { rows: CvEmploymentEntry[]; maste
   };
 
   return (
-    <Card>
+    <Card id="cv-employment" className="scroll-mt-20">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-navy">{t('cv.employmentHistory')}</h2>
         <Button type="button" variant="outline" size="sm" onClick={() => setList((prev) => [...prev, blank])}>
@@ -521,7 +464,7 @@ function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
   };
 
   return (
-    <Card>
+    <Card id="cv-certificates" className="scroll-mt-20">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-navy">{t('cv.certificates')}</h2>
         <Button
@@ -567,6 +510,14 @@ export default function CvManagerPage() {
   const { t } = useTranslation('dashboard');
   const { data, isLoading } = useCvEditProfile();
   const { data: masters } = useCvMasters();
+  const { hash } = useLocation();
+
+  // The profile-completion checklist links here with a `#cv-employment`-style hash. The
+  // sections only exist once the CV has loaded, so scroll after it renders, not on mount.
+  useEffect(() => {
+    if (!hash || !data) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [hash, data]);
 
   return (
     <div className="mx-auto max-w-4xl">
