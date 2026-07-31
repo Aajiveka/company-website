@@ -37,6 +37,10 @@ const MASTERS = {
   ],
 };
 
+// LocationSelect passes its `label` through as the trigger's and panel's aria-label, so this is
+// how both are addressed. Matches jobPost.districtCity in locales/en/dashboard.json.
+const LOCATION_LABEL = 'District / City';
+
 const POSTED_JOB = {
   jobId: 42,
   designation: 'Software Engineer',
@@ -127,16 +131,26 @@ test.describe('Job Posting Flow', () => {
     await page.goto('/company/post-job');
     await expect(page.locator('form')).toBeVisible({ timeout: 10_000 });
 
-    // City dropdown should be disabled before state is selected
-    const citySelect = page.locator('select').nth(2); // 3rd select = city
-    await expect(citySelect).toBeDisabled();
+    // Location is one LocationSelect combobox: states are collapsed rows, cities appear only
+    // under the state you expand. (It replaced the old pair of dependent <select>s.)
+    await page.getByRole('button', { name: LOCATION_LABEL }).click();
+    const panel = page.getByRole('listbox', { name: LOCATION_LABEL });
+    await expect(panel).toBeVisible();
 
-    // Select state "Maharashtra"
-    const stateSelect = page.locator('select').nth(1); // 2nd select = state
-    await stateSelect.selectOption({ label: 'Maharashtra' });
+    // Collapsed: state rows are there, no city is.
+    await expect(panel.getByRole('button', { name: 'Maharashtra' })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Karnataka' })).toBeVisible();
+    await expect(panel.getByRole('option')).toHaveCount(0);
 
-    // City dropdown should now be enabled
-    await expect(citySelect).toBeEnabled();
+    // Expanding Maharashtra reveals its cities — and only its cities.
+    await panel.getByRole('button', { name: 'Maharashtra' }).click();
+    await expect(panel.getByRole('option')).toHaveText(['Mumbai', 'Pune']);
+    await expect(panel.getByRole('option', { name: 'Bengaluru' })).toHaveCount(0);
+
+    // Picking one closes the panel and shows the city with its state.
+    await panel.getByRole('option', { name: 'Mumbai' }).click();
+    await expect(panel).toBeHidden();
+    await expect(page.getByRole('button', { name: LOCATION_LABEL })).toContainText('Mumbai, Maharashtra');
   });
 
   test('fills form and submits successfully', async ({ page }) => {
@@ -144,19 +158,19 @@ test.describe('Job Posting Flow', () => {
     await expect(page.locator('form')).toBeVisible({ timeout: 10_000 });
 
     // Fill designation
-    await page.locator('select').first().selectOption({ label: 'Software Engineer' });
+    await page.locator('select[name="designationId"]').selectOption({ label: 'Software Engineer' });
 
-    // Select state then city
-    const stateSelect = page.locator('select').nth(1);
-    await stateSelect.selectOption({ label: 'Maharashtra' });
-    const citySelect = page.locator('select').nth(2);
-    await citySelect.selectOption({ label: 'Mumbai' });
+    // Location — expand the state, then pick the city
+    await page.getByRole('button', { name: LOCATION_LABEL }).click();
+    const panel = page.getByRole('listbox', { name: LOCATION_LABEL });
+    await panel.getByRole('button', { name: 'Maharashtra' }).click();
+    await panel.getByRole('option', { name: 'Mumbai' }).click();
 
     // Work mode
-    await page.locator('select').nth(3).selectOption({ label: 'Remote' });
+    await page.locator('select[name="workModeId"]').selectOption({ label: 'Remote' });
 
     // Employment type
-    await page.locator('select').nth(4).selectOption({ label: 'Full-time' });
+    await page.locator('select[name="employmentTypeId"]').selectOption({ label: 'Full-time' });
 
     // Experience
     await page.getByLabel(/experience/i).fill('2');
