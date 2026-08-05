@@ -5,10 +5,17 @@ import type {
   AppliedJob,
   CandidateDocument,
   CandidateProfile,
+  CvAccomplishmentEntry,
+  CvCareerProfile,
+  CvDiversity,
   CvEditProfile,
+  CvItSkillEntry,
+  CvLanguageEntry,
   CvMasters,
   CvPersonal,
+  CvPersonalDetails,
   CvProfessional,
+  CvProjectEntry,
   JobAlert,
   SavedJob,
 } from './candidate.types';
@@ -66,11 +73,18 @@ export function useUpdatePersonal() {
   });
 }
 
-/** Save professional details, preferred locations and skill tags. */
+/**
+ * Save professional details, preferred locations and skill tags.
+ *
+ * The payload is partial on purpose: the API only replaces the keys it is sent, so an editor
+ * that does not show preferred locations or skill tags must leave them out rather than
+ * round-trip them and risk clobbering a concurrent change.
+ */
 export function useUpdateProfessional() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CvProfessional) => api.put('/candidates/me/professional', payload).then((r) => r.data),
+    mutationFn: (payload: Partial<CvProfessional>) =>
+      api.put('/candidates/me/professional', payload).then((r) => r.data),
     onSuccess: () => invalidateCv(qc),
   });
 }
@@ -79,8 +93,15 @@ export function useUpdateProfessional() {
 export function useUpsertEducation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { subscriberEducationId?: number; courseTypeId: number; degreeId: number }) =>
-      api.put('/candidates/me/education', payload).then((r) => r.data),
+    mutationFn: (payload: {
+      subscriberEducationId?: number;
+      courseTypeId?: number;
+      degreeId: number;
+      instituteName?: string;
+      passingYear?: number;
+      courseMode?: string;
+      marks?: string;
+    }) => api.put('/candidates/me/education', payload).then((r) => r.data),
     onSuccess: () => invalidateCv(qc),
   });
 }
@@ -125,10 +146,101 @@ export function useDeleteEmployment() {
 export function useUpsertCertificate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { subscriberCertificateId?: number; certificateName: string }) =>
-      api.put('/candidates/me/certificates', payload).then((r) => r.data),
+    mutationFn: (payload: {
+      subscriberCertificateId?: number;
+      certificateName: string;
+      certificateUrl?: string;
+      certificationId?: string;
+      validFromMonth?: number;
+      validFromYear?: number;
+      validTillMonth?: number;
+      validTillYear?: number;
+      neverExpires?: boolean;
+    }) => api.put('/candidates/me/certificates', payload).then((r) => r.data),
     onSuccess: () => invalidateCv(qc),
   });
+}
+
+/* --------------------------- Profile sections ---------------------------- *
+ * One hook per section, mirroring the API: the profile page edits one section at a time,
+ * and a single whole-profile mutation would let each dialog clear fields it never showed.
+ * -------------------------------------------------------------------------- */
+
+/** Shared shape: PUT one section, then refresh the CV and the profile header. */
+function useSectionMutation<TPayload>(path: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: TPayload) => api.put(path, payload).then((r) => r.data),
+    onSuccess: () => invalidateCv(qc),
+  });
+}
+
+function useSectionDelete(path: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`${path}/${id}`).then((r) => r.data),
+    onSuccess: () => invalidateCv(qc),
+  });
+}
+
+export function useUpdateHeadline() {
+  return useSectionMutation<{ resumeHeadline: string }>('/candidates/me/headline');
+}
+
+export function useUpdateSummary() {
+  return useSectionMutation<{ profileSummary: string }>('/candidates/me/summary');
+}
+
+export function useUpdateKeySkills() {
+  return useSectionMutation<{ tagNames: string[] }>('/candidates/me/key-skills');
+}
+
+export function useUpdateCareerProfile() {
+  return useSectionMutation<Partial<CvCareerProfile>>('/candidates/me/career-profile');
+}
+
+export function useUpdatePersonalDetails() {
+  return useSectionMutation<Partial<CvPersonalDetails>>('/candidates/me/personal-details');
+}
+
+export function useUpdateDiversity() {
+  return useSectionMutation<Partial<CvDiversity>>('/candidates/me/diversity');
+}
+
+export function useUpsertItSkill() {
+  return useSectionMutation<Partial<CvItSkillEntry> & { skillName: string }>('/candidates/me/it-skills');
+}
+
+export function useDeleteItSkill() {
+  return useSectionDelete('/candidates/me/it-skills');
+}
+
+export function useUpsertProject() {
+  return useSectionMutation<Partial<CvProjectEntry> & { title: string }>('/candidates/me/projects');
+}
+
+export function useDeleteProject() {
+  return useSectionDelete('/candidates/me/projects');
+}
+
+export function useUpsertAccomplishment() {
+  return useSectionMutation<Partial<CvAccomplishmentEntry> & { kind: string; title: string }>(
+    '/candidates/me/accomplishments',
+  );
+}
+
+export function useDeleteAccomplishment() {
+  return useSectionDelete('/candidates/me/accomplishments');
+}
+
+export function useUpsertLanguage() {
+  return useSectionMutation<Partial<CvLanguageEntry> & { languageName: string; proficiencyId: number }>(
+    '/candidates/me/languages',
+  );
+}
+
+export function useDeleteLanguage() {
+  return useSectionDelete('/candidates/me/languages');
 }
 
 export function useDeleteCertificate() {
@@ -248,6 +360,29 @@ export function useUploadResume() {
         .then((r) => r.data);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+  });
+}
+
+/**
+ * Download the stored resume.
+ *
+ * A plain `<a href download>` cannot be used: the API is bearer-authenticated and the browser
+ * would send no token, so the link 401s. The file is fetched through the API client and saved
+ * from a blob URL under the candidate's original filename.
+ */
+export function useDownloadResume() {
+  return useMutation({
+    mutationFn: async (fileName: string) => {
+      const res = await api.get('/files/resume', { responseType: 'blob' });
+      const href = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = fileName || 'resume';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+    },
   });
 }
 

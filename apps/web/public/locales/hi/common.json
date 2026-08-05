@@ -3,7 +3,10 @@
     "home": "होम",
     "findJobs": "नौकरी खोजें",
     "registerNow": "रजिस्टर करें",
+    "login": "लॉगिन",
+    "candidateLogin": "उम्मीदवार लॉगिन",
     "employerLogin": "नियोक्ता लॉगिन",
+    "adminLogin": "एडमिन लॉगिन",
     "subscribeNow": "सब्सक्राइब करें",
     "tollFree": "टोल फ्री नं:",
     "tollFreeNumber": "18003093346"
@@ -20,6 +23,9 @@
     "privacyPolicy": "गोपनीयता नीति",
     "termsAndConditions": "नियम और शर्तें",
     "subscriptionBenefits": "सदस्यता लाभ",
+    "legalEntity": "मेक माई करियर टेक्नोलॉजीज प्रा. लि.",
+    "cin": "CIN: U78100HR2023PTC109516",
+    "gstin": "GSTIN: 06AAQCM5954Q1ZG",
     "copyright": "© {{year}} आजीवेका। सर्वाधिकार सुरक्षित।"
   },
   "sidebar": {

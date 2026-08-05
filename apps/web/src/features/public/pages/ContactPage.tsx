@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, MapPin } from 'lucide-react';
+import { Building2, Mail, MapPin, Phone, PhoneCall } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
@@ -47,12 +47,51 @@ export default function ContactPage() {
             <div className="mt-8 space-y-4">
               <h2 className="mb-3">{t('contact.serviceHeading')}</h2>
               <p className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
-                <Mail className="h-5 w-5 text-primary" /> {t('contact.email')}
+                <Mail className="h-5 w-5 text-primary" />
+                <a href={`mailto:${t('contact.email')}`} className="rounded hover:text-primary">
+                  {t('contact.email')}
+                </a>
+              </p>
+              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                <Mail className="h-5 w-5 text-primary" />
+                <a href={`mailto:${t('contact.salesEmail')}`} className="rounded hover:text-primary">
+                  {t('contact.salesEmail')}
+                </a>
+              </p>
+              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                <PhoneCall className="h-5 w-5 text-primary" />
+                <span>
+                  {t('contact.tollFreeLabel')}{' '}
+                  <a href={`tel:${t('contact.tollFree')}`} className="rounded hover:text-primary">
+                    {t('contact.tollFree')}
+                  </a>
+                </span>
+              </p>
+              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                <Phone className="h-5 w-5 text-primary" />
+                <a href={`tel:${t('contact.phone')}`} className="rounded hover:text-primary">
+                  {t('contact.phone')}
+                </a>
               </p>
               <p className="flex items-start gap-2 text-gray-700 dark:text-gray-200">
                 <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
                 {t('contact.address')}
               </p>
+            </div>
+
+            <div className="mt-8">
+              <h3 className="mb-3 flex items-center gap-2 font-heading text-lg font-semibold text-navy">
+                <Building2 className="h-5 w-5 text-primary" /> {t('contact.legalHeading')}
+              </h3>
+              <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                <li>{t('contact.legalEntity')}</li>
+                <li>
+                  {t('contact.cinLabel')} {t('contact.cin')}
+                </li>
+                <li>
+                  {t('contact.gstinLabel')} {t('contact.gstin')}
+                </li>
+              </ul>
             </div>
           </div>
 

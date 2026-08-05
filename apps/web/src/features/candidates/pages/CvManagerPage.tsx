@@ -262,7 +262,20 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setList((prev) => [...prev, { subscriberEducationId: 0, courseTypeId: null, degreeId: null }])}
+          onClick={() =>
+            setList((prev) => [
+              ...prev,
+              {
+                subscriberEducationId: 0,
+                courseTypeId: null,
+                degreeId: null,
+                instituteName: '',
+                passingYear: null,
+                courseMode: '',
+                marks: '',
+              },
+            ])
+          }
         >
           <Plus className="h-4 w-4" /> {t('cv.add')}
         </Button>
@@ -471,7 +484,22 @@ function CertificatesSection({ rows }: { rows: CvCertificateEntry[] }) {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setList((prev) => [...prev, { subscriberCertificateId: 0, certificateName: '' }])}
+          onClick={() =>
+            setList((prev) => [
+              ...prev,
+              {
+                subscriberCertificateId: 0,
+                certificateName: '',
+                certificateUrl: '',
+                certificationId: '',
+                validFromMonth: null,
+                validFromYear: null,
+                validTillMonth: null,
+                validTillYear: null,
+                neverExpires: false,
+              },
+            ])
+          }
         >
           <Plus className="h-4 w-4" /> {t('cv.add')}
         </Button>

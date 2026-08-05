@@ -5,7 +5,304 @@
     "loadError": "Unable to load your profile. Please try again.",
     "skills": "Skills",
     "experience": "Experience",
-    "education": "Education"
+    "education": {
+      "heading": "Education",
+      "add": "Add education",
+      "empty": "Add your education",
+      "degree": "Education level",
+      "course": "Course",
+      "institute": "University / board / school",
+      "passingYear": "Passing year",
+      "courseMode": "Course type",
+      "marks": "Marks / grade",
+      "marksPlaceholder": "e.g. 78% or 8.2 CGPA",
+      "deleteTitle": "Remove this qualification?"
+    },
+    "add": "Add",
+    "saved": "Saved.",
+    "saveError": "Could not save. Please try again.",
+    "deleteMessage": "This entry will be removed from your profile.",
+    "editSection": "Edit {{section}}",
+    "verified": "Verified",
+    "quickLinks": "Quick links",
+    "percentComplete": "{{percent}}%",
+    "lastUpdated": "Profile last updated - {{date}}",
+    "changePhoto": "Change profile photo",
+    "atCompany": "at {{company}}",
+    "to": "to",
+    "present": "Present",
+    "yes": "Yes",
+    "no": "No",
+    "years_one": "{{count}} year",
+    "years_other": "{{count}} years",
+    "months_one": "{{count}} month",
+    "months_other": "{{count}} months",
+    "yearsExperience_one": "{{count}} year",
+    "yearsExperience_other": "{{count}} years",
+    "noticeDays_one": "{{count}} day notice period",
+    "noticeDays_other": "{{count}} days notice period",
+    "resume": {
+      "heading": "Resume",
+      "currentFile": "Current resume",
+      "uploadedOn": "Uploaded on {{date}}",
+      "hint": "Supported formats: doc, docx, rtf, pdf, up to 2 MB",
+      "uploaded": "Resume uploaded.",
+      "uploadFailed": "Could not upload your resume.",
+      "downloadFailed": "Could not download your resume.",
+      "deleteTitle": "Delete resume?",
+      "deleteMessage": "Recruiters will no longer be able to download your resume.",
+      "deleted": "Resume deleted.",
+      "deleteFailed": "Could not delete your resume."
+    },
+    "headline": {
+      "heading": "Resume headline",
+      "empty": "Add a resume headline",
+      "help": "Write one line that tells recruiters who you are and what you do.",
+      "placeholder": "e.g. Full Stack Developer | React, Node.js | 3 years experience"
+    },
+    "summary": {
+      "heading": "Profile summary",
+      "empty": "Add a profile summary",
+      "help": "Summarise your experience, skills and achievements in 3-5 sentences.",
+      "placeholder": "Tell recruiters what you have built and what you are good at."
+    },
+    "keySkills": {
+      "heading": "Key skills",
+      "empty": "Add your key skills",
+      "none": "No skills added yet.",
+      "remove": "Remove {{skill}}",
+      "addLabel": "Add a skill",
+      "addPlaceholder": "Type a skill and press Enter",
+      "suggested": "Suggested skills"
+    },
+    "professional": {
+      "heading": "Professional details",
+      "function": "Function / department",
+      "primarySkill": "Primary skill",
+      "totalExperience": "Total experience",
+      "currentCtc": "Current annual salary",
+      "currentLocation": "Current location",
+      "noticePeriod": "Notice period (days)",
+      "relocate": "Ready to relocate"
+    },
+    "employment": {
+      "heading": "Employment",
+      "add": "Add employment",
+      "empty": "Add your work experience",
+      "untitledRole": "Role not set",
+      "notice_one": "{{count}} day notice period",
+      "notice_other": "{{count}} days notice period",
+      "designation": "Designation",
+      "company": "Company",
+      "type": "Employment type",
+      "salary": "Annual salary",
+      "from": "Worked from",
+      "till": "Worked till",
+      "current": "I currently work here",
+      "noticeDays": "Notice period (days)",
+      "description": "Describe what you do here",
+      "deleteTitle": "Remove this employment?"
+    },
+    "itSkills": {
+      "heading": "IT skills",
+      "add": "Add details",
+      "empty": "Add the tools and technologies you use",
+      "skill": "Skill",
+      "version": "Version",
+      "lastUsed": "Last used",
+      "experience": "Experience",
+      "expYears": "Years",
+      "expMonths": "Months",
+      "deleteTitle": "Remove this skill?"
+    },
+    "projects": {
+      "heading": "Projects",
+      "add": "Add project",
+      "empty": "Add the projects you have worked on",
+      "title": "Project title",
+      "client": "Client / employer",
+      "status": "Status",
+      "site": "Project location",
+      "fromMonth": "From month",
+      "fromYear": "From year",
+      "tillMonth": "Till month",
+      "tillYear": "Till year",
+      "nature": "Nature of employment",
+      "teamSize": "Team size",
+      "teamOf_one": "Team of {{count}}",
+      "teamOf_other": "Team of {{count}}",
+      "role": "Your role",
+      "skillsUsed": "Skills used",
+      "skillsPlaceholder": "Comma separated, e.g. React, Node.js",
+      "details": "Project details",
+      "deleteTitle": "Remove this project?"
+    },
+    "accomplishments": {
+      "heading": "Accomplishments",
+      "url": "Link",
+      "month": "Month",
+      "year": "Year",
+      "description": "Description",
+      "patentStatus": "Patent status",
+      "patentOffice": "Patent office and application number",
+      "certification": "Certification",
+      "certificationHint": "Add certifications you have earned",
+      "certificateName": "Certification name",
+      "certificationId": "Certification id",
+      "validFromMonth": "Valid from month",
+      "validFromYear": "Valid from year",
+      "validTillMonth": "Valid till month",
+      "validTillYear": "Valid till year",
+      "neverExpires": "This certification does not expire",
+      "validRange": "Valid from {{from}} to {{till}}.",
+      "validFromNoExpiry": "Valid from {{from}}. Does not expire.",
+      "deleteTitle": "Remove this accomplishment?",
+      "deleteCertTitle": "Remove this certification?",
+      "kinds": {
+        "ONLINE_PROFILE": "Online profile",
+        "WORK_SAMPLE": "Work sample",
+        "PUBLICATION": "White paper / Research publication / Journal entry",
+        "PRESENTATION": "Presentation",
+        "PATENT": "Patent"
+      },
+      "hints": {
+        "ONLINE_PROFILE": "Add a link to an online professional profile (e.g. LinkedIn)",
+        "WORK_SAMPLE": "Link relevant work samples (e.g. GitHub, Behance)",
+        "PUBLICATION": "Add links to your online publications",
+        "PRESENTATION": "Add links to your online presentations",
+        "PATENT": "Add details of patents you have filed"
+      },
+      "titleLabels": {
+        "ONLINE_PROFILE": "Profile name",
+        "WORK_SAMPLE": "Work sample title",
+        "PUBLICATION": "Publication title",
+        "PRESENTATION": "Presentation title",
+        "PATENT": "Patent title"
+      },
+      "patentStatuses": {
+        "Filed": "Filed",
+        "Granted": "Granted"
+      }
+    },
+    "careerProfile": {
+      "heading": "Career profile",
+      "industry": "Current industry",
+      "department": "Department",
+      "roleCategory": "Role category",
+      "jobRole": "Job role",
+      "desiredJobType": "Desired job type",
+      "desiredEmploymentType": "Desired employment type",
+      "preferredRoles": "Preferred job role",
+      "preferredRolesPlaceholder": "Comma separated, e.g. React Developer, Node Backend Developer",
+      "preferredLocations": "Preferred work location",
+      "preferredSalary": "Preferred annual salary",
+      "shift": "Preferred shift"
+    },
+    "personalDetails": {
+      "heading": "Personal details",
+      "personal": "Personal",
+      "workPermit": "Work permit",
+      "dob": "Date of birth",
+      "address": "Address",
+      "category": "Category",
+      "maritalStatus": "Marital status",
+      "usWorkPermit": "US work permit",
+      "usWorkPermitPlaceholder": "e.g. Have US H1 Visa",
+      "workPermitCountries": "Work permit for other countries",
+      "workPermitPlaceholder": "Comma separated, e.g. India, Australia",
+      "traits": "More about you",
+      "traitsPlaceholder": "Comma separated, e.g. Single parent"
+    },
+    "languages": {
+      "heading": "Languages",
+      "add": "Add languages",
+      "empty": "Add the languages you know",
+      "language": "Language",
+      "proficiency": "Proficiency",
+      "read": "Read",
+      "write": "Write",
+      "speak": "Speak",
+      "canRead": "Can read",
+      "canWrite": "Can write",
+      "canSpeak": "Can speak",
+      "levels": {
+        "1": "Beginner",
+        "2": "Proficient",
+        "3": "Expert"
+      },
+      "deleteTitle": "Remove this language?"
+    },
+    "diversity": {
+      "heading": "Diversity & inclusion",
+      "help": "Share details to attract recruiters who value people from different backgrounds.",
+      "disability": "Disability status",
+      "disabilityType": "Type of disability",
+      "disabilityPercent": "Percentage of disability",
+      "assistance": "Assistance required",
+      "military": "Military experience",
+      "serviceType": "Service type",
+      "rank": "Rank",
+      "enrolmentDate": "Enrolment date",
+      "careerBreak": "Career break",
+      "breakReason": "Reason",
+      "breakFrom": "Break from",
+      "breakTo": "Break till"
+    },
+    "courseModes": {
+      "Full Time": "Full time",
+      "Part Time": "Part time",
+      "Correspondence": "Correspondence"
+    },
+    "jobTypes": {
+      "Permanent": "Permanent",
+      "Contractual": "Contractual"
+    },
+    "employmentTypes": {
+      "Full Time": "Full time",
+      "Part Time": "Part time"
+    },
+    "shifts": {
+      "Day": "Day",
+      "Night": "Night",
+      "Flexible": "Flexible"
+    },
+    "maritalStatuses": {
+      "Single / unmarried": "Single / unmarried",
+      "Married": "Married",
+      "Widowed": "Widowed",
+      "Divorced": "Divorced",
+      "Separated": "Separated",
+      "Other": "Other"
+    },
+    "categories": {
+      "General": "General",
+      "OBC": "OBC",
+      "SC": "SC",
+      "ST": "ST",
+      "EWS": "EWS",
+      "Other": "Other"
+    },
+    "projectStatuses": {
+      "In Progress": "In progress",
+      "Finished": "Finished"
+    },
+    "projectSites": {
+      "Onsite": "Onsite",
+      "Offsite": "Offsite"
+    },
+    "disabilityStatuses": {
+      "Do not have disability": "Do not have disability",
+      "Have disability": "Have disability"
+    },
+    "militaryStatuses": {
+      "Not applicable": "Not applicable",
+      "Currently serving": "Currently serving",
+      "Veteran": "Veteran"
+    },
+    "careerBreakStatuses": {
+      "Have not taken": "Have not taken",
+      "Have taken": "Have taken"
+    }
   },
   "cv": {
     "heading": "CV Manager",
@@ -181,7 +478,16 @@
     "professional": "Professional details",
     "education": "Education (at least one entry)",
     "employment": "Employment history (at least one entry)",
-    "certificates": "Certificates (at least one)"
+    "certificates": "Certificates (at least one)",
+    "personalDetails": "Personal details",
+    "headline": "Resume headline",
+    "keySkills": "Key skills",
+    "itSkills": "IT skills",
+    "projects": "Projects",
+    "summary": "Profile summary",
+    "accomplishments": "Accomplishments",
+    "careerProfile": "Career profile",
+    "languages": "Personal details and languages"
   },
   "publicCompany": {
     "notAvailable": "This company profile is not available.",

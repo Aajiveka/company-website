@@ -718,6 +718,18 @@ model SubscriberCertificate {
   subscriberCertificateID      BigInt                             @id @default(autoincrement()) @map("SubscriberCertificateID")
   subscriberID                 BigInt                             @map("SubscriberID")  // FK -> SubscriberRegistration (confirmed)
   certificateName              String @db.VarChar(500)            @map("CertificateName")
+  /// Everything below is new. The legacy table stored a bare name, which is not enough to
+  /// show a certification the way the profile page does — recruiters click through to the
+  /// issued credential and check whether it is still valid.
+  certificateUrl               String? @db.VarChar(2000)          @map("CertificateUrl")
+  certificationID              String? @db.VarChar(200)           @map("CertificationID")
+  validFromMonth               Int? @db.SmallInt                  @map("ValidFromMonth")
+  validFromYear                Int?                               @map("ValidFromYear")
+  validTillMonth               Int? @db.SmallInt                  @map("ValidTillMonth")
+  validTillYear                Int?                               @map("ValidTillYear")
+  /// "Does not expire" is distinct from "expiry unknown", so it cannot be inferred from a
+  /// NULL ValidTill*.
+  flgNeverExpires              Boolean @default(false)            @map("flgNeverExpires")
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDIns                   BigInt                             @map("LoginIDIns")
@@ -741,6 +753,15 @@ model SubscriberEducation {
   /// chosen EducationTypeID straight into this column. The extraction guessed
   /// MstrEducationDegree — a byte-identical copy of MstrCourse — and flagged it "dirty".
   degreeID                     Int?                               @map("DegreeID")  // FK -> MstrEducationType (confirmed via candidate-profile.aspx)
+  /// The legacy table recorded only "which course at which level", so the profile page had
+  /// nothing to print under a degree — no board/university, no year. It derived the year from
+  /// TimestampIns, i.e. when the row was typed in, which is not when the candidate graduated.
+  instituteName                String? @db.VarChar(500)           @map("InstituteName")
+  passingYear                  Int?                               @map("PassingYear")
+  /// Full Time / Part Time / Correspondence — how the course was studied, free text against a
+  /// fixed UI list rather than a master table, because no such master exists in the schema.
+  courseMode                   String? @db.VarChar(50)            @map("CourseMode")
+  marks                        String? @db.VarChar(100)           @map("Marks")
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDIns                   BigInt                             @map("LoginIDIns")
@@ -799,15 +820,21 @@ model SubscriberJobStatusLatest {
 model SubscriberLanguage {
   subscriberLanguageID         BigInt                             @id @default(autoincrement()) @map("SubscriberLanguageID")
   subscriberID                 BigInt?                            @map("SubscriberID")
+  /// LanguageID points at a master table that does not exist anywhere in the schema — there is
+  /// no tblMstrLanguage — so the name has to be stored on the row itself. LanguageID is kept
+  /// nullable and unused so migrated rows are not rewritten.
   languageID                   Int?                               @map("LanguageID")
+  languageName                 String? @db.VarChar(100)           @map("LanguageName")
   flgRead                      String? @db.Char(1)                @map("flgRead")
   flgWrite                     String? @db.Char(1)                @map("flgWrite")
   flgSpeak                     String? @db.Char(1)                @map("flgSpeak")
+  /// 1 = Beginner, 2 = Proficient, 3 = Expert (the three levels the profile UI offers).
   proficiencyID                Int?                               @map("ProficiencyID")
   timestampIns                 DateTime? @db.Timestamp(6)         @map("TimestampIns")
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDIns                   BigInt?                            @map("LoginIDIns")
   loginIDUpd                   BigInt?                            @map("loginIDUpd")
+  @@index([subscriberID])
   @@map("tblSubscriberLanguage")
 }
 
@@ -842,6 +869,10 @@ model SubscriberRegistration {
   SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToSubscriberRegistration")
   SubscriberEmployer           SubscriberEmployer[]               @relation("SubscriberEmployerToSubscriberRegistration")
   SubscriberJobStatusLatest    SubscriberJobStatusLatest?         @relation("SubscriberJobStatusLatestToSubscriberRegistration")
+  SubscriberProfileExtra       SubscriberProfileExtra?            @relation("SubscriberProfileExtraToSubscriberRegistration")
+  SubscriberITSkill            SubscriberITSkill[]                @relation("SubscriberITSkillToSubscriberRegistration")
+  SubscriberProject            SubscriberProject[]                @relation("SubscriberProjectToSubscriberRegistration")
+  SubscriberAccomplishment     SubscriberAccomplishment[]         @relation("SubscriberAccomplishmentToSubscriberRegistration")
   SubscriberPrefferedLocations SubscriberPrefferedLocations[]     @relation("SubscriberPrefferedLocationsToSubscriberRegistration")
   SubscriberStatusHistory      SubscriberStatusHistory[]          @relation("SubscriberStatusHistoryToSubscriberRegistration")
   SubscriberTags               SubscriberTags[]                   @relation("SubscriberTagsToSubscriberRegistration")
@@ -894,6 +925,158 @@ model SubscriberTags {
 
   @@id([subscriberID, tagID])
   @@map("tblSubscriberTags")
+}
+
+/* ------------------------------------------------------------------------- *
+ * Profile sections the legacy CV had no room for.
+ *
+ * tblSubscriberCVDetails is a flat, id-heavy row inherited from the ASP.NET app: it covers
+ * who the candidate is and one primary skill/function, and nothing else. Everything below —
+ * the headline, the summary, what they want next, how they present themselves — lived only
+ * on paper in the uploaded resume, so none of it was searchable or editable in the product.
+ * These live in their own tables rather than as more columns on tblSubscriberCVDetails so a
+ * legacy row stays exactly as migrated until the candidate fills a section in.
+ * ------------------------------------------------------------------------- */
+
+/// One row per candidate, holding every single-valued section: headline, summary, career
+/// preferences, the personal facts that are not already on tblSubscriberCVDetails, and the
+/// diversity block. Split off as 1:1 rather than merged into the CV row because it is written
+/// by a different set of screens and is absent for every migrated candidate.
+model SubscriberProfileExtra {
+  subscriberID                 BigInt                             @id @map("SubscriberID")
+
+  /// The one-line pitch shown under the name. Naukri calls this the resume headline.
+  resumeHeadline               String? @db.VarChar(500)           @map("ResumeHeadline")
+  profileSummary               String? @db.VarChar(4000)          @map("ProfileSummary")
+
+  // ── Career profile ──
+  /// Free text against fixed UI lists. tblMstrSubFunctions covers function/designation, but
+  /// department, role category and job role have no masters in this schema.
+  department                   String? @db.VarChar(200)           @map("Department")
+  roleCategory                 String? @db.VarChar(200)           @map("RoleCategory")
+  jobRole                      String? @db.VarChar(200)           @map("JobRole")
+  /// Comma-separated: a candidate can be open to both Permanent and Contractual.
+  desiredJobType               String? @db.VarChar(100)           @map("DesiredJobType")
+  desiredEmploymentType        String? @db.VarChar(100)           @map("DesiredEmploymentType")
+  preferredShift               String? @db.VarChar(50)            @map("PreferredShift")
+  preferredSalary              Decimal? @db.Decimal(18, 0)        @map("PreferredSalary")
+  /// Comma-separated role names. Preferred *locations* are not here — they already have their
+  /// own table, tblSubscriberPrefferedLocations.
+  preferredJobRoles            String? @db.VarChar(1000)          @map("PreferredJobRoles")
+
+  // ── Personal details ──
+  maritalStatus                String? @db.VarChar(50)            @map("MaritalStatus")
+  /// Extra personal facts the profile shows next to marital status (e.g. "Single parent").
+  personalTraits               String? @db.VarChar(500)           @map("PersonalTraits")
+  category                     String? @db.VarChar(50)            @map("Category")
+  /// Comma-separated country names the candidate holds a work permit for.
+  workPermitCountries          String? @db.VarChar(500)           @map("WorkPermitCountries")
+  usWorkPermit                 String? @db.VarChar(100)           @map("USWorkPermit")
+
+  // ── Diversity & inclusion ──
+  disabilityStatus             String? @db.VarChar(100)           @map("DisabilityStatus")
+  disabilityType               String? @db.VarChar(200)           @map("DisabilityType")
+  /// Percent disability, as declared. Nullable and unvalidated: it is self-reported.
+  disabilityPercent            Int? @db.SmallInt                  @map("DisabilityPercent")
+  assistanceRequired           String? @db.VarChar(500)           @map("AssistanceRequired")
+  militaryStatus               String? @db.VarChar(100)           @map("MilitaryStatus")
+  militaryServiceType          String? @db.VarChar(200)           @map("MilitaryServiceType")
+  militaryRank                 String? @db.VarChar(200)           @map("MilitaryRank")
+  militaryEnrolmentDate        DateTime? @db.Date                 @map("MilitaryEnrolmentDate")
+  careerBreakStatus            String? @db.VarChar(100)           @map("CareerBreakStatus")
+  careerBreakReason            String? @db.VarChar(200)           @map("CareerBreakReason")
+  careerBreakFrom              DateTime? @db.Date                 @map("CareerBreakFrom")
+  /// NULL while the break is ongoing — the UI prints "Present".
+  careerBreakTo                DateTime? @db.Date                 @map("CareerBreakTo")
+
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+  timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
+  loginIDIns                   BigInt                             @map("LoginIDIns")
+  loginIDUpd                   BigInt?                            @map("loginIDUpd")
+
+  subscriber                   SubscriberRegistration             @relation("SubscriberProfileExtraToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  @@map("tblSubscriberProfileExtra")
+}
+
+/// Technical skills with depth — version, when it was last used, how long it was used for.
+/// Distinct from tblSubscriberTags (flat keyword chips) and tblSubscriberCVDetails.SkillID
+/// (the single primary skill used for matching).
+model SubscriberITSkill {
+  subscriberITSkillID          BigInt                             @id @default(autoincrement()) @map("SubscriberITSkillID")
+  subscriberID                 BigInt                             @map("SubscriberID")
+  skillName                    String @db.VarChar(200)            @map("SkillName")
+  version                      String? @db.VarChar(50)            @map("Version")
+  lastUsedYear                 Int?                               @map("LastUsedYear")
+  expYears                     Int? @db.SmallInt                  @map("ExpYears")
+  expMonths                    Int? @db.SmallInt                  @map("ExpMonths")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+  timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
+  loginIDIns                   BigInt                             @map("LoginIDIns")
+  loginIDUpd                   BigInt?                            @map("loginIDUpd")
+
+  subscriber                   SubscriberRegistration             @relation("SubscriberITSkillToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  @@index([subscriberID])
+  @@map("tblSubscriberITSkill")
+}
+
+/// Projects worked on. Deliberately not folded into tblSubscriberEmployer: a project can be
+/// personal, span two employers, or still be in progress while the job it started under ended.
+model SubscriberProject {
+  subscriberProjectID          BigInt                             @id @default(autoincrement()) @map("SubscriberProjectID")
+  subscriberID                 BigInt                             @map("SubscriberID")
+  title                        String @db.VarChar(500)            @map("Title")
+  clientName                   String? @db.VarChar(500)           @map("ClientName")
+  /// "In Progress" or "Finished". Drives whether WorkedTill* is shown at all.
+  projectStatus                String? @db.VarChar(50)            @map("ProjectStatus")
+  /// Month/year pairs rather than dates: the UI collects only those, and a synthesised
+  /// day-of-month would read as precision the candidate never supplied.
+  workedFromMonth              Int? @db.SmallInt                  @map("WorkedFromMonth")
+  workedFromYear               Int?                               @map("WorkedFromYear")
+  workedTillMonth              Int? @db.SmallInt                  @map("WorkedTillMonth")
+  workedTillYear               Int?                               @map("WorkedTillYear")
+  /// Onsite / Offsite.
+  projectSite                  String? @db.VarChar(50)            @map("ProjectSite")
+  natureOfEmployment           String? @db.VarChar(100)           @map("NatureOfEmployment")
+  teamSize                     Int?                               @map("TeamSize")
+  roleDescr                    String? @db.VarChar(500)           @map("RoleDescr")
+  skillsUsed                   String? @db.VarChar(1000)          @map("SkillsUsed")
+  details                      String? @db.VarChar(4000)          @map("Details")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+  timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
+  loginIDIns                   BigInt                             @map("LoginIDIns")
+  loginIDUpd                   BigInt?                            @map("loginIDUpd")
+
+  subscriber                   SubscriberRegistration             @relation("SubscriberProjectToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  @@index([subscriberID])
+  @@map("tblSubscriberProject")
+}
+
+/// Online profiles, work samples, publications, presentations and patents. One table with a
+/// Kind discriminator rather than five near-identical tables — every kind is (title, link,
+/// description, date) and they are always read together as one "Accomplishments" block.
+/// Certifications stay in tblSubscriberCertificate, which already existed.
+model SubscriberAccomplishment {
+  subscriberAccomplishmentID   BigInt                             @id @default(autoincrement()) @map("SubscriberAccomplishmentID")
+  subscriberID                 BigInt                             @map("SubscriberID")
+  /// ONLINE_PROFILE | WORK_SAMPLE | PUBLICATION | PRESENTATION | PATENT
+  kind                         String @db.VarChar(30)             @map("Kind")
+  title                        String @db.VarChar(500)            @map("Title")
+  url                          String? @db.VarChar(2000)          @map("Url")
+  descr                        String? @db.VarChar(4000)          @map("Descr")
+  /// Publication/presentation date, or the patent filing date.
+  eventMonth                   Int? @db.SmallInt                  @map("EventMonth")
+  eventYear                    Int?                               @map("EventYear")
+  /// Patents only: "Filed" vs "Granted", and the office/application number.
+  patentStatus                 String? @db.VarChar(50)            @map("PatentStatus")
+  patentOffice                 String? @db.VarChar(200)           @map("PatentOffice")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+  timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
+  loginIDIns                   BigInt                             @map("LoginIDIns")
+  loginIDUpd                   BigInt?                            @map("loginIDUpd")
+
+  subscriber                   SubscriberRegistration             @relation("SubscriberAccomplishmentToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+  @@index([subscriberID, kind])
+  @@map("tblSubscriberAccomplishment")
 }
 
 

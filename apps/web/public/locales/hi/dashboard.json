@@ -5,7 +5,304 @@
     "loadError": "आपकी प्रोफ़ाइल लोड नहीं हो सकी। कृपया पुनः प्रयास करें।",
     "skills": "कौशल",
     "experience": "अनुभव",
-    "education": "शिक्षा"
+    "education": {
+      "heading": "शिक्षा",
+      "add": "शिक्षा जोड़ें",
+      "empty": "अपनी शिक्षा जोड़ें",
+      "degree": "शिक्षा स्तर",
+      "course": "पाठ्यक्रम",
+      "institute": "विश्वविद्यालय / बोर्ड / विद्यालय",
+      "passingYear": "उत्तीर्ण वर्ष",
+      "courseMode": "पाठ्यक्रम प्रकार",
+      "marks": "अंक / ग्रेड",
+      "marksPlaceholder": "जैसे 78% या 8.2 CGPA",
+      "deleteTitle": "यह योग्यता हटाएँ?"
+    },
+    "add": "जोड़ें",
+    "saved": "सहेज लिया गया।",
+    "saveError": "सहेजा नहीं जा सका। कृपया पुनः प्रयास करें।",
+    "deleteMessage": "यह प्रविष्टि आपकी प्रोफ़ाइल से हटा दी जाएगी।",
+    "editSection": "{{section}} संपादित करें",
+    "verified": "सत्यापित",
+    "quickLinks": "त्वरित लिंक",
+    "percentComplete": "{{percent}}%",
+    "lastUpdated": "प्रोफ़ाइल अंतिम बार अपडेट - {{date}}",
+    "changePhoto": "प्रोफ़ाइल फ़ोटो बदलें",
+    "atCompany": "{{company}} में",
+    "to": "से",
+    "present": "वर्तमान",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "years_one": "{{count}} वर्ष",
+    "years_other": "{{count}} वर्ष",
+    "months_one": "{{count}} माह",
+    "months_other": "{{count}} माह",
+    "yearsExperience_one": "{{count}} वर्ष",
+    "yearsExperience_other": "{{count}} वर्ष",
+    "noticeDays_one": "{{count}} दिन नोटिस अवधि",
+    "noticeDays_other": "{{count}} दिन नोटिस अवधि",
+    "resume": {
+      "heading": "रिज़्यूमे",
+      "currentFile": "वर्तमान रिज़्यूमे",
+      "uploadedOn": "{{date}} को अपलोड किया गया",
+      "hint": "समर्थित प्रारूप: doc, docx, rtf, pdf, अधिकतम 2 MB",
+      "uploaded": "रिज़्यूमे अपलोड हो गया।",
+      "uploadFailed": "रिज़्यूमे अपलोड नहीं हो सका।",
+      "downloadFailed": "रिज़्यूमे डाउनलोड नहीं हो सका।",
+      "deleteTitle": "रिज़्यूमे हटाएँ?",
+      "deleteMessage": "भर्तीकर्ता अब आपका रिज़्यूमे डाउनलोड नहीं कर पाएंगे।",
+      "deleted": "रिज़्यूमे हटा दिया गया।",
+      "deleteFailed": "रिज़्यूमे हटाया नहीं जा सका।"
+    },
+    "headline": {
+      "heading": "रिज़्यूमे हेडलाइन",
+      "empty": "रिज़्यूमे हेडलाइन जोड़ें",
+      "help": "एक पंक्ति में बताएं कि आप कौन हैं और क्या करते हैं।",
+      "placeholder": "जैसे: Full Stack Developer | React, Node.js | 3 वर्ष अनुभव"
+    },
+    "summary": {
+      "heading": "प्रोफ़ाइल सारांश",
+      "empty": "प्रोफ़ाइल सारांश जोड़ें",
+      "help": "अपने अनुभव, कौशल और उपलब्धियों को 3-5 वाक्यों में बताएं।",
+      "placeholder": "भर्तीकर्ताओं को बताएं कि आपने क्या बनाया है और आप किसमें दक्ष हैं।"
+    },
+    "keySkills": {
+      "heading": "मुख्य कौशल",
+      "empty": "अपने मुख्य कौशल जोड़ें",
+      "none": "अभी कोई कौशल नहीं जोड़ा गया।",
+      "remove": "{{skill}} हटाएँ",
+      "addLabel": "कौशल जोड़ें",
+      "addPlaceholder": "कौशल लिखें और Enter दबाएँ",
+      "suggested": "सुझाए गए कौशल"
+    },
+    "professional": {
+      "heading": "पेशेवर विवरण",
+      "function": "कार्य / विभाग",
+      "primarySkill": "मुख्य कौशल",
+      "totalExperience": "कुल अनुभव",
+      "currentCtc": "वर्तमान वार्षिक वेतन",
+      "currentLocation": "वर्तमान स्थान",
+      "noticePeriod": "नोटिस अवधि (दिन)",
+      "relocate": "स्थानांतरण के लिए तैयार"
+    },
+    "employment": {
+      "heading": "रोज़गार",
+      "add": "रोज़गार जोड़ें",
+      "empty": "अपना कार्य अनुभव जोड़ें",
+      "untitledRole": "पद निर्धारित नहीं",
+      "notice_one": "{{count}} दिन नोटिस अवधि",
+      "notice_other": "{{count}} दिन नोटिस अवधि",
+      "designation": "पदनाम",
+      "company": "कंपनी",
+      "type": "रोज़गार प्रकार",
+      "salary": "वार्षिक वेतन",
+      "from": "कार्य आरंभ",
+      "till": "कार्य समाप्ति",
+      "current": "मैं यहाँ अभी कार्यरत हूँ",
+      "noticeDays": "नोटिस अवधि (दिन)",
+      "description": "यहाँ आप क्या करते हैं",
+      "deleteTitle": "यह रोज़गार हटाएँ?"
+    },
+    "itSkills": {
+      "heading": "आईटी कौशल",
+      "add": "विवरण जोड़ें",
+      "empty": "आप जिन तकनीकों का उपयोग करते हैं उन्हें जोड़ें",
+      "skill": "कौशल",
+      "version": "संस्करण",
+      "lastUsed": "अंतिम उपयोग",
+      "experience": "अनुभव",
+      "expYears": "वर्ष",
+      "expMonths": "माह",
+      "deleteTitle": "यह कौशल हटाएँ?"
+    },
+    "projects": {
+      "heading": "प्रोजेक्ट",
+      "add": "प्रोजेक्ट जोड़ें",
+      "empty": "आपने जिन प्रोजेक्ट पर काम किया है उन्हें जोड़ें",
+      "title": "प्रोजेक्ट शीर्षक",
+      "client": "क्लाइंट / नियोक्ता",
+      "status": "स्थिति",
+      "site": "प्रोजेक्ट स्थान",
+      "fromMonth": "आरंभ माह",
+      "fromYear": "आरंभ वर्ष",
+      "tillMonth": "समाप्ति माह",
+      "tillYear": "समाप्ति वर्ष",
+      "nature": "रोज़गार की प्रकृति",
+      "teamSize": "टीम का आकार",
+      "teamOf_one": "{{count}} सदस्यों की टीम",
+      "teamOf_other": "{{count}} सदस्यों की टीम",
+      "role": "आपकी भूमिका",
+      "skillsUsed": "उपयोग किए गए कौशल",
+      "skillsPlaceholder": "अल्पविराम से अलग, जैसे React, Node.js",
+      "details": "प्रोजेक्ट विवरण",
+      "deleteTitle": "यह प्रोजेक्ट हटाएँ?"
+    },
+    "accomplishments": {
+      "heading": "उपलब्धियाँ",
+      "url": "लिंक",
+      "month": "माह",
+      "year": "वर्ष",
+      "description": "विवरण",
+      "patentStatus": "पेटेंट स्थिति",
+      "patentOffice": "पेटेंट कार्यालय और आवेदन संख्या",
+      "certification": "प्रमाणन",
+      "certificationHint": "आपके द्वारा अर्जित प्रमाणन जोड़ें",
+      "certificateName": "प्रमाणन का नाम",
+      "certificationId": "प्रमाणन आईडी",
+      "validFromMonth": "मान्य आरंभ माह",
+      "validFromYear": "मान्य आरंभ वर्ष",
+      "validTillMonth": "मान्य समाप्ति माह",
+      "validTillYear": "मान्य समाप्ति वर्ष",
+      "neverExpires": "यह प्रमाणन कभी समाप्त नहीं होता",
+      "validRange": "{{from}} से {{till}} तक मान्य।",
+      "validFromNoExpiry": "{{from}} से मान्य। समाप्त नहीं होता।",
+      "deleteTitle": "यह उपलब्धि हटाएँ?",
+      "deleteCertTitle": "यह प्रमाणन हटाएँ?",
+      "kinds": {
+        "ONLINE_PROFILE": "ऑनलाइन प्रोफ़ाइल",
+        "WORK_SAMPLE": "कार्य नमूना",
+        "PUBLICATION": "श्वेत पत्र / शोध प्रकाशन / जर्नल",
+        "PRESENTATION": "प्रस्तुति",
+        "PATENT": "पेटेंट"
+      },
+      "hints": {
+        "ONLINE_PROFILE": "ऑनलाइन पेशेवर प्रोफ़ाइल का लिंक जोड़ें (जैसे LinkedIn)",
+        "WORK_SAMPLE": "प्रासंगिक कार्य नमूनों के लिंक जोड़ें (जैसे GitHub, Behance)",
+        "PUBLICATION": "अपने ऑनलाइन प्रकाशनों के लिंक जोड़ें",
+        "PRESENTATION": "अपनी ऑनलाइन प्रस्तुतियों के लिंक जोड़ें",
+        "PATENT": "आपके द्वारा दायर पेटेंट का विवरण जोड़ें"
+      },
+      "titleLabels": {
+        "ONLINE_PROFILE": "प्रोफ़ाइल का नाम",
+        "WORK_SAMPLE": "कार्य नमूने का शीर्षक",
+        "PUBLICATION": "प्रकाशन का शीर्षक",
+        "PRESENTATION": "प्रस्तुति का शीर्षक",
+        "PATENT": "पेटेंट का शीर्षक"
+      },
+      "patentStatuses": {
+        "Filed": "दायर",
+        "Granted": "स्वीकृत"
+      }
+    },
+    "careerProfile": {
+      "heading": "करियर प्रोफ़ाइल",
+      "industry": "वर्तमान उद्योग",
+      "department": "विभाग",
+      "roleCategory": "भूमिका श्रेणी",
+      "jobRole": "जॉब रोल",
+      "desiredJobType": "वांछित नौकरी प्रकार",
+      "desiredEmploymentType": "वांछित रोज़गार प्रकार",
+      "preferredRoles": "पसंदीदा जॉब रोल",
+      "preferredRolesPlaceholder": "अल्पविराम से अलग, जैसे React Developer, Node Backend Developer",
+      "preferredLocations": "पसंदीदा कार्य स्थान",
+      "preferredSalary": "पसंदीदा वार्षिक वेतन",
+      "shift": "पसंदीदा शिफ़्ट"
+    },
+    "personalDetails": {
+      "heading": "व्यक्तिगत विवरण",
+      "personal": "व्यक्तिगत",
+      "workPermit": "वर्क परमिट",
+      "dob": "जन्म तिथि",
+      "address": "पता",
+      "category": "श्रेणी",
+      "maritalStatus": "वैवाहिक स्थिति",
+      "usWorkPermit": "अमेरिका वर्क परमिट",
+      "usWorkPermitPlaceholder": "जैसे US H1 वीज़ा है",
+      "workPermitCountries": "अन्य देशों के वर्क परमिट",
+      "workPermitPlaceholder": "अल्पविराम से अलग, जैसे भारत, ऑस्ट्रेलिया",
+      "traits": "आपके बारे में और",
+      "traitsPlaceholder": "अल्पविराम से अलग, जैसे एकल अभिभावक"
+    },
+    "languages": {
+      "heading": "भाषाएँ",
+      "add": "भाषाएँ जोड़ें",
+      "empty": "आप जो भाषाएँ जानते हैं उन्हें जोड़ें",
+      "language": "भाषा",
+      "proficiency": "दक्षता",
+      "read": "पढ़ना",
+      "write": "लिखना",
+      "speak": "बोलना",
+      "canRead": "पढ़ सकते हैं",
+      "canWrite": "लिख सकते हैं",
+      "canSpeak": "बोल सकते हैं",
+      "levels": {
+        "1": "प्रारंभिक",
+        "2": "प्रवीण",
+        "3": "विशेषज्ञ"
+      },
+      "deleteTitle": "यह भाषा हटाएँ?"
+    },
+    "diversity": {
+      "heading": "विविधता एवं समावेशन",
+      "help": "विभिन्न पृष्ठभूमि के लोगों को महत्व देने वाले भर्तीकर्ताओं को आकर्षित करने के लिए विवरण साझा करें।",
+      "disability": "दिव्यांगता स्थिति",
+      "disabilityType": "दिव्यांगता का प्रकार",
+      "disabilityPercent": "दिव्यांगता प्रतिशत",
+      "assistance": "आवश्यक सहायता",
+      "military": "सैन्य अनुभव",
+      "serviceType": "सेवा प्रकार",
+      "rank": "रैंक",
+      "enrolmentDate": "भर्ती तिथि",
+      "careerBreak": "करियर ब्रेक",
+      "breakReason": "कारण",
+      "breakFrom": "ब्रेक आरंभ",
+      "breakTo": "ब्रेक समाप्ति"
+    },
+    "courseModes": {
+      "Full Time": "पूर्णकालिक",
+      "Part Time": "अंशकालिक",
+      "Correspondence": "पत्राचार"
+    },
+    "jobTypes": {
+      "Permanent": "स्थायी",
+      "Contractual": "अनुबंधित"
+    },
+    "employmentTypes": {
+      "Full Time": "पूर्णकालिक",
+      "Part Time": "अंशकालिक"
+    },
+    "shifts": {
+      "Day": "दिन",
+      "Night": "रात",
+      "Flexible": "लचीली"
+    },
+    "maritalStatuses": {
+      "Single / unmarried": "अविवाहित",
+      "Married": "विवाहित",
+      "Widowed": "विधवा / विधुर",
+      "Divorced": "तलाकशुदा",
+      "Separated": "अलग रह रहे",
+      "Other": "अन्य"
+    },
+    "categories": {
+      "General": "सामान्य",
+      "OBC": "अन्य पिछड़ा वर्ग",
+      "SC": "अनुसूचित जाति",
+      "ST": "अनुसूचित जनजाति",
+      "EWS": "आर्थिक रूप से कमज़ोर वर्ग",
+      "Other": "अन्य"
+    },
+    "projectStatuses": {
+      "In Progress": "जारी",
+      "Finished": "पूर्ण"
+    },
+    "projectSites": {
+      "Onsite": "ऑनसाइट",
+      "Offsite": "ऑफ़साइट"
+    },
+    "disabilityStatuses": {
+      "Do not have disability": "दिव्यांगता नहीं है",
+      "Have disability": "दिव्यांगता है"
+    },
+    "militaryStatuses": {
+      "Not applicable": "लागू नहीं",
+      "Currently serving": "वर्तमान में सेवारत",
+      "Veteran": "भूतपूर्व सैनिक"
+    },
+    "careerBreakStatuses": {
+      "Have not taken": "नहीं लिया",
+      "Have taken": "लिया है"
+    }
   },
   "cv": {
     "heading": "सीवी प्रबंधक",
@@ -181,7 +478,16 @@
     "professional": "पेशेवर विवरण",
     "education": "शिक्षा (कम से कम एक प्रविष्टि)",
     "employment": "रोज़गार इतिहास (कम से कम एक प्रविष्टि)",
-    "certificates": "प्रमाणपत्र (कम से कम एक)"
+    "certificates": "प्रमाणपत्र (कम से कम एक)",
+    "personalDetails": "व्यक्तिगत विवरण",
+    "headline": "रिज़्यूमे हेडलाइन",
+    "keySkills": "मुख्य कौशल",
+    "itSkills": "आईटी कौशल",
+    "projects": "प्रोजेक्ट",
+    "summary": "प्रोफ़ाइल सारांश",
+    "accomplishments": "उपलब्धियाँ",
+    "careerProfile": "करियर प्रोफ़ाइल",
+    "languages": "व्यक्तिगत विवरण और भाषाएँ"
   },
   "publicCompany": {
     "notAvailable": "यह कंपनी प्रोफ़ाइल उपलब्ध नहीं है।",

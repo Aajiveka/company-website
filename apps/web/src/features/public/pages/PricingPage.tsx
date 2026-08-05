@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { PricingPlans } from '../components/PricingPlans';
+import { PlanComparison } from '../components/PlanComparison';
 import { DevicesSection } from '../components/DevicesSection';
 
 export default function PricingPage() {
@@ -19,6 +20,7 @@ export default function PricingPage() {
         subtitle={t('pricing.bannerSubtitle')}
       />
       <PricingPlans />
+      <PlanComparison />
       <DevicesSection />
     </>
   );

@@ -7,6 +7,18 @@ import { JobSearchBar } from '@/features/jobs/components/JobSearchBar';
 /** Service icon paths — keep content in the translation file. */
 const SERVICE_ICONS = ['/image/s1.svg', '/image/s2.svg', '/image/s3.svg', '/image/s4.svg', '/image/s5.svg', '/image/s6.svg'];
 const SERVICE_KEYS = ['advancedSearch', 'jobPosting', 'resumeBuilder', 'employerBranding', 'resumeDatabase', 'careerAdvice'] as const;
+/** The seven onboarding steps from the company brochure. */
+const HOW_IT_WORKS_STEPS = [1, 2, 3, 4, 5, 6, 7] as const;
+/** Brochure page 4 staggers the steps around the phone: odd ones to its left, even ones to its right. */
+const STEP_PLACEMENT = [
+  'lg:col-start-1 lg:row-start-1 lg:flex-row-reverse lg:text-right',
+  'lg:col-start-3 lg:row-start-2',
+  'lg:col-start-1 lg:row-start-3 lg:flex-row-reverse lg:text-right',
+  'lg:col-start-3 lg:row-start-4',
+  'lg:col-start-1 lg:row-start-5 lg:flex-row-reverse lg:text-right',
+  'lg:col-start-3 lg:row-start-6',
+  'lg:col-start-1 lg:row-start-7 lg:flex-row-reverse lg:text-right',
+] as const;
 
 /**
  * Home page — faithful rebuild of index.aspx (hero, About, Our Story,
@@ -71,9 +83,25 @@ export default function HomePage() {
 
       {/* ------------------------------- About -------------------------------- */}
       <section className="py-8 md:py-12 lg:py-20">
-        <div className="container text-center">
-          <h2>{t('about.heading')}</h2>
-          <p className="mx-auto mt-4 max-w-3xl text-gray-600 dark:text-gray-300">{t('about.text')}</p>
+        <div className="container">
+          <div className="grid items-center gap-8 md:grid-cols-2 lg:gap-14">
+            <div>
+              <p className="font-heading text-xl font-medium text-gray-500 dark:text-gray-400">{t('about.eyebrow')}</p>
+              <h2>{t('about.heading')}</h2>
+              <p className="mt-6 text-gray-600 dark:text-gray-300">{t('about.text1')}</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">{t('about.text2')}</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">{t('about.text3')}</p>
+            </div>
+            <img
+              src="/image/about-aajiveka.webp"
+              alt={t('about.imageAlt')}
+              width={900}
+              height={1080}
+              loading="lazy"
+              decoding="async"
+              className="mx-auto w-full max-w-md rounded-2xl object-cover"
+            />
+          </div>
         </div>
       </section>
 
@@ -99,34 +127,63 @@ export default function HomePage() {
       {/* --------------------------- Our Philosophy --------------------------- */}
       <section className="my-8 bg-accent py-10 md:my-12 md:py-16 lg:my-20">
         <div className="container">
-          <h2>{t('philosophy.heading')}</h2>
-          <div className="mt-4 max-w-4xl space-y-3 text-navy/80">
-            <p>{t('philosophy.text1')}</p>
-            <p>{t('philosophy.text2')}</p>
-          </div>
-          <div className="my-8 grid grid-cols-2 gap-4 md:my-12 md:gap-6 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((n, i) => (
-              <div
-                key={n}
-                className={`group overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                  i % 2 === 1 ? 'lg:mt-10' : ''
-                }`}
-              >
-                <img
-                  src={`/image/philosophy${n}.webp`}
-                  alt=""
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                  decoding="async"
-                  style={{ aspectRatio: '3/4' }}
-                />
+          <div className="grid items-center gap-8 md:grid-cols-2 lg:gap-14">
+            <div>
+              <h2>{t('philosophy.heading')}</h2>
+              <div className="mt-6 space-y-3 text-navy/80">
+                <p>{t('philosophy.text1')}</p>
+                <p>{t('philosophy.text2')}</p>
+                <p>{t('philosophy.text3')}</p>
               </div>
-            ))}
+            </div>
+            <img
+              src="/image/philosophy-aajiveka.webp"
+              alt={t('philosophy.imageAlt')}
+              width={800}
+              height={827}
+              loading="lazy"
+              decoding="async"
+              className="mx-auto w-full max-w-sm object-contain"
+            />
           </div>
-          <div className="max-w-4xl space-y-3 text-navy/80">
-            <p>{t('philosophy.text3')}</p>
+          <div className="mt-8 max-w-4xl space-y-3 text-navy/80 md:mt-12">
             <p>{t('philosophy.text4')}</p>
+            <p>{t('philosophy.text5')}</p>
+            <p>{t('philosophy.text6')}</p>
           </div>
+        </div>
+      </section>
+
+      {/* --------------------------- How It Works ----------------------------- */}
+      <section className="py-8 md:py-12">
+        <div className="container">
+          <div className="max-w-xl">
+            <p className="font-heading text-xl font-medium text-gray-500 dark:text-gray-400">{t('howItWorks.eyebrow')}</p>
+            <h2>{t('howItWorks.heading')}</h2>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">{t('howItWorks.subtext')}</p>
+          </div>
+          <ol className="mt-8 grid items-center gap-4 sm:grid-cols-2 lg:mt-12 lg:grid-cols-[1fr_auto_1fr] lg:gap-x-12">
+            <img
+              src="/image/how-it-works-app.webp"
+              alt={t('howItWorks.imageAlt')}
+              width={560}
+              height={1166}
+              loading="lazy"
+              decoding="async"
+              className="mx-auto w-full max-w-55 object-contain sm:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-span-7 lg:row-start-1 lg:max-w-65"
+            />
+            {HOW_IT_WORKS_STEPS.map((n) => (
+              <li
+                key={n}
+                className={`flex items-center gap-4 rounded-xl bg-white p-4 shadow-card transition hover:-translate-y-1 dark:bg-gray-800 dark:shadow-none dark:ring-1 dark:ring-gray-700 ${STEP_PLACEMENT[n - 1]}`}
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary font-heading text-lg font-bold text-white">
+                  {n}
+                </span>
+                <span className="font-medium text-navy dark:text-gray-200">{t(`howItWorks.step${n}`)}</span>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 

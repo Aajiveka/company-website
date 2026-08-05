@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, useToast } from '@/components/ui';
@@ -12,6 +12,12 @@ import { loginSchema, type LoginValues } from '../auth.types';
 import { ROLE_HOME } from '@/types/roles';
 import { AuthShell } from '../components/AuthShell';
 import SocialLoginButtons from '../components/SocialLoginButtons';
+import {
+  LOGIN_PORTAL_PARAM,
+  isLoginPortal,
+  portalAllowsRole,
+  type LoginPortal,
+} from '../loginPortals';
 
 export default function LoginPage() {
   const { setSession } = useAuth();
@@ -20,7 +26,13 @@ export default function LoginPage() {
   const location = useLocation();
   const { t } = useTranslation('auth');
   const { t: tCommon } = useTranslation('common');
+  const [searchParams] = useSearchParams();
   const from = (location.state as { from?: Location } | null)?.from?.pathname;
+
+  // `/login?as=admin|employer|candidate` — set by the navbar's login dropdown. Without it
+  // the page keeps its original behaviour: any role may sign in here.
+  const portalParam = searchParams.get(LOGIN_PORTAL_PARAM);
+  const portal: LoginPortal | null = isLoginPortal(portalParam) ? portalParam : null;
 
   const {
     register,
@@ -31,6 +43,14 @@ export default function LoginPage() {
   const mutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (session) => {
+      // Wrong door: the credentials are valid but not for this portal. Drop the session
+      // rather than redirecting, so "Admin Login" only ever signs in an admin. The tokens
+      // the API just issued are revoked so nothing usable is left behind.
+      if (portal && !portalAllowsRole(portal, session.user.roleId)) {
+        void authApi.logout(session.refreshToken).catch(() => {});
+        notify(t(`login.portal.${portal}.wrongPortal`), 'error');
+        return;
+      }
       setSession(session);
       notify(t('login.welcomeBack'), 'success');
       navigate(from ?? ROLE_HOME[session.user.roleId], { replace: true });
@@ -47,18 +67,24 @@ export default function LoginPage() {
     <>
     <Seo title="Login" description="Log in to your Aajiveka account to manage jobs, applications, and your career profile." path="/login" noIndex />
     <AuthShell
-      title={t('login.title')}
-      subtitle={t('login.subtitle')}
+      title={portal ? t(`login.portal.${portal}.title`) : t('login.title')}
+      subtitle={portal ? t(`login.portal.${portal}.subtitle`) : t('login.subtitle')}
       footer={
-        <>
-          {t('login.noAccount')}{' '}
-          <Link to="/register" className="font-medium text-primary hover:underline">
-            {t('login.registerLink')}
-          </Link>
-        </>
+        // Admin accounts are provisioned, never self-registered, so that door gets no
+        // "register now" link.
+        portal === 'admin' ? null : (
+          <>
+            {t('login.noAccount')}{' '}
+            <Link to="/register" className="font-medium text-primary hover:underline">
+              {t('login.registerLink')}
+            </Link>
+          </>
+        )
       }
     >
-      <SocialLoginButtons mode="login" />
+      {/* OAuth returns its own session and so never passes through the portal check
+          below — keep it off the admin door entirely. */}
+      {portal !== 'admin' && <SocialLoginButtons mode="login" />}
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
         <Input
           label={t('login.usernameOrEmail')}

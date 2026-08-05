@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 import { PricingPlans } from '../components/PricingPlans';
+import { PlanComparison } from '../components/PlanComparison';
 import { DevicesSection } from '../components/DevicesSection';
 
 const BENEFIT_KEYS = ['benefit1', 'benefit2', 'benefit3', 'benefit4', 'benefit5'] as const;
@@ -32,6 +33,7 @@ export default function SubscriptionPage() {
         </div>
       </section>
 
+      <PlanComparison />
       <PricingPlans />
       <DevicesSection />
     </>

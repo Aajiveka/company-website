@@ -7,12 +7,22 @@ import { JobMapStatus, SubscriberStatus, JOB_STATUS_ACTIVE } from '@/shared/stat
 import type {
   CreateJobAlertDto,
   CreateSavedSearchDto,
+  UpdateCareerProfileDto,
+  UpdateDiversityDto,
+  UpdateHeadlineDto,
+  UpdateKeySkillsDto,
   UpdateNotificationPrefsDto,
+  UpdatePersonalDetailsDto,
   UpdatePersonalDto,
   UpdateProfessionalDto,
+  UpdateSummaryDto,
+  UpsertAccomplishmentDto,
   UpsertCertificateDto,
   UpsertEducationDto,
   UpsertEmploymentDto,
+  UpsertItSkillDto,
+  UpsertLanguageDto,
+  UpsertProjectDto,
 } from './dto/candidates.dto';
 
 /* ------------------------------------------------------------------ *
@@ -137,7 +147,7 @@ export class CandidatesService {
     });
     if (!cv) throw new NotFoundException('Candidate profile not found');
 
-    const [tags, education, employers] = await Promise.all([
+    const [tags, education, employers, extra, uploadedCv] = await Promise.all([
       // Skills are tags, not tblMstrSkills — the proc builds them from tblSubscriberTags.
       this.db.subscriberTags.findMany({
         where: { subscriberID: subscriberId },
@@ -153,26 +163,57 @@ export class CandidatesService {
         include: { designation: { select: { descr: true } } },
         orderBy: { joiningDate: 'desc' },
       }),
+      this.db.subscriberProfileExtra.findUnique({ where: { subscriberID: subscriberId } }),
+      this.db.subscriberCVUploaded.findUnique({ where: { subscriberID: subscriberId } }),
     ]);
 
     const gender = cv.gender === 'M' ? 'Male' : cv.gender === 'F' ? 'Female' : 'Others';
     const date = (d: Date | null) => this.fmtDate(d);
+    const current = employers.find((e) => e.flgCurrent === 1) ?? employers[0];
+
+    /**
+     * "Last updated" is the newest write across the CV row and every section that hangs off
+     * it. Reading only tblSubscriberCVDetails.TimestampUpd would freeze the date the moment a
+     * candidate started editing sections that live in their own tables.
+     */
+    const lastUpdated = [
+      cv.timestampUpd,
+      cv.timestampIns,
+      extra?.timestampUpd,
+      ...employers.map((e) => e.timestampUpd ?? e.timestampIns),
+      ...education.map((e) => e.timestampUpd ?? e.timestampIns),
+    ]
+      .filter((d): d is Date => !!d)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
 
     return {
       subscriberId,
       fullName: cv.fullName?.trim() || cv.mobileNo1 || '',
       email: cv.emailID ?? '',
+      emailVerified: cv.emailVerified,
       mobile: cv.mobileNo1 ?? '',
       gender,
       city: cv.city?.descr ?? '',
       designation: cv.subFunction?.descr ?? '',
       totalExperience: cv.totalExp != null ? String(cv.totalExp) : '',
       photoUrl: cv.photoName?.trim() ? `/files/${cv.photoName}` : null,
+      // The header block the profile page renders above the fold.
+      resumeHeadline: extra?.resumeHeadline ?? '',
+      currentCompany: current?.employer ?? '',
+      currentDesignation: current?.designation?.descr ?? cv.subFunction?.descr ?? '',
+      currentCtc: cv.currentCTC != null ? Number(cv.currentCTC) : null,
+      noticePeriod: cv.noticePeriod,
+      profileUpdatedAt: lastUpdated ? lastUpdated.toISOString() : null,
+      // tblSubscriberCVUploaded is where the uploaded file's own name and date live;
+      // CVDetails.CVPath only ever held the storage key.
+      resumeUrl: uploadedCv ? `/files/resume` : null,
+      resumeFileName: uploadedCv?.cVName ?? null,
+      resumeUploadedAt: uploadedCv ? date(uploadedCv.tImestampUpd ?? uploadedCv.timestampIns) : null,
       skills: tags.map((t) => t.tag?.tagName ?? '').filter(Boolean),
       education: education.map((e) => ({
         degree: e.degree?.descr ?? '',
-        institute: '', // tblSubscriberEducation records no institute — the column does not exist.
-        year: date(e.timestampIns).slice(0, 4),
+        institute: e.instituteName ?? '',
+        year: e.passingYear != null ? String(e.passingYear) : date(e.timestampIns).slice(0, 4),
       })),
       experience: employers.map((e) => ({
         company: e.employer ?? '',
@@ -199,7 +240,7 @@ export class CandidatesService {
 
   /** id-backed lookup lists for the CV editor — every axis on tblSubscriberCVDetails is an FK, not free text. */
   async cvMasters() {
-    const [states, cities, subFunctions, industries, skills, courses, degrees, designations, empTypes] = await Promise.all([
+    const [states, cities, subFunctions, industries, skills, courses, degrees, designations, empTypes, tags] = await Promise.all([
       this.db.mstrState.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrCily.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrSubFunctions.findMany({ orderBy: { descr: 'asc' } }),
@@ -219,6 +260,10 @@ export class CandidatesService {
       this.db.mstrEducationType.findMany({ orderBy: { highestSeq: 'asc' } }),
       this.db.mstrDesignation.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrEmpType.findMany({ orderBy: { descr: 'asc' } }),
+      // The key-skill chips are tblMstrTags, not tblMstrSkills — updateProfessional matches
+      // submitted names against tags and drops anything unmatched, so the picker has to offer
+      // tag names or every suggestion it made would silently vanish on save.
+      this.db.mstrTags.findMany({ orderBy: { tagName: 'asc' } }),
     ]);
     const opt = (id: number, label: string | null) => ({ id, label: label ?? '' });
     return {
@@ -233,21 +278,132 @@ export class CandidatesService {
       degrees: degrees.map((d) => opt(d.educationTypeID, d.descr)),
       designations: designations.map((d) => opt(d.designationID, d.descr)),
       employmentTypes: empTypes.map((e) => opt(e.employeeTypeID, e.descr)),
+      tags: tags.map((t) => opt(Number(t.tagID), t.tagName)),
     };
+  }
+
+  /** Splits a stored comma-separated list back into the array the editor works in. */
+  private csvToList(value: string | null | undefined): string[] {
+    return (value ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  /** The inverse — NULL rather than '' for an empty list, so "never set" stays distinguishable. */
+  private listToCsv(list: string[] | undefined): string | null | undefined {
+    if (list === undefined) return undefined;
+    const joined = list.map((s) => s.trim()).filter(Boolean).join(', ');
+    return joined || null;
   }
 
   /** The candidate's own CV in edit-friendly shape — raw ids, not display strings. */
   async editProfile(subscriberId: number) {
-    const [cv, education, employers, certificates, preferredLocations, tags] = await Promise.all([
+    const [
+      cv,
+      education,
+      employers,
+      certificates,
+      preferredLocations,
+      tags,
+      extra,
+      itSkills,
+      projects,
+      accomplishments,
+      languages,
+    ] = await Promise.all([
       this.db.subscriberCVDetails.findUnique({ where: { subscriberID: subscriberId } }),
       this.db.subscriberEducation.findMany({ where: { subscriberID: subscriberId }, orderBy: { subscriberEducationID: 'asc' } }),
       this.db.subscriberEmployer.findMany({ where: { subscriberID: subscriberId }, orderBy: { joiningDate: 'desc' } }),
       this.db.subscriberCertificate.findMany({ where: { subscriberID: subscriberId }, orderBy: { subscriberCertificateID: 'asc' } }),
       this.db.subscriberPrefferedLocations.findMany({ where: { subscriberID: subscriberId } }),
       this.db.subscriberTags.findMany({ where: { subscriberID: subscriberId }, include: { tag: { select: { tagName: true } } } }),
+      this.db.subscriberProfileExtra.findUnique({ where: { subscriberID: subscriberId } }),
+      this.db.subscriberITSkill.findMany({ where: { subscriberID: subscriberId }, orderBy: { subscriberITSkillID: 'asc' } }),
+      this.db.subscriberProject.findMany({ where: { subscriberID: subscriberId }, orderBy: [{ workedFromYear: 'desc' }, { subscriberProjectID: 'desc' }] }),
+      this.db.subscriberAccomplishment.findMany({ where: { subscriberID: subscriberId }, orderBy: { subscriberAccomplishmentID: 'asc' } }),
+      this.db.subscriberLanguage.findMany({ where: { subscriberID: subscriberId }, orderBy: { subscriberLanguageID: 'asc' } }),
     ]);
 
     return {
+      headline: extra?.resumeHeadline ?? '',
+      summary: extra?.profileSummary ?? '',
+      careerProfile: {
+        industryTypeId: cv?.industryTypeID ?? null,
+        department: extra?.department ?? '',
+        roleCategory: extra?.roleCategory ?? '',
+        jobRole: extra?.jobRole ?? '',
+        desiredJobType: this.csvToList(extra?.desiredJobType),
+        desiredEmploymentType: this.csvToList(extra?.desiredEmploymentType),
+        preferredShift: extra?.preferredShift ?? '',
+        preferredSalary: extra?.preferredSalary != null ? Number(extra.preferredSalary) : null,
+        preferredJobRoles: this.csvToList(extra?.preferredJobRoles),
+        preferredCityIds: preferredLocations.map((p) => p.cityID),
+      },
+      personalDetails: {
+        maritalStatus: extra?.maritalStatus ?? '',
+        personalTraits: this.csvToList(extra?.personalTraits),
+        category: extra?.category ?? '',
+        workPermitCountries: this.csvToList(extra?.workPermitCountries),
+        usWorkPermit: extra?.usWorkPermit ?? '',
+      },
+      diversity: {
+        disabilityStatus: extra?.disabilityStatus ?? '',
+        disabilityType: extra?.disabilityType ?? '',
+        disabilityPercent: extra?.disabilityPercent ?? null,
+        assistanceRequired: extra?.assistanceRequired ?? '',
+        militaryStatus: extra?.militaryStatus ?? '',
+        militaryServiceType: extra?.militaryServiceType ?? '',
+        militaryRank: extra?.militaryRank ?? '',
+        militaryEnrolmentDate: this.fmtDate(extra?.militaryEnrolmentDate ?? null),
+        careerBreakStatus: extra?.careerBreakStatus ?? '',
+        careerBreakReason: extra?.careerBreakReason ?? '',
+        careerBreakFrom: this.fmtDate(extra?.careerBreakFrom ?? null),
+        careerBreakTo: this.fmtDate(extra?.careerBreakTo ?? null),
+      },
+      itSkills: itSkills.map((s) => ({
+        subscriberItSkillId: Number(s.subscriberITSkillID),
+        skillName: s.skillName,
+        version: s.version ?? '',
+        lastUsedYear: s.lastUsedYear,
+        expYears: s.expYears,
+        expMonths: s.expMonths,
+      })),
+      projects: projects.map((p) => ({
+        subscriberProjectId: Number(p.subscriberProjectID),
+        title: p.title,
+        clientName: p.clientName ?? '',
+        projectStatus: p.projectStatus ?? '',
+        workedFromMonth: p.workedFromMonth,
+        workedFromYear: p.workedFromYear,
+        workedTillMonth: p.workedTillMonth,
+        workedTillYear: p.workedTillYear,
+        projectSite: p.projectSite ?? '',
+        natureOfEmployment: p.natureOfEmployment ?? '',
+        teamSize: p.teamSize,
+        roleDescr: p.roleDescr ?? '',
+        skillsUsed: this.csvToList(p.skillsUsed),
+        details: p.details ?? '',
+      })),
+      accomplishments: accomplishments.map((a) => ({
+        subscriberAccomplishmentId: Number(a.subscriberAccomplishmentID),
+        kind: a.kind,
+        title: a.title,
+        url: a.url ?? '',
+        descr: a.descr ?? '',
+        eventMonth: a.eventMonth,
+        eventYear: a.eventYear,
+        patentStatus: a.patentStatus ?? '',
+        patentOffice: a.patentOffice ?? '',
+      })),
+      languages: languages.map((l) => ({
+        subscriberLanguageId: Number(l.subscriberLanguageID),
+        languageName: l.languageName ?? '',
+        proficiencyId: l.proficiencyID ?? 1,
+        canRead: l.flgRead === 'Y',
+        canWrite: l.flgWrite === 'Y',
+        canSpeak: l.flgSpeak === 'Y',
+      })),
       personal: cv && {
         fullName: cv.fullName ?? '',
         email: cv.emailID ?? '',
@@ -273,6 +429,10 @@ export class CandidatesService {
         subscriberEducationId: Number(e.subscriberEducationID),
         courseTypeId: e.courseTypeID,
         degreeId: e.degreeID,
+        instituteName: e.instituteName ?? '',
+        passingYear: e.passingYear,
+        courseMode: e.courseMode ?? '',
+        marks: e.marks ?? '',
       })),
       employment: employers.map((e) => ({
         subscriberEmployerId: Number(e.subscriberEmployerID),
@@ -289,6 +449,13 @@ export class CandidatesService {
       certificates: certificates.map((c) => ({
         subscriberCertificateId: Number(c.subscriberCertificateID),
         certificateName: c.certificateName,
+        certificateUrl: c.certificateUrl ?? '',
+        certificationId: c.certificationID ?? '',
+        validFromMonth: c.validFromMonth,
+        validFromYear: c.validFromYear,
+        validTillMonth: c.validTillMonth,
+        validTillYear: c.validTillYear,
+        neverExpires: c.flgNeverExpires,
       })),
     };
   }
@@ -406,21 +573,27 @@ export class CandidatesService {
   /** Port of spSubscriberCVUpdate_Education — create when no id, else update in place. */
   async upsertEducation(userId: number, subscriberId: number, dto: UpsertEducationDto) {
     const now = new Date();
+    // Conditional, because two editors write this row and they do not show the same fields.
+    // An unconditional mapping made the CV manager blank the institute and passing year it
+    // never rendered. An explicit empty string still clears, which is how the profile
+    // dialog removes a value.
+    const data = {
+      courseTypeID: dto.courseTypeId ?? null,
+      degreeID: dto.degreeId,
+      ...(dto.instituteName !== undefined && { instituteName: dto.instituteName.trim() || null }),
+      ...(dto.passingYear !== undefined && { passingYear: dto.passingYear }),
+      ...(dto.courseMode !== undefined && { courseMode: dto.courseMode || null }),
+      ...(dto.marks !== undefined && { marks: dto.marks.trim() || null }),
+    };
     if (dto.subscriberEducationId) {
       await this.db.subscriberEducation.updateMany({
         where: { subscriberEducationID: dto.subscriberEducationId, subscriberID: subscriberId },
-        data: { courseTypeID: dto.courseTypeId, degreeID: dto.degreeId, timestampUpd: now, loginIDUpd: userId },
+        data: { ...data, timestampUpd: now, loginIDUpd: userId },
       });
       return { subscriberEducationId: dto.subscriberEducationId };
     }
     const row = await this.db.subscriberEducation.create({
-      data: {
-        subscriberID: subscriberId,
-        courseTypeID: dto.courseTypeId,
-        degreeID: dto.degreeId,
-        timestampIns: now,
-        loginIDIns: userId,
-      },
+      data: { subscriberID: subscriberId, ...data, timestampIns: now, loginIDIns: userId },
     });
     return { subscriberEducationId: Number(row.subscriberEducationID) };
   }
@@ -464,21 +637,260 @@ export class CandidatesService {
 
   async upsertCertificate(userId: number, subscriberId: number, dto: UpsertCertificateDto) {
     const now = new Date();
+    // A credential flagged as never expiring must not also carry a "valid till" — the two
+    // would contradict each other on the profile.
+    const neverExpires = !!dto.neverExpires;
+    // Conditional for the same reason as education: the CV manager edits only the name.
+    const data = {
+      certificateName: dto.certificateName.trim(),
+      ...(dto.certificateUrl !== undefined && { certificateUrl: dto.certificateUrl.trim() || null }),
+      ...(dto.certificationId !== undefined && { certificationID: dto.certificationId.trim() || null }),
+      ...(dto.validFromMonth !== undefined && { validFromMonth: dto.validFromMonth }),
+      ...(dto.validFromYear !== undefined && { validFromYear: dto.validFromYear }),
+      ...(dto.neverExpires !== undefined && {
+        flgNeverExpires: neverExpires,
+        validTillMonth: neverExpires ? null : (dto.validTillMonth ?? null),
+        validTillYear: neverExpires ? null : (dto.validTillYear ?? null),
+      }),
+    };
     if (dto.subscriberCertificateId) {
       await this.db.subscriberCertificate.updateMany({
         where: { subscriberCertificateID: dto.subscriberCertificateId, subscriberID: subscriberId },
-        data: { certificateName: dto.certificateName, timestampUpd: now, loginIDUpd: userId },
+        data: { ...data, timestampUpd: now, loginIDUpd: userId },
       });
       return { subscriberCertificateId: dto.subscriberCertificateId };
     }
     const row = await this.db.subscriberCertificate.create({
-      data: { subscriberID: subscriberId, certificateName: dto.certificateName, timestampIns: now, loginIDIns: userId },
+      data: { subscriberID: subscriberId, ...data, timestampIns: now, loginIDIns: userId },
     });
     return { subscriberCertificateId: Number(row.subscriberCertificateID) };
   }
 
   async deleteCertificate(subscriberId: number, id: number) {
     await this.db.subscriberCertificate.deleteMany({ where: { subscriberCertificateID: id, subscriberID: subscriberId } });
+    return { ok: true };
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Profile sections (tblSubscriberProfileExtra and friends)
+   * ------------------------------------------------------------------ */
+
+  /**
+   * Writes a patch to the 1:1 extras row, creating it on first use.
+   *
+   * Every caller passes a partial: a section editor must not blank out the sections it does
+   * not render. Prisma's `update` half of an upsert only touches the keys present in the
+   * object, and each DTO→data mapper below omits `undefined` fields for the same reason.
+   */
+  private async writeExtra(
+    userId: number,
+    subscriberId: number,
+    data: Record<string, unknown>,
+  ) {
+    const now = new Date();
+    await this.db.subscriberProfileExtra.upsert({
+      where: { subscriberID: subscriberId },
+      create: { subscriberID: subscriberId, ...data, timestampIns: now, loginIDIns: userId },
+      update: { ...data, timestampUpd: now, loginIDUpd: userId },
+    });
+    return { ok: true };
+  }
+
+  updateHeadline(userId: number, subscriberId: number, dto: UpdateHeadlineDto) {
+    return this.writeExtra(userId, subscriberId, { resumeHeadline: dto.resumeHeadline.trim() || null });
+  }
+
+  updateSummary(userId: number, subscriberId: number, dto: UpdateSummaryDto) {
+    return this.writeExtra(userId, subscriberId, { profileSummary: dto.profileSummary.trim() || null });
+  }
+
+  /**
+   * Key skills on their own, so the chip editor does not have to round-trip the whole
+   * professional block (and risk clearing a field it never showed).
+   */
+  async updateKeySkills(userId: number, subscriberId: number, dto: UpdateKeySkillsDto) {
+    return this.updateProfessional(userId, subscriberId, { tagNames: dto.tagNames });
+  }
+
+  /**
+   * Career profile. Industry and preferred locations already live on the legacy tables, so
+   * they are written there; everything else is new and lands on the extras row.
+   */
+  async updateCareerProfile(userId: number, subscriberId: number, dto: UpdateCareerProfileDto) {
+    if (dto.industryTypeId !== undefined || dto.preferredCityIds !== undefined) {
+      await this.updateProfessional(userId, subscriberId, {
+        industryTypeId: dto.industryTypeId,
+        preferredCityIds: dto.preferredCityIds,
+      });
+    }
+    return this.writeExtra(userId, subscriberId, {
+      ...(dto.department !== undefined && { department: dto.department.trim() || null }),
+      ...(dto.roleCategory !== undefined && { roleCategory: dto.roleCategory.trim() || null }),
+      ...(dto.jobRole !== undefined && { jobRole: dto.jobRole.trim() || null }),
+      ...(dto.desiredJobType !== undefined && { desiredJobType: this.listToCsv(dto.desiredJobType) }),
+      ...(dto.desiredEmploymentType !== undefined && {
+        desiredEmploymentType: this.listToCsv(dto.desiredEmploymentType),
+      }),
+      ...(dto.preferredShift !== undefined && { preferredShift: dto.preferredShift || null }),
+      ...(dto.preferredSalary !== undefined && { preferredSalary: dto.preferredSalary }),
+      ...(dto.preferredJobRoles !== undefined && { preferredJobRoles: this.listToCsv(dto.preferredJobRoles) }),
+    });
+  }
+
+  updatePersonalDetails(userId: number, subscriberId: number, dto: UpdatePersonalDetailsDto) {
+    return this.writeExtra(userId, subscriberId, {
+      ...(dto.maritalStatus !== undefined && { maritalStatus: dto.maritalStatus || null }),
+      ...(dto.personalTraits !== undefined && { personalTraits: this.listToCsv(dto.personalTraits) }),
+      ...(dto.category !== undefined && { category: dto.category || null }),
+      ...(dto.workPermitCountries !== undefined && {
+        workPermitCountries: this.listToCsv(dto.workPermitCountries),
+      }),
+      ...(dto.usWorkPermit !== undefined && { usWorkPermit: dto.usWorkPermit.trim() || null }),
+    });
+  }
+
+  updateDiversity(userId: number, subscriberId: number, dto: UpdateDiversityDto) {
+    const date = (v: string | undefined) => (v ? new Date(v) : null);
+    return this.writeExtra(userId, subscriberId, {
+      ...(dto.disabilityStatus !== undefined && { disabilityStatus: dto.disabilityStatus || null }),
+      ...(dto.disabilityType !== undefined && { disabilityType: dto.disabilityType.trim() || null }),
+      ...(dto.disabilityPercent !== undefined && { disabilityPercent: dto.disabilityPercent }),
+      ...(dto.assistanceRequired !== undefined && { assistanceRequired: dto.assistanceRequired.trim() || null }),
+      ...(dto.militaryStatus !== undefined && { militaryStatus: dto.militaryStatus || null }),
+      ...(dto.militaryServiceType !== undefined && { militaryServiceType: dto.militaryServiceType.trim() || null }),
+      ...(dto.militaryRank !== undefined && { militaryRank: dto.militaryRank.trim() || null }),
+      ...(dto.militaryEnrolmentDate !== undefined && { militaryEnrolmentDate: date(dto.militaryEnrolmentDate) }),
+      ...(dto.careerBreakStatus !== undefined && { careerBreakStatus: dto.careerBreakStatus || null }),
+      ...(dto.careerBreakReason !== undefined && { careerBreakReason: dto.careerBreakReason.trim() || null }),
+      ...(dto.careerBreakFrom !== undefined && { careerBreakFrom: date(dto.careerBreakFrom) }),
+      // Left NULL while the break is ongoing; the profile prints "Present" for that.
+      ...(dto.careerBreakTo !== undefined && { careerBreakTo: date(dto.careerBreakTo) }),
+    });
+  }
+
+  async upsertItSkill(userId: number, subscriberId: number, dto: UpsertItSkillDto) {
+    const now = new Date();
+    const data = {
+      skillName: dto.skillName.trim(),
+      version: dto.version?.trim() || null,
+      lastUsedYear: dto.lastUsedYear ?? null,
+      expYears: dto.expYears ?? null,
+      expMonths: dto.expMonths ?? null,
+    };
+    if (dto.subscriberItSkillId) {
+      await this.db.subscriberITSkill.updateMany({
+        where: { subscriberITSkillID: dto.subscriberItSkillId, subscriberID: subscriberId },
+        data: { ...data, timestampUpd: now, loginIDUpd: userId },
+      });
+      return { subscriberItSkillId: dto.subscriberItSkillId };
+    }
+    const row = await this.db.subscriberITSkill.create({
+      data: { subscriberID: subscriberId, ...data, timestampIns: now, loginIDIns: userId },
+    });
+    return { subscriberItSkillId: Number(row.subscriberITSkillID) };
+  }
+
+  async deleteItSkill(subscriberId: number, id: number) {
+    await this.db.subscriberITSkill.deleteMany({ where: { subscriberITSkillID: id, subscriberID: subscriberId } });
+    return { ok: true };
+  }
+
+  async upsertProject(userId: number, subscriberId: number, dto: UpsertProjectDto) {
+    const now = new Date();
+    // An in-progress project has no end, so a "worked till" typed before the status was
+    // switched must not survive as a contradictory end date.
+    const inProgress = dto.projectStatus === 'In Progress';
+    const data = {
+      title: dto.title.trim(),
+      clientName: dto.clientName?.trim() || null,
+      projectStatus: dto.projectStatus || null,
+      workedFromMonth: dto.workedFromMonth ?? null,
+      workedFromYear: dto.workedFromYear ?? null,
+      workedTillMonth: inProgress ? null : dto.workedTillMonth ?? null,
+      workedTillYear: inProgress ? null : dto.workedTillYear ?? null,
+      projectSite: dto.projectSite || null,
+      natureOfEmployment: dto.natureOfEmployment || null,
+      teamSize: dto.teamSize ?? null,
+      roleDescr: dto.roleDescr?.trim() || null,
+      skillsUsed: this.listToCsv(dto.skillsUsed) ?? null,
+      details: dto.details?.trim() || null,
+    };
+    if (dto.subscriberProjectId) {
+      await this.db.subscriberProject.updateMany({
+        where: { subscriberProjectID: dto.subscriberProjectId, subscriberID: subscriberId },
+        data: { ...data, timestampUpd: now, loginIDUpd: userId },
+      });
+      return { subscriberProjectId: dto.subscriberProjectId };
+    }
+    const row = await this.db.subscriberProject.create({
+      data: { subscriberID: subscriberId, ...data, timestampIns: now, loginIDIns: userId },
+    });
+    return { subscriberProjectId: Number(row.subscriberProjectID) };
+  }
+
+  async deleteProject(subscriberId: number, id: number) {
+    await this.db.subscriberProject.deleteMany({ where: { subscriberProjectID: id, subscriberID: subscriberId } });
+    return { ok: true };
+  }
+
+  async upsertAccomplishment(userId: number, subscriberId: number, dto: UpsertAccomplishmentDto) {
+    const now = new Date();
+    const data = {
+      kind: dto.kind,
+      title: dto.title.trim(),
+      url: dto.url?.trim() || null,
+      descr: dto.descr?.trim() || null,
+      eventMonth: dto.eventMonth ?? null,
+      eventYear: dto.eventYear ?? null,
+      patentStatus: dto.patentStatus?.trim() || null,
+      patentOffice: dto.patentOffice?.trim() || null,
+    };
+    if (dto.subscriberAccomplishmentId) {
+      await this.db.subscriberAccomplishment.updateMany({
+        where: { subscriberAccomplishmentID: dto.subscriberAccomplishmentId, subscriberID: subscriberId },
+        data: { ...data, timestampUpd: now, loginIDUpd: userId },
+      });
+      return { subscriberAccomplishmentId: dto.subscriberAccomplishmentId };
+    }
+    const row = await this.db.subscriberAccomplishment.create({
+      data: { subscriberID: subscriberId, ...data, timestampIns: now, loginIDIns: userId },
+    });
+    return { subscriberAccomplishmentId: Number(row.subscriberAccomplishmentID) };
+  }
+
+  async deleteAccomplishment(subscriberId: number, id: number) {
+    await this.db.subscriberAccomplishment.deleteMany({
+      where: { subscriberAccomplishmentID: id, subscriberID: subscriberId },
+    });
+    return { ok: true };
+  }
+
+  async upsertLanguage(userId: number, subscriberId: number, dto: UpsertLanguageDto) {
+    const now = new Date();
+    // The legacy columns are char(1) 'Y'/'N', not booleans.
+    const yn = (v: boolean | undefined) => (v ? 'Y' : 'N');
+    const data = {
+      languageName: dto.languageName.trim(),
+      proficiencyID: dto.proficiencyId,
+      flgRead: yn(dto.canRead),
+      flgWrite: yn(dto.canWrite),
+      flgSpeak: yn(dto.canSpeak),
+    };
+    if (dto.subscriberLanguageId) {
+      await this.db.subscriberLanguage.updateMany({
+        where: { subscriberLanguageID: dto.subscriberLanguageId, subscriberID: subscriberId },
+        data: { ...data, timestampUpd: now, loginIDUpd: userId },
+      });
+      return { subscriberLanguageId: dto.subscriberLanguageId };
+    }
+    const row = await this.db.subscriberLanguage.create({
+      data: { subscriberID: subscriberId, ...data, timestampIns: now, loginIDIns: userId },
+    });
+    return { subscriberLanguageId: Number(row.subscriberLanguageID) };
+  }
+
+  async deleteLanguage(subscriberId: number, id: number) {
+    await this.db.subscriberLanguage.deleteMany({ where: { subscriberLanguageID: id, subscriberID: subscriberId } });
     return { ok: true };
   }
 
@@ -1182,10 +1594,37 @@ export class CandidatesService {
     const docTypeId = resumeDocType ? Number(resumeDocType.documentID) : 1;
 
     const stored = await this.storage.upload(docTypeId, userId, file);
+    const now = new Date();
 
     await this.db.subscriberCVDetails.update({
       where: { subscriberID: subscriberId },
       data: { cVPath: stored.key },
+    });
+
+    /**
+     * CVDetails.CVPath alone cannot back the resume card: it holds a generated storage key,
+     * so the profile could show neither the candidate's own filename nor when they uploaded
+     * it. tblSubscriberCVUploaded exists for exactly that and was simply never written.
+     */
+    await this.db.subscriberCVUploaded.upsert({
+      where: { subscriberID: subscriberId },
+      create: {
+        subscriberID: subscriberId,
+        latestCVPath: stored.key,
+        cVName: file.originalname,
+        timestampIns: now,
+        loginIDIns: userId,
+      },
+      update: {
+        latestCVPath: stored.key,
+        cVName: file.originalname,
+        tImestampUpd: now,
+        loginIDUpd: userId,
+      },
+    });
+    await this.db.subscriberRegistration.update({
+      where: { subscriberID: subscriberId },
+      data: { flgCVUploaded: 1 },
     });
 
     await this.audit.record({
@@ -1205,7 +1644,17 @@ export class CandidatesService {
       where: { subscriberID: subscriberId },
       data: { cVPath: null },
     });
+    // deleteMany, not delete: a candidate who never uploaded has no row, and clicking delete
+    // must not 500 on that.
+    await this.db.subscriberCVUploaded.deleteMany({ where: { subscriberID: subscriberId } });
     return { ok: true };
+  }
+
+  /** Streams the candidate's own resume back — the download link on the profile's resume card. */
+  async resumeFile(subscriberId: number) {
+    const uploaded = await this.db.subscriberCVUploaded.findUnique({ where: { subscriberID: subscriberId } });
+    if (!uploaded) throw new NotFoundException('No resume uploaded');
+    return { body: await this.storage.read(uploaded.latestCVPath), fileName: uploaded.cVName };
   }
 
   /** Upload avatar photo and update photoName on subscriberCVDetails. */

@@ -96,6 +96,25 @@ export class FilesController {
     return this.candidates.uploadResume(user.userId, subscriberId, file);
   }
 
+  /**
+   * The resume card's download link. It cannot point at the generic `:folder/:sub/:name`
+   * route: the browser sends no Authorization header on a plain <a download>, and the stored
+   * key is a generated name the candidate would not recognise. The client fetches this
+   * through the authenticated API client and saves the blob under the original filename.
+   */
+  @Get('resume')
+  @Roles(Role.Subscriber)
+  @ApiOperation({ summary: 'Download the signed-in candidate\'s own resume' })
+  async downloadResume(@CurrentUser() user: RequestUser, @Res() res: Response) {
+    const subscriberId = await this.candidates.subscriberIdFor(user.userId);
+    const { body, fileName } = await this.candidates.resumeFile(subscriberId);
+    // Never inline: the same reasoning as the generic download route.
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(body);
+  }
+
   @Delete('resume')
   @Roles(Role.Subscriber)
   @ApiOperation({ summary: 'Delete the signed-in candidate\'s resume reference' })

@@ -10,6 +10,7 @@ import AnalyticsProvider from '@/components/AnalyticsProvider';
 
 // Route-level code splitting — each page is its own chunk.
 const HomePage = lazy(() => import('@/features/home/HomePage'));
+const BrochureHomePage = lazy(() => import('@/features/home/brochure/BrochureHomePage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
 
@@ -112,6 +113,13 @@ export const router = createBrowserRouter([
   {
     element: <AnalyticsProvider />,
     children: [
+      // Brochure home — a full-bleed, page-for-page rebuild of the printed
+      // company brochure, so it deliberately renders without the site chrome.
+      {
+        path: '/brochure',
+        element: withSuspense(<BrochureHomePage />),
+        errorElement: <RouteErrorFallback />,
+      },
       {
         element: <PublicLayout />,
         errorElement: <RouteErrorFallback />,

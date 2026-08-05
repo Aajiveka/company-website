@@ -1,6 +1,20 @@
 import { Role, type RoleId } from '@/types/roles';
 import type { AuthSession } from '@/features/auth/auth.types';
-import type { CandidateProfile, CvEditProfile } from '@/features/candidates/candidate.types';
+import type {
+  AccomplishmentKind,
+  CandidateProfile,
+  CvAccomplishmentEntry,
+  CvCareerProfile,
+  CvCertificateEntry,
+  CvDiversity,
+  CvEditProfile,
+  CvEducationEntry,
+  CvItSkillEntry,
+  CvLanguageEntry,
+  CvPersonalDetails,
+  CvProjectEntry,
+  LanguageProficiency,
+} from '@/features/candidates/candidate.types';
 import type { CompanyMasters, CompanyProfile, JobListing } from '@/features/clients/client.types';
 import type { PublicJob } from '@/features/jobs/jobs.types';
 import type { CandidateDocReview, CandidateRow, QC1Stats } from '@/features/recruitment/recruitment.types';
@@ -52,12 +66,19 @@ export const CANDIDATE_PROFILE: CandidateProfile = {
   subscriberId: 1,
   fullName: 'Rahul Sharma',
   email: 'rahul@example.com',
+  emailVerified: true,
   mobile: '9876543210',
   gender: 'Male',
   city: 'Pune',
   designation: 'Senior Software Engineer',
-  totalExperience: '6 years',
+  totalExperience: '6',
   photoUrl: null,
+  resumeHeadline: 'Full Stack Developer | React, Node.js | 6 years experience',
+  currentCompany: 'Acme Corp',
+  currentDesignation: 'Senior Software Engineer',
+  currentCtc: 1800000,
+  noticePeriod: 30,
+  profileUpdatedAt: '2026-07-07T10:00:00.000Z',
   resumeUrl: null,
   resumeFileName: null,
   resumeUploadedAt: null,
@@ -128,24 +149,104 @@ export const CV_MASTERS = {
     { id: 1, label: 'Full-time' },
     { id: 2, label: 'Contract' },
   ],
+  // Key-skill chips come from tblMstrTags, not tblMstrSkills.
+  tags: [
+    { id: 1, label: 'React' },
+    { id: 2, label: 'Node.js' },
+    { id: 3, label: 'TypeScript' },
+    { id: 4, label: 'SQL Server' },
+    { id: 5, label: 'REST APIs' },
+  ],
 };
 
 export let CV_EDIT_PROFILE: CvEditProfile = {
   personal: { fullName: 'Rahul Sharma', email: 'rahul@example.com', mobile: '9876543210', dob: '1994-05-12', gender: 'M', address: 'Pune, Maharashtra', cityId: 1 },
   professional: { subFunctionId: 1, skillId: 1, totalExp: 6, currentCtc: 1800000, currentCityId: 1, flgReadyToRelocate: true, noticePeriod: 30, industryTypeId: 1, preferredCityIds: [1, 2], tagNames: ['React', 'Node.js'] },
   education: [
-    { subscriberEducationId: 1, courseTypeId: 1, degreeId: 1 },
-    { subscriberEducationId: 2, courseTypeId: 1, degreeId: 2 },
+    { subscriberEducationId: 1, courseTypeId: 1, degreeId: 1, instituteName: 'University of Pune', passingYear: 2018, courseMode: 'Full Time', marks: '78%' },
+    { subscriberEducationId: 2, courseTypeId: 1, degreeId: 2, instituteName: 'Fergusson College', passingYear: 2014, courseMode: 'Full Time', marks: '' },
   ],
   employment: [
     { subscriberEmployerId: 1, employer: 'Acme Corp', designationId: 2, employeeTypeId: 1, joiningDate: '2021-01-01', releavingDate: '', flgCurrent: true, salary: 1800000, jobDescr: '', noticePeriodDays: 30 },
   ],
-  certificates: [{ subscriberCertificateId: 1, certificateName: 'AWS Certified Developer' }],
+  certificates: [
+    {
+      subscriberCertificateId: 1,
+      certificateName: 'AWS Certified Developer',
+      certificateUrl: '',
+      certificationId: '',
+      validFromMonth: 6,
+      validFromYear: 2024,
+      validTillMonth: null,
+      validTillYear: null,
+      neverExpires: true,
+    },
+  ],
+  headline: 'Full Stack Developer | React, Node.js | 6 years experience',
+  summary: '',
+  careerProfile: {
+    industryTypeId: 51,
+    department: 'Engineering - Software & QA',
+    roleCategory: 'Software Development',
+    jobRole: 'Full Stack Developer',
+    desiredJobType: ['Permanent'],
+    desiredEmploymentType: ['Full Time'],
+    preferredShift: 'Day',
+    preferredSalary: 2500000,
+    preferredJobRoles: ['React Developer'],
+    preferredCityIds: [413],
+  },
+  personalDetails: {
+    maritalStatus: 'Single / unmarried',
+    personalTraits: [],
+    category: 'General',
+    workPermitCountries: ['India'],
+    usWorkPermit: '',
+  },
+  diversity: {
+    disabilityStatus: 'Do not have disability',
+    disabilityType: '',
+    disabilityPercent: null,
+    assistanceRequired: '',
+    militaryStatus: 'Not applicable',
+    militaryServiceType: '',
+    militaryRank: '',
+    militaryEnrolmentDate: '',
+    careerBreakStatus: 'Have not taken',
+    careerBreakReason: '',
+    careerBreakFrom: '',
+    careerBreakTo: '',
+  },
+  itSkills: [
+    { subscriberItSkillId: 1, skillName: 'React.js', version: '18', lastUsedYear: 2026, expYears: 4, expMonths: 0 },
+  ],
+  projects: [],
+  accomplishments: [
+    {
+      subscriberAccomplishmentId: 1,
+      kind: 'ONLINE_PROFILE',
+      title: 'LinkedIn',
+      url: 'https://www.linkedin.com/in/rahul-sharma',
+      descr: '',
+      eventMonth: null,
+      eventYear: null,
+      patentStatus: '',
+      patentOffice: '',
+    },
+  ],
+  languages: [
+    { subscriberLanguageId: 1, languageName: 'English', proficiencyId: 2, canRead: true, canWrite: true, canSpeak: true },
+    { subscriberLanguageId: 2, languageName: 'Hindi', proficiencyId: 3, canRead: true, canWrite: true, canSpeak: true },
+  ],
 };
 
 let nextEducationId = 3;
 let nextEmploymentId = 2;
 let nextCertificateId = 2;
+let nextItSkillId = 2;
+let nextProjectId = 1;
+let nextAccomplishmentId = 2;
+let nextLanguageId = 3;
 
 export function updateCvPersonal(payload: typeof CV_EDIT_PROFILE.personal) {
   CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, personal: payload };
@@ -153,14 +254,22 @@ export function updateCvPersonal(payload: typeof CV_EDIT_PROFILE.personal) {
 export function updateCvProfessional(payload: typeof CV_EDIT_PROFILE.professional) {
   CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, professional: payload };
 }
-export function upsertCvEducation(payload: { subscriberEducationId?: number; courseTypeId: number; degreeId: number }) {
+export function upsertCvEducation(payload: Partial<CvEducationEntry> & { degreeId: number }) {
   if (payload.subscriberEducationId) {
     CV_EDIT_PROFILE = {
       ...CV_EDIT_PROFILE,
       education: CV_EDIT_PROFILE.education.map((e) => (e.subscriberEducationId === payload.subscriberEducationId ? { ...e, ...payload } : e)),
     };
   } else {
-    const row = { subscriberEducationId: nextEducationId++, courseTypeId: payload.courseTypeId, degreeId: payload.degreeId };
+    const row: CvEducationEntry = {
+      subscriberEducationId: nextEducationId++,
+      courseTypeId: payload.courseTypeId ?? null,
+      degreeId: payload.degreeId,
+      instituteName: payload.instituteName ?? '',
+      passingYear: payload.passingYear ?? null,
+      courseMode: payload.courseMode ?? '',
+      marks: payload.marks ?? '',
+    };
     CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, education: [...CV_EDIT_PROFILE.education, row] };
   }
 }
@@ -187,7 +296,7 @@ export function upsertCvEmployment(payload: Partial<(typeof CV_EDIT_PROFILE.empl
 export function deleteCvEmployment(id: number) {
   CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, employment: CV_EDIT_PROFILE.employment.filter((e) => e.subscriberEmployerId !== id) };
 }
-export function upsertCvCertificate(payload: { subscriberCertificateId?: number; certificateName: string }) {
+export function upsertCvCertificate(payload: Partial<CvCertificateEntry> & { certificateName: string }) {
   if (payload.subscriberCertificateId) {
     CV_EDIT_PROFILE = {
       ...CV_EDIT_PROFILE,
@@ -196,12 +305,157 @@ export function upsertCvCertificate(payload: { subscriberCertificateId?: number;
       ),
     };
   } else {
-    const row = { subscriberCertificateId: nextCertificateId++, certificateName: payload.certificateName };
+    const row: CvCertificateEntry = {
+      subscriberCertificateId: nextCertificateId++,
+      certificateName: payload.certificateName,
+      certificateUrl: payload.certificateUrl ?? '',
+      certificationId: payload.certificationId ?? '',
+      validFromMonth: payload.validFromMonth ?? null,
+      validFromYear: payload.validFromYear ?? null,
+      validTillMonth: payload.validTillMonth ?? null,
+      validTillYear: payload.validTillYear ?? null,
+      neverExpires: payload.neverExpires ?? false,
+    };
     CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, certificates: [...CV_EDIT_PROFILE.certificates, row] };
   }
 }
 export function deleteCvCertificate(id: number) {
   CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, certificates: CV_EDIT_PROFILE.certificates.filter((c) => c.subscriberCertificateId !== id) };
+}
+
+/* ---------------------------- Profile sections ---------------------------- */
+
+export function updateCvHeadline(payload: { resumeHeadline: string }) {
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, headline: payload.resumeHeadline };
+}
+export function updateCvSummary(payload: { profileSummary: string }) {
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, summary: payload.profileSummary };
+}
+export function updateCvKeySkills(payload: { tagNames: string[] }) {
+  const professional = CV_EDIT_PROFILE.professional;
+  if (!professional) return;
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, professional: { ...professional, tagNames: payload.tagNames } };
+}
+export function updateCvCareerProfile(payload: Partial<CvCareerProfile>) {
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, careerProfile: { ...CV_EDIT_PROFILE.careerProfile, ...payload } };
+}
+export function updateCvPersonalDetails(payload: Partial<CvPersonalDetails>) {
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, personalDetails: { ...CV_EDIT_PROFILE.personalDetails, ...payload } };
+}
+export function updateCvDiversity(payload: Partial<CvDiversity>) {
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, diversity: { ...CV_EDIT_PROFILE.diversity, ...payload } };
+}
+
+export function upsertCvItSkill(payload: Partial<CvItSkillEntry> & { skillName: string }) {
+  if (payload.subscriberItSkillId) {
+    CV_EDIT_PROFILE = {
+      ...CV_EDIT_PROFILE,
+      itSkills: CV_EDIT_PROFILE.itSkills.map((s) =>
+        s.subscriberItSkillId === payload.subscriberItSkillId ? { ...s, ...payload } : s,
+      ),
+    };
+  } else {
+    const row: CvItSkillEntry = {
+      subscriberItSkillId: nextItSkillId++,
+      skillName: payload.skillName,
+      version: payload.version ?? '',
+      lastUsedYear: payload.lastUsedYear ?? null,
+      expYears: payload.expYears ?? null,
+      expMonths: payload.expMonths ?? null,
+    };
+    CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, itSkills: [...CV_EDIT_PROFILE.itSkills, row] };
+  }
+}
+export function deleteCvItSkill(id: number) {
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, itSkills: CV_EDIT_PROFILE.itSkills.filter((s) => s.subscriberItSkillId !== id) };
+}
+
+export function upsertCvProject(payload: Partial<CvProjectEntry> & { title: string }) {
+  if (payload.subscriberProjectId) {
+    CV_EDIT_PROFILE = {
+      ...CV_EDIT_PROFILE,
+      projects: CV_EDIT_PROFILE.projects.map((p) =>
+        p.subscriberProjectId === payload.subscriberProjectId ? { ...p, ...payload } : p,
+      ),
+    };
+  } else {
+    const row: CvProjectEntry = {
+      subscriberProjectId: nextProjectId++,
+      title: payload.title,
+      clientName: payload.clientName ?? '',
+      projectStatus: payload.projectStatus ?? '',
+      workedFromMonth: payload.workedFromMonth ?? null,
+      workedFromYear: payload.workedFromYear ?? null,
+      workedTillMonth: payload.workedTillMonth ?? null,
+      workedTillYear: payload.workedTillYear ?? null,
+      projectSite: payload.projectSite ?? '',
+      natureOfEmployment: payload.natureOfEmployment ?? '',
+      teamSize: payload.teamSize ?? null,
+      roleDescr: payload.roleDescr ?? '',
+      skillsUsed: payload.skillsUsed ?? [],
+      details: payload.details ?? '',
+    };
+    CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, projects: [...CV_EDIT_PROFILE.projects, row] };
+  }
+}
+export function deleteCvProject(id: number) {
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, projects: CV_EDIT_PROFILE.projects.filter((p) => p.subscriberProjectId !== id) };
+}
+
+export function upsertCvAccomplishment(
+  payload: Partial<CvAccomplishmentEntry> & { kind: AccomplishmentKind; title: string },
+) {
+  if (payload.subscriberAccomplishmentId) {
+    CV_EDIT_PROFILE = {
+      ...CV_EDIT_PROFILE,
+      accomplishments: CV_EDIT_PROFILE.accomplishments.map((a) =>
+        a.subscriberAccomplishmentId === payload.subscriberAccomplishmentId ? { ...a, ...payload } : a,
+      ),
+    };
+  } else {
+    const row: CvAccomplishmentEntry = {
+      subscriberAccomplishmentId: nextAccomplishmentId++,
+      kind: payload.kind,
+      title: payload.title,
+      url: payload.url ?? '',
+      descr: payload.descr ?? '',
+      eventMonth: payload.eventMonth ?? null,
+      eventYear: payload.eventYear ?? null,
+      patentStatus: payload.patentStatus ?? '',
+      patentOffice: payload.patentOffice ?? '',
+    };
+    CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, accomplishments: [...CV_EDIT_PROFILE.accomplishments, row] };
+  }
+}
+export function deleteCvAccomplishment(id: number) {
+  CV_EDIT_PROFILE = {
+    ...CV_EDIT_PROFILE,
+    accomplishments: CV_EDIT_PROFILE.accomplishments.filter((a) => a.subscriberAccomplishmentId !== id),
+  };
+}
+
+export function upsertCvLanguage(payload: Partial<CvLanguageEntry> & { languageName: string; proficiencyId: LanguageProficiency }) {
+  if (payload.subscriberLanguageId) {
+    CV_EDIT_PROFILE = {
+      ...CV_EDIT_PROFILE,
+      languages: CV_EDIT_PROFILE.languages.map((l) =>
+        l.subscriberLanguageId === payload.subscriberLanguageId ? { ...l, ...payload } : l,
+      ),
+    };
+  } else {
+    const row: CvLanguageEntry = {
+      subscriberLanguageId: nextLanguageId++,
+      languageName: payload.languageName,
+      proficiencyId: payload.proficiencyId,
+      canRead: payload.canRead ?? false,
+      canWrite: payload.canWrite ?? false,
+      canSpeak: payload.canSpeak ?? false,
+    };
+    CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, languages: [...CV_EDIT_PROFILE.languages, row] };
+  }
+}
+export function deleteCvLanguage(id: number) {
+  CV_EDIT_PROFILE = { ...CV_EDIT_PROFILE, languages: CV_EDIT_PROFILE.languages.filter((l) => l.subscriberLanguageId !== id) };
 }
 
 export const COMPANY_PROFILE: CompanyProfile = {

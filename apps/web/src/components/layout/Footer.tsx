@@ -65,8 +65,19 @@ export function Footer() {
             <FooterColumn links={columnC} />
           </nav>
         </div>
-        <div className="mt-10 border-t border-white/15 pt-6 text-center text-sm text-white/80">
-          {t('footer.copyright', { year: new Date().getFullYear() })}
+        <div className="mt-10 space-y-1.5 border-t border-white/15 pt-6 text-center text-sm text-white/80">
+          <p className="font-medium text-white">{t('footer.legalEntity')}</p>
+          <p className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+            <span>{t('footer.cin')}</span>
+            <span>{t('footer.gstin')}</span>
+            <span>
+              {t('nav.tollFree')}{' '}
+              <a href={`tel:${t('nav.tollFreeNumber')}`} className="rounded hover:text-white focus-visible:ring-2 focus-visible:ring-white/60">
+                {t('nav.tollFreeNumber')}
+              </a>
+            </span>
+          </p>
+          <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
         </div>
       </div>
     </footer>

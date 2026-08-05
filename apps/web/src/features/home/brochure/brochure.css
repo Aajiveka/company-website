@@ -1,0 +1,66 @@
+/**
+ * Aajiveka company brochure — pixel-exact reproduction.
+ *
+ * Every page of the source PDF is A4 landscape: 1190.551 x 841.890 PDF points.
+ * A sheet is laid out in those exact point coordinates: `--u` is one PDF point
+ * expressed against the sheet's own inline size, so the whole design scales
+ * proportionally at any width without a single value changing.
+ *
+ *   1 pt = 100cqw / 1190.551 = 0.0839947cqw
+ *
+ * Text is positioned by its glyph-box top-left, exactly as the PDF records it.
+ * Montserrat's metrics (ascender 968, descender -251, unitsPerEm 1000) give a
+ * normal line box of 1.219em, so `line-height: 1.219` places every baseline on
+ * the same spot the PDF does.
+ */
+
+.bro-doc {
+  background: #fff;
+  font-family: Montserrat, 'Helvetica Neue', Arial, sans-serif;
+  font-feature-settings: 'liga' 1, 'kern' 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Narrow viewports scroll the sheet rather than shrinking it past legibility. */
+.bro-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bro-sheet {
+  --u: 0.0839947cqw;
+
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1190.551 / 841.89;
+  overflow: hidden;
+  background: #fff;
+  color: #404041;
+}
+
+@media (max-width: 900px) {
+  .bro-sheet {
+    min-width: 900px;
+  }
+}
+
+.bro-txt {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  line-height: 1.219;
+  letter-spacing: 0;
+}
+
+.bro-box {
+  position: absolute;
+}
+
+.bro-img {
+  position: absolute;
+  display: block;
+  object-fit: fill;
+}

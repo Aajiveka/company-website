@@ -1,116 +1,182 @@
-import { Award, Briefcase, Download, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import { Breadcrumbs, Button, Card, ProfileSkeleton } from '@/components/ui';
-import { useCandidateProfile } from '../candidate.api';
-import { DashboardStats } from '../components/DashboardStats';
-import { ProfileCompletionMeter } from '../components/ProfileCompletionMeter';
-import { RecommendedJobs } from '@/features/jobs/components/RecommendedJobs';
-import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
+import { Breadcrumbs, Card, ProfileSkeleton } from '@/components/ui';
+import { useCandidateProfile, useCvEditProfile, useCvMasters } from '../candidate.api';
+import { computeCompletion } from '../profileCompletion';
+import { ProfileHeader, QuickLinks, type QuickLink } from '../components/profile/ProfileHeader';
+import { ResumeSection } from '../components/profile/ResumeSection';
+import { HeadlineSection, KeySkillsSection, SummarySection } from '../components/profile/TextSections';
+import { ProfessionalSection } from '../components/profile/ProfessionalSection';
+import { EducationSection, EmploymentSection } from '../components/profile/HistorySections';
+import { ItSkillsSection, ProjectsSection } from '../components/profile/SkillProjectSections';
+import { AccomplishmentsSection } from '../components/profile/AccomplishmentsSection';
+import {
+  CareerProfileSection,
+  DiversitySection,
+  PersonalDetailsSection,
+} from '../components/profile/PreferenceSections';
 
-/** Candidate self-profile / CV view (candidate-profile.aspx). */
+/** The anchors, in the order they appear down the page. */
+const SECTION_IDS = [
+  'resume',
+  'headline',
+  'professional',
+  'key-skills',
+  'employment',
+  'education',
+  'it-skills',
+  'projects',
+  'summary',
+  'accomplishments',
+  'career-profile',
+  'personal-details',
+  'diversity',
+] as const;
+
+/**
+ * Highlights the quick-link for whichever section is currently under the top of the viewport.
+ *
+ * Uses scroll position rather than IntersectionObserver visibility: several sections are
+ * on screen at once, and "the last one whose top has passed" is what a reader means by
+ * where they are.
+ */
+function useActiveSection(ready: boolean) {
+  const [active, setActive] = useState<string>(SECTION_IDS[0]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const onScroll = () => {
+      let current: string = SECTION_IDS[0];
+      for (const id of SECTION_IDS) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 120) current = id;
+      }
+      setActive(current);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [ready]);
+
+  return active;
+}
+
+/** Candidate self-profile — every section editable in place. */
 export default function CandidateProfilePage() {
   const { t } = useTranslation('dashboard');
-  const { data, isLoading, isError } = useCandidateProfile();
+  const { data: profile, isLoading, isError } = useCandidateProfile();
+  const { data: cv } = useCvEditProfile();
+  const { data: masters } = useCvMasters();
+  const { hash } = useLocation();
+
+  const ready = !!profile && !!cv;
+  const activeId = useActiveSection(ready);
+
+  // The completion meter and the header ring must show the same number, so both read the
+  // shared calculation rather than each rolling their own.
+  const percent = useMemo(() => (cv ? computeCompletion(cv).percent : 0), [cv]);
+
+  // Deep links (`/candidate/profile#employment`) arrive before the sections exist, so the
+  // scroll waits until the data has rendered them.
+  useEffect(() => {
+    if (!hash || !ready) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [hash, ready]);
+
+  const links: QuickLink[] = useMemo(() => {
+    if (!cv) return [];
+    const entries: [string, string, boolean][] = [
+      ['resume', t('profile.resume.heading'), !!profile?.resumeUrl],
+      ['headline', t('profile.headline.heading'), !!cv.headline],
+      ['professional', t('profile.professional.heading'), !!cv.professional?.totalExp],
+      ['key-skills', t('profile.keySkills.heading'), (cv.professional?.tagNames.length ?? 0) > 0],
+      ['employment', t('profile.employment.heading'), cv.employment.length > 0],
+      ['education', t('profile.education.heading'), cv.education.length > 0],
+      ['it-skills', t('profile.itSkills.heading'), cv.itSkills.length > 0],
+      ['projects', t('profile.projects.heading'), cv.projects.length > 0],
+      ['summary', t('profile.summary.heading'), !!cv.summary],
+      [
+        'accomplishments',
+        t('profile.accomplishments.heading'),
+        cv.accomplishments.length > 0 || cv.certificates.length > 0,
+      ],
+      ['career-profile', t('profile.careerProfile.heading'), !!cv.careerProfile.jobRole],
+      ['personal-details', t('profile.personalDetails.heading'), !!cv.personalDetails.maritalStatus],
+      ['diversity', t('profile.diversity.heading'), !!cv.diversity.disabilityStatus],
+    ];
+    // The rail doubles as a to-do list: sections still empty carry an "Add" call to action.
+    return entries.map(([id, label, filled]) => ({ id, label, action: filled ? undefined : t('profile.add') }));
+  }, [cv, profile, t]);
+
+  if (isLoading || (!isError && !ready)) {
+    return (
+      <div className="mx-auto max-w-6xl">
+        <ProfileSkeleton />
+      </div>
+    );
+  }
+
+  if (isError || !profile || !cv) {
+    return (
+      <div className="mx-auto max-w-6xl">
+        <Card>{t('profile.loadError')}</Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/candidate/profile' }, { label: t('profile.heading') }]} />
+    <div className="mx-auto max-w-6xl">
+      <Breadcrumbs
+        items={[{ label: t('common:dashboard'), to: '/candidate/profile' }, { label: t('profile.heading') }]}
+      />
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-heading text-2xl font-bold text-navy">{t('profile.heading')}</h1>
-        <Link to="/candidate/resume">
-          <Button variant="outline" size="sm">
-            <Download className="mr-1.5 h-4 w-4" />
-            {t('resume.downloadButton')}
-          </Button>
-        </Link>
-      </div>
+      <ProfileHeader profile={profile} percent={percent} />
 
-      {isLoading ? (
-        <ProfileSkeleton />
-      ) : isError || !data ? (
-        <Card>{t('profile.loadError')}</Card>
-      ) : (
-        <div className="space-y-6">
-          <DashboardStats />
-          <ProfileCompletionMeter />
-          <RecommendedJobs />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[15rem_1fr] lg:items-start">
+        <QuickLinks links={links} activeId={activeId} />
 
-          {/* Header card */}
-          <Card className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-            <ProfilePhotoUpload currentPhotoUrl={data.photoUrl ?? undefined} />
-            <div className="text-center sm:text-left">
-              <h1 className="font-heading text-2xl font-bold text-navy">{data.fullName}</h1>
-              <p className="text-primary">{data.designation}</p>
-              <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-gray-600 dark:text-gray-300 sm:justify-start">
-                <span className="flex items-center gap-1.5">
-                  <Mail className="h-4 w-4" /> {data.email}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Phone className="h-4 w-4" /> {data.mobile}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" /> {data.city}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Briefcase className="h-4 w-4" /> {data.totalExperience}
-                </span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Skills */}
-          <Card>
-            <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-navy">
-              <Award className="h-5 w-5 text-primary" /> {t('profile.skills')}
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {data.skills.map((s) => (
-                <span key={s} className="rounded-full bg-brand-soft px-3 py-1 text-sm text-primary">
-                  {s}
-                </span>
-              ))}
-            </div>
-          </Card>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Experience */}
-            <Card>
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-navy">
-                <Briefcase className="h-5 w-5 text-primary" /> {t('profile.experience')}
-              </h2>
-              <ul className="space-y-4">
-                {data.experience.map((e, i) => (
-                  <li key={i} className="border-l-2 border-brand-soft pl-3">
-                    <p className="font-medium text-navy">{e.designation}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{e.company}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {e.from} — {e.to}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            {/* Education */}
-            <Card>
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-navy">
-                <GraduationCap className="h-5 w-5 text-primary" /> {t('profile.education')}
-              </h2>
-              <ul className="space-y-4">
-                {data.education.map((e, i) => (
-                  <li key={i} className="border-l-2 border-brand-soft pl-3">
-                    <p className="font-medium text-navy">{e.degree}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{e.institute}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{e.year}</p>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
+        <div className="min-w-0 space-y-6">
+          <ResumeSection profile={profile} />
+          <HeadlineSection headline={cv.headline} />
+          <ProfessionalSection
+            data={
+              cv.professional ?? {
+                subFunctionId: null,
+                skillId: null,
+                totalExp: 0,
+                currentCtc: null,
+                currentCityId: null,
+                flgReadyToRelocate: false,
+                noticePeriod: null,
+                industryTypeId: null,
+                preferredCityIds: [],
+                tagNames: [],
+              }
+            }
+            masters={masters}
+          />
+          <KeySkillsSection
+            skills={cv.professional?.tagNames ?? []}
+            suggestions={(masters?.tags ?? []).map((s) => s.label)}
+          />
+          <EmploymentSection rows={cv.employment} masters={masters} />
+          <EducationSection rows={cv.education} masters={masters} />
+          <ItSkillsSection rows={cv.itSkills} />
+          <ProjectsSection rows={cv.projects} />
+          <SummarySection summary={cv.summary} />
+          <AccomplishmentsSection accomplishments={cv.accomplishments} certificates={cv.certificates} />
+          <CareerProfileSection data={cv.careerProfile} masters={masters} />
+          <PersonalDetailsSection
+            details={cv.personalDetails}
+            personal={cv.personal}
+            languages={cv.languages}
+            gender={profile.gender}
+            masters={masters}
+          />
+          <DiversitySection data={cv.diversity} />
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Check, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
@@ -8,6 +9,8 @@ import { DevicesSection } from '../components/DevicesSection';
 
 const CHOOSE_ICONS = ['/image/C1.svg', '/image/C2.svg', '/image/C3.svg', '/image/C4.svg', '/image/C5.svg'];
 const INDUSTRY_ICONS = ['/image/I1.svg', '/image/I2.svg', '/image/I3.svg', '/image/I4.svg', '/image/I5.svg'];
+/** Campus programme offered to educational institutions (company brochure). */
+const INSTITUTION_KEYS = ['institution1', 'institution2', 'institution3', 'institution4'] as const;
 
 export default function AboutPage() {
   const { t } = useTranslation('public');
@@ -110,6 +113,39 @@ export default function AboutPage() {
                 <p className="text-sm text-white/80">{c.text}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Educational institutions */}
+      <section className="py-12 md:py-20">
+        <div className="container grid gap-8 lg:grid-cols-2">
+          <div>
+            <h2>{t('about.institutionsHeading')}</h2>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">{t('about.institutionsText')}</p>
+            <ul className="mt-6 space-y-3">
+              {INSTITUTION_KEYS.map((key) => (
+                <li key={key} className="flex items-start gap-3">
+                  <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+                  <span className="text-gray-700 dark:text-gray-200">
+                    {t(`about.${key}`)}
+                    {key === 'institution4' && (
+                      <span className="block text-sm text-gray-500 dark:text-gray-400">{t('about.institution4Note')}</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex flex-col justify-center rounded-2xl bg-navy p-6 text-center text-white sm:p-10">
+            <h3 className="font-heading text-2xl font-semibold text-white">{t('about.institutionsCtaHeading')}</h3>
+            <p className="mt-3 text-white/80">{t('about.institutionsCtaText')}</p>
+            <a href={`mailto:${t('contact.salesEmail')}`} className="mt-5 flex items-center justify-center gap-2 font-medium hover:underline">
+              <Mail className="h-5 w-5" /> {t('contact.salesEmail')}
+            </a>
+            <a href={`tel:${t('contact.phone')}`} className="mt-3 flex items-center justify-center gap-2 font-medium hover:underline">
+              <Phone className="h-5 w-5" /> {t('contact.phone')}
+            </a>
           </div>
         </div>
       </section>

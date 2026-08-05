@@ -3,7 +3,10 @@
     "home": "Home",
     "findJobs": "Find Jobs",
     "registerNow": "Register Now",
+    "login": "Login",
+    "candidateLogin": "Candidate Login",
     "employerLogin": "Employer Login",
+    "adminLogin": "Admin Login",
     "subscribeNow": "Subscribe Now",
     "tollFree": "Toll Free No:",
     "tollFreeNumber": "18003093346"
@@ -20,6 +23,9 @@
     "privacyPolicy": "Privacy Policy",
     "termsAndConditions": "Terms and Conditions",
     "subscriptionBenefits": "Subscription Benefits",
+    "legalEntity": "Make My Career Technologies Pvt. Ltd.",
+    "cin": "CIN: U78100HR2023PTC109516",
+    "gstin": "GSTIN: 06AAQCM5954Q1ZG",
     "copyright": "© {{year}} Aajiveka. All rights reserved."
   },
   "sidebar": {

@@ -1,5 +1,18 @@
 import { http, HttpResponse } from 'msw';
-import type { CvEmploymentEntry, CvPersonal, CvProfessional } from '@/features/candidates/candidate.types';
+import type {
+  AccomplishmentKind,
+  CvAccomplishmentEntry,
+  CvCareerProfile,
+  CvDiversity,
+  CvEmploymentEntry,
+  CvItSkillEntry,
+  CvLanguageEntry,
+  CvPersonal,
+  CvPersonalDetails,
+  CvProfessional,
+  CvProjectEntry,
+  LanguageProficiency,
+} from '@/features/candidates/candidate.types';
 import type { JobListing } from '@/features/clients/client.types';
 import {
   ACTIVE_JOBS,
@@ -21,9 +34,13 @@ import {
   deactivateCompanyJob,
   decideApplicant,
   decideCandidate,
+  deleteCvAccomplishment,
   deleteCvCertificate,
   deleteCvEducation,
   deleteCvEmployment,
+  deleteCvItSkill,
+  deleteCvLanguage,
+  deleteCvProject,
   DEMO_USERS,
   DOC_REVIEWS,
   DOCUMENT_TYPES,
@@ -41,13 +58,23 @@ import {
   makeSession,
   reviewDoc,
   updateCompanyJob,
+  updateCvCareerProfile,
+  updateCvDiversity,
+  updateCvHeadline,
+  updateCvKeySkills,
   updateCvPersonal,
+  updateCvPersonalDetails,
   updateCvProfessional,
+  updateCvSummary,
   updateInterviewStatus,
   uploadCandidateDocument,
+  upsertCvAccomplishment,
   upsertCvCertificate,
   upsertCvEducation,
   upsertCvEmployment,
+  upsertCvItSkill,
+  upsertCvLanguage,
+  upsertCvProject,
 } from './data';
 
 const BASE = '/api';
@@ -242,6 +269,68 @@ export const handlers = [
   }),
   http.delete(`${BASE}/candidates/me/certificates/:id`, ({ params }) => {
     deleteCvCertificate(Number(params.id));
+    return HttpResponse.json({ ok: true });
+  }),
+
+  // Profile sections — one route per section, mirroring the API.
+  http.put(`${BASE}/candidates/me/headline`, async ({ request }) => {
+    updateCvHeadline((await request.json()) as { resumeHeadline: string });
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/summary`, async ({ request }) => {
+    updateCvSummary((await request.json()) as { profileSummary: string });
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/key-skills`, async ({ request }) => {
+    updateCvKeySkills((await request.json()) as { tagNames: string[] });
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/career-profile`, async ({ request }) => {
+    updateCvCareerProfile((await request.json()) as Partial<CvCareerProfile>);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/personal-details`, async ({ request }) => {
+    updateCvPersonalDetails((await request.json()) as Partial<CvPersonalDetails>);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/diversity`, async ({ request }) => {
+    updateCvDiversity((await request.json()) as Partial<CvDiversity>);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/it-skills`, async ({ request }) => {
+    upsertCvItSkill((await request.json()) as Partial<CvItSkillEntry> & { skillName: string });
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete(`${BASE}/candidates/me/it-skills/:id`, ({ params }) => {
+    deleteCvItSkill(Number(params.id));
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/projects`, async ({ request }) => {
+    upsertCvProject((await request.json()) as Partial<CvProjectEntry> & { title: string });
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete(`${BASE}/candidates/me/projects/:id`, ({ params }) => {
+    deleteCvProject(Number(params.id));
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/accomplishments`, async ({ request }) => {
+    upsertCvAccomplishment(
+      (await request.json()) as Partial<CvAccomplishmentEntry> & { kind: AccomplishmentKind; title: string },
+    );
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete(`${BASE}/candidates/me/accomplishments/:id`, ({ params }) => {
+    deleteCvAccomplishment(Number(params.id));
+    return HttpResponse.json({ ok: true });
+  }),
+  http.put(`${BASE}/candidates/me/languages`, async ({ request }) => {
+    upsertCvLanguage(
+      (await request.json()) as Partial<CvLanguageEntry> & { languageName: string; proficiencyId: LanguageProficiency },
+    );
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete(`${BASE}/candidates/me/languages/:id`, ({ params }) => {
+    deleteCvLanguage(Number(params.id));
     return HttpResponse.json({ ok: true });
   }),
   http.get(`${BASE}/candidates/me/job-alerts`, () => HttpResponse.json(JOB_ALERTS)),

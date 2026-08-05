@@ -16,12 +16,21 @@ export interface CandidateProfile {
   subscriberId: number;
   fullName: string;
   email: string;
+  emailVerified: boolean;
   mobile: string;
   gender: string;
   city: string;
   designation: string;
   totalExperience: string;
   photoUrl: string | null;
+  /** The one-line pitch shown under the name. */
+  resumeHeadline: string;
+  currentCompany: string;
+  currentDesignation: string;
+  currentCtc: number | null;
+  noticePeriod: number | null;
+  /** Newest write across the CV and every section hanging off it, ISO 8601. */
+  profileUpdatedAt: string | null;
   resumeUrl: string | null;
   resumeFileName: string | null;
   resumeUploadedAt: string | null;
@@ -124,6 +133,11 @@ export interface CvMasters {
   courses: CvCourseOption[];
   designations: CvMasterOption[];
   employmentTypes: CvMasterOption[];
+  /**
+   * Key-skill chips come from tblMstrTags, not tblMstrSkills — the save endpoint matches
+   * names against tags and drops what it cannot find.
+   */
+  tags: CvMasterOption[];
 }
 
 export interface CvPersonal {
@@ -153,6 +167,10 @@ export interface CvEducationEntry {
   subscriberEducationId: number;
   courseTypeId: number | null;
   degreeId: number | null;
+  instituteName: string;
+  passingYear: number | null;
+  courseMode: string;
+  marks: string;
 }
 
 export interface CvEmploymentEntry {
@@ -171,6 +189,128 @@ export interface CvEmploymentEntry {
 export interface CvCertificateEntry {
   subscriberCertificateId: number;
   certificateName: string;
+  certificateUrl: string;
+  certificationId: string;
+  validFromMonth: number | null;
+  validFromYear: number | null;
+  validTillMonth: number | null;
+  validTillYear: number | null;
+  neverExpires: boolean;
+}
+
+/* ---------------------------- Profile sections ---------------------------- */
+
+/**
+ * Closed vocabularies. None of these has a master table in the schema — they are fixed lists
+ * a candidate picks from, and the API validates against the same values.
+ */
+export const COURSE_MODES = ['Full Time', 'Part Time', 'Correspondence'] as const;
+export const JOB_TYPES = ['Permanent', 'Contractual'] as const;
+export const EMPLOYMENT_TYPES = ['Full Time', 'Part Time'] as const;
+export const SHIFTS = ['Day', 'Night', 'Flexible'] as const;
+export const MARITAL_STATUSES = ['Single / unmarried', 'Married', 'Widowed', 'Divorced', 'Separated', 'Other'] as const;
+export const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'] as const;
+export const PROJECT_STATUSES = ['In Progress', 'Finished'] as const;
+export const PROJECT_SITES = ['Onsite', 'Offsite'] as const;
+export const DISABILITY_STATUSES = ['Do not have disability', 'Have disability'] as const;
+export const MILITARY_STATUSES = ['Not applicable', 'Currently serving', 'Veteran'] as const;
+export const CAREER_BREAK_STATUSES = ['Have not taken', 'Have taken'] as const;
+
+/** The five link-shaped accomplishments. Certifications have their own richer entry type. */
+export const ACCOMPLISHMENT_KINDS = [
+  'ONLINE_PROFILE',
+  'WORK_SAMPLE',
+  'PUBLICATION',
+  'PRESENTATION',
+  'PATENT',
+] as const;
+export type AccomplishmentKind = (typeof ACCOMPLISHMENT_KINDS)[number];
+
+/** 1 = Beginner, 2 = Proficient, 3 = Expert. */
+export type LanguageProficiency = 1 | 2 | 3;
+
+export interface CvCareerProfile {
+  industryTypeId: number | null;
+  department: string;
+  roleCategory: string;
+  jobRole: string;
+  desiredJobType: string[];
+  desiredEmploymentType: string[];
+  preferredShift: string;
+  preferredSalary: number | null;
+  preferredJobRoles: string[];
+  preferredCityIds: number[];
+}
+
+export interface CvPersonalDetails {
+  maritalStatus: string;
+  personalTraits: string[];
+  category: string;
+  workPermitCountries: string[];
+  usWorkPermit: string;
+}
+
+export interface CvDiversity {
+  disabilityStatus: string;
+  disabilityType: string;
+  disabilityPercent: number | null;
+  assistanceRequired: string;
+  militaryStatus: string;
+  militaryServiceType: string;
+  militaryRank: string;
+  militaryEnrolmentDate: string;
+  careerBreakStatus: string;
+  careerBreakReason: string;
+  careerBreakFrom: string;
+  /** Empty while the break is ongoing — the profile prints "Present". */
+  careerBreakTo: string;
+}
+
+export interface CvItSkillEntry {
+  subscriberItSkillId: number;
+  skillName: string;
+  version: string;
+  lastUsedYear: number | null;
+  expYears: number | null;
+  expMonths: number | null;
+}
+
+export interface CvProjectEntry {
+  subscriberProjectId: number;
+  title: string;
+  clientName: string;
+  projectStatus: string;
+  workedFromMonth: number | null;
+  workedFromYear: number | null;
+  workedTillMonth: number | null;
+  workedTillYear: number | null;
+  projectSite: string;
+  natureOfEmployment: string;
+  teamSize: number | null;
+  roleDescr: string;
+  skillsUsed: string[];
+  details: string;
+}
+
+export interface CvAccomplishmentEntry {
+  subscriberAccomplishmentId: number;
+  kind: AccomplishmentKind;
+  title: string;
+  url: string;
+  descr: string;
+  eventMonth: number | null;
+  eventYear: number | null;
+  patentStatus: string;
+  patentOffice: string;
+}
+
+export interface CvLanguageEntry {
+  subscriberLanguageId: number;
+  languageName: string;
+  proficiencyId: LanguageProficiency;
+  canRead: boolean;
+  canWrite: boolean;
+  canSpeak: boolean;
 }
 
 export interface CvEditProfile {
@@ -179,4 +319,13 @@ export interface CvEditProfile {
   education: CvEducationEntry[];
   employment: CvEmploymentEntry[];
   certificates: CvCertificateEntry[];
+  headline: string;
+  summary: string;
+  careerProfile: CvCareerProfile;
+  personalDetails: CvPersonalDetails;
+  diversity: CvDiversity;
+  itSkills: CvItSkillEntry[];
+  projects: CvProjectEntry[];
+  accomplishments: CvAccomplishmentEntry[];
+  languages: CvLanguageEntry[];
 }

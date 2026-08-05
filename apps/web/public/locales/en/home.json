@@ -3,8 +3,12 @@
     "title": "Unlock your Potential with Aajiveka - Your Ultimate Career Partner"
   },
   "about": {
-    "heading": "About Aajevika",
-    "text": "\"Aajiveka\", which ultimately means a basic necessity for any individual to sustain themselves and achieve financial stability. In this technology-driven era, Aajiveka is a next-gen leading job portal in India, connecting talented professionals with top-notch employers to help them achieve their career aspirations. Aajiveka's motive is to foster a win-win situation for both employers and job seekers and contribute to the overall economic growth of the country."
+    "eyebrow": "About",
+    "heading": "AAJIVEKA",
+    "text1": "“Aajiveka”, which ultimately means a basic necessity for any individual to sustain themselves and achieve financial stability. In the business world, the simple way to provide livelihood is by generating potential career opportunities that not only benefit the employees but also the employers. And this is exactly what Aajiveka manifested into their business fundamentals.",
+    "text2": "In this technology-driven era, Aajiveka is considered as a next-gen leading job portal in India, that connects talented professionals with top-notch employers to help them achieve their career aspirations. By doing so, Aajiveka enables employers to attract and retain talented individuals, which can help them achieve their business goals.",
+    "text3": "At the same time, job seekers can find best job opportunities that align with their skills, knowledge, and career aspirations, thus achieving a fulfilling and rewarding career. Ultimately, Aajiveka's motive is to foster a win-win situation for both employers and job seekers and contribute to the overall economic growth of the country.",
+    "imageAlt": "A job seeker reviewing opportunities on Aajiveka"
   },
   "story": {
     "heading": "Our Story",
@@ -13,11 +17,14 @@
     "tagline": "Empowering Careers, Transforming Lives."
   },
   "philosophy": {
-    "heading": "Our Philosophy",
-    "text1": "At Aajiveka, we believe in creating an inclusive and diverse platform that fosters growth and development for all. We are committed to providing equal opportunities to all candidates, assessed on their unique skills and potential.",
-    "text2": "Candidates can begin by simply signing up: create an account, add a skill set, and upload a resume and documents to seamlessly start applying to the best suitable jobs.",
-    "text3": "We have a dedicated pool of career counselors and experts who deeply evaluate the skills of each candidate and help in writing a resume. We assign a dedicated AI career assistant to stand by your side, from creating a free resume to finding the right jobs.",
-    "text4": "We maintain transparency and integrity in all our dealings, take your privacy as the top priority, and never sell the database to corporates and big firms."
+    "heading": "PHILOSOPHY",
+    "text1": "At Aajiveka, we believe in creating an inclusive and diverse platform that fosters growth and development for all. We are committed to providing equal opportunities to all candidates and ensuring that every applicant is assessed based on their unique skills and potential.",
+    "text2": "So candidates looking for the job can begin with the process by simply signing up for the Aajiveka app. Create an account, add a skill set, and upload a resume and documents to seamlessly start the process of applying to the best suitable jobs.",
+    "text3": "But what if the candidates still need a resume? That’s where Aajiveka holds your hand and helps you jump onto the next step of career-making. To make this mantra work, we have a dedicated pool of career counselors and experts who will deeply evaluate the skills of the individual candidate and help in writing a resume. That’s not all!",
+    "text4": "At Aajiveka, we assigned a dedicated AI career assistant to the candidates, which will stand by your side right from creating a free resume to finding right jobs. The moment you create an account, our AI career experts will help you find the best job matches, deliver career opportunities to doorsteps, and assist career pathways at each phase of their journey.",
+    "text5": "We strive to maintain transparency and integrity in all our dealings and ensure that the recruitment process is fair and unbiased. Also, we take your privacy as the top priority, therefore, we are never into selling the database to the corporates and big firms.",
+    "text6": "Our expert team works closely with job seekers and employers to understand their requirements and provide customized solutions that meet their unique needs by keeping in mind data security and candidates’ privacy.",
+    "imageAlt": "An Aajiveka career assistant pointing to the next step"
   },
   "service": {
     "heading": "Our Service",
@@ -34,5 +41,18 @@
     "resumeDatabaseText": "Our extensive resume database allows employers to search for and shortlist candidates based on their skills, qualifications, and experience.",
     "careerAdvice": "Career Advice",
     "careerAdviceText": "By creating an account with Aajiveka, students can get the best career advice without any hassle. We have a 24/7 chatbot available on the portal that offers valuable career guidance."
+  },
+  "howItWorks": {
+    "eyebrow": "How it",
+    "heading": "WORKS?",
+    "subtext": "Our workflow is simple and easy to understand. Finding a job at Aajiveka is just one step away from your screen. Here is a working mechanism of Aajiveka:",
+    "step1": "Download the App",
+    "step2": "Login / Signup",
+    "step3": "Create an Account",
+    "step4": "Add Skills",
+    "step5": "Upload Resume",
+    "step6": "Upload Documents",
+    "step7": "Get Started With The Job",
+    "imageAlt": "The Aajiveka app open on a phone"
   }
 }

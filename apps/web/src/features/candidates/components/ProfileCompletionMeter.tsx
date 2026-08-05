@@ -5,55 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui';
 import { useCvEditProfile } from '../candidate.api';
-import type { CvEditProfile } from '../candidate.types';
-
-interface Section {
-  key: string;
-  weight: number;
-  done: boolean;
-}
-
-function computeSections(cv: CvEditProfile): Section[] {
-  const p = cv.personal;
-  const pr = cv.professional;
-  return [
-    {
-      key: 'personal',
-      weight: 25,
-      done: !!(p && p.fullName && p.mobile && p.gender && p.cityId),
-    },
-    {
-      key: 'professional',
-      weight: 25,
-      done: !!(pr && (pr.subFunctionId || pr.skillId) && pr.totalExp > 0),
-    },
-    {
-      key: 'education',
-      weight: 20,
-      done: cv.education.length > 0,
-    },
-    {
-      key: 'employment',
-      weight: 20,
-      done: cv.employment.length > 0,
-    },
-    {
-      key: 'certificates',
-      weight: 10,
-      done: cv.certificates.length > 0,
-    },
-  ];
-}
+import { computeCompletion, type CompletionSection } from '../profileCompletion';
 
 export function ProfileCompletionMeter() {
   const { t } = useTranslation('dashboard');
   const { data } = useCvEditProfile();
 
   const { sections, percent } = useMemo(() => {
-    if (!data) return { sections: [] as Section[], percent: 0 };
-    const s = computeSections(data);
-    const pct = s.reduce((sum, sec) => sum + (sec.done ? sec.weight : 0), 0);
-    return { sections: s, percent: pct };
+    if (!data) return { sections: [] as CompletionSection[], percent: 0 };
+    return computeCompletion(data);
   }, [data]);
 
   if (!data) return null;
@@ -93,12 +53,13 @@ export function ProfileCompletionMeter() {
         </p>
       )}
 
-      {/* Section checklist */}
+      {/* Section checklist. Every section is editable in place on the profile page now, so the
+          checklist links there rather than sending the candidate to a separate CV editor. */}
       <ul className="mt-4 space-y-2">
         {sections.map((sec) => (
           <li key={sec.key}>
             <Link
-              to={`/candidate/cv-manager#cv-${sec.key}`}
+              to={`/candidate/profile#${sec.anchor}`}
               className={cn(
                 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-gray-700/50',
                 sec.done ? 'text-gray-500 dark:text-gray-400' : 'text-navy font-medium',

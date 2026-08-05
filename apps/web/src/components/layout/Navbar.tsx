@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown, ShieldCheck, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Button } from '@/components/ui';
+import { Button, Dropdown, buttonVariants } from '@/components/ui';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  LOGIN_PORTALS,
+  LOGIN_PORTAL_ORDER,
+  LOGIN_PORTAL_PARAM,
+} from '@/features/auth/loginPortals';
+
+const PORTAL_ICON = {
+  candidate: User,
+  employer: Building2,
+  admin: ShieldCheck,
+} as const;
 
 /**
  * Public site header — mirrors FrontMaster.Master:
@@ -13,6 +25,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY >= 100);
@@ -56,11 +69,24 @@ export function Navbar() {
               {t('nav.registerNow')}
             </Button>
           </Link>
-          <Link to="/login" className="hidden md:block">
-            <Button variant="accent" size="sm">
-              {t('nav.employerLogin')}
-            </Button>
-          </Link>
+          <div className="hidden md:block">
+            <Dropdown
+              trigger={
+                <span className={cn(buttonVariants({ variant: 'accent', size: 'sm' }))}>
+                  {t('nav.login')}
+                  <ChevronDown className="h-4 w-4" aria-hidden />
+                </span>
+              }
+              items={LOGIN_PORTAL_ORDER.map((portal) => {
+                const Icon = PORTAL_ICON[portal];
+                return {
+                  label: t(LOGIN_PORTALS[portal].labelKey),
+                  icon: <Icon className="h-4 w-4" aria-hidden />,
+                  onSelect: () => navigate(`/login?${LOGIN_PORTAL_PARAM}=${portal}`),
+                };
+              })}
+            />
+          </div>
           <Link to="/pricing" className="hidden sm:block">
             <Button variant="accent" size="sm">
               {t('nav.subscribeNow')}
