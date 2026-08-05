@@ -65,11 +65,14 @@ function useActiveSection(ready: boolean) {
 /** Candidate self-profile — every section editable in place. */
 export default function CandidateProfilePage() {
   const { t } = useTranslation('dashboard');
-  const { data: profile, isLoading, isError } = useCandidateProfile();
-  const { data: cv } = useCvEditProfile();
+  const { data: profile, isLoading, isError: profileFailed } = useCandidateProfile();
+  const { data: cv, isError: cvFailed } = useCvEditProfile();
   const { data: masters } = useCvMasters();
   const { hash } = useLocation();
 
+  // Both queries feed the page, so both have to be watched: keying the error branch off the
+  // profile alone left a cv-edit failure showing the skeleton forever, with nothing to retry.
+  const isError = profileFailed || cvFailed;
   const ready = !!profile && !!cv;
   const activeId = useActiveSection(ready);
 
