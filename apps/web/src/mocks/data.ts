@@ -15,7 +15,7 @@ import type {
   CvProjectEntry,
   LanguageProficiency,
 } from '@/features/candidates/candidate.types';
-import type { CompanyMasters, CompanyProfile, JobListing } from '@/features/clients/client.types';
+import type { CompanyMasters, CompanyProfile, JobListing } from '@/employer/services/employer.types';
 import type { PublicJob } from '@/features/jobs/jobs.types';
 import type { CandidateDocReview, CandidateRow, QC1Stats } from '@/features/recruitment/recruitment.types';
 

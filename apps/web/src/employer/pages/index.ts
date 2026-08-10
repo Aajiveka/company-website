@@ -1,0 +1,13 @@
+export { DashboardPage } from '@/employer/pages/Dashboard/DashboardPage';
+export { CompleteProfilePage } from '@/employer/pages/CompleteProfile/CompleteProfilePage';
+export { JobListPage } from '@/employer/pages/ManageJobs/JobList/JobListPage';
+export { AddJobPage } from '@/employer/pages/ManageJobs/AddJob/AddJobPage';
+export { BulkImportPage } from '@/employer/pages/ManageJobs/BulkImport/BulkImportPage';
+export { ApplicantListPage } from '@/employer/pages/Applicants/ApplicantList/ApplicantListPage';
+export { ApplicantProfilePage } from '@/employer/pages/Applicants/ApplicantProfile/ApplicantProfilePage';
+export { ComparePage } from '@/employer/pages/CompareCandidates/ComparePage';
+export { AnalyticsPage } from '@/employer/pages/Analytics/AnalyticsPage';
+export { BillingPage } from '@/employer/pages/Billing/BillingPage';
+export { MessagesPage } from '@/employer/pages/Messages/MessagesPage';
+export { NotificationsPage } from '@/employer/pages/Notifications/NotificationsPage';
+export { SettingsPage } from '@/employer/pages/Settings/SettingsPage';

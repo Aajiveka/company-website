@@ -11,30 +11,21 @@ import {
   FileText,
   Gift,
   Heart,
-  KanbanSquare,
   KeyRound,
   LayoutDashboard,
-  Mail,
-  Megaphone,
   MessageSquare,
   PenTool,
   Search,
   Settings,
   ShieldCheck,
   Upload,
-  UploadCloud,
   Users,
-  FileBarChart,
   Target,
   CalendarDays,
   Clock,
   TrendingUp,
-  Workflow,
-  LayoutTemplate,
-  Palette,
   Building,
   Kanban,
-  UserCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { Role, type RoleId } from '@/types/roles';
@@ -42,13 +33,19 @@ import { Role, type RoleId } from '@/types/roles';
 export interface MenuItem {
   /** Translation key under the "common" namespace → sidebar.* */
   i18nKey: string;
+  /** Primary route — required for leaf items; groups use this as the landing path. */
   to: string;
   icon: LucideIcon;
+  /** Nested under-page links (shown as expandable submenu). */
+  children?: MenuItem[];
 }
 
 /**
- * Role-gated sidebar menus. Labels are now i18n keys resolved at render time
+ * Role-gated sidebar menus. Labels are i18n keys resolved at render time
  * via `t(`sidebar.${item.i18nKey}`)`.
+ *
+ * Employer (Client) items that are "under" a main page are nested as children
+ * so the sidebar stays short.
  */
 const MENUS: Record<RoleId, MenuItem[]> = {
   [Role.Subscriber]: [
@@ -84,24 +81,8 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
     { i18nKey: 'documents', to: '/recruitment/documents', icon: FileCheck2 },
   ],
-  [Role.Client]: [
-    { i18nKey: 'companyProfile', to: '/company/profile', icon: Building2 },
-    { i18nKey: 'manageJobs', to: '/company/jobs', icon: Briefcase },
-    { i18nKey: 'postAJob', to: '/company/post-job', icon: FileText },
-    { i18nKey: 'applicants', to: '/company/applicants', icon: Users },
-    { i18nKey: 'emailTemplates', to: '/company/email-templates', icon: Mail },
-    { i18nKey: 'bulkImport', to: '/company/bulk-import', icon: UploadCloud },
-    { i18nKey: 'pipeline', to: '/company/pipeline', icon: KanbanSquare },
-    { i18nKey: 'employerAnalytics', to: '/company/analytics', icon: BarChart3 },
-    { i18nKey: 'reports', to: '/company/reports', icon: FileBarChart },
-    { i18nKey: 'sourcing', to: '/company/sourcing', icon: Search },
-    { i18nKey: 'campaigns', to: '/company/campaigns', icon: Megaphone },
-    { i18nKey: 'workflows', to: '/company/workflows', icon: Workflow },
-    { i18nKey: 'templateLibrary', to: '/company/template-library', icon: LayoutTemplate },
-    { i18nKey: 'branding', to: '/company/branding', icon: Palette },
-    { i18nKey: 'compareCandidates', to: '/company/compare-candidates', icon: UserCheck },
-    { i18nKey: 'messages', to: '/company/messages', icon: MessageSquare },
-  ],
+  // Employer panel uses apps/web/src/employer/constants/menu.ts (EmployerLayout).
+  [Role.Client]: [],
   [Role.Admin]: [
     { i18nKey: 'adminDashboard', to: '/admin', icon: BarChart3 },
     { i18nKey: 'userManagement', to: '/admin/users', icon: Users },
@@ -117,3 +98,13 @@ const MENUS: Record<RoleId, MenuItem[]> = {
 };
 
 export const getMenuForRole = (role: RoleId): MenuItem[] => MENUS[role] ?? [];
+
+/** Flat list of all leaf + parent routes (for command palette / breadcrumbs helpers). */
+export function flattenMenu(items: MenuItem[]): MenuItem[] {
+  const out: MenuItem[] = [];
+  for (const item of items) {
+    out.push(item);
+    if (item.children?.length) out.push(...flattenMenu(item.children));
+  }
+  return out;
+}

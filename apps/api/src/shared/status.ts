@@ -17,14 +17,15 @@ export const JobMapStatus = {
 } as const;
 
 /**
- * A job is Active or Closed, nothing else.
+ * A job is Active (1), Closed (2), Archived (3), or Draft (4).
  *
- * spClientGetJoblisting reads tblClientJobs.StatusID as
- *   CASE WHEN StatusID = 1 THEN 'Active' ELSE 'Closed' END
- * and spClientManageJob writes 1 on insert. It is a flag, not a lookup — tblMstrStatus is
- * the CANDIDATE journey, and joining it made every job display "Account created".
+ * Legacy listing used CASE WHEN StatusID = 1 THEN 'Active' ELSE 'Closed'.
+ * Employer portal adds Archived=3 and Draft=4 so Closed / Archive / Draft stay distinct.
  */
 export const JOB_STATUS_ACTIVE = 1;
+export const JOB_STATUS_CLOSED = 2;
+export const JOB_STATUS_ARCHIVED = 3;
+export const JOB_STATUS_DRAFT = 4;
 
 export const SubscriberStatus = {
   ACCOUNT_CREATED: 1,

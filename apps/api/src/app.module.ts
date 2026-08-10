@@ -9,7 +9,7 @@ import { NotificationsModule } from '@/modules/notifications/notifications.modul
 import { env } from '@/config/env';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
-import { ClientsModule } from '@/modules/clients/clients.module';
+import { EmployersModule } from '@/modules/employers/employers.module';
 import { JobsModule } from '@/modules/jobs/jobs.module';
 import { RecruitmentModule } from '@/modules/recruitment/recruitment.module';
 import { StorageModule } from '@/modules/storage/storage.module';
@@ -37,7 +37,7 @@ import { CompaniesModule } from '@/modules/companies/companies.module';
     AuthModule,
     JobsModule,
     CandidatesModule,
-    ClientsModule,
+    EmployersModule,
     RecruitmentModule,
     StorageModule,
     FilesModule,

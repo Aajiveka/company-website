@@ -13,7 +13,7 @@ import type {
   CvProjectEntry,
   LanguageProficiency,
 } from '@/features/candidates/candidate.types';
-import type { JobListing } from '@/features/clients/client.types';
+import type { JobListing } from '@/employer/services/employer.types';
 import {
   ACTIVE_JOBS,
   addAppliedJob,
@@ -351,7 +351,45 @@ export const handlers = [
     if (!userFromAuth(request)) return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
     return HttpResponse.json(COMPANY_PROFILE);
   }),
-  http.get(`${BASE}/clients/me/jobs`, () => HttpResponse.json(COMPANY_JOBS)),
+  http.get(`${BASE}/clients/me/jobs`, ({ request }) => {
+    const url = new URL(request.url);
+    const q = (url.searchParams.get('q') ?? '').toLowerCase();
+    const city = url.searchParams.get('city') ?? '';
+    const status = url.searchParams.get('status') ?? '';
+    const page = Math.max(1, Number(url.searchParams.get('page') ?? 1));
+    const pageSize = Math.max(1, Number(url.searchParams.get('pageSize') ?? 10));
+    let rows = [...COMPANY_JOBS];
+    if (status === 'Draft' || status === 'Archived') rows = [];
+    else if (status) rows = rows.filter((j) => j.status === status);
+    if (city) rows = rows.filter((j) => j.city === city);
+    if (q) {
+      rows = rows.filter(
+        (j) =>
+          j.designation.toLowerCase().includes(q) ||
+          (j.city ?? '').toLowerCase().includes(q) ||
+          (j.description ?? '').toLowerCase().includes(q),
+      );
+    }
+    const total = rows.length;
+    const start = (page - 1) * pageSize;
+    const items = rows.slice(start, start + pageSize);
+    const cities = Array.from(new Set(COMPANY_JOBS.map((j) => j.city).filter(Boolean))).sort();
+    return HttpResponse.json({
+      items,
+      total,
+      page,
+      pageSize,
+      pageCount: Math.ceil(total / pageSize) || 0,
+      counts: {
+        all: COMPANY_JOBS.length,
+        active: COMPANY_JOBS.filter((j) => j.status === 'Active').length,
+        closed: COMPANY_JOBS.filter((j) => j.status === 'Closed').length,
+        draft: 0,
+        archived: 0,
+      },
+      cities,
+    });
+  }),
   http.post(`${BASE}/clients/me/jobs`, async ({ request }) => {
     const body = await request.json();
     return HttpResponse.json({ ok: true, job: body }, { status: 201 });

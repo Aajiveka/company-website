@@ -1,3 +1,5 @@
-EmployeeTypeID|Descr
+﻿EmployeeTypeID|Descr
 1|Full Time
 2|Part Time
+3|Internship
+4|Contract
