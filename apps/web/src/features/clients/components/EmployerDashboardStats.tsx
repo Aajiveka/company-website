@@ -19,7 +19,7 @@ export function EmployerDashboardStats() {
   const { data: applicants } = useApplicants();
 
   const stats = useMemo((): StatCard[] => {
-    const jobList = jobs ?? [];
+    const jobList = jobs?.items ?? [];
     const appList = applicants ?? [];
 
     const activeJobs = jobList.filter((j) => j.status === 'Active').length;

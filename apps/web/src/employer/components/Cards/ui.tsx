@@ -122,18 +122,21 @@ export function SecondaryButton({
   className,
   type = 'button',
   onClick,
+  disabled,
 }: {
   children: ReactNode;
   className?: string;
   type?: 'button' | 'submit';
   onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type={type}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
-        'inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50',
+        'inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
     >
