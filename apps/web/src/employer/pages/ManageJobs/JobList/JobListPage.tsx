@@ -11,9 +11,8 @@ import {
 import { DataTable, type Column } from '@/employer/components/Tables/DataTable';
 import {
   ColumnVisibilityMenu,
-  loadColumnVisibility,
-  saveColumnVisibility,
 } from '@/employer/components/Tables/ColumnVisibilityMenu';
+import { loadColumnVisibility, saveColumnVisibility } from '@/employer/components/Tables/columnVisibilityStorage';
 import { employerPaths } from '@/employer/constants/paths';
 import {
   useArchiveJob,
