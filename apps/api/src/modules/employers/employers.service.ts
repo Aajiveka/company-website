@@ -80,11 +80,18 @@ function decodeInterviewProcess(raw: string | null | undefined): InterviewRoundD
 
 /** Normalize labels so "Full time" ≈ "Full Time", "In-office" ≈ "Work From Office", etc. */
 function normalizeMasterLabel(label: string): string {
-  const s = label.toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
-  if (['full time', 'fulltime'].includes(s)) return 'full time';
+  const s = label
+    .normalize('NFKC')
+    .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
+    .toLowerCase()
+    .replace(/[-_/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (['full time', 'fulltime', 'full time employment', 'permanent'].includes(s)) return 'full time';
   if (['part time', 'parttime'].includes(s)) return 'part time';
   if (['internship', 'intern'].includes(s)) return 'internship';
-  if (['contract', 'contractual'].includes(s)) return 'contract';
+  if (['contract', 'contractual', 'contractor'].includes(s)) return 'contract';
+
   if (['in office', 'onsite', 'on site', 'work from office', 'wfo'].includes(s)) return 'in office';
   if (['remote', 'work from home', 'wfh'].includes(s)) return 'remote';
   if (['hybrid'].includes(s)) return 'hybrid';
@@ -848,6 +855,38 @@ export class EmployersService {
     });
   }
 
+  /** Make sure CSV labels like "Full Time" / "Bengaluru" exist (migrate-before-seed gap). */
+  private async ensureBulkImportMasters() {
+    const empTypes = ['Full Time', 'Part Time', 'Internship', 'Contract'];
+    for (const descr of empTypes) {
+      await this.db.$executeRaw`
+        INSERT INTO "tblMstrEmpType" ("Descr")
+        SELECT ${descr}
+        WHERE NOT EXISTS (
+          SELECT 1 FROM "tblMstrEmpType" e WHERE lower(trim(e."Descr")) = lower(trim(${descr}))
+        )
+      `;
+    }
+
+    const cities: { descr: string; stateId: number }[] = [
+      { descr: 'Bengaluru', stateId: 16 },
+      { descr: 'Bangalore', stateId: 16 },
+      { descr: 'Noida', stateId: 34 },
+      { descr: 'Mumbai', stateId: 21 },
+      { descr: 'Delhi', stateId: 9 },
+    ];
+    for (const { descr, stateId } of cities) {
+      await this.db.$executeRaw`
+        INSERT INTO "tblMstrCily" ("Descr", "StateID")
+        SELECT ${descr}, ${stateId}
+        WHERE EXISTS (SELECT 1 FROM "tblMstrState" st WHERE st."StateID" = ${stateId})
+          AND NOT EXISTS (
+            SELECT 1 FROM "tblMstrCily" c WHERE lower(trim(c."Descr")) = lower(trim(${descr}))
+          )
+      `;
+    }
+  }
+
   /** Bulk-upload jobs from a CSV that matches employer jobFields columns. */
   async bulkUploadJobs(userId: number, file: Express.Multer.File) {
     if (!file || !file.buffer) throw new BadRequestException('No file provided');
@@ -859,6 +898,8 @@ export class EmployersService {
 
     const headers = parseCsvLine(lines[0]).map(headerKey);
     const dataLines = lines.slice(1);
+
+    await this.ensureBulkImportMasters();
 
     const [designations, cities, workModes, empTypes, industries, skills] = await Promise.all([
       this.db.mstrDesignation.findMany(),

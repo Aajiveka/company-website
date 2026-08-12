@@ -1,0 +1,4 @@
+Position,Employment type,Experience,Work mode,CTC (min),CTC (max),Education Detail,Report to,Team size,Industry type,Department,Sub-Department,Skills,Job Description,Location,Interview round,Interview Process
+Frontend Developer,Full Time,2-5,Hybrid,600000,1200000,B.Tech / MCA,Engineering Manager,8,IT Services & Consulting,Engineering,Frontend,"React, TypeScript, Node.js",Build and own web product features.,Bengaluru,1|2|3,HR Screen|Technical|Hiring Manager
+Backend Developer,Full Time,3-6,Work From Office,800000,1500000,B.Tech,Tech Lead,5,IT Services & Consulting,Engineering,Backend,"Node.js, PostgreSQL, AWS",Design and ship API services.,Noida,1|2,HR Screen|Technical
+QA Engineer,Contract,1-3,Remote,400000,700000,B.Sc / BCA,QA Lead,4,IT Services & Consulting,Quality,Testing,"Selenium, Manual Testing, JIRA",Own regression and release quality.,Pune,1|2,HR Screen|Technical
