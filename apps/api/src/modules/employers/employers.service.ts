@@ -15,10 +15,37 @@ import type {
   ApplicantNoteDto,
   CreateJobDto,
   InterviewRoundDto,
+  ListApplicantsQueryDto,
   ListJobsQueryDto,
   UpdateBrandingDto,
+  UpdateCompanyProfileDto,
   UpdateJobDto,
 } from './dto/employers.dto';
+
+type PipelineStatus = 'New' | 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+
+const INTERVIEW_MAP_STATUSES: number[] = [
+  JobMapStatus.INTERVIEW_SCHEDULED,
+  JobMapStatus.INTERVIEW_ATTENDED,
+  JobMapStatus.RESCHEDULE_REQUESTED,
+  JobMapStatus.RESCHEDULED,
+];
+
+function pipelineStatus(statusId: number | null | undefined): PipelineStatus {
+  if (statusId === JobMapStatus.SHORTLISTED) return 'Shortlisted';
+  if (statusId != null && INTERVIEW_MAP_STATUSES.includes(statusId)) return 'Interview';
+  if (statusId === JobMapStatus.SELECTED) return 'Hired';
+  if (statusId === JobMapStatus.REJECTED) return 'Rejected';
+  return 'New';
+}
+
+function jobMapIdsForPipeline(status: PipelineStatus): number[] {
+  if (status === 'Shortlisted') return [JobMapStatus.SHORTLISTED];
+  if (status === 'Interview') return INTERVIEW_MAP_STATUSES;
+  if (status === 'Hired') return [JobMapStatus.SELECTED];
+  if (status === 'Rejected') return [JobMapStatus.REJECTED];
+  return [JobMapStatus.MAPPED];
+}
 
 const jobStatus = (statusId: number | null) => {
   if (statusId === JOB_STATUS_ACTIVE) return 'Active';
@@ -162,14 +189,44 @@ export class EmployersService {
       clientId: Number(c.clientID),
       clientName: c.clientName ?? '',
       industry: c.industryType?.industryType ?? '',
+      industryTypeId: c.industryTypeID,
       email: c.emailID ?? '',
       contactNo: c.contactNo ?? '',
       website: c.companyWebsite ?? '',
       city: c.city?.descr ?? '',
+      cityId: c.cityID,
       address: c.clientAddress ?? '',
       logoUrl: c.companyLogo?.trim() ? `/files/${c.companyLogo}` : null,
       description: c.companyDescr ?? '',
     };
+  }
+
+  /** Update owned company profile fields on tblClientMstr. */
+  async updateProfile(userId: number, dto: UpdateCompanyProfileDto) {
+    const clientId = await this.clientIdFor(userId);
+    await this.db.clientMstr.update({
+      where: { clientID: clientId },
+      data: {
+        ...(dto.clientName !== undefined && { clientName: dto.clientName.trim() }),
+        ...(dto.email !== undefined && { emailID: dto.email.trim() || null }),
+        ...(dto.contactNo !== undefined && { contactNo: dto.contactNo.trim() || null }),
+        ...(dto.website !== undefined && { companyWebsite: dto.website.trim() || null }),
+        ...(dto.address !== undefined && { clientAddress: dto.address.trim() || null }),
+        ...(dto.description !== undefined && { companyDescr: dto.description.trim() || null }),
+        ...(dto.cityId !== undefined && { cityID: dto.cityId }),
+        ...(dto.industryTypeId !== undefined && { industryTypeID: dto.industryTypeId }),
+        ...(dto.companyLogo !== undefined && { companyLogo: dto.companyLogo.trim() || null }),
+        timestampUpd: new Date(),
+        loginIDUpd: userId,
+      },
+    });
+    await this.audit.record({
+      userId,
+      action: 'company.profile.update',
+      entity: 'ClientMstr',
+      entityId: Number(clientId),
+    });
+    return this.profile(userId);
   }
 
   /** Port of spClientGetJoblisting — paginated company openings with search/filters. */
@@ -341,10 +398,18 @@ export class EmployersService {
   }
 
   /** Candidates who applied to any of this company's jobs (spClientGetJobSubscribers). */
-  async applicants(userId: number) {
+  async applicants(userId: number, query: ListApplicantsQueryDto = {}) {
     const clientId = await this.clientIdFor(userId);
+    const statusFilter = query.status;
+    const q = query.q?.trim() ?? '';
+
+    const where: Record<string, unknown> = { job: { clientID: clientId } };
+    if (statusFilter) {
+      where.jobMapStatusID = { in: jobMapIdsForPipeline(statusFilter) };
+    }
+
     const rows = await this.db.jobSubscriberMapping.findMany({
-      where: { job: { clientID: clientId } },
+      where,
       orderBy: { mapDate: 'desc' },
       include: {
         jobMapStatus: { select: { descr: true } },
@@ -352,26 +417,153 @@ export class EmployersService {
         subscriber: {
           include: {
             SubscriberCVDetails: {
-              include: { city: { select: { descr: true } } },
+              include: {
+                city: { select: { descr: true } },
+                skill: { select: { descr: true } },
+              },
+            },
+            SubscriberEmployer: {
+              orderBy: { timestampIns: 'desc' },
+              take: 1,
+              include: { designation: { select: { descr: true } } },
             },
           },
         },
       },
     });
 
-    return rows.map((r) => {
+    let mapped = rows.map((r) => {
       const cv = r.subscriber?.SubscriberCVDetails;
+      const current = r.subscriber?.SubscriberEmployer?.[0];
+      const status = pipelineStatus(r.jobMapStatusID);
+      const skills = [cv?.skill?.descr].filter(Boolean) as string[];
       return {
+        jobSubscriberMapId: Number(r.jobSubscriberMapID),
         subscriberId: Number(r.subscriberID ?? 0),
         fullName: cv?.fullName?.trim() || cv?.mobileNo1 || '',
         designation: r.job?.designation?.descr ?? '',
         city: cv?.city?.descr ?? '',
         experience: cv?.totalExp != null ? `${cv.totalExp} yrs` : '',
         jobStatus: r.jobMapStatus?.descr ?? 'Applied',
+        status,
+        skills,
+        company: current?.employer ?? '',
+        notice: cv?.noticePeriod != null ? `${cv.noticePeriod} days` : current?.noticePeriodDays != null ? `${current.noticePeriodDays} days` : '',
         appliedOn: r.mapDate?.toISOString().slice(0, 10) ?? '',
-        jobSubscriberMapId: Number(r.jobSubscriberMapID),
+        email: cv?.emailID ?? '',
+        mobile: cv?.mobileNo1 ?? '',
       };
     });
+
+    if (q) {
+      const needle = q.toLowerCase();
+      mapped = mapped.filter(
+        (a) =>
+          a.fullName.toLowerCase().includes(needle) ||
+          a.designation.toLowerCase().includes(needle) ||
+          a.city.toLowerCase().includes(needle) ||
+          a.company.toLowerCase().includes(needle),
+      );
+    }
+
+    return mapped;
+  }
+
+  /** Single owned applicant application + CV summary. */
+  async getApplicant(userId: number, jobSubscriberMapId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const r = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: {
+        jobMapStatus: { select: { descr: true } },
+        job: {
+          include: {
+            designation: { select: { descr: true } },
+            jobCity: { select: { descr: true } },
+          },
+        },
+        subscriber: {
+          include: {
+            SubscriberCVDetails: {
+              include: {
+                city: { select: { descr: true } },
+                currentCity: { select: { descr: true } },
+                skill: { select: { descr: true } },
+                industryType: { select: { industryType: true } },
+              },
+            },
+            SubscriberEducation: {
+              orderBy: { timestampIns: 'desc' },
+              include: {
+                course: { select: { degreeName: true } },
+                degree: { select: { descr: true } },
+              },
+            },
+            SubscriberEmployer: {
+              orderBy: { timestampIns: 'desc' },
+              include: { designation: { select: { descr: true } } },
+            },
+            SubscriberStatusHistory: {
+              where: { clientID: clientId },
+              orderBy: { timestampIns: 'desc' },
+              take: 20,
+              include: { status: { select: { descr: true } } },
+            },
+          },
+        },
+      },
+    });
+    if (!r || Number(r.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const cv = r.subscriber?.SubscriberCVDetails;
+    const status = pipelineStatus(r.jobMapStatusID);
+
+    return {
+      jobSubscriberMapId: Number(r.jobSubscriberMapID),
+      subscriberId: Number(r.subscriberID ?? 0),
+      fullName: cv?.fullName?.trim() || cv?.mobileNo1 || '',
+      email: cv?.emailID ?? '',
+      mobile: cv?.mobileNo1 ?? '',
+      designation: r.job?.designation?.descr ?? '',
+      jobCity: r.job?.jobCity?.descr ?? '',
+      city: cv?.city?.descr ?? cv?.currentCity?.descr ?? '',
+      experience: cv?.totalExp != null ? `${cv.totalExp} yrs` : '',
+      totalExp: cv?.totalExp ?? null,
+      currentCtc: cv?.currentCTC != null ? Number(cv.currentCTC) : null,
+      notice: cv?.noticePeriod != null ? `${cv.noticePeriod} days` : '',
+      skills: [cv?.skill?.descr].filter(Boolean) as string[],
+      industry: cv?.industryType?.industryType ?? '',
+      status,
+      jobStatus: r.jobMapStatus?.descr ?? 'Applied',
+      appliedOn: r.mapDate?.toISOString().slice(0, 10) ?? '',
+      cvPath: cv?.cVPath?.trim() ? `/files/${cv.cVPath}` : null,
+      photoUrl: cv?.photoName?.trim() ? `/files/${cv.photoName}` : null,
+      employment: (r.subscriber?.SubscriberEmployer ?? []).map((e) => ({
+        employer: e.employer,
+        designation: e.designation?.descr ?? '',
+        from: e.joiningDate?.toISOString().slice(0, 10) ?? '',
+        to: e.releavingDate?.toISOString().slice(0, 10) ?? '',
+        salary: e.salary,
+        description: e.jobDescr ?? '',
+        current: e.flgCurrent === 1,
+      })),
+      education: (r.subscriber?.SubscriberEducation ?? []).map((ed) => ({
+        degree: ed.degree?.descr ?? '',
+        course: ed.course?.degreeName ?? '',
+        institute: ed.instituteName ?? '',
+        year: ed.passingYear,
+        mode: ed.courseMode ?? '',
+        marks: ed.marks ?? '',
+      })),
+      timeline: (r.subscriber?.SubscriberStatusHistory ?? []).map((h) => ({
+        status: h.status?.descr ?? '',
+        at: h.timestampIns?.toISOString() ?? '',
+        comments: h.comments ?? '',
+      })),
+      company: r.subscriber?.SubscriberEmployer?.[0]?.employer ?? '',
+    };
   }
 
   /** id-backed lookup lists for the job post/edit form (fixes free-text fields that never matched CreateJobDto's ints). */
@@ -559,7 +751,7 @@ export class EmployersService {
     return { ok: true };
   }
 
-  /** Client-side shortlist/reject of an applicant (spClientShortListRejectSubscriber, RoleID=4 branch). */
+  /** Client-side pipeline decision on an applicant. */
   async decideApplicant(userId: number, jobSubscriberMapId: number, dto: ApplicantDecisionDto) {
     const clientId = await this.clientIdFor(userId);
     const mapping = await this.db.jobSubscriberMapping.findUnique({
@@ -570,9 +762,20 @@ export class EmployersService {
       throw new NotFoundException('Application not found');
     }
 
-    const jobMapStatusId = dto.decision === 'Shortlisted' ? JobMapStatus.SHORTLISTED : JobMapStatus.REJECTED;
-    const historyStatusId = dto.decision === 'Shortlisted' ? SubscriberStatus.SHORTLISTED : SubscriberStatus.REJECTED;
-    await this.applications.transitionStatus(jobSubscriberMapId, jobMapStatusId, userId, historyStatusId);
+    const map: Record<
+      ApplicantDecisionDto['decision'],
+      { jobMapStatusId: number; historyStatusId: number }
+    > = {
+      Shortlisted: { jobMapStatusId: JobMapStatus.SHORTLISTED, historyStatusId: SubscriberStatus.SHORTLISTED },
+      Interview: {
+        jobMapStatusId: JobMapStatus.INTERVIEW_SCHEDULED,
+        historyStatusId: SubscriberStatus.INTERVIEW_SCHEDULED,
+      },
+      Hired: { jobMapStatusId: JobMapStatus.SELECTED, historyStatusId: SubscriberStatus.SELECTED },
+      Rejected: { jobMapStatusId: JobMapStatus.REJECTED, historyStatusId: SubscriberStatus.REJECTED },
+    };
+    const next = map[dto.decision];
+    await this.applications.transitionStatus(jobSubscriberMapId, next.jobMapStatusId, userId, next.historyStatusId);
     await this.audit.record({
       userId,
       action: 'applicant.decision',
@@ -580,7 +783,7 @@ export class EmployersService {
       entityId: jobSubscriberMapId,
       detail: { decision: dto.decision },
     });
-    return { ok: true };
+    return { ok: true, status: dto.decision };
   }
 
   // ---------------------------------------------------------------------------
@@ -886,38 +1089,53 @@ export class EmployersService {
 
     const totalJobs = jobs.length;
     const activeJobs = jobs.filter((j) => j.statusID === JOB_STATUS_ACTIVE).length;
+    const closedJobs = jobs.filter((j) => j.statusID === JOB_STATUS_CLOSED).length;
+    const draftJobs = jobs.filter((j) => j.statusID === JOB_STATUS_DRAFT).length;
+    const archivedJobs = jobs.filter((j) => j.statusID === JOB_STATUS_ARCHIVED).length;
 
     let totalApplications = 0;
     let shortlisted = 0;
     let interviewScheduled = 0;
     let selected = 0;
     let rejected = 0;
+    let mapped = 0;
 
     const jobPerformance = jobs.map((j) => {
       const apps = j.JobSubscriberMapping;
       const jShortlisted = apps.filter((a) => a.jobMapStatusID === JobMapStatus.SHORTLISTED).length;
-      const jInterviewScheduled = apps.filter((a) => a.jobMapStatusID === JobMapStatus.INTERVIEW_SCHEDULED).length;
+      const jInterviewScheduled = apps.filter(
+        (a) => a.jobMapStatusID != null && INTERVIEW_MAP_STATUSES.includes(a.jobMapStatusID),
+      ).length;
       const jSelected = apps.filter((a) => a.jobMapStatusID === JobMapStatus.SELECTED).length;
       const jRejected = apps.filter((a) => a.jobMapStatusID === JobMapStatus.REJECTED).length;
+      const jMapped = apps.filter((a) => a.jobMapStatusID === JobMapStatus.MAPPED || a.jobMapStatusID == null).length;
 
       totalApplications += apps.length;
       shortlisted += jShortlisted;
       interviewScheduled += jInterviewScheduled;
       selected += jSelected;
       rejected += jRejected;
+      mapped += jMapped;
 
       return {
         jobId: Number(j.jobID),
         designation: j.designation?.descr ?? '',
         applications: apps.length,
         shortlisted: jShortlisted,
+        interviewScheduled: jInterviewScheduled,
+        selected: jSelected,
+        rejected: jRejected,
       };
     });
 
     return {
       totalJobs,
       activeJobs,
+      closedJobs,
+      draftJobs,
+      archivedJobs,
       totalApplications,
+      mapped,
       shortlisted,
       interviewScheduled,
       selected,

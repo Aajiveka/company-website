@@ -10,9 +10,11 @@ import {
   ApplicantDecisionDto,
   ApplicantNoteDto,
   CreateJobDto,
+  ListApplicantsQueryDto,
   ListJobsQueryDto,
   SetJobStatusDto,
   UpdateBrandingDto,
+  UpdateCompanyProfileDto,
   UpdateJobDto,
 } from './dto/employers.dto';
 
@@ -37,6 +39,12 @@ export class EmployersController {
     return this.clients.profile(user.userId);
   }
 
+  @Patch('me')
+  @ApiOperation({ summary: 'Update the signed-in employer company profile' })
+  updateProfile(@CurrentUser() user: RequestUser, @Body() dto: UpdateCompanyProfileDto) {
+    return this.clients.updateProfile(user.userId, dto);
+  }
+
   @Get('me/jobs')
   @ApiOperation({ summary: 'The company\u2019s job openings (paginated + filters)' })
   jobs(@CurrentUser() user: RequestUser, @Query() query: ListJobsQueryDto) {
@@ -55,8 +63,17 @@ export class EmployersController {
 
   @Get('me/applicants')
   @ApiOperation({ summary: 'Candidates who applied to the company\u2019s jobs' })
-  applicants(@CurrentUser() user: RequestUser) {
-    return this.clients.applicants(user.userId);
+  applicants(@CurrentUser() user: RequestUser, @Query() query: ListApplicantsQueryDto) {
+    return this.clients.applicants(user.userId, query);
+  }
+
+  @Get('me/applicants/:jobSubscriberMapId')
+  @ApiOperation({ summary: 'One applicant application + CV summary' })
+  getApplicant(
+    @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.clients.getApplicant(user.userId, jobSubscriberMapId);
   }
 
   @Get('masters')
@@ -119,7 +136,7 @@ export class EmployersController {
   }
 
   @Post('me/applicants/:jobSubscriberMapId/decision')
-  @ApiOperation({ summary: 'Shortlist or reject an applicant (spClientShortListRejectSubscriber)' })
+  @ApiOperation({ summary: 'Set applicant pipeline status (Shortlisted / Interview / Hired / Rejected)' })
   decideApplicant(
     @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
     @CurrentUser() user: RequestUser,

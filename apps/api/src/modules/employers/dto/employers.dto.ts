@@ -268,9 +268,68 @@ export class SetJobStatusDto {
 }
 
 export class ApplicantDecisionDto {
-  @ApiProperty({ enum: ['Shortlisted', 'Rejected'] })
-  @IsIn(['Shortlisted', 'Rejected'])
-  decision!: 'Shortlisted' | 'Rejected';
+  @ApiProperty({ enum: ['Shortlisted', 'Interview', 'Hired', 'Rejected'] })
+  @IsIn(['Shortlisted', 'Interview', 'Hired', 'Rejected'])
+  decision!: 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+}
+
+export class ListApplicantsQueryDto {
+  @ApiPropertyOptional({ enum: ['New', 'Shortlisted', 'Interview', 'Hired', 'Rejected'] })
+  @IsOptional()
+  @IsIn(['New', 'Shortlisted', 'Interview', 'Hired', 'Rejected'])
+  status?: 'New' | 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+
+  @ApiPropertyOptional({ description: 'Search name, designation, city' })
+  @IsOptional()
+  @IsString()
+  q?: string;
+}
+
+export class UpdateCompanyProfileDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  clientName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  contactNo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  website?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  cityId?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  industryTypeId?: number;
+
+  @ApiPropertyOptional({ description: 'Stored logo filename/path under uploads' })
+  @IsOptional()
+  @IsString()
+  companyLogo?: string;
 }
 
 export class UpdateBrandingDto {

@@ -3,23 +3,39 @@ import { api } from '@/lib/axios';
 import { queryKeys } from '@/lib/queryClient';
 import type {
   BulkUploadResult,
+  CompanyAnalytics,
   CompanyMasters,
   CompanyProfile,
+  EmployerApplicant,
+  EmployerApplicantDetail,
   JobListParams,
   JobListResponse,
   JobListing,
   JobPostInput,
+  ApplicantDecision,
+  ApplicantPipelineStatus,
+  UpdateCompanyProfileInput,
 } from './employer.types';
-import type { CandidateRow } from '@/features/recruitment/recruitment.types';
 
-export type ApplicantRow = CandidateRow & { jobSubscriberMapId: number };
-export type { JobPostInput, JobListParams, JobListResponse, JobListing };
+export type { JobPostInput, JobListParams, JobListResponse, JobListing, EmployerApplicant, EmployerApplicantDetail, CompanyAnalytics, ApplicantDecision, ApplicantPipelineStatus };
+
+/** @deprecated Prefer `EmployerApplicant` — kept for legacy `features/clients` imports. */
+export type ApplicantRow = EmployerApplicant;
 
 /** Company profile (spClientGetCompanyInfo). HTTP stays /clients for API compatibility. */
 export function useCompanyProfile() {
   return useQuery({
     queryKey: queryKeys.employer.company('me'),
     queryFn: () => api.get<CompanyProfile>('/clients/me').then((r) => r.data),
+  });
+}
+
+export function useUpdateCompanyProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: UpdateCompanyProfileInput) =>
+      api.patch<CompanyProfile>('/clients/me', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.employer.company('me') }),
   });
 }
 
@@ -137,37 +153,89 @@ export function useDeleteJob() {
 }
 
 /** Applicants across the company's jobs (spClientGetJobSubscribers). */
-export function useApplicants() {
+export function useApplicants(params: { status?: ApplicantPipelineStatus; q?: string } = {}) {
   return useQuery({
-    queryKey: queryKeys.employer.applicants(),
-    queryFn: () => api.get<ApplicantRow[]>('/clients/me/applicants').then((r) => r.data),
+    queryKey: [...queryKeys.employer.applicants(), params],
+    queryFn: () =>
+      api
+        .get<EmployerApplicant[]>('/clients/me/applicants', {
+          params: {
+            ...(params.status ? { status: params.status } : {}),
+            ...(params.q ? { q: params.q } : {}),
+          },
+        })
+        .then((r) => r.data),
   });
 }
 
-/** Shortlist or reject an applicant (spClientShortListRejectSubscriber). */
+export function useApplicant(jobSubscriberMapId: number | null) {
+  return useQuery({
+    queryKey: ['employer', 'applicants', 'detail', jobSubscriberMapId],
+    enabled: jobSubscriberMapId != null && jobSubscriberMapId > 0,
+    queryFn: () =>
+      api.get<EmployerApplicantDetail>(`/clients/me/applicants/${jobSubscriberMapId}`).then((r) => r.data),
+  });
+}
+
+export function useApplicantNotes(jobSubscriberMapId: number | null) {
+  return useQuery({
+    queryKey: ['employer', 'applicants', 'notes', jobSubscriberMapId],
+    enabled: jobSubscriberMapId != null && jobSubscriberMapId > 0,
+    queryFn: () =>
+      api
+        .get<{ notes: Array<{ noteId: number; note: string; createdAt: string; updatedBy: number | null }> }>(
+          `/clients/me/applicants/${jobSubscriberMapId}/notes`,
+        )
+        .then((r) => r.data),
+  });
+}
+
+export function useSaveApplicantNote(jobSubscriberMapId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (note: string) =>
+      api.put(`/clients/me/applicants/${jobSubscriberMapId}/notes`, { note }).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employer', 'applicants', 'notes', jobSubscriberMapId] });
+    },
+  });
+}
+
+export function useCompanyAnalytics() {
+  return useQuery({
+    queryKey: ['employer', 'analytics'],
+    queryFn: () => api.get<CompanyAnalytics>('/clients/me/analytics').then((r) => r.data),
+  });
+}
+
+/** Shortlist / Interview / Hire / Reject an applicant. */
 export function useDecideApplicant() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { jobSubscriberMapId: number; decision: 'Shortlisted' | 'Rejected' }) =>
+    mutationFn: (payload: { jobSubscriberMapId: number; decision: ApplicantDecision }) =>
       api
         .post(`/clients/me/applicants/${payload.jobSubscriberMapId}/decision`, { decision: payload.decision })
         .then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.employer.applicants() }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+      void qc.invalidateQueries({ queryKey: ['employer', 'analytics'] });
+    },
   });
 }
 
-/** Bulk shortlist or reject multiple applicants at once. */
+/** Bulk pipeline decisions. */
 export function useBulkDecideApplicants() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { ids: number[]; decision: 'Shortlisted' | 'Rejected' }) => {
+    mutationFn: async (payload: { ids: number[]; decision: ApplicantDecision }) => {
       await Promise.all(
-        payload.ids.map((id) =>
-          api.post(`/clients/me/applicants/${id}/decision`, { decision: payload.decision }),
-        ),
+        payload.ids.map((id) => api.post(`/clients/me/applicants/${id}/decision`, { decision: payload.decision })),
       );
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.employer.applicants() }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+      void qc.invalidateQueries({ queryKey: ['employer', 'analytics'] });
+    },
   });
 }
 

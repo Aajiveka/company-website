@@ -8,13 +8,99 @@ export interface CompanyProfile {
   clientId: number;
   clientName: string;
   industry: string;
+  industryTypeId?: number | null;
   email: string;
   contactNo: string;
   website: string;
   city: string;
+  cityId?: number;
   address: string;
   logoUrl: string | null;
   description: string;
+}
+
+export type ApplicantPipelineStatus = 'New' | 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+export type ApplicantDecision = 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+
+export interface EmployerApplicant {
+  jobSubscriberMapId: number;
+  subscriberId: number;
+  fullName: string;
+  designation: string;
+  city: string;
+  experience: string;
+  jobStatus: string;
+  status: ApplicantPipelineStatus;
+  skills: string[];
+  company: string;
+  notice: string;
+  appliedOn: string;
+  email?: string;
+  mobile?: string;
+}
+
+export interface EmployerApplicantDetail extends EmployerApplicant {
+  email: string;
+  mobile: string;
+  jobCity: string;
+  totalExp: number | null;
+  currentCtc: number | null;
+  industry: string;
+  cvPath: string | null;
+  photoUrl: string | null;
+  employment: Array<{
+    employer: string;
+    designation: string;
+    from: string;
+    to: string;
+    salary: number | null;
+    description: string;
+    current: boolean;
+  }>;
+  education: Array<{
+    degree: string;
+    course: string;
+    institute: string;
+    year: number | null;
+    mode: string;
+    marks: string;
+  }>;
+  timeline: Array<{ status: string; at: string; comments: string }>;
+}
+
+export interface CompanyAnalytics {
+  totalJobs: number;
+  activeJobs: number;
+  closedJobs: number;
+  draftJobs: number;
+  archivedJobs: number;
+  totalApplications: number;
+  mapped: number;
+  shortlisted: number;
+  interviewScheduled: number;
+  selected: number;
+  rejected: number;
+  jobPerformance: Array<{
+    jobId: number;
+    designation: string;
+    applications: number;
+    shortlisted: number;
+    interviewScheduled: number;
+    selected: number;
+    rejected: number;
+  }>;
+}
+
+export interface UpdateCompanyProfileInput {
+  clientName?: string;
+  email?: string;
+  contactNo?: string;
+  website?: string;
+  address?: string;
+  description?: string;
+  cityId?: number;
+  industryTypeId?: number;
+  companyLogo?: string;
 }
 
 export interface JobListing {

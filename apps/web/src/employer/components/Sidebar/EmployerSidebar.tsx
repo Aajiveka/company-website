@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 import { brand } from '@/employer/constants/brand';
 import { EMPLOYER_MENU, type EmployerMenuItem } from '@/employer/constants/menu';
 
-const EXPANDED = 'w-60';
+const EXPANDED = 'w-52';
 const COLLAPSED = 'w-[4.5rem]';
 
 function pathActive(pathname: string, to: string) {
@@ -48,17 +48,7 @@ export function EmployerSidebar({
         open ? 'translate-x-0' : '-translate-x-full',
       )}
     >
-      <div className={cn('hidden items-center gap-2 border-b border-slate-100 px-3 py-2.5 lg:flex', collapsed && 'justify-center px-2')}>
-        <div className={cn('flex h-7 w-7 items-center justify-center rounded-md text-[10px] font-bold text-white', brand.bg)}>
-          AJ
-        </div>
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-slate-900">Aajiveka</p>
-            <p className="truncate text-[10px] text-slate-500">Employer</p>
-          </div>
-        )}
-      </div>
+    
 
       <nav className={cn('sidebar-scroll flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto', collapsed ? 'p-1.5' : 'p-2')}>
         {EMPLOYER_MENU.map((item) => {

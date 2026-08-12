@@ -2,13 +2,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
   Building2,
-  HelpCircle,
   LogOut,
   Menu as MenuIcon,
-  MessageSquare,
-  Search,
   Settings,
-  UserCircle2,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth.store';
 import { Dropdown } from '@/components/ui';
@@ -41,6 +37,18 @@ export function EmployerHeader({
 
   return (
     <header className="flex h-14 items-center gap-2 border-b border-slate-200 bg-white px-3">
+      <Link
+        to={employerPaths.dashboard}
+        className="flex shrink-0 items-center"
+        aria-label="Aajiveka home"
+      >
+        <img
+          src="/image/aajiveka-logo.png"
+          alt="Aajiveka"
+          className="h-10 w-10 rounded-md object-cover object-top"
+        />
+      </Link>
+
       <button
         type="button"
         className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100 lg:hidden"
@@ -54,7 +62,7 @@ export function EmployerHeader({
         <p className="truncate text-sm font-semibold text-slate-900">{hello}</p>
       </div>
 
-      <div className="hidden max-w-[220px] flex-1 md:block lg:max-w-xs">
+      {/* <div className="hidden max-w-[220px] flex-1 md:block lg:max-w-xs">
         <label className="relative block">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <input
@@ -66,24 +74,24 @@ export function EmployerHeader({
             )}
           />
         </label>
-      </div>
+      </div> */}
 
       <div className="flex items-center gap-0.5 sm:gap-1">
         <Link to={employerPaths.notifications} className="relative rounded-md p-1.5 text-slate-600 hover:bg-slate-100" title="Notifications">
           <Bell className="h-4 w-4" />
           <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-rose-500" />
         </Link>
-        <Link to={employerPaths.messages} className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100" title="Messages">
+        {/* <Link to={employerPaths.messages} className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100" title="Messages">
           <MessageSquare className="h-4 w-4" />
-        </Link>
-        <button type="button" className="hidden rounded-md p-1.5 text-slate-600 hover:bg-slate-100 sm:inline-flex" title="Help">
+        </Link> */}
+        {/* <button type="button" className="hidden rounded-md p-1.5 text-slate-600 hover:bg-slate-100 sm:inline-flex" title="Help">
           <HelpCircle className="h-4 w-4" />
-        </button>
+        </button> */}
         <DarkModeToggle />
 
         <Dropdown
           trigger={
-            <span className="flex items-center gap-1.5 rounded-full py-0.5 pr-1.5 pl-0.5 hover:bg-slate-100">
+            <span className="flex cursor-pointer items-center gap-1.5 rounded-full py-0.5 pr-1.5 pl-0.5 hover:bg-slate-100">
               <span className={cn('flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white', brand.bg)}>
                 {firstName(user.fullName).slice(0, 1).toUpperCase()}
               </span>
@@ -93,8 +101,11 @@ export function EmployerHeader({
             </span>
           }
           items={[
-            { label: 'My Profile', onSelect: () => navigate(employerPaths.completeProfile), icon: <UserCircle2 className="h-4 w-4" /> },
-            { label: 'Company Profile', onSelect: () => navigate(employerPaths.completeProfile), icon: <Building2 className="h-4 w-4" /> },
+            {
+              label: 'Company Profile',
+              onSelect: () => navigate(employerPaths.completeProfile),
+              icon: <Building2 className="h-4 w-4" />,
+            },
             { label: 'Settings', onSelect: () => navigate(employerPaths.settings), icon: <Settings className="h-4 w-4" /> },
             { label: 'Logout', onSelect: () => void logout(), icon: <LogOut className="h-4 w-4" />, danger: true },
           ]}
