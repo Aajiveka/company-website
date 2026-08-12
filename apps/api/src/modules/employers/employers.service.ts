@@ -88,8 +88,19 @@ function normalizeMasterLabel(label: string): string {
   if (['in office', 'onsite', 'on site', 'work from office', 'wfo'].includes(s)) return 'in office';
   if (['remote', 'work from home', 'wfh'].includes(s)) return 'remote';
   if (['hybrid'].includes(s)) return 'hybrid';
-  // City aliases used in CSVs / Naukri-style dumps
-  if (['bangalore', 'bengaluru', 'bengalooru'].includes(s)) return 'bengaluru';
+  // City aliases used in CSVs / Naukri-style dumps (district names from legacy seed too)
+  if (
+    s === 'bangalore' ||
+    s === 'bengaluru' ||
+    s === 'bengalooru' ||
+    s === 'bangalore urban' ||
+    s === 'bangalore rural' ||
+    s.startsWith('bangalore ') ||
+    s.startsWith('bengaluru ')
+  ) {
+    return 'bengaluru';
+  }
+  if (s === 'noida' || s === 'gautam buddha nagar' || s === 'gautam budh nagar') return 'noida';
   if (['gurgaon', 'gurugram'].includes(s)) return 'gurugram';
   if (['bombay', 'mumbai'].includes(s)) return 'mumbai';
   if (['calcutta', 'kolkata'].includes(s)) return 'kolkata';

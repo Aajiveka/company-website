@@ -290,9 +290,64 @@ async function seedDemoJob() {
   console.log('  demo job                    1 row');
 }
 
+/**
+ * Cities / emp types that bulk-import CSVs use (Bengaluru, Noida, Full Time, …).
+ * The expand_job_masters migration tries to insert cities at migrate time — but states
+ * are empty until this seed runs, so those INSERTs are skipped. Fill the gap here.
+ */
+async function ensureJobImportMasters() {
+  console.log('\nensuring bulk-import master labels (cities + employment types)');
+
+  const cities: { descr: string; stateId: number }[] = [
+    { descr: 'Bengaluru', stateId: 16 },
+    { descr: 'Bangalore', stateId: 16 },
+    { descr: 'Noida', stateId: 34 },
+    { descr: 'Mumbai', stateId: 21 },
+    { descr: 'Delhi', stateId: 9 },
+    { descr: 'Ahmedabad', stateId: 11 },
+    { descr: 'Kolkata', stateId: 36 },
+    { descr: 'Chandigarh', stateId: 6 },
+    { descr: 'Jaipur', stateId: 29 },
+  ];
+
+  for (const { descr, stateId } of cities) {
+    await prisma.$executeRaw`
+      INSERT INTO "tblMstrCily" ("Descr", "StateID")
+      SELECT ${descr}, ${stateId}
+      WHERE EXISTS (SELECT 1 FROM "tblMstrState" st WHERE st."StateID" = ${stateId})
+        AND NOT EXISTS (
+          SELECT 1 FROM "tblMstrCily" c WHERE lower(trim(c."Descr")) = lower(trim(${descr}))
+        )
+    `;
+  }
+
+  const empTypes = ['Full Time', 'Part Time', 'Internship', 'Contract'];
+  for (const descr of empTypes) {
+    await prisma.$executeRaw`
+      INSERT INTO "tblMstrEmpType" ("Descr")
+      SELECT ${descr}
+      WHERE NOT EXISTS (
+        SELECT 1 FROM "tblMstrEmpType" e WHERE lower(trim(e."Descr")) = lower(trim(${descr}))
+      )
+    `;
+  }
+
+  await prisma.$executeRaw`
+    SELECT setval(pg_get_serial_sequence('"tblMstrCily"', 'CityID'),
+      COALESCE((SELECT MAX("CityID") FROM "tblMstrCily"), 1), true)
+  `.catch(() => undefined);
+  await prisma.$executeRaw`
+    SELECT setval(pg_get_serial_sequence('"tblMstrEmpType"', 'EmployeeTypeID'),
+      COALESCE((SELECT MAX("EmployeeTypeID") FROM "tblMstrEmpType"), 1), true)
+  `.catch(() => undefined);
+
+  console.log('  job-import cities + emp types ensured');
+}
+
 async function main() {
   console.log('seeding master data (real values from the restored backup)');
   await seedMasterData();
+  await ensureJobImportMasters();
   await seedPlans();
 
   if (process.env.SEED_DEMO_USERS === '1') {
