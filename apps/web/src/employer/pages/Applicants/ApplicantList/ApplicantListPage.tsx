@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CalendarClock, Eye, ThumbsDown, ThumbsUp, UserCheck } from 'lucide-react';
 import {
@@ -40,9 +40,12 @@ export function ApplicantListPage() {
   });
   const decide = useDecideApplicant();
 
-  const runDecide = (jobSubscriberMapId: number, decision: 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected') => {
-    void decide.mutateAsync({ jobSubscriberMapId, decision });
-  };
+  const runDecide = useCallback(
+    (jobSubscriberMapId: number, decision: 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected') => {
+      void decide.mutateAsync({ jobSubscriberMapId, decision });
+    },
+    [decide],
+  );
 
   const columns: Column<EmployerApplicant>[] = useMemo(
     () => [
@@ -138,7 +141,7 @@ export function ApplicantListPage() {
         ),
       },
     ],
-    [decide.isPending],
+    [decide.isPending, runDecide],
   );
 
   const tabs = [
