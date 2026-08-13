@@ -7,6 +7,7 @@ import { RouteErrorFallback, DashboardErrorFallback } from '@/components/ErrorFa
 import { Loader } from '@/components/ui';
 import { Role } from '@/types/roles';
 import AnalyticsProvider from '@/components/AnalyticsProvider';
+import { employerRouteTree } from '@/employer/routes/employerRoutes';
 
 // Route-level code splitting — each page is its own chunk.
 const HomePage = lazy(() => import('@/features/home/HomePage'));
@@ -50,10 +51,6 @@ const SavedJobsPage = lazy(() => import('@/features/candidates/pages/SavedJobsPa
 const ResumePreviewPage = lazy(() => import('@/features/candidates/pages/ResumePreviewPage'));
 const JobAlertsPage = lazy(() => import('@/features/candidates/pages/JobAlertsPage'));
 const ChangePasswordPage = lazy(() => import('@/features/candidates/pages/ChangePasswordPage'));
-const CompanyProfilePage = lazy(() => import('@/features/clients/pages/CompanyProfilePage'));
-const ManageJobsPage = lazy(() => import('@/features/clients/pages/ManageJobsPage'));
-const JobPostPage = lazy(() => import('@/features/clients/pages/JobPostPage'));
-const ApplicantsPage = lazy(() => import('@/features/clients/pages/ApplicantsPage'));
 const CandidatesListPage = lazy(() => import('@/features/recruitment/pages/CandidatesListPage'));
 const CandidateDetailsPage = lazy(() => import('@/features/recruitment/pages/CandidateDetailsPage'));
 const QC1DashboardPage = lazy(() => import('@/features/recruitment/pages/QC1DashboardPage'));
@@ -86,14 +83,10 @@ const CompanyPublicPage = lazy(() => import('@/features/clients/pages/CompanyPub
 const AdminDashboardPage = lazy(() => import('@/features/admin/pages/AdminDashboardPage'));
 const NotificationsPage = lazy(() => import('@/features/candidates/pages/NotificationsPage'));
 const SalaryInsightsPage = lazy(() => import('@/features/public/pages/SalaryInsightsPage'));
-const EmailTemplatesPage = lazy(() => import('@/features/clients/pages/EmailTemplatesPage'));
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/AdminUsersPage'));
 const AdminJobsPage = lazy(() => import('@/features/admin/pages/AdminJobsPage'));
 const AssessmentsListPage = lazy(() => import('@/features/candidates/pages/AssessmentsListPage'));
 const SkillAssessmentPage = lazy(() => import('@/features/candidates/pages/SkillAssessmentPage'));
-const BulkJobImportPage = lazy(() => import('@/features/clients/pages/BulkJobImportPage'));
-const PipelineBoardPage = lazy(() => import('@/features/clients/pages/PipelineBoardPage'));
-const EmployerAnalyticsPage = lazy(() => import('@/features/clients/pages/EmployerAnalyticsPage'));
 const BlogCmsPage = lazy(() => import('@/features/admin/pages/BlogCmsPage'));
 const MessagingPage = lazy(() => import('@/features/messaging/MessagingPage'));
 const SavedSearchesPage = lazy(() => import('@/features/candidates/pages/SavedSearchesPage'));
@@ -101,14 +94,7 @@ const SkillGapPage = lazy(() => import('@/features/candidates/pages/SkillGapPage
 const InterviewCalendarPage = lazy(() => import('@/features/candidates/pages/InterviewCalendarPage'));
 const ActivityTimelinePage = lazy(() => import('@/features/candidates/pages/ActivityTimelinePage'));
 const CareerPathPage = lazy(() => import('@/features/candidates/pages/CareerPathPage'));
-const ReportExportPage = lazy(() => import('@/features/clients/pages/ReportExportPage'));
-const CandidateSourcePage = lazy(() => import('@/features/clients/pages/CandidateSourcePage'));
-const EmailCampaignPage = lazy(() => import('@/features/clients/pages/EmailCampaignPage'));
-const ScreeningWorkflowPage = lazy(() => import('@/features/clients/pages/ScreeningWorkflowPage'));
-const TemplateLibraryPage = lazy(() => import('@/features/clients/pages/TemplateLibraryPage'));
-const EmployerBrandingPage = lazy(() => import('@/features/clients/pages/EmployerBrandingPage'));
 const CompanyComparisonPage = lazy(() => import('@/features/candidates/pages/CompanyComparisonPage'));
-const CandidateComparisonPage = lazy(() => import('@/features/clients/pages/CandidateComparisonPage'));
 const DashboardHome = lazy(() => import('@/features/dashboard/DashboardHome'));
 const AdminSettingsPage = lazy(() => import('@/features/admin/pages/AdminSettingsPage'));
 const ReportsPage = lazy(() => import('@/features/admin/pages/ReportsPage'));
@@ -214,29 +200,7 @@ export const router = createBrowserRouter([
                   { path: '/candidate/dashboard', element: withSuspense(<DashboardHome />) },
                 ],
               },
-              // Client / Admin
-              {
-                element: <ProtectedRoute allow={[Role.Client, Role.Admin]} />,
-                children: [
-                  { path: '/company/profile', element: withSuspense(<CompanyProfilePage />) },
-                  { path: '/company/jobs', element: withSuspense(<ManageJobsPage />) },
-                  { path: '/company/post-job', element: withSuspense(<JobPostPage />) },
-                  { path: '/company/jobs/:id/edit', element: withSuspense(<JobPostPage />) },
-                  { path: '/company/applicants', element: withSuspense(<ApplicantsPage />) },
-                  { path: '/company/email-templates', element: withSuspense(<EmailTemplatesPage />) },
-                  { path: '/company/bulk-import', element: withSuspense(<BulkJobImportPage />) },
-                  { path: '/company/pipeline', element: withSuspense(<PipelineBoardPage />) },
-                  { path: '/company/analytics', element: withSuspense(<EmployerAnalyticsPage />) },
-                  { path: '/company/messages', element: withSuspense(<MessagingPage />) },
-                  { path: '/company/reports', element: withSuspense(<ReportExportPage />) },
-                  { path: '/company/sourcing', element: withSuspense(<CandidateSourcePage />) },
-                  { path: '/company/campaigns', element: withSuspense(<EmailCampaignPage />) },
-                  { path: '/company/workflows', element: withSuspense(<ScreeningWorkflowPage />) },
-                  { path: '/company/template-library', element: withSuspense(<TemplateLibraryPage />) },
-                  { path: '/company/branding', element: withSuspense(<EmployerBrandingPage />) },
-                  { path: '/company/compare-candidates', element: withSuspense(<CandidateComparisonPage />) },
-                ],
-              },
+              // Client / Admin company area moved to Employer Portal (see sibling route tree)
               // Admin
               {
                 element: <ProtectedRoute allow={[Role.Admin]} />,
@@ -263,6 +227,12 @@ export const router = createBrowserRouter([
             ],
           },
         ],
+      },
+      // Employer Portal — dedicated layout (replaces legacy /company client pages)
+      {
+        element: <ProtectedRoute allow={[Role.Client, Role.Admin]} />,
+        errorElement: <DashboardErrorFallback />,
+        children: [employerRouteTree],
       },
       { path: '*', element: withSuspense(<NotFoundPage />) },
     ],

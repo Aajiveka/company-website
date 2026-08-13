@@ -6,7 +6,7 @@ import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/shared/roles';
 import { AuditService } from '@/modules/audit/audit.service';
 import { RecruitmentService } from '@/modules/recruitment/recruitment.service';
-import { ClientsService } from '@/modules/clients/clients.service';
+import { EmployersService } from '@/modules/employers/employers.service';
 import { ExportsService, type Column } from './exports.service';
 
 type Format = 'csv' | 'xlsx' | 'pdf';
@@ -143,7 +143,7 @@ export class ExportsController {
   constructor(
     private readonly exports: ExportsService,
     private readonly recruitment: RecruitmentService,
-    private readonly clients: ClientsService,
+    private readonly clients: EmployersService,
     private readonly audit: AuditService,
   ) {}
 

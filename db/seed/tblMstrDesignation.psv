@@ -1,4 +1,4 @@
-DesignationID|Descr
+﻿DesignationID|Descr
 1|Software Developer
 2|Project Manager
 3|Team Leader
@@ -6,3 +6,61 @@ DesignationID|Descr
 5|Data Base Administrator
 6|Aws Solution Architect
 7|Azure Solution Architect
+8|Power BI Developer
+9|Network Engineer
+10|Engineering Manager
+11|Technical Lead
+12|Data Engineer
+13|Support Engineer
+14|Data Scientist
+15|Manual Tester
+16|System Administrator
+17|iOS Developer
+18|DevOps Engineer
+19|Business Development Executive
+20|Automation Tester
+21|Python Developer
+22|Recruiter
+23|Content Writer
+24|Marketing Executive
+25|Android Developer
+26|PHP Developer
+27|CTO
+28|UI/UX Designer
+29|Node.js Developer
+30|HR Manager
+31|Flutter Developer
+32|Digital Marketing Executive
+33|Software Engineer
+34|UX Researcher
+35|ML Engineer
+36|Operations Executive
+37|Dot Net Developer
+38|Data Analyst
+39|Talent Acquisition Specialist
+40|Customer Support
+41|Full Stack Developer
+42|Technical Writer
+43|Account Manager
+44|Angular Developer
+45|Finance Executive
+46|Sales Executive
+47|Cloud Engineer
+48|SEO Specialist
+49|Salesforce Developer
+50|Project Coordinator
+51|SAP Consultant
+52|Product Manager
+53|Frontend Developer
+54|Business Analyst
+55|Database Admin
+56|HR Executive
+57|React Developer
+58|Security Engineer
+59|Java Developer
+60|Backend Developer
+61|AI Engineer
+62|QA Engineer
+63|SDET
+64|Scrum Master
+65|Graphic Designer

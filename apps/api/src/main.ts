@@ -16,7 +16,12 @@ async function bootstrap() {
   // reject it, so the raw body is captured for that one route.
   app.use('/api/payments/webhook', text({ type: '*/*' }));
   app.use(helmet());
-  app.enableCors({ origin: env.CORS_ORIGIN, credentials: true });
+  // Comma-separated origins (localhost + LAN IP for same‑Wi‑Fi phones/laptops).
+  const corsOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
+  app.enableCors({
+    origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
+    credentials: true,
+  });
 
   app.useGlobalFilters(new AllExceptionsFilter());
 

@@ -44,7 +44,7 @@ export default function JobPostPage() {
 
   useUnsavedChanges(isDirty);
 
-  const job = isEdit ? jobs?.find((j) => String(j.jobId) === id) : undefined;
+  const job = isEdit ? jobs?.items.find((j) => String(j.jobId) === id) : undefined;
 
   useEffect(() => {
     if (job && masters) {

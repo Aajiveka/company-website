@@ -131,6 +131,7 @@ export default defineConfig(({ mode: _mode }) => ({
     alias: { '@': path.resolve(__dirname, './src') },
   },
   server: {
+    host: true, // listen on 0.0.0.0 so phones/PCs on the same Wi‑Fi can open http://<LAN-IP>:5173
     port: 5173,
     // Proxy API calls to the NestJS backend (default PORT=4000) to avoid CORS.
     // Override with VITE_API_PROXY if the API runs elsewhere.
@@ -141,6 +142,7 @@ export default defineConfig(({ mode: _mode }) => ({
   // `vite preview` serves the production build. CI drives the e2e suite against it, so it
   // needs the same /api proxy the dev server has — otherwise every API call 404s.
   preview: {
+    host: true,
     port: 5173,
     proxy: {
       '/api': { target: process.env.VITE_API_PROXY ?? 'http://localhost:4000', changeOrigin: true },

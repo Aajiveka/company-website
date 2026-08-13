@@ -85,7 +85,7 @@ export default function ManageJobsPage() {
           </Button>
         </Link>
       </div>
-      <Table columns={columns} data={data ?? []} rowKey={(j) => j.jobId} isLoading={isLoading} emptyMessage={t('manageJobs.noJobs')} />
+      <Table columns={columns} data={data?.items ?? []} rowKey={(j) => j.jobId} isLoading={isLoading} emptyMessage={t('manageJobs.noJobs')} />
 
       <ConfirmDialog
         isOpen={!!confirmJob}
