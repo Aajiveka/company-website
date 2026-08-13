@@ -208,6 +208,8 @@ export const COURSE_MODES = ['Full Time', 'Part Time', 'Correspondence'] as cons
 export const JOB_TYPES = ['Permanent', 'Contractual'] as const;
 export const EMPLOYMENT_TYPES = ['Full Time', 'Part Time'] as const;
 export const SHIFTS = ['Day', 'Night', 'Flexible'] as const;
+/** Where the candidate wants to work, which is a different question from which shift. */
+export const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const;
 export const MARITAL_STATUSES = ['Single / unmarried', 'Married', 'Widowed', 'Divorced', 'Separated', 'Other'] as const;
 export const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'] as const;
 export const PROJECT_STATUSES = ['In Progress', 'Finished'] as const;
@@ -237,6 +239,7 @@ export interface CvCareerProfile {
   desiredJobType: string[];
   desiredEmploymentType: string[];
   preferredShift: string;
+  preferredWorkModes: string[];
   preferredSalary: number | null;
   preferredJobRoles: string[];
   preferredCityIds: number[];

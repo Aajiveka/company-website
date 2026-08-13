@@ -26,7 +26,10 @@ export function usePrefetchRoute(path: string) {
     if (!loader) return;
 
     prefetched.add(path);
-    void loader();
+    // Swallowed for the same reason as the idle prefetch in router.tsx: warming a chunk is
+    // best-effort, and an unhandled rejection here would surface a console error on a page
+    // that is working perfectly well. The route still loads when actually navigated to.
+    loader().catch(() => {});
   }, [path]);
 
   return {
