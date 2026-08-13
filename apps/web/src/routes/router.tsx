@@ -30,14 +30,26 @@ if (typeof window !== 'undefined') {
 }
 const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
+// Candidate portal — the "Aajiveka UI" redesign. These screens render inside their own
+// shell (header + profile banner + module rail) rather than DashboardLayout, which is what
+// the design specifies and what lets the banner survive navigation between modules.
+const CandidatePortalLayout = lazy(() => import('@/features/candidates/portal/CandidatePortalLayout'));
+const ProfileOverviewPage = lazy(() => import('@/features/candidates/portal/pages/ProfileOverviewPage'));
+const ProfileWizardPage = lazy(() => import('@/features/candidates/portal/pages/ProfileWizardPage'));
+const PortalTrackerPage = lazy(() => import('@/features/candidates/portal/pages/ApplicationTrackerPage'));
+const PortalInterviewsPage = lazy(() => import('@/features/candidates/portal/pages/InterviewsPage'));
+const PortalDocumentsPage = lazy(() => import('@/features/candidates/portal/pages/DocumentsPage'));
+const PortalReferPage = lazy(() => import('@/features/candidates/portal/pages/ReferPage'));
+const PortalAccountPage = lazy(() => import('@/features/candidates/portal/pages/AccountSettingsPage'));
+const PortalEmailPrefsPage = lazy(() => import('@/features/candidates/portal/pages/EmailPreferencesPage'));
+const PortalResumeBuilderPage = lazy(() => import('@/features/candidates/portal/pages/ResumeBuilderPage'));
+
 const CandidateProfilePage = lazy(() => import('@/features/candidates/pages/CandidateProfilePage'));
 const CvManagerPage = lazy(() => import('@/features/candidates/pages/CvManagerPage'));
 const AppliedJobsPage = lazy(() => import('@/features/candidates/pages/AppliedJobsPage'));
 const SavedJobsPage = lazy(() => import('@/features/candidates/pages/SavedJobsPage'));
 const ResumePreviewPage = lazy(() => import('@/features/candidates/pages/ResumePreviewPage'));
-const CandidateInterviewsPage = lazy(() => import('@/features/candidates/pages/InterviewsPage'));
 const JobAlertsPage = lazy(() => import('@/features/candidates/pages/JobAlertsPage'));
-const DocumentsPage = lazy(() => import('@/features/candidates/pages/DocumentsPage'));
 const ChangePasswordPage = lazy(() => import('@/features/candidates/pages/ChangePasswordPage'));
 const CandidatesListPage = lazy(() => import('@/features/recruitment/pages/CandidatesListPage'));
 const CandidateDetailsPage = lazy(() => import('@/features/recruitment/pages/CandidateDetailsPage'));
@@ -69,16 +81,12 @@ const MembershipPage = lazy(() => import('@/features/payments/pages/MembershipPa
 const PublicProfilePage = lazy(() => import('@/features/candidates/pages/PublicProfilePage'));
 const CompanyPublicPage = lazy(() => import('@/features/clients/pages/CompanyPublicPage'));
 const AdminDashboardPage = lazy(() => import('@/features/admin/pages/AdminDashboardPage'));
-const OnboardingPage = lazy(() => import('@/features/candidates/pages/OnboardingPage'));
-const NotificationSettingsPage = lazy(() => import('@/features/candidates/pages/NotificationSettingsPage'));
 const NotificationsPage = lazy(() => import('@/features/candidates/pages/NotificationsPage'));
 const SalaryInsightsPage = lazy(() => import('@/features/public/pages/SalaryInsightsPage'));
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/AdminUsersPage'));
 const AdminJobsPage = lazy(() => import('@/features/admin/pages/AdminJobsPage'));
-const ResumeBuilderPage = lazy(() => import('@/features/candidates/pages/ResumeBuilderPage'));
 const AssessmentsListPage = lazy(() => import('@/features/candidates/pages/AssessmentsListPage'));
 const SkillAssessmentPage = lazy(() => import('@/features/candidates/pages/SkillAssessmentPage'));
-const ReferralPage = lazy(() => import('@/features/candidates/pages/ReferralPage'));
 const BlogCmsPage = lazy(() => import('@/features/admin/pages/BlogCmsPage'));
 const MessagingPage = lazy(() => import('@/features/messaging/MessagingPage'));
 const SavedSearchesPage = lazy(() => import('@/features/candidates/pages/SavedSearchesPage'));
@@ -87,7 +95,6 @@ const InterviewCalendarPage = lazy(() => import('@/features/candidates/pages/Int
 const ActivityTimelinePage = lazy(() => import('@/features/candidates/pages/ActivityTimelinePage'));
 const CareerPathPage = lazy(() => import('@/features/candidates/pages/CareerPathPage'));
 const CompanyComparisonPage = lazy(() => import('@/features/candidates/pages/CompanyComparisonPage'));
-const ApplicationTrackerPage = lazy(() => import('@/features/candidates/pages/ApplicationTrackerPage'));
 const DashboardHome = lazy(() => import('@/features/dashboard/DashboardHome'));
 const AdminSettingsPage = lazy(() => import('@/features/admin/pages/AdminSettingsPage'));
 const ReportsPage = lazy(() => import('@/features/admin/pages/ReportsPage'));
@@ -140,31 +147,49 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          // Candidate portal — the redesigned screens, in their own shell.
+          {
+            element: <ProtectedRoute allow={[Role.Subscriber]} />,
+            children: [
+              {
+                element: <CandidatePortalLayout />,
+                errorElement: <DashboardErrorFallback />,
+                children: [
+                  { path: '/candidate/profile', element: withSuspense(<ProfileOverviewPage />) },
+                  { path: '/candidate/onboarding', element: withSuspense(<ProfileWizardPage />) },
+                  { path: '/candidate/tracker', element: withSuspense(<PortalTrackerPage />) },
+                  { path: '/candidate/interviews', element: withSuspense(<PortalInterviewsPage />) },
+                  { path: '/candidate/documents', element: withSuspense(<PortalDocumentsPage />) },
+                  { path: '/candidate/referrals', element: withSuspense(<PortalReferPage />) },
+                  { path: '/candidate/account', element: withSuspense(<PortalAccountPage />) },
+                  { path: '/candidate/notifications', element: withSuspense(<PortalEmailPrefsPage />) },
+                  { path: '/candidate/resume-builder', element: withSuspense(<PortalResumeBuilderPage />) },
+                ],
+              },
+            ],
+          },
           {
             element: <DashboardLayout />,
             errorElement: <DashboardErrorFallback />,
             children: [
-              // Candidate
+              // Candidate — screens the redesign does not cover, still on the dashboard shell.
               {
                 element: <ProtectedRoute allow={[Role.Subscriber]} />,
                 children: [
-                  { path: '/candidate/profile', element: withSuspense(<CandidateProfilePage />) },
+                  // The full section-by-section CV editor. The portal profile covers the
+                  // sections the design specifies; this keeps the rest (IT skills, diversity,
+                  // personal details, accomplishments) editable rather than dropping them.
+                  { path: '/candidate/profile/advanced', element: withSuspense(<CandidateProfilePage />) },
                   { path: '/candidate/cv-manager', element: withSuspense(<CvManagerPage />) },
                   { path: '/candidate/applied-jobs', element: withSuspense(<AppliedJobsPage />) },
-                  { path: '/candidate/interviews', element: withSuspense(<CandidateInterviewsPage />) },
                   { path: '/candidate/saved-jobs', element: withSuspense(<SavedJobsPage />) },
                   { path: '/candidate/resume', element: withSuspense(<ResumePreviewPage />) },
                   { path: '/candidate/job-alerts', element: withSuspense(<JobAlertsPage />) },
-                  { path: '/candidate/documents', element: withSuspense(<DocumentsPage />) },
                   { path: '/candidate/subscription', element: withSuspense(<MembershipPage />) },
                   { path: '/candidate/change-password', element: withSuspense(<ChangePasswordPage />) },
-                  { path: '/candidate/onboarding', element: withSuspense(<OnboardingPage />) },
-                  { path: '/candidate/notifications', element: withSuspense(<NotificationSettingsPage />) },
                   { path: '/candidate/all-notifications', element: withSuspense(<NotificationsPage />) },
-                  { path: '/candidate/resume-builder', element: withSuspense(<ResumeBuilderPage />) },
                   { path: '/candidate/assessments', element: withSuspense(<AssessmentsListPage />) },
                   { path: '/candidate/assessments/:id', element: withSuspense(<SkillAssessmentPage />) },
-                  { path: '/candidate/referrals', element: withSuspense(<ReferralPage />) },
                   { path: '/candidate/messages', element: withSuspense(<MessagingPage />) },
                   { path: '/candidate/saved-searches', element: withSuspense(<SavedSearchesPage />) },
                   { path: '/candidate/skill-gap', element: withSuspense(<SkillGapPage />) },
@@ -172,7 +197,6 @@ export const router = createBrowserRouter([
                   { path: '/candidate/activity', element: withSuspense(<ActivityTimelinePage />) },
                   { path: '/candidate/career-path', element: withSuspense(<CareerPathPage />) },
                   { path: '/candidate/compare-companies', element: withSuspense(<CompanyComparisonPage />) },
-                  { path: '/candidate/tracker', element: withSuspense(<ApplicationTrackerPage />) },
                   { path: '/candidate/dashboard', element: withSuspense(<DashboardHome />) },
                 ],
               },

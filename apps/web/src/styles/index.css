@@ -49,6 +49,33 @@
   --animate-slide-up: slide-up 0.3s ease-out;
 
   --shadow-card: 0 6px 15px rgba(64, 79, 104, 0.05);
+
+  /* ---------------------------------------------------------------- */
+  /* Candidate-portal tokens ("Aajiveka UI" Figma)                     */
+  /*                                                                   */
+  /* Deliberately a separate `aj-*` namespace rather than a redefinition
+     of --color-primary: the portal design is blue (#1A56DB) while the
+     public marketing site stays teal (#005985), and ~50 undesigned
+     routes still render against the old tokens. Anything the design
+     shares with Tailwind's stock palette (slate/blue/emerald/orange/
+     red/violet ramps) uses the stock utility instead of a token here,
+     so only the genuinely custom values live below.                   */
+  /* ---------------------------------------------------------------- */
+  --font-display: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+
+  --color-aj-blue: #1a56db;
+  --color-aj-blue-hover: #1447e6;
+  --color-aj-blue-end: #2563eb;
+
+  --color-aj-canvas: #f0f4f9;
+  --color-aj-line: #d1ddf0;
+  --color-aj-line-soft: #e8f0fe;
+  --color-aj-ring: #c7d7f0;
+  --color-aj-surface-soft: #f8faff;
+
+  --shadow-aj-card: 0 1px 3px rgb(0 0 0 / 0.08);
+  --shadow-aj-raised: 0 1px 2px -1px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.1);
+  --shadow-aj-pop: 0 4px 6px rgb(0 0 0 / 0.1), 0 10px 15px rgb(0 0 0 / 0.1);
 }
 
 @keyframes slide-up {

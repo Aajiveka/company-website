@@ -21,6 +21,7 @@ import { CandidatesService } from './candidates.service';
 import {
   ChangePasswordDto,
   CreateJobAlertDto,
+  CreateReferralDto,
   CreateSavedSearchDto,
   UpdateCareerProfileDto,
   UpdateDiversityDto,
@@ -28,6 +29,7 @@ import {
   UpdateKeySkillsDto,
   UpdateNotificationPrefsDto,
   UpdatePersonalDetailsDto,
+  UpdatePrivacyDto,
   UpdatePersonalDto,
   UpdateProfessionalDto,
   UpdateSummaryDto,
@@ -353,5 +355,64 @@ export class CandidatesController {
       await this.candidates.subscriberIdFor(user.userId),
       Number.isFinite(from) && from > 0 ? from : 0,
     );
+  }
+
+  /* ----------------------------------------------------------------------- *
+   * Referrals & privacy
+   * ----------------------------------------------------------------------- */
+
+  @Get('me/referrals')
+  @ApiOperation({ summary: 'Referral code, totals and the list of people invited' })
+  async referrals(@CurrentUser() user: RequestUser) {
+    return this.candidates.referrals(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Post('me/referrals')
+  @ApiOperation({ summary: 'Invite someone. Re-inviting the same person is a no-op.' })
+  @ApiResponse({ status: 400, description: 'Neither an email nor a mobile number was given' })
+  async createReferral(@Body() dto: CreateReferralDto, @CurrentUser() user: RequestUser) {
+    return this.candidates.createReferral(
+      user.userId,
+      await this.candidates.subscriberIdFor(user.userId),
+      dto,
+    );
+  }
+
+  @Get('me/privacy')
+  @ApiOperation({ summary: 'Privacy settings and any pending export / deletion request' })
+  async privacy(@CurrentUser() user: RequestUser) {
+    return this.candidates.privacy(await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Put('me/privacy')
+  @ApiOperation({ summary: 'Update privacy settings' })
+  async updatePrivacy(@Body() dto: UpdatePrivacyDto, @CurrentUser() user: RequestUser) {
+    return this.candidates.updatePrivacy(
+      user.userId,
+      await this.candidates.subscriberIdFor(user.userId),
+      dto,
+    );
+  }
+
+  @Post('me/export')
+  @HttpCode(202)
+  @ApiOperation({
+    summary: 'Request a copy of your data',
+    description: 'Queued rather than returned inline — the archive is emailed when it is ready.',
+  })
+  async requestExport(@CurrentUser() user: RequestUser) {
+    return this.candidates.requestExport(user.userId, await this.candidates.subscriberIdFor(user.userId));
+  }
+
+  @Post('me/delete-account')
+  @HttpCode(202)
+  @ApiOperation({
+    summary: 'Request account deletion',
+    description:
+      'Disables the login and ends every session immediately; the data is purged by the retention ' +
+      'job after the grace period. Applications already made stay attached to the employer records.',
+  })
+  async requestDeletion(@CurrentUser() user: RequestUser) {
+    return this.candidates.requestDeletion(user.userId, await this.candidates.subscriberIdFor(user.userId));
   }
 }

@@ -336,6 +336,7 @@ export class CandidatesService {
         desiredJobType: this.csvToList(extra?.desiredJobType),
         desiredEmploymentType: this.csvToList(extra?.desiredEmploymentType),
         preferredShift: extra?.preferredShift ?? '',
+        preferredWorkModes: this.csvToList(extra?.preferredWorkModes),
         preferredSalary: extra?.preferredSalary != null ? Number(extra.preferredSalary) : null,
         preferredJobRoles: this.csvToList(extra?.preferredJobRoles),
         preferredCityIds: preferredLocations.map((p) => p.cityID),
@@ -732,6 +733,7 @@ export class CandidatesService {
         desiredEmploymentType: this.listToCsv(dto.desiredEmploymentType),
       }),
       ...(dto.preferredShift !== undefined && { preferredShift: dto.preferredShift || null }),
+      ...(dto.preferredWorkModes !== undefined && { preferredWorkModes: this.listToCsv(dto.preferredWorkModes) }),
       ...(dto.preferredSalary !== undefined && { preferredSalary: dto.preferredSalary }),
       ...(dto.preferredJobRoles !== undefined && { preferredJobRoles: this.listToCsv(dto.preferredJobRoles) }),
     });
@@ -1682,5 +1684,183 @@ export class CandidatesService {
     });
 
     return { url: await this.storage.url(stored.key) };
+  }
+
+  /* ----------------------------------------------------------------------- *
+   * Referrals
+   * ----------------------------------------------------------------------- */
+
+  /**
+   * Referral summary for the "Refer a Friend" screen.
+   *
+   * The referral code is derived from the subscriber id rather than stored: it has to be
+   * stable and unique, and both of those are already true of the id. Deriving it means there
+   * is no second source of truth to keep in step, and no backfill for existing candidates.
+   */
+  async referrals(subscriberId: number) {
+    const rows = await this.db.candidateReferral.findMany({
+      where: { subscriberID: subscriberId },
+      orderBy: { invitedAt: 'desc' },
+    });
+
+    const earnedPaise = rows.filter((r) => r.rewardPaid).reduce((sum, r) => sum + r.rewardPaise, 0);
+    const pendingPaise = rows.filter((r) => !r.rewardPaid).reduce((sum, r) => sum + r.rewardPaise, 0);
+
+    return {
+      code: this.referralCode(subscriberId),
+      totalInvited: rows.length,
+      successfulSignups: rows.filter((r) => r.status !== 'Invited').length,
+      earnedRupees: earnedPaise / 100,
+      pendingRupees: pendingPaise / 100,
+      referrals: rows.map((r) => ({
+        referralId: r.referralId,
+        name: r.name,
+        email: r.email,
+        mobile: r.mobile,
+        status: r.status,
+        rewardRupees: r.rewardPaise / 100,
+        rewardPaid: r.rewardPaid,
+        invitedAt: r.invitedAt.toISOString(),
+      })),
+    };
+  }
+
+  /** Stable, shareable code for a candidate — base-36 of the id, so it stays short. */
+  private referralCode(subscriberId: number) {
+    return `AJ${subscriberId.toString(36).toUpperCase().padStart(5, '0')}`;
+  }
+
+  async createReferral(
+    userId: number,
+    subscriberId: number,
+    dto: { name: string; email?: string; mobile?: string },
+  ) {
+    if (!dto.email && !dto.mobile) {
+      throw new BadRequestException('Provide an email address or a mobile number to send the invite.');
+    }
+
+    // The same person invited twice should not create a second reward line.
+    const duplicate = await this.db.candidateReferral.findFirst({
+      where: {
+        subscriberID: subscriberId,
+        OR: [
+          ...(dto.email ? [{ email: dto.email }] : []),
+          ...(dto.mobile ? [{ mobile: dto.mobile }] : []),
+        ],
+      },
+    });
+    if (duplicate) return { referralId: duplicate.referralId, duplicate: true };
+
+    const row = await this.db.candidateReferral.create({
+      data: {
+        subscriberID: subscriberId,
+        name: dto.name,
+        email: dto.email ?? null,
+        mobile: dto.mobile ?? null,
+      },
+    });
+
+    await this.audit.record({
+      userId,
+      action: 'candidate.referral_created',
+      entity: 'CandidateReferral',
+      entityId: row.referralId,
+      detail: { name: dto.name },
+    });
+
+    return { referralId: row.referralId, duplicate: false };
+  }
+
+  /* ----------------------------------------------------------------------- *
+   * Privacy & account lifecycle
+   * ----------------------------------------------------------------------- */
+
+  /** Defaults are returned for a candidate who has never opened the privacy tab. */
+  async privacy(subscriberId: number) {
+    const row = await this.db.candidatePrivacy.findUnique({ where: { subscriberID: subscriberId } });
+    return {
+      showCurrentEmployer: row?.showCurrentEmployer ?? true,
+      allowRecruiterMessages: row?.allowRecruiterMessages ?? true,
+      exportRequestedAt: row?.exportRequestedAt?.toISOString() ?? null,
+      deletionRequestedAt: row?.deletionRequestedAt?.toISOString() ?? null,
+    };
+  }
+
+  async updatePrivacy(
+    userId: number,
+    subscriberId: number,
+    dto: { showCurrentEmployer?: boolean; allowRecruiterMessages?: boolean },
+  ) {
+    await this.db.candidatePrivacy.upsert({
+      where: { subscriberID: subscriberId },
+      create: { subscriberID: subscriberId, ...dto, updatedAt: new Date() },
+      update: { ...dto, updatedAt: new Date() },
+    });
+
+    await this.audit.record({
+      userId,
+      action: 'candidate.privacy_updated',
+      entity: 'CandidatePrivacy',
+      entityId: subscriberId,
+      detail: dto,
+    });
+
+    return this.privacy(subscriberId);
+  }
+
+  /**
+   * Records a data-export request. Producing the archive is a background job rather than a
+   * request-time zip: a full profile plus documents is far too slow to build inline, and the
+   * candidate is told it will be emailed.
+   */
+  async requestExport(userId: number, subscriberId: number) {
+    const requestedAt = new Date();
+    await this.db.candidatePrivacy.upsert({
+      where: { subscriberID: subscriberId },
+      create: { subscriberID: subscriberId, exportRequestedAt: requestedAt, updatedAt: requestedAt },
+      update: { exportRequestedAt: requestedAt, updatedAt: requestedAt },
+    });
+
+    await this.audit.record({
+      userId,
+      action: 'candidate.export_requested',
+      entity: 'CandidatePrivacy',
+      entityId: subscriberId,
+    });
+
+    return { requestedAt: requestedAt.toISOString() };
+  }
+
+  /**
+   * Marks the account for deletion and locks the candidate out immediately.
+   *
+   * Deliberately not a hard DELETE: applications the candidate has already made are part of
+   * an employer's hiring record, and a cascade would tear rows out of someone else's ATS.
+   * The login is disabled now and the data is purged by a retention job after the grace
+   * period, which is also what makes the request reversible if it was a mistake.
+   */
+  async requestDeletion(userId: number, subscriberId: number) {
+    const requestedAt = new Date();
+
+    await this.db.$transaction([
+      this.db.candidatePrivacy.upsert({
+        where: { subscriberID: subscriberId },
+        create: { subscriberID: subscriberId, deletionRequestedAt: requestedAt, updatedAt: requestedAt },
+        update: { deletionRequestedAt: requestedAt, updatedAt: requestedAt },
+      }),
+      // Active '1' is what every login and refresh path filters on (see AuthService), so
+      // clearing it locks the account out everywhere without a second mechanism.
+      this.db.secUser.update({ where: { userID: userId }, data: { active: '0' } }),
+      this.db.secActiveSessions.deleteMany({ where: { userID: userId } }),
+    ]);
+
+    await this.audit.record({
+      userId,
+      action: 'candidate.deletion_requested',
+      entity: 'SubscriberRegistration',
+      entityId: subscriberId,
+    });
+
+    return { requestedAt: requestedAt.toISOString() };
   }
 }

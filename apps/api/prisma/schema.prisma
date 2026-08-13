@@ -873,6 +873,8 @@ model SubscriberRegistration {
   JobSubscriberMapping         JobSubscriberMapping[]             @relation("JobSubscriberMappingToSubscriberRegistration")
   SubscriberCVDetails          SubscriberCVDetails?               @relation("SubscriberCVDetailsToSubscriberRegistration")
   SubscriberCVUploaded         SubscriberCVUploaded?              @relation("SubscriberCVUploadedToSubscriberRegistration")
+  CandidateReferral            CandidateReferral[]                @relation("CandidateReferralToSubscriberRegistration")
+  CandidatePrivacy             CandidatePrivacy?                  @relation("CandidatePrivacyToSubscriberRegistration")
   SubscriberCertificate        SubscriberCertificate[]            @relation("SubscriberCertificateToSubscriberRegistration")
   SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToSubscriberRegistration")
   SubscriberEmployer           SubscriberEmployer[]               @relation("SubscriberEmployerToSubscriberRegistration")
@@ -967,6 +969,9 @@ model SubscriberProfileExtra {
   desiredJobType               String? @db.VarChar(100)           @map("DesiredJobType")
   desiredEmploymentType        String? @db.VarChar(100)           @map("DesiredEmploymentType")
   preferredShift               String? @db.VarChar(50)            @map("PreferredShift")
+  /// Comma-separated Remote / Hybrid / On-site. Separate from PreferredShift: where you work
+  /// and which hours you work are independent answers, and the wizard asks for both.
+  preferredWorkModes           String? @db.VarChar(100)           @map("PreferredWorkModes")
   preferredSalary              Decimal? @db.Decimal(18, 0)        @map("PreferredSalary")
   /// Comma-separated role names. Preferred *locations* are not here — they already have their
   /// own table, tblSubscriberPrefferedLocations.
@@ -1316,4 +1321,52 @@ model CompanyBranding {
 
   client                       ClientMstr                         @relation("CompanyBrandingToClientMstr", fields: [clientID], references: [clientID])
   @@map("tblCompanyBranding")
+}
+
+/// Candidate referrals — "Refer a Friend".
+///
+/// The portal offered a referral screen against an endpoint that never existed, so nothing
+/// was ever recorded. A referral is its own row rather than a column on the invitee: the
+/// person invited may never sign up, and the reward has to be tracked either way.
+model CandidateReferral {
+  referralId                   Int                                @id @default(autoincrement()) @map("ReferralID")
+  /// Who sent the invite.
+  subscriberID                 BigInt                             @map("SubscriberID")
+  name                         String   @db.VarChar(200)          @map("Name")
+  /// One of email / mobile is enough to send an invite, so both are optional.
+  email                        String?  @db.VarChar(320)          @map("Email")
+  mobile                       String?  @db.VarChar(15)           @map("Mobile")
+  /// Invited → Signed Up → Applied → Rewarded.
+  status                       String   @db.VarChar(30)           @default("Invited") @map("Status")
+  /// Reward in paise, so no floating-point money.
+  rewardPaise                  Int                                @default(0) @map("RewardPaise")
+  rewardPaid                   Boolean                            @default(false) @map("RewardPaid")
+  invitedAt                    DateTime @db.Timestamp(6)          @default(now()) @map("InvitedAt")
+
+  subscriber                   SubscriberRegistration             @relation("CandidateReferralToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+
+  @@index([subscriberID])
+  @@map("tblCandidateReferral")
+}
+
+/// Candidate privacy choices and account-lifecycle requests.
+///
+/// 1:1 with the candidate and created on first write, so an untouched account carries no row
+/// and reads fall back to the defaults below.
+model CandidatePrivacy {
+  subscriberID                 BigInt                             @id @map("SubscriberID")
+  /// Show the current employer on the public profile.
+  showCurrentEmployer          Boolean                            @default(true) @map("ShowCurrentEmployer")
+  /// Let recruiters contact the candidate directly.
+  allowRecruiterMessages       Boolean                            @default(true) @map("AllowRecruiterMessages")
+  /// Set when the candidate asks for a data export; cleared once it has been delivered.
+  exportRequestedAt            DateTime? @db.Timestamp(6)         @map("ExportRequestedAt")
+  /// Set when the candidate asks for deletion. Retained rather than hard-deleting so the
+  /// request is auditable and reversible inside the grace period.
+  deletionRequestedAt          DateTime? @db.Timestamp(6)         @map("DeletionRequestedAt")
+  updatedAt                    DateTime? @db.Timestamp(6)         @map("UpdatedAt")
+
+  subscriber                   SubscriberRegistration             @relation("CandidatePrivacyToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+
+  @@map("tblCandidatePrivacy")
 }
