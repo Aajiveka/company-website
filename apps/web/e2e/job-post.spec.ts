@@ -1,45 +1,17 @@
 import { test, expect } from '@playwright/test';
 
-// These specs mock the network with page.route(), which requires MSW's service
-// worker to be OFF. Blocking it makes the app fall back to the real network layer
-// where Playwright's route handlers apply. (See bootstrap fallback in src/main.tsx.)
+// The portal uses page.route() fixtures, so service workers must remain disabled.
 test.use({ serviceWorkers: 'block' });
 
-/**
- * Job Posting Flow — tests the /company/post-job form and /company/jobs listing.
- *
- * All API calls are intercepted with page.route() so the tests run without a
- * live backend.  The flow exercises the state/city cascade, form validation,
- * submission, and post-submit listing verification.
- */
-
 const MASTERS = {
-  designations: [
-    { id: 1, label: 'Software Engineer' },
-    { id: 2, label: 'Product Manager' },
-  ],
-  states: [
-    { id: 10, label: 'Maharashtra' },
-    { id: 20, label: 'Karnataka' },
-  ],
-  cities: [
-    { id: 100, label: 'Mumbai', stateId: 10 },
-    { id: 101, label: 'Pune', stateId: 10 },
-    { id: 200, label: 'Bengaluru', stateId: 20 },
-  ],
-  workModes: [
-    { id: 1, label: 'Remote' },
-    { id: 2, label: 'On-site' },
-  ],
-  employmentTypes: [
-    { id: 1, label: 'Full-time' },
-    { id: 2, label: 'Contract' },
-  ],
+  designations: [{ id: 1, label: 'Software Engineer' }],
+  states: [{ id: 10, label: 'Maharashtra' }],
+  cities: [{ id: 100, label: 'Mumbai', stateId: 10 }],
+  workModes: [{ id: 1, label: 'Remote' }],
+  employmentTypes: [{ id: 1, label: 'Full-time' }],
+  industryTypes: [{ id: 1, label: 'Technology' }],
+  skills: [{ id: 1, label: 'React' }],
 };
-
-// LocationSelect passes its `label` through as the trigger's and panel's aria-label, so this is
-// how both are addressed. Matches jobPost.districtCity in locales/en/dashboard.json.
-const LOCATION_LABEL = 'District / City';
 
 const POSTED_JOB = {
   jobId: 42,
@@ -51,164 +23,114 @@ const POSTED_JOB = {
   workModeId: 1,
   employmentType: 'Full-time',
   employmentTypeId: 1,
+  industryTypeId: 1,
   minExp: 2,
+  maxExp: 4,
   minCtc: 500000,
   maxCtc: 1200000,
+  educationDetail: 'B.Tech in Computer Science',
+  reportTo: '',
+  teamSize: null,
+  department: 'Engineering',
+  subDepartment: '',
+  interviewProcess: [],
   status: 'Active',
   applicants: 0,
   description: 'A great role for experienced developers.',
+  candidateProfile: '',
+  openings: null,
+  skillIds: [1],
+  postedOn: '2026-08-11',
 };
 
+function jobListResponse(items: typeof POSTED_JOB[]) {
+  return {
+    items,
+    total: items.length,
+    page: 1,
+    pageSize: 10,
+    pageCount: 1,
+    counts: { all: items.length, active: items.length, closed: 0, draft: 0, archived: 0 },
+    cities: [...new Set(items.map((job) => job.city))],
+  };
+}
+
 async function mockAuthSession(page: import('@playwright/test').Page) {
-  // Set refresh token so the auth bootstrap calls /auth/me
-  await page.addInitScript(() => {
-    localStorage.setItem('aaj.refresh', 'fake-refresh-token');
-  });
-  await page.route('**/api/auth/refresh', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ accessToken: 'fake-access', refreshToken: 'fake-refresh-token' }),
-    }),
-  );
-  await page.route('**/api/auth/me', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ userId: 1, fullName: 'Test Employer', roleId: 4 }),
-    }),
-  );
+  await page.addInitScript(() => localStorage.setItem('aaj.refresh', 'fake-refresh-token'));
+  await page.route('**/api/auth/refresh', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ accessToken: 'fake-access', refreshToken: 'fake-refresh-token' }),
+  }));
+  await page.route('**/api/auth/me', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ userId: 1, fullName: 'Test Employer', roleId: 4 }),
+  }));
 }
 
 test.describe('Job Posting Flow', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock auth so ProtectedRoute allows access
     await mockAuthSession(page);
+    await page.route('**/api/clients/masters', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(MASTERS),
+    }));
 
-    // Masters data for dropdowns — app calls /clients/masters
-    await page.route('**/api/clients/masters', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(MASTERS),
-      }),
-    );
-
-    // Company jobs listing — app calls /clients/me/jobs
     let jobs: typeof POSTED_JOB[] = [];
-    await page.route('**/api/clients/me/jobs', (route) => {
+    await page.route('**/api/clients/me/jobs**', (route) => {
       if (route.request().method() === 'GET') {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(jobs),
-        });
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(jobListResponse(jobs)) });
       }
-      // POST — new job
       jobs = [POSTED_JOB];
-      return route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify(POSTED_JOB),
-      });
+      return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(POSTED_JOB) });
     });
   });
 
-  test('shows validation errors when submitting empty form', async ({ page }) => {
+  test('shows native validation when submitting an empty form', async ({ page }) => {
     await page.goto('/company/post-job');
-
-    // Wait for form to load (masters fetched)
     await expect(page.locator('form')).toBeVisible({ timeout: 10_000 });
-
-    // Submit without filling anything
     await page.getByRole('button', { name: /publish/i }).click();
-
-    // Validation errors should appear
-    await expect(page.locator('[class*="text-danger"], [role="alert"]').first()).toBeVisible();
+    await expect(page.getByLabel(/position/i)).not.toHaveJSProperty('validationMessage', '');
   });
 
-  test('state/city cascade filters cities by selected state', async ({ page }) => {
+  test('lists the cities supplied by the employer masters endpoint', async ({ page }) => {
     await page.goto('/company/post-job');
     await expect(page.locator('form')).toBeVisible({ timeout: 10_000 });
-
-    // Location is one LocationSelect combobox: states are collapsed rows, cities appear only
-    // under the state you expand. (It replaced the old pair of dependent <select>s.)
-    await page.getByRole('button', { name: LOCATION_LABEL }).click();
-    const panel = page.getByRole('listbox', { name: LOCATION_LABEL });
-    await expect(panel).toBeVisible();
-
-    // Collapsed: state rows are there, no city is.
-    await expect(panel.getByRole('button', { name: 'Maharashtra' })).toBeVisible();
-    await expect(panel.getByRole('button', { name: 'Karnataka' })).toBeVisible();
-    await expect(panel.getByRole('option')).toHaveCount(0);
-
-    // Expanding Maharashtra reveals its cities — and only its cities.
-    await panel.getByRole('button', { name: 'Maharashtra' }).click();
-    await expect(panel.getByRole('option')).toHaveText(['Mumbai', 'Pune']);
-    await expect(panel.getByRole('option', { name: 'Bengaluru' })).toHaveCount(0);
-
-    // Picking one closes the panel and shows the city with its state.
-    await panel.getByRole('option', { name: 'Mumbai' }).click();
-    await expect(panel).toBeHidden();
-    await expect(page.getByRole('button', { name: LOCATION_LABEL })).toContainText('Mumbai, Maharashtra');
+    const location = page.getByLabel(/location/i);
+    await expect(location.locator('option')).toHaveText(['Select city', 'Mumbai']);
+    await location.selectOption({ label: 'Mumbai' });
+    await expect(location).toHaveValue('100');
   });
 
-  test('fills form and submits successfully', async ({ page }) => {
+  test('fills the employer form and publishes a job', async ({ page }) => {
     await page.goto('/company/post-job');
     await expect(page.locator('form')).toBeVisible({ timeout: 10_000 });
-
-    // Fill designation
-    await page.locator('select[name="designationId"]').selectOption({ label: 'Software Engineer' });
-
-    // Location — expand the state, then pick the city
-    await page.getByRole('button', { name: LOCATION_LABEL }).click();
-    const panel = page.getByRole('listbox', { name: LOCATION_LABEL });
-    await panel.getByRole('button', { name: 'Maharashtra' }).click();
-    await panel.getByRole('option', { name: 'Mumbai' }).click();
-
-    // Work mode
-    await page.locator('select[name="workModeId"]').selectOption({ label: 'Remote' });
-
-    // Employment type
-    await page.locator('select[name="employmentTypeId"]').selectOption({ label: 'Full-time' });
-
-    // Experience
-    await page.getByLabel(/experience/i).fill('2');
-
-    // CTC fields
-    const numberInputs = page.locator('input[type="number"]');
-    const ctcInputs = await numberInputs.all();
-    // minCtc and maxCtc are the last two number inputs
-    if (ctcInputs.length >= 2) {
-      await ctcInputs[ctcInputs.length - 2].fill('500000');
-      await ctcInputs[ctcInputs.length - 1].fill('1200000');
-    }
-
-    // Description — the RichTextEditor is a contenteditable div
-    const editor = page.locator('[contenteditable="true"]');
-    if (await editor.isVisible()) {
-      await editor.fill('A great role for experienced developers.');
-    }
-
-    // Submit
+    await page.getByLabel(/position/i).selectOption({ label: 'Software Engineer' });
+    await page.getByLabel(/employment type/i).selectOption({ label: 'Full-time' });
+    await page.getByLabel(/work mode/i).selectOption({ label: 'Remote' });
+    await page.getByLabel(/industry type/i).selectOption({ label: 'Technology' });
+    await page.getByLabel(/location/i).selectOption({ label: 'Mumbai' });
+    await page.getByLabel(/experience \(min yrs\)/i).fill('2');
+    await page.getByLabel(/ctc \(min\)/i).fill('500000');
+    await page.getByLabel(/ctc \(max\)/i).fill('1200000');
+    await page.getByLabel(/education detail/i).fill('B.Tech in Computer Science');
+    await page.getByLabel(/^department/i).fill('Engineering');
+    await page.getByRole('button', { name: /skills.*0 selected/i }).click();
+    await page.getByLabel(/job description/i).fill('A great role for experienced developers.');
     await page.getByRole('button', { name: /publish/i }).click();
-
-    // Should show success toast
-    await expect(page.getByText(/success/i).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Software Engineer')).toBeVisible({ timeout: 10_000 });
   });
 
-  test('submitted job appears in the listing page', async ({ page }) => {
-    // Navigate directly to jobs listing with a pre-populated job
-    await page.route('**/api/clients/me/jobs', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([POSTED_JOB]),
-      }),
-    );
-
+  test('shows a pre-populated job in the listing page', async ({ page }) => {
+    await page.route('**/api/clients/me/jobs**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(jobListResponse([POSTED_JOB])),
+    }));
     await page.goto('/company/jobs');
     await expect(page.getByText('Software Engineer')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('Mumbai')).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Mumbai' })).toBeVisible();
   });
 });

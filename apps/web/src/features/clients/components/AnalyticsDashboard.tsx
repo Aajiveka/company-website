@@ -58,7 +58,7 @@ export function AnalyticsDashboard() {
   }, [applicants, t]);
 
   const topJobs = useMemo(() => {
-    const jobList = jobs ?? [];
+    const jobList = jobs?.items ?? [];
     const sorted = [...jobList]
       .filter((j) => j.status === 'Active')
       .sort((a, b) => b.applicants - a.applicants)

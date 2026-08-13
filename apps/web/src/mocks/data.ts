@@ -15,7 +15,7 @@ import type {
   CvProjectEntry,
   LanguageProficiency,
 } from '@/features/candidates/candidate.types';
-import type { CompanyMasters, CompanyProfile, JobListing } from '@/features/clients/client.types';
+import type { CompanyMasters, CompanyProfile, JobListing } from '@/employer/services/employer.types';
 import type { PublicJob } from '@/features/jobs/jobs.types';
 import type { CandidateDocReview, CandidateRow, QC1Stats } from '@/features/recruitment/recruitment.types';
 
@@ -511,9 +511,9 @@ export const COMPANY_MASTERS: CompanyMasters = {
 };
 
 export let COMPANY_JOBS: JobListing[] = [
-  { jobId: 101, designation: 'Frontend Engineer', designationId: 1, city: 'Bengaluru', cityId: 1, workMode: 'Hybrid', workModeId: 2, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Build and ship customer-facing UI.', candidateProfile: '', openings: 2, skillIds: [1], minExp: 3, minCtc: 1200000, maxCtc: 1800000, status: 'Active', applicants: 24, postedOn: '2026-06-20' },
-  { jobId: 102, designation: 'Backend Engineer', designationId: 2, city: 'Pune', cityId: 2, workMode: 'Remote', workModeId: 3, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Own the core API and data layer.', candidateProfile: '', openings: 1, skillIds: [2, 3], minExp: 4, minCtc: 1500000, maxCtc: 2200000, status: 'Active', applicants: 18, postedOn: '2026-06-25' },
-  { jobId: 103, designation: 'QA Analyst', designationId: 3, city: 'Bengaluru', cityId: 1, workMode: 'On-site', workModeId: 1, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Own test planning and release quality.', candidateProfile: '', openings: 1, skillIds: [], minExp: 2, minCtc: 800000, maxCtc: 1200000, status: 'Closed', applicants: 9, postedOn: '2026-07-01' },
+  { jobId: 101, designation: 'Frontend Engineer', designationId: 1, city: 'Bengaluru', cityId: 1, workMode: 'Hybrid', workModeId: 2, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Build and ship customer-facing UI.', candidateProfile: '', openings: 2, skillIds: [1], minExp: 3, maxExp: 6, minCtc: 1200000, maxCtc: 1800000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'Engineering Manager', teamSize: 6, department: 'Engineering', subDepartment: 'Frontend', interviewProcess: [], status: 'Active', applicants: 24, postedOn: '2026-06-20' },
+  { jobId: 102, designation: 'Backend Engineer', designationId: 2, city: 'Pune', cityId: 2, workMode: 'Remote', workModeId: 3, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Own the core API and data layer.', candidateProfile: '', openings: 1, skillIds: [2, 3], minExp: 4, maxExp: 8, minCtc: 1500000, maxCtc: 2200000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'Engineering Manager', teamSize: 5, department: 'Engineering', subDepartment: 'Backend', interviewProcess: [], status: 'Active', applicants: 18, postedOn: '2026-06-25' },
+  { jobId: 103, designation: 'QA Analyst', designationId: 3, city: 'Bengaluru', cityId: 1, workMode: 'On-site', workModeId: 1, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Own test planning and release quality.', candidateProfile: '', openings: 1, skillIds: [], minExp: 2, maxExp: 4, minCtc: 800000, maxCtc: 1200000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'QA Manager', teamSize: 4, department: 'Engineering', subDepartment: 'Quality Assurance', interviewProcess: [], status: 'Closed', applicants: 9, postedOn: '2026-07-01' },
 ];
 
 export function updateCompanyJob(jobId: number, patch: Partial<JobListing>) {

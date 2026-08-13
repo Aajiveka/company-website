@@ -1,3 +1,6 @@
-WorkModeID|Descr
+﻿WorkModeID|Descr
 1|Work From Home
 2|Work From Office
+3|In-office
+4|Hybrid
+5|Remote

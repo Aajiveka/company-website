@@ -14,9 +14,17 @@ export const queryClient = new QueryClient({
 export const queryKeys = {
   auth: { me: ['auth', 'me'] as const },
   candidate: { profile: (id: string | number) => ['candidate', 'profile', id] as const },
+  /** @deprecated Prefer queryKeys.employer — kept for legacy mock/tests. */
   client: {
-    company: (id: string | number) => ['client', 'company', id] as const,
-    jobs: (id: string | number) => ['client', 'jobs', id] as const,
+    company: (id: string | number) => ['employer', 'company', id] as const,
+    jobs: (id: string | number) => ['employer', 'jobs', id] as const,
+  },
+  employer: {
+    company: (id: string | number) => ['employer', 'company', id] as const,
+    jobs: (id: string | number) => ['employer', 'jobs', id] as const,
+    jobsList: (params?: unknown) => ['employer', 'jobs', 'list', params] as const,
+    applicants: () => ['employer', 'applicants'] as const,
+    masters: () => ['employer', 'masters'] as const,
   },
   recruitment: {
     candidates: (params?: unknown) => ['recruitment', 'candidates', params] as const,
@@ -55,7 +63,12 @@ export function invalidateRecruitment(qc: QC) {
 
 /** Invalidate all client/employer queries (company profile, job listings). */
 export function invalidateClient(qc: QC) {
-  return qc.invalidateQueries({ queryKey: ['client'] });
+  return qc.invalidateQueries({ queryKey: ['employer'] });
+}
+
+/** Invalidate all employer portal queries. */
+export function invalidateEmployer(qc: QC) {
+  return qc.invalidateQueries({ queryKey: ['employer'] });
 }
 
 /** Invalidate all payment queries (plans, subscription, orders). */

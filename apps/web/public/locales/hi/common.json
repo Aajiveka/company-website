@@ -180,6 +180,13 @@
   },
   "logout": "लॉगआउट",
   "toggleMenu": "मेनू टॉगल करें",
+  "collapseSidebar": "साइडबार सिकोड़ें",
+  "expandSidebar": "साइडबार बढ़ाएँ",
+  "greeting": {
+    "morning": "सुप्रभात, {{name}}",
+    "afternoon": "नमस्कार, {{name}}",
+    "evening": "शुभ संध्या, {{name}}"
+  },
   "notFound": {
     "title": "404",
     "heading": "पेज नहीं मिला",

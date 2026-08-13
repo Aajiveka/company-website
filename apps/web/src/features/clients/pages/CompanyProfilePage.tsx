@@ -81,7 +81,7 @@ export default function CompanyProfilePage() {
       <h2 className="mb-3 text-lg font-semibold text-navy">{t('company.postedJobs')}</h2>
       <Table
         columns={jobColumns}
-        data={jobs ?? []}
+        data={jobs?.items ?? []}
         rowKey={(j) => j.jobId}
         isLoading={jobsLoading}
         emptyMessage={t('company.noJobs')}

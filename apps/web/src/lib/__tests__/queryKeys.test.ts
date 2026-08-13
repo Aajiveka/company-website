@@ -11,9 +11,10 @@ describe('queryKeys', () => {
     expect(queryKeys.candidate.profile('abc')).toEqual(['candidate', 'profile', 'abc']);
   });
 
-  it('client keys include id', () => {
-    expect(queryKeys.client.company(1)).toEqual(['client', 'company', 1]);
-    expect(queryKeys.client.jobs(1)).toEqual(['client', 'jobs', 1]);
+  it('employer keys include id', () => {
+    expect(queryKeys.employer.company(1)).toEqual(['employer', 'company', 1]);
+    expect(queryKeys.employer.jobs(1)).toEqual(['employer', 'jobs', 1]);
+    expect(queryKeys.client.company(1)).toEqual(['employer', 'company', 1]);
   });
 
   it('recruitment.candidates includes params', () => {

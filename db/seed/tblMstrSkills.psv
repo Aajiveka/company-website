@@ -1,5 +1,86 @@
-SkillID|Descr
+﻿SkillID|Descr
 1|unskilled
 2|Semi-Skilled
 3|Skilled
 4|Management
+5|Go
+6|GraphQL
+7|iOS
+8|Microservices
+9|Scrum
+10|Linux
+11|SQL
+12|.NET
+13|Vue.js
+14|Android
+15|NumPy
+16|Pandas
+17|Tailwind CSS
+18|Selenium
+19|React
+20|Docker
+21|TensorFlow
+22|Power BI
+23|React Native
+24|MongoDB
+25|Excel
+26|Agile
+27|PostgreSQL
+28|Tableau
+29|Automation Testing
+30|Salesforce
+31|Manual Testing
+32|C#
+33|Kubernetes
+34|Kotlin
+35|Oracle
+36|Python
+37|Redis
+38|Ruby on Rails
+39|Git
+40|Content Writing
+41|Deep Learning
+42|MySQL
+43|Figma
+44|CSS
+45|CI/CD
+46|HTML
+47|Photoshop
+48|Illustrator
+49|TypeScript
+50|Express
+51|Swift
+52|SAP
+53|Communication
+54|Machine Learning
+55|Azure
+56|JavaScript
+57|Ruby
+58|Algorithms
+59|Jenkins
+60|Flutter
+61|SEO
+62|REST API
+63|FastAPI
+64|Problem Solving
+65|PHP
+66|Flask
+67|Spring Boot
+68|Leadership
+69|Adobe XD
+70|Django
+71|NLP
+72|System Design
+73|Data Structures
+74|AWS
+75|GCP
+76|Digital Marketing
+77|Angular
+78|Cypress
+79|JIRA
+80|Java
+81|Playwright
+82|PyTorch
+83|JMeter
+84|Laravel
+85|Node.js

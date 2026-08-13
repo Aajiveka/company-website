@@ -99,6 +99,7 @@ model ClientJobs {
   jobDescr                     String? @db.Text                   @map("JobDescr")
   jobCandidateProfile          String? @db.Text                   @map("JobCandidateProfile")
   minExp                       Int?                               @map("MinExp")
+  maxExp                       Int?                               @map("MaxExp")
   maxEmp                       Int?                               @map("MaxEmp")
   minCTC                       Int                                @map("MinCTC")
   maxCTC                       Int                                @map("MaxCTC")
@@ -109,6 +110,13 @@ model ClientJobs {
   timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
   loginIDUpd                   BigInt?                            @map("LoginIDUpd")
   industryTypeID               Int?                               @map("IndustryTypeID")  // FK -> MstrIndustryType (confirmed)
+  educationDetail              String? @db.VarChar(500)           @map("EducationDetail")
+  reportTo                     String? @db.VarChar(200)           @map("ReportTo")
+  teamSize                     Int?                               @map("TeamSize")
+  department                   String? @db.VarChar(200)           @map("Department")
+  subDepartment                String? @db.VarChar(200)           @map("SubDepartment")
+  interviewProcess             String? @db.Text                   @map("InterviewProcess")
+
 
   client                       ClientMstr                         @relation("ClientJobsToClientMstr", fields: [clientID], references: [clientID])
   designation                  MstrDesignation                    @relation("ClientJobsToMstrDesignation", fields: [designationID], references: [designationID])
