@@ -16,10 +16,17 @@ const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
 
 // Prefetch critical route chunks on idle so they're ready when the user navigates.
+//
+// Each import is caught, because a prefetch that fails must stay invisible. `void import(...)`
+// discards the promise without handling rejection, so a chunk that does not arrive — a flaky
+// network, or a tab left open across a deploy asking for a hash that no longer exists — became
+// an unhandled rejection on whatever page the user happened to be on. Nothing is broken when
+// this fails: the route still loads on real navigation, since lazy() imports it again then.
+const swallow = () => {};
 const prefetchRoutes = () => {
-  void import('@/features/home/HomePage');
-  void import('@/features/jobs/pages/JobSearchPage');
-  void import('@/features/auth/pages/LoginPage');
+  import('@/features/home/HomePage').catch(swallow);
+  import('@/features/jobs/pages/JobSearchPage').catch(swallow);
+  import('@/features/auth/pages/LoginPage').catch(swallow);
 };
 if (typeof window !== 'undefined') {
   if ('requestIdleCallback' in window) {
