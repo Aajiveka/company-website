@@ -8,8 +8,12 @@ test.use({ serviceWorkers: 'block' });
 /**
  * Candidate Profile — tests profile page rendering and data display.
  *
- * The page at /candidate/profile is the candidate's own profile, every section editable in
- * place. It renders from three endpoints: /candidates/me for the header and resume card,
+ * /candidate/profile is the candidate portal's overview screen (Aajiveka UI redesign): a blue
+ * profile banner, a left rail with contact/skills/preferences/resume cards, and the section
+ * cards down the right. Editing happens in the wizard at /candidate/onboarding, which each
+ * card's "Edit" links into.
+ *
+ * It renders from three endpoints: /candidates/me for the banner and resume card,
  * /candidates/me/cv-edit for the sections, and /candidates/me/cv-masters for the id-backed
  * labels (a designation, course or degree is stored as an id, so without the masters those
  * rows render blank). All three are mocked so the tests run without a live backend.
@@ -24,8 +28,7 @@ const CANDIDATE_PROFILE = {
   gender: 'F',
   city: 'Pune',
   designation: 'Senior Developer',
-  // A count, not a sentence — the header runs it through the pluralised
-  // `profile.yearsExperience` to render "5 years".
+  // A count, not a sentence — the banner formats it as "5 years experience".
   totalExperience: '5',
   photoUrl: null,
   resumeHeadline: 'Senior developer with a product bent',
@@ -132,6 +135,7 @@ const CV_EDIT = {
     desiredJobType: [],
     desiredEmploymentType: [],
     preferredShift: '',
+    preferredWorkModes: [],
     preferredSalary: null,
     preferredJobRoles: [],
     preferredCityIds: [],
@@ -217,8 +221,10 @@ test.describe('Candidate Profile Page', () => {
   test('displays contact information', async ({ page }) => {
     await page.goto('/candidate/profile');
 
-    await expect(page.getByText('priya@example.com')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('9876543210')).toBeVisible();
+    const contact = page.locator('#contact');
+    await expect(contact.getByText('priya@example.com')).toBeVisible({ timeout: 10_000 });
+    await expect(contact.getByText('9876543210')).toBeVisible();
+    // The city is shown in the profile banner rather than the contact card.
     await expect(page.getByText('Pune').first()).toBeVisible();
   });
 
@@ -236,7 +242,7 @@ test.describe('Candidate Profile Page', () => {
   test('displays experience entries', async ({ page }) => {
     await page.goto('/candidate/profile');
 
-    const employment = page.locator('#employment');
+    const employment = page.locator('#experience');
     await expect(employment.getByText('TechCorp')).toBeVisible({ timeout: 10_000 });
     await expect(employment.getByText('StartupXYZ')).toBeVisible();
     // "Full Time | Jan 2023 to Present (…)" — the dates are formatted from joiningDate.
@@ -256,7 +262,7 @@ test.describe('Candidate Profile Page', () => {
   test('shows experience duration', async ({ page }) => {
     await page.goto('/candidate/profile');
 
-    await expect(page.getByText('5 years').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/5 years experience/).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('shows download resume button', async ({ page }) => {

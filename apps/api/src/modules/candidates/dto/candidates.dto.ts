@@ -37,6 +37,8 @@ export const COURSE_MODES = ['Full Time', 'Part Time', 'Correspondence'] as cons
 export const JOB_TYPES = ['Permanent', 'Contractual'] as const;
 export const EMPLOYMENT_TYPES = ['Full Time', 'Part Time'] as const;
 export const SHIFTS = ['Day', 'Night', 'Flexible'] as const;
+/// Where the candidate wants to work, which is a different question from which shift.
+export const WORK_MODES = ['Remote', 'Hybrid', 'On-site'] as const;
 export const MARITAL_STATUSES = ['Single / unmarried', 'Married', 'Widowed', 'Divorced', 'Separated', 'Other'] as const;
 export const CATEGORIES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'] as const;
 export const PROJECT_STATUSES = ['In Progress', 'Finished'] as const;
@@ -420,6 +422,12 @@ export class UpdateCareerProfileDto {
   @IsIn(orBlank(SHIFTS))
   preferredShift?: string;
 
+  @ApiPropertyOptional({ enum: WORK_MODES, isArray: true, description: 'A candidate can accept more than one' })
+  @IsOptional()
+  @IsArray()
+  @IsIn(WORK_MODES, { each: true })
+  preferredWorkModes?: string[];
+
   @ApiPropertyOptional({ description: 'Annual, in rupees' })
   @IsOptional()
   @IsNumber()
@@ -772,4 +780,42 @@ export class CreateSavedSearchDto {
   @IsOptional()
   @IsObject()
   filters?: Record<string, unknown>;
+}
+
+/* ------------------------------------------------------------------------- *
+ * Referrals & privacy
+ * ------------------------------------------------------------------------- */
+
+/** One "Refer a Friend" invite. Either an email or a mobile is enough to send it. */
+export class CreateReferralDto {
+  @ApiProperty({ example: 'Priya Mehta' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  name!: string;
+
+  @ApiPropertyOptional({ example: 'priya.m@email.com' })
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(320)
+  email?: string;
+
+  @ApiPropertyOptional({ example: '9876543210' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(15)
+  mobile?: string;
+}
+
+/** Privacy toggles on the Account Settings screen. Both are optional so one can be saved alone. */
+export class UpdatePrivacyDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  showCurrentEmployer?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  allowRecruiterMessages?: boolean;
 }

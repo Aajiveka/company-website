@@ -59,7 +59,18 @@ export default function SearchResultsPage() {
   const { t } = useTranslation('jobs');
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') ?? '';
-  const [activeTab, setActiveTab] = useState<SearchTab>('jobs');
+  // Tab lives in the URL so it can be linked to (the portal header's "Companies"
+  // entry points at /search?tab=companies) and survives a reload. Anything other
+  // than a known tab falls back to jobs, which is what it defaulted to before.
+  const tabParam = searchParams.get('tab');
+  const activeTab: SearchTab = (['jobs', 'companies', 'candidates'] as const).includes(tabParam as SearchTab)
+    ? (tabParam as SearchTab)
+    : 'jobs';
+  const setActiveTab = (tab: SearchTab) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', tab);
+    setSearchParams(next, { replace: true });
+  };
   const [pages, setPages] = useState<Record<SearchTab, number>>({
     jobs: 1,
     companies: 1,

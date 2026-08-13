@@ -192,6 +192,7 @@ export let CV_EDIT_PROFILE: CvEditProfile = {
     desiredJobType: ['Permanent'],
     desiredEmploymentType: ['Full Time'],
     preferredShift: 'Day',
+    preferredWorkModes: ['Remote', 'Hybrid'],
     preferredSalary: 2500000,
     preferredJobRoles: ['React Developer'],
     preferredCityIds: [413],
