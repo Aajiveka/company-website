@@ -16,14 +16,14 @@ interface StatCard {
 export function EmployerDashboardStats() {
   const { t } = useTranslation('dashboard');
   const { data: jobs } = useCompanyJobs();
-  const { data: applicants } = useApplicants();
+  const { data: applicants } = useApplicants({ page: 1, pageSize: 100 });
 
   const stats = useMemo((): StatCard[] => {
     const jobList = jobs?.items ?? [];
-    const appList = applicants ?? [];
+    const appList = applicants?.items ?? [];
 
     const activeJobs = jobList.filter((j) => j.status === 'Active').length;
-    const totalApplicants = appList.length;
+    const totalApplicants = applicants?.total ?? appList.length;
     const shortlisted = appList.filter((a) => a.jobStatus === 'Shortlisted').length;
     const interviews = appList.filter((a) => a.jobStatus === 'Interview').length;
 

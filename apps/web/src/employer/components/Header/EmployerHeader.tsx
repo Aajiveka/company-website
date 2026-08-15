@@ -69,7 +69,7 @@ export function EmployerHeader({
             type="search"
             placeholder="Search…"
             className={cn(
-              'h-8 w-full rounded-md border border-slate-200 bg-slate-50 py-1.5 pr-2.5 pl-8 text-xs text-slate-800 outline-none transition',
+              'h-8 w-full rounded-md border border-slate-500 bg-slate-50 py-1.5 pr-2.5 pl-8 text-xs text-slate-800 outline-none transition',
               'placeholder:text-slate-400 focus:border-[#1A56DB] focus:bg-white focus:ring-1 focus:ring-[#1A56DB]/25',
             )}
           />

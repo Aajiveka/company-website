@@ -30,15 +30,15 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             className,
           )}
         >
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex shrink-0 items-center justify-between">
             {title ? (
-              <Dialog.Title className="text-lg font-semibold text-navy sm:text-xl">{title}</Dialog.Title>
+              <Dialog.Title className="pr-2 text-lg font-semibold text-navy sm:text-xl">{title}</Dialog.Title>
             ) : (
               // Radix requires a title for screen readers even where the design shows none.
               <Dialog.Title className="sr-only">Dialog</Dialog.Title>
             )}
             <Dialog.Close
-              className="ml-auto rounded-full p-1 text-gray-400 outline-none transition hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              className="ml-auto shrink-0 rounded-full p-1 text-gray-400 outline-none transition hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               aria-label="Close"
             >
               <X className="h-5 w-5" />

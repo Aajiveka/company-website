@@ -404,7 +404,21 @@ export const handlers = [
     deactivateCompanyJob(Number(params.id));
     return HttpResponse.json({ ok: true });
   }),
-  http.get(`${BASE}/clients/me/applicants`, () => HttpResponse.json(APPLICANT_ROWS)),
+  http.get(`${BASE}/clients/me/applicants`, ({ request }) => {
+    const url = new URL(request.url);
+    const page = Math.max(1, Number(url.searchParams.get('page') || 1));
+    const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize') || 10)));
+    const total = APPLICANT_ROWS.length;
+    const start = (page - 1) * pageSize;
+    const items = APPLICANT_ROWS.slice(start, start + pageSize);
+    return HttpResponse.json({
+      items,
+      total,
+      page,
+      pageSize,
+      pageCount: Math.ceil(total / pageSize) || 0,
+    });
+  }),
   http.post(`${BASE}/clients/me/applicants/:id/decision`, async ({ request, params }) => {
     const { decision } = (await request.json()) as { decision: 'Shortlisted' | 'Rejected' };
     decideApplicant(Number(params.id), decision);

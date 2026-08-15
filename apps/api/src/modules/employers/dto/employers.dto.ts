@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -52,6 +53,15 @@ export class InterviewRoundDto {
   @ApiProperty()
   @IsString()
   process!: string;
+
+  @ApiPropertyOptional({
+    description: 'Interview mode: Telephonic | Face to face | Video call',
+    enum: ['Telephonic', 'Face to face', 'Video call'],
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Telephonic', 'Face to face', 'Video call'])
+  mode?: string;
 }
 
 export class CreateJobDto {
@@ -104,9 +114,10 @@ export class CreateJobDto {
   @Min(1)
   openings?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ maxLength: 1000 })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @ApiPropertyOptional()
@@ -119,6 +130,16 @@ export class CreateJobDto {
   @IsArray()
   @IsInt({ each: true })
   skillIds?: number[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Skill labels — matched or created in tblMstrSkills, then linked to the job',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  skills?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -211,9 +232,10 @@ export class UpdateJobDto {
   @Min(1)
   openings?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ maxLength: 1000 })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   description?: string;
 
   @ApiPropertyOptional()
@@ -226,6 +248,16 @@ export class UpdateJobDto {
   @IsArray()
   @IsInt({ each: true })
   skillIds?: number[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Skill labels — matched or created in tblMstrSkills, then linked to the job',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  skills?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -279,39 +311,92 @@ export class ListApplicantsQueryDto {
   @IsIn(['New', 'Shortlisted', 'Interview', 'Hired', 'Rejected'])
   status?: 'New' | 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
 
-  @ApiPropertyOptional({ description: 'Search name, designation, city' })
+  @ApiPropertyOptional({ description: 'Search name, designation, city, company, skills' })
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by job opening id' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  jobId?: number;
+
+  @ApiPropertyOptional({ description: 'Filter by candidate city (case-insensitive contains)' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional({ description: 'Minimum total experience in years' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  minExp?: number;
+
+  @ApiPropertyOptional({ description: 'Maximum notice period in days' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  maxNotice?: number;
+
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ default: 10, enum: [10, 25, 50] })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number = 10;
 }
 
 export class UpdateCompanyProfileDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Company name (e.g. Maruti)' })
   @IsOptional()
   @IsString()
   clientName?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Company email' })
   @IsOptional()
   @IsString()
   email?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Company contact number' })
   @IsOptional()
   @IsString()
   contactNo?: string;
+
+  @ApiPropertyOptional({ description: 'HR contact email' })
+  @IsOptional()
+  @IsString()
+  hrEmail?: string;
+
+  @ApiPropertyOptional({ description: 'HR contact number' })
+  @IsOptional()
+  @IsString()
+  hrContactNo?: string;
+
+  @ApiPropertyOptional({ description: 'HR contact person name' })
+  @IsOptional()
+  @IsString()
+  hrContactName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   website?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Company location / address' })
   @IsOptional()
   @IsString()
   address?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'About company' })
   @IsOptional()
   @IsString()
   description?: string;

@@ -33,7 +33,8 @@ const statIcons: Record<string, ReactNode> = {
 
 export function DashboardPage() {
   const { data: analytics, isLoading, isError, error } = useCompanyAnalytics();
-  const { data: applicants = [] } = useApplicants();
+  const { data: applicantsRes } = useApplicants({ page: 1, pageSize: 50 });
+  const applicants = applicantsRes?.items ?? [];
 
   const stats = [
     { id: 'totalJobs', label: 'Total Jobs', value: analytics?.totalJobs ?? 0 },

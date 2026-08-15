@@ -485,7 +485,7 @@ export class JobsService {
     const j = await this.db.clientJobs.findUnique({
       where: { jobID: jobId },
       include: {
-        client: { select: { clientName: true, companyLogo: true } },
+        client: { select: { clientID: true, clientName: true, companyLogo: true } },
         jobCity: { select: { descr: true } },
         designation: { select: { descr: true } },
         industryType: { select: { industryType: true } },
@@ -513,7 +513,9 @@ export class JobsService {
       candidateProfile: j.jobCandidateProfile ?? null,
       skills: j.ClientJobSkill.map((s) => s.skill?.descr).filter((s): s is string => !!s),
       educationTypes: j.ClientJobs_EducationType.map((e) => e.educationType?.descr).filter((e): e is string => !!e),
-      companyLogo: j.client?.companyLogo ?? null,
+      companyLogo: j.client?.companyLogo?.trim()
+        ? `/api/clients/${Number(j.clientID)}/logo`
+        : null,
     };
   }
 

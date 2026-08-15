@@ -17,6 +17,7 @@ export const JOB_IMPORT_COLUMNS = [
   { key: 'location', label: 'Location', required: true },
   { key: 'interviewRound', label: 'Interview round', required: false },
   { key: 'interviewProcess', label: 'Interview Process', required: false },
+  { key: 'interviewMode', label: 'Interview mode', required: false },
 ] as const;
 
 export type JobImportColumnKey = (typeof JOB_IMPORT_COLUMNS)[number]['key'];
@@ -41,6 +42,7 @@ export const JOB_IMPORT_SAMPLE_ROWS: Record<JobImportColumnKey, string>[] = [
     location: 'Bengaluru',
     interviewRound: '1|2|3',
     interviewProcess: 'HR Screen|Technical|Hiring Manager',
+    interviewMode: 'Telephonic|Face to face|Video call',
   },
   {
     position: 'Backend Developer',
@@ -60,6 +62,7 @@ export const JOB_IMPORT_SAMPLE_ROWS: Record<JobImportColumnKey, string>[] = [
     location: 'Noida',
     interviewRound: '1|2',
     interviewProcess: 'HR Screen|Technical',
+    interviewMode: 'Telephonic|Face to face',
   },
   {
     position: 'QA Engineer',
@@ -79,6 +82,7 @@ export const JOB_IMPORT_SAMPLE_ROWS: Record<JobImportColumnKey, string>[] = [
     location: 'Pune',
     interviewRound: '1|2',
     interviewProcess: 'HR Screen|Technical',
+    interviewMode: 'Video call|Face to face',
   },
 ];
 
@@ -99,13 +103,13 @@ export function buildJobImportCsv(): string {
   return `${headers}\n${rows.join('\n')}\n`;
 }
 
-export function downloadJobImportTemplate(format: 'csv' | 'xlsx-hint' = 'csv') {
+export function downloadJobImportTemplate() {
   const csv = buildJobImportCsv();
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = format === 'csv' ? 'job-import-template.csv' : 'job-import-template.csv';
+  a.download = 'job-import-template.csv';
   a.click();
   URL.revokeObjectURL(url);
 }

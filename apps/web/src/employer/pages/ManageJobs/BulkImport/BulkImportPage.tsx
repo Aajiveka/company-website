@@ -60,7 +60,7 @@ export function BulkImportPage() {
     <div>
       <PageHeader
         title="Bulk Import Jobs"
-        subtitle="Template columns match Post a New Job. Names must match master data (Position, City, Skills, …)."
+        subtitle="Download one CSV template aligned with Post a New Job, then upload filled rows."
       />
 
       <ol className="mb-3 flex flex-wrap gap-2">
@@ -99,8 +99,9 @@ export function BulkImportPage() {
               <h3 className="mt-2 text-xs font-semibold text-slate-800">Step 1 — Download Template</h3>
               <p className="mx-auto mt-1 max-w-xl text-xs text-slate-500">
                 CSV columns mirror Post a New Job. Use pipe <code className="rounded bg-slate-100 px-1">|</code> to
-                separate interview rounds/processes. Master names must match exactly (e.g. Software Developer,
-                Gurugram, Full Time).
+                separate interview rounds, processes, and modes (Telephonic / Face to face / Video call). Skills may
+                include new names. Job Description max 1000 characters. Master names for Position, City, Employment,
+                Work mode, and Industry must match.
               </p>
             </div>
 
@@ -127,13 +128,9 @@ export function BulkImportPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <SecondaryButton onClick={() => downloadJobImportTemplate('csv')}>
+              <SecondaryButton onClick={() => downloadJobImportTemplate()}>
                 <Download className="h-4 w-4" />
                 Download CSV
-              </SecondaryButton>
-              <SecondaryButton onClick={() => downloadJobImportTemplate('xlsx-hint')}>
-                <Download className="h-4 w-4" />
-                Download Excel
               </SecondaryButton>
               <PrimaryButton onClick={goNext}>Continue to Upload</PrimaryButton>
             </div>
@@ -171,7 +168,7 @@ export function BulkImportPage() {
                 </span>
                 <input
                   type="file"
-                  accept=".csv,.xlsx,.xls,text/csv"
+                  accept=".csv,text/csv"
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
