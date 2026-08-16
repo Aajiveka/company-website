@@ -9,6 +9,7 @@ import type {
   CvCareerProfile,
   CvDiversity,
   CvEditProfile,
+  CvInstituteOption,
   CvItSkillEntry,
   CvLanguageEntry,
   CvMasters,
@@ -56,11 +57,48 @@ export function useCvMasters() {
   });
 }
 
-/** The candidate's own CV in edit-friendly shape (raw ids, not display strings). */
-export function useCvEditProfile() {
+/**
+ * Institution / university suggestions for the Education step.
+ *
+ * Server-side search rather than a client-side filter over a preloaded list: the master runs to
+ * hundreds of rows and only grows, so shipping it in `cv-masters` would push a large payload at
+ * every candidate on every page load to serve one field.
+ *
+ * `stateId` (the candidate's own state, derived from their profile city) prioritises without
+ * excluding — someone in Bihar usually studied in Bihar, but the ones who did not must still be
+ * able to find their college.
+ *
+ * `enabled` is what implements the debounce: the caller passes a value it only updates on a
+ * timer, so keystrokes do not each become a request. `placeholderData` keeps the previous list
+ * on screen while the next one loads, so the dropdown does not blink empty between keystrokes.
+ */
+export function useInstituteSearch(query: string, stateId: number | null, enabled = true) {
+  return useQuery({
+    queryKey: ['candidate', 'institutes', query, stateId],
+    queryFn: () =>
+      api
+        .get<CvInstituteOption[]>('/candidates/me/institutes', {
+          params: { q: query || undefined, stateId: stateId ?? undefined, limit: 20 },
+        })
+        .then((r) => r.data),
+    enabled,
+    placeholderData: (prev) => prev,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * The candidate's own CV in edit-friendly shape (raw ids, not display strings).
+ *
+ * `enabled` exists because the public job pages use the CV to score how well a listing
+ * matches — but they also serve anonymous visitors and employers, for whom this endpoint
+ * would 401 on every render.
+ */
+export function useCvEditProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: CV_EDIT_KEY,
     queryFn: () => api.get<CvEditProfile>('/candidates/me/cv-edit').then((r) => r.data),
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -99,6 +137,8 @@ export function useUpsertEducation() {
       degreeId: number;
       instituteName?: string;
       passingYear?: number;
+      startYear?: number;
+      specialization?: string;
       courseMode?: string;
       marks?: string;
     }) => api.put('/candidates/me/education', payload).then((r) => r.data),
@@ -431,10 +471,20 @@ export function useDashboard() {
 // ── Notification Preferences ──
 
 export interface NotificationPrefs {
+  /** How we reach the candidate. */
   emailAlerts: boolean;
   pushAlerts: boolean;
   smsAlerts: boolean;
   jobAlertFrequency: 'Daily' | 'Weekly' | 'Instant';
+  /** What we contact them about. */
+  newJobAlerts: boolean;
+  weeklyJobDigest: boolean;
+  profileViewAlerts: boolean;
+  applicationStatusUpdates: boolean;
+  recruiterMessages: boolean;
+  interviewReminders: boolean;
+  productUpdates: boolean;
+  marketingOffers: boolean;
 }
 
 export function useNotificationPrefs() {

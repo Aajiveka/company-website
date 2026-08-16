@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ShieldCheck, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -18,14 +18,23 @@ const PORTAL_ICON = {
   admin: ShieldCheck,
 } as const;
 
+/** Pages with a light background rather than a dark hero behind the header. */
+const SOLID_HEADER_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
+
 /**
  * Public site header — mirrors FrontMaster.Master:
  * fixed, transparent at top, turns solid primary (#005985) after 100px scroll.
+ *
+ * The transparent state assumes a dark hero underneath. The auth pages are a pale card on a
+ * near-white background, where white-on-white left the logo and toll-free number unreadable,
+ * so those routes start solid instead of waiting for a scroll that never comes.
  */
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const solid = scrolled || SOLID_HEADER_ROUTES.some((r) => pathname.startsWith(r));
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY >= 100);
@@ -38,7 +47,7 @@ export function Navbar() {
     <header
       className={cn(
         'fixed inset-x-0 top-0 z-[999] transition-colors duration-300',
-        scrolled ? 'bg-primary shadow-md' : 'bg-transparent',
+        solid ? 'bg-primary shadow-md' : 'bg-transparent',
       )}
     >
       <nav aria-label="Main" className="container flex items-center justify-between px-3 py-3 sm:px-4">

@@ -5,6 +5,30 @@ import { JobMapStatus, SubscriberStatus } from '@/shared/status';
 
 const JOB_STATUS_ACTIVE = 1;
 
+/** Snapshot of the apply form. Stored as sent, never re-read from the live CV. */
+export interface JobApplicationDetails {
+  fullName: string;
+  email: string;
+  phone: string;
+  totalExperience?: string;
+  currentLocation?: string;
+  expectedSalary?: string;
+  noticePeriod?: string;
+  linkedInUrl?: string;
+  portfolioUrl?: string;
+  resumeFileName?: string;
+  coverLetter?: string;
+}
+
+/**
+ * Shareable reference the candidate sees on the confirmation screen ("AJ-441160").
+ *
+ * Derived from the mapping id rather than stored: it has to be stable and unique, and the id
+ * already is both, so there is no second source of truth and no backfill for old applications.
+ */
+export const applicationReference = (jobSubscriberMapId: number) =>
+  `AJ-${String(jobSubscriberMapId).padStart(6, '0')}`;
+
 /**
  * The shared write path behind every action that creates or moves a job application
  * (tblJobSubscriberMapping): candidate self-apply, staff assign-to-job, client
@@ -23,8 +47,18 @@ export class JobApplicationsService {
     return this.prisma.client;
   }
 
-  /** Creates a new application (candidate self-apply, or staff assign-to-job). */
-  async apply(subscriberId: number, jobId: number, actorUserId: number) {
+  /**
+   * Creates a new application (candidate self-apply, or staff assign-to-job).
+   *
+   * `details` is the form a candidate filled in on the apply screen. Staff assigning a
+   * candidate to a job pass nothing, which is why it is optional rather than a second method.
+   */
+  async apply(
+    subscriberId: number,
+    jobId: number,
+    actorUserId: number,
+    details?: JobApplicationDetails,
+  ) {
     const job = await this.db.clientJobs.findUnique({
       where: { jobID: jobId },
       select: { jobID: true, statusID: true, clientID: true },
@@ -91,6 +125,27 @@ export class JobApplicationsService {
           loginIDIns: actorUserId,
         },
       });
+      // Inside the same transaction as the mapping: an application whose form failed to
+      // save would show the recruiter a row with no answers on it.
+      if (details) {
+        await tx.jobApplicationDetail.create({
+          data: {
+            jobSubscriberMapID: map.jobSubscriberMapID,
+            fullName: details.fullName,
+            email: details.email,
+            phone: details.phone,
+            totalExperience: details.totalExperience ?? null,
+            currentLocation: details.currentLocation ?? null,
+            expectedSalary: details.expectedSalary ?? null,
+            noticePeriod: details.noticePeriod ?? null,
+            linkedInUrl: details.linkedInUrl ?? null,
+            portfolioUrl: details.portfolioUrl ?? null,
+            resumeFileName: details.resumeFileName ?? null,
+            coverLetter: details.coverLetter ?? null,
+            submittedAt: now,
+          },
+        });
+      }
       return map;
     });
 
@@ -100,7 +155,8 @@ export class JobApplicationsService {
       entity: 'JobSubscriberMapping',
       entityId: Number(mapping.jobSubscriberMapID),
     });
-    return { jobSubscriberMapId: Number(mapping.jobSubscriberMapID) };
+    const jobSubscriberMapId = Number(mapping.jobSubscriberMapID);
+    return { jobSubscriberMapId, reference: applicationReference(jobSubscriberMapId) };
   }
 
   /**

@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
-import { Button, Input, useToast } from '@/components/ui';
+import { Input, PasswordInput, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '../auth.store';
 import { authApi } from '../auth.api';
@@ -89,24 +89,29 @@ export default function LoginPage() {
         <Input
           label={t('login.usernameOrEmail')}
           autoComplete="username"
+          placeholder="anuj@aajiveka.com"
           error={errors.userName?.message}
           {...register('userName')}
         />
-        <Input
+        <PasswordInput
           label={t('login.password')}
-          type="password"
           autoComplete="current-password"
+          placeholder={t('login.passwordPlaceholder', 'Enter your password')}
           error={errors.password?.message}
           {...register('password')}
         />
         <div className="text-right">
-          <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+          <Link to="/forgot-password" className="text-sm font-medium text-aj-blue hover:underline">
             {t('login.forgotPassword')}
           </Link>
         </div>
-        <Button type="submit" className="w-full" isLoading={mutation.isPending}>
-          {t('login.loginButton')}
-        </Button>
+        <button
+          type="submit"
+          disabled={mutation.isPending}
+          className="w-full rounded-[10px] bg-[#1D60E5] py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgb(29_96_229/0.33)] transition-colors hover:bg-aj-blue-hover disabled:opacity-60"
+        >
+          {mutation.isPending ? `${t('login.loginButton')}…` : t('login.loginButton')}
+        </button>
       </form>
     </AuthShell>
     </>

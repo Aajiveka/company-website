@@ -8,7 +8,8 @@ test.describe('Public Navigation', () => {
 
   test('navigates to jobs page', async ({ page }) => {
     await page.goto('/jobs');
-    await expect(page.locator('h1, h2')).toBeVisible();
+    // The page has several headings (page title, Filters panel), so assert on the first.
+    await expect(page.locator('h1, h2').first()).toBeVisible();
   });
 
   test('navigates to about page', async ({ page }) => {

@@ -76,6 +76,9 @@ vi.mock('@/features/candidates/candidate.api', () => ({
   useSavedJobIds: () => ({ data: [] }),
   useSaveJob: () => ({ mutate: vi.fn() }),
   useUnsaveJob: () => ({ mutate: vi.fn() }),
+  // The page scores how well each job matches the signed-in candidate's CV. These specs
+  // render as an anonymous visitor, so the query is disabled and there is no CV.
+  useCvEditProfile: () => ({ data: undefined }),
 }));
 
 vi.mock('@/features/auth/auth.store', () => ({
@@ -174,7 +177,9 @@ describe('JobSearchPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('TechCorp')).toBeInTheDocument();
-    expect(screen.getByText('DataSoft')).toBeInTheDocument();
+    // The card renders company, city and work mode on one line, so match on a substring
+    // rather than the whole text content of the element.
+    expect(screen.getByText(/TechCorp/)).toBeInTheDocument();
+    expect(screen.getByText(/DataSoft/)).toBeInTheDocument();
   });
 });

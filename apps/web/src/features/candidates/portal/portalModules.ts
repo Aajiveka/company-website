@@ -1,9 +1,13 @@
 import {
+  Bookmark,
   BriefcaseBusiness,
   CalendarDays,
+  CircleCheckBig,
   FileText,
   FolderClosed,
+  Home,
   Mail,
+  Search,
   Settings,
   Users,
   type LucideIcon,
@@ -40,11 +44,26 @@ export const PORTAL_MODULES: PortalModule[] = [
   { to: '/candidate/notifications', label: 'Email Preferences', blurb: 'Alerts & notification config', icon: Mail },
 ];
 
-/** Top-level site navigation shown in the portal header (Figma node 1:778). */
-export const PORTAL_NAV = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/jobs', label: 'Jobs' },
-  { to: '/search?tab=companies', label: 'Companies' },
-  { to: '/pricing', label: 'Services' },
-  { to: '/salary-insights', label: 'Insights' },
-] as const;
+/**
+ * Top-level navigation in the portal header.
+ *
+ * The August design replaced the marketing links (Companies / Services / Insights) with the
+ * candidate's own working set — the three places they return to between visits — and gave
+ * each one an icon. `match` is the path prefix that lights the item up, which is not always
+ * the same as `to` (Jobs stays active while reading a job or filling in its apply form).
+ */
+export interface PortalNavItem {
+  to: string;
+  /** Path prefix that lights the item up; `end` makes it an exact match. */
+  match: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+}
+
+export const PORTAL_NAV: PortalNavItem[] = [
+  { to: '/', match: '/', label: 'Home', icon: Home, end: true },
+  { to: '/jobs', match: '/jobs', label: 'Jobs', icon: Search },
+  { to: '/candidate/applications', match: '/candidate/applications', label: 'Applications', icon: CircleCheckBig },
+  { to: '/candidate/saved-jobs', match: '/candidate/saved-jobs', label: 'Saved Jobs', icon: Bookmark },
+];

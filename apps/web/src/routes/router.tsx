@@ -50,11 +50,12 @@ const PortalReferPage = lazy(() => import('@/features/candidates/portal/pages/Re
 const PortalAccountPage = lazy(() => import('@/features/candidates/portal/pages/AccountSettingsPage'));
 const PortalEmailPrefsPage = lazy(() => import('@/features/candidates/portal/pages/EmailPreferencesPage'));
 const PortalResumeBuilderPage = lazy(() => import('@/features/candidates/portal/pages/ResumeBuilderPage'));
+const PortalApplicationsPage = lazy(() => import('@/features/candidates/portal/pages/ApplicationsPage'));
+const PortalSavedJobsPage = lazy(() => import('@/features/candidates/portal/pages/SavedJobsPage'));
 
 const CandidateProfilePage = lazy(() => import('@/features/candidates/pages/CandidateProfilePage'));
 const CvManagerPage = lazy(() => import('@/features/candidates/pages/CvManagerPage'));
 const AppliedJobsPage = lazy(() => import('@/features/candidates/pages/AppliedJobsPage'));
-const SavedJobsPage = lazy(() => import('@/features/candidates/pages/SavedJobsPage'));
 const ResumePreviewPage = lazy(() => import('@/features/candidates/pages/ResumePreviewPage'));
 const JobAlertsPage = lazy(() => import('@/features/candidates/pages/JobAlertsPage'));
 const ChangePasswordPage = lazy(() => import('@/features/candidates/pages/ChangePasswordPage'));
@@ -78,6 +79,8 @@ const BlogDetailPage = lazy(() => import('@/features/public/pages/BlogDetailPage
 const HelpPage = lazy(() => import('@/features/public/pages/HelpPage'));
 const CompanyReviewsPage = lazy(() => import('@/features/public/pages/CompanyReviewsPage'));
 
+const JobsLayout = lazy(() => import('@/features/jobs/components/JobsLayout'));
+const JobApplyPage = lazy(() => import('@/features/jobs/pages/JobApplyPage'));
 const JobSearchPage = lazy(() => import('@/features/jobs/pages/JobSearchPage'));
 const JobDetailPage = lazy(() => import('@/features/jobs/pages/JobDetailPage'));
 const SearchResultsPage = lazy(() => import('@/features/jobs/pages/SearchResultsPage'));
@@ -120,6 +123,16 @@ export const router = createBrowserRouter([
         element: withSuspense(<BrochureHomePage />),
         errorElement: <RouteErrorFallback />,
       },
+      // Job screens: public (SEO + anonymous browsing) but drawn behind the candidate
+      // header once someone is signed in, which is how the design shows them.
+      {
+        element: withSuspense(<JobsLayout />),
+        errorElement: <RouteErrorFallback />,
+        children: [
+          { path: '/jobs', element: withSuspense(<JobSearchPage />) },
+          { path: '/jobs/:id', element: withSuspense(<JobDetailPage />) },
+        ],
+      },
       {
         element: <PublicLayout />,
         errorElement: <RouteErrorFallback />,
@@ -129,8 +142,6 @@ export const router = createBrowserRouter([
           { path: '/register', element: withSuspense(<RegisterPage />) },
           { path: '/forgot-password', element: withSuspense(<ForgotPasswordPage />) },
           { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
-          { path: '/jobs', element: withSuspense(<JobSearchPage />) },
-          { path: '/jobs/:id', element: withSuspense(<JobDetailPage />) },
           { path: '/search', element: withSuspense(<SearchResultsPage />) },
           { path: '/candidates/:id', element: withSuspense(<PublicProfilePage />) },
           { path: '/companies/:id', element: withSuspense(<CompanyPublicPage />) },
@@ -154,6 +165,22 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          // Screens the design draws with the header alone — no profile banner or module
+          // rail — so they reuse the job chrome rather than the portal shell.
+          {
+            element: <ProtectedRoute allow={[Role.Subscriber]} />,
+            children: [
+              {
+                element: withSuspense(<JobsLayout />),
+                errorElement: <DashboardErrorFallback />,
+                children: [
+                  { path: '/candidate/applications', element: withSuspense(<PortalApplicationsPage />) },
+                  { path: '/candidate/saved-jobs', element: withSuspense(<PortalSavedJobsPage />) },
+                  { path: '/jobs/:id/apply', element: withSuspense(<JobApplyPage />) },
+                ],
+              },
+            ],
+          },
           // Candidate portal — the redesigned screens, in their own shell.
           {
             element: <ProtectedRoute allow={[Role.Subscriber]} />,
@@ -189,7 +216,6 @@ export const router = createBrowserRouter([
                   { path: '/candidate/profile/advanced', element: withSuspense(<CandidateProfilePage />) },
                   { path: '/candidate/cv-manager', element: withSuspense(<CvManagerPage />) },
                   { path: '/candidate/applied-jobs', element: withSuspense(<AppliedJobsPage />) },
-                  { path: '/candidate/saved-jobs', element: withSuspense(<SavedJobsPage />) },
                   { path: '/candidate/resume', element: withSuspense(<ResumePreviewPage />) },
                   { path: '/candidate/job-alerts', element: withSuspense(<JobAlertsPage />) },
                   { path: '/candidate/subscription', element: withSuspense(<MembershipPage />) },

@@ -4,9 +4,11 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { StorageService } from '@/modules/storage/storage.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobMapStatus, SubscriberStatus, JOB_STATUS_ACTIVE } from '@/shared/status';
+import { EDUCATION_MAX_YEAR_AHEAD, EDUCATION_MIN_YEAR } from './dto/candidates.dto';
 import type {
   CreateJobAlertDto,
   CreateSavedSearchDto,
+  InstituteSearchDto,
   UpdateCareerProfileDto,
   UpdateDiversityDto,
   UpdateHeadlineDto,
@@ -209,7 +211,11 @@ export class CandidatesService {
       resumeUrl: uploadedCv ? `/files/resume` : null,
       resumeFileName: uploadedCv?.cVName ?? null,
       resumeUploadedAt: uploadedCv ? date(uploadedCv.tImestampUpd ?? uploadedCv.timestampIns) : null,
-      skills: tags.map((t) => t.tag?.tagName ?? '').filter(Boolean),
+      // Same source as cv-edit's tagNames, so the profile header and the chip editor cannot
+      // disagree about which skills the candidate has.
+      skills: extra?.keySkills
+        ? this.csvToList(extra.keySkills)
+        : tags.map((t) => t.tag?.tagName ?? '').filter(Boolean),
       education: education.map((e) => ({
         degree: e.degree?.descr ?? '',
         institute: e.instituteName ?? '',
@@ -252,11 +258,13 @@ export class CandidatesService {
       // writes CourseTypeID from a variable it calls @CoureID. tblMstrCourseType has no rows and
       // no extracted source anywhere, so reading it left the Course dropdown permanently empty.
       this.db.mstrCourse.findMany({ orderBy: { degreeName: 'asc' } }),
-      // Degree list = education LEVELS (10th, 12th, Graduation, Post Graduation), which is what
+      // Degree list = the QUALIFICATION (10th, ITI, B.Tech, MBA, Ph.D.), which is what
       // candidate-profile.aspx binds: fnBindDegreeDropdown reads EducationTypeID/Descr, i.e.
       // tblMstrEducationType. tblMstrEducationDegree is a byte-identical copy of tblMstrCourse
       // and is the COURSE list, not the degree list — using it made both dropdowns show the
       // same eight courses.
+      // HighestSeq is seniority, so ordering by it puts 10th before B.Tech before Ph.D., which
+      // is also the order the wizard's category groups run in.
       this.db.mstrEducationType.findMany({ orderBy: { highestSeq: 'asc' } }),
       this.db.mstrDesignation.findMany({ orderBy: { descr: 'asc' } }),
       this.db.mstrEmpType.findMany({ orderBy: { descr: 'asc' } }),
@@ -275,11 +283,154 @@ export class CandidatesService {
       // Courses carry their level so the UI can cascade: picking a degree filters the courses,
       // exactly as fnDegree() does in candidate-profile.aspx.
       courses: courses.map((c) => ({ ...opt(c.degreeID, c.degreeName), degreeId: c.educationTypeID })),
-      degrees: degrees.map((d) => opt(d.educationTypeID, d.descr)),
+      // `category` groups ~90 qualifications into School / Diploma / Undergraduate /
+      // Postgraduate / Doctorate so the dropdown can render <optgroup>s. Null for any row added
+      // outside prisma/data/india-education.ts; the UI files those under "Other".
+      degrees: degrees.map((d) => ({ ...opt(d.educationTypeID, d.descr), category: d.category ?? null })),
       designations: designations.map((d) => opt(d.designationID, d.descr)),
       employmentTypes: empTypes.map((e) => opt(e.employeeTypeID, e.descr)),
       tags: tags.map((t) => opt(Number(t.tagID), t.tagName)),
     };
+  }
+
+  /**
+   * Institution typeahead for the Education step.
+   *
+   * Deliberately NOT part of cvMasters: there are hundreds of institutions and the list only
+   * grows, so shipping it inside the masters payload would push a large blob at every candidate
+   * on every page load to serve one field. This filters server-side and returns at most 50.
+   *
+   * `stateId` prioritises, it never filters. A candidate living in Bihar most often studied in
+   * Bihar, so those rows sort first — but plenty studied elsewhere, and excluding the rest would
+   * make the field useless to exactly the people who moved for work, which is most of them.
+   */
+  async searchInstitutes(dto: InstituteSearchDto) {
+    const limit = dto.limit ?? 20;
+    const stateId = dto.stateId ?? null;
+    // Same normalisation the SearchText column was built with, so "Dr. A.P.J." finds "dr apj".
+    const query = (dto.q ?? '')
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[’']/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\b(the|of|and|for)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Every word has to match, each against either half of SearchText. "iit patna" then finds
+    // IIT Patna — "iit" via the initialism, "patna" via the name — without also returning IIT
+    // Bombay, which a single substring match on the whole phrase could not manage either way.
+    // Capped so a paste of a whole paragraph cannot turn into a hundred-way AND.
+    const tokens = query.split(' ').filter(Boolean).slice(0, 6);
+
+    // Raw SQL because the ranking is computed — "my state first, then names starting with what
+    // I typed, then names merely containing it" — which Prisma's orderBy cannot express, and
+    // which three stitched-together queries would get wrong at the limit boundary.
+    const rows = await this.db.$queryRaw<
+      { InstituteID: number; Name: string; Kind: string | null; City: string | null; StateID: number | null }[]
+    >`
+      SELECT "InstituteID", "Name", "Kind", "City", "StateID"
+        FROM "tblMstrInstitute"
+       WHERE "FlgActive" = 1
+         AND (
+           cardinality(${tokens}::text[]) = 0
+           OR NOT EXISTS (
+             SELECT 1 FROM unnest(${tokens}::text[]) AS t(word)
+              WHERE COALESCE("SearchText", "SearchKey") NOT LIKE '%' || t.word || '%'
+           )
+         )
+       ORDER BY (${stateId}::int IS NOT NULL AND "StateID" = ${stateId}::int) DESC,
+                (COALESCE("SearchText", "SearchKey") LIKE ${query + '%'}) DESC,
+                length("Name") ASC,
+                "Name" ASC
+       LIMIT ${limit}
+    `;
+
+    return rows.map((r) => ({
+      id: r.InstituteID,
+      label: r.Name,
+      kind: r.Kind,
+      city: r.City,
+      stateId: r.StateID,
+    }));
+  }
+
+  /**
+   * The rules a saved qualification has to satisfy, checked here as well as in the wizard.
+   *
+   * The wizard is not the only writer — the CV manager and the profile dialog post to the same
+   * endpoint, and anything holding a token can post to it directly — so the rules that protect
+   * the data (a course that belongs to its qualification, years in order, a percentage that is
+   * actually a percentage) cannot live only in the form.
+   */
+  private async validateEducation(subscriberId: number, dto: UpsertEducationDto) {
+    const thisYear = new Date().getFullYear();
+    const maxYear = thisYear + EDUCATION_MAX_YEAR_AHEAD;
+
+    const degree = await this.db.mstrEducationType.findUnique({
+      where: { educationTypeID: dto.degreeId },
+      select: { educationTypeID: true, descr: true },
+    });
+    // Without this the FK violation surfaces as a 500 with a Prisma message.
+    if (!degree) throw new BadRequestException('Choose a valid education qualification.');
+
+    if (dto.courseTypeId != null) {
+      const course = await this.db.mstrCourse.findUnique({
+        where: { degreeID: dto.courseTypeId },
+        select: { educationTypeID: true },
+      });
+      if (!course) throw new BadRequestException('Choose a valid course.');
+      // Changing the qualification without clearing the course would otherwise store a B.Tech
+      // branch under an MBBS, which no employer filter could make sense of afterwards.
+      if (course.educationTypeID !== dto.degreeId) {
+        throw new BadRequestException(`That course does not belong to ${degree.descr}.`);
+      }
+    }
+
+    if (dto.startYear != null && dto.startYear > thisYear) {
+      throw new BadRequestException('Start year cannot be in the future.');
+    }
+    if (dto.passingYear != null && dto.passingYear > maxYear) {
+      throw new BadRequestException(`End year cannot be later than ${maxYear}.`);
+    }
+    if (dto.startYear != null && dto.passingYear != null && dto.passingYear < dto.startYear) {
+      throw new BadRequestException('End year cannot be earlier than start year.');
+    }
+    for (const year of [dto.startYear, dto.passingYear]) {
+      if (year != null && year < EDUCATION_MIN_YEAR) {
+        throw new BadRequestException(`Year cannot be earlier than ${EDUCATION_MIN_YEAR}.`);
+      }
+    }
+
+    const marks = dto.marks?.trim();
+    if (marks) {
+      // The field is labelled "Percentage %", but the column already holds CGPA values typed by
+      // candidates ("8.5 CGPA", "8.5/10"), so both forms are accepted and only the plain-number
+      // form is range-checked as a percentage.
+      const percent = /^(\d{1,3}(\.\d{1,2})?)\s*%?$/.exec(marks);
+      const cgpa = /^(\d{1,2}(\.\d{1,2})?)\s*(cgpa|gpa|\/\s*(10|4|5))$/i.exec(marks);
+      if (percent) {
+        const value = Number(percent[1]);
+        if (value < 0 || value > 100) throw new BadRequestException('Percentage must be between 0 and 100.');
+      } else if (!cgpa) {
+        throw new BadRequestException('Enter a percentage (0-100) or a CGPA such as "8.5 CGPA".');
+      }
+    }
+
+    // One qualification from one institution finishing in one year is one record. Re-adding it
+    // is a double-submit or a mis-click, not a second degree.
+    const duplicate = await this.db.subscriberEducation.findFirst({
+      where: {
+        subscriberID: subscriberId,
+        degreeID: dto.degreeId,
+        courseTypeID: dto.courseTypeId ?? null,
+        passingYear: dto.passingYear ?? null,
+        instituteName: dto.instituteName?.trim() || null,
+        ...(dto.subscriberEducationId && { subscriberEducationID: { not: dto.subscriberEducationId } }),
+      },
+      select: { subscriberEducationID: true },
+    });
+    if (duplicate) throw new BadRequestException('You have already added this qualification.');
   }
 
   /** Splits a stored comma-separated list back into the array the editor works in. */
@@ -295,6 +446,39 @@ export class CandidatesService {
     if (list === undefined) return undefined;
     const joined = list.map((s) => s.trim()).filter(Boolean).join(', ');
     return joined || null;
+  }
+
+  /**
+   * Trims, drops blanks and removes case-insensitive duplicates while keeping the order the
+   * candidate entered — "React" and "react" are one chip, and it is the first spelling that
+   * survives, because that is the one they are looking at.
+   */
+  private dedupeSkills(list: string[]): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const raw of list) {
+      const value = raw.trim();
+      if (!value) continue;
+      const key = value.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(value);
+    }
+    return out;
+  }
+
+  /**
+   * Joins as many entries as fit the column, rather than truncating the joined string — a
+   * hard cut would store half a skill name and read back as a chip that says "Postgre".
+   */
+  private csvWithin(list: string[], max: number): string | null {
+    let csv = '';
+    for (const value of list) {
+      const next = csv ? `${csv}, ${value}` : value;
+      if (next.length > max) break;
+      csv = next;
+    }
+    return csv || null;
   }
 
   /** The candidate's own CV in edit-friendly shape — raw ids, not display strings. */
@@ -424,7 +608,12 @@ export class CandidatesService {
         noticePeriod: cv.noticePeriod,
         industryTypeId: cv.industryTypeID,
         preferredCityIds: preferredLocations.map((p) => p.cityID),
-        tagNames: tags.map((t) => t.tag?.tagName ?? '').filter(Boolean),
+        // The typed list wins: tblSubscriberTags only ever held the names that happened to
+        // exist in tblMstrTags, so reading from it dropped every free-typed skill. The join
+        // is still the fallback for rows saved before KeySkills existed.
+        tagNames: extra?.keySkills
+          ? this.csvToList(extra.keySkills)
+          : tags.map((t) => t.tag?.tagName ?? '').filter(Boolean),
       },
       education: education.map((e) => ({
         subscriberEducationId: Number(e.subscriberEducationID),
@@ -432,6 +621,8 @@ export class CandidatesService {
         degreeId: e.degreeID,
         instituteName: e.instituteName ?? '',
         passingYear: e.passingYear,
+        startYear: e.startYear,
+        specialization: e.specialization ?? '',
         courseMode: e.courseMode ?? '',
         marks: e.marks ?? '',
       })),
@@ -554,11 +745,22 @@ export class CandidatesService {
     }
 
     if (dto.tagNames) {
-      // Tags are scoped to a skill category (tblMstrTags.SkillID is required), so free-typed
-      // names are matched against the existing master list; unmatched names are dropped —
-      // creating new tags is master-data administration, out of scope here.
+      // Two writes, because the two stores answer different questions.
+      //
+      // tblSubscriberTags is the searchable index and can only hold names that already exist
+      // in tblMstrTags (TagID is a required FK, and minting master rows from free text is
+      // master-data administration). Matching against it and keeping only the hits used to be
+      // the whole of this method — which meant a candidate who typed "reactjs" got a 200 back
+      // and an empty Key Skills card, because nothing they typed survived the round trip.
+      //
+      // So the typed list is also stored verbatim on the extras row, and that copy is what
+      // the profile reads back. The tag join below is unchanged, so recruiter search still
+      // sees whatever matched.
+      const typed = this.dedupeSkills(dto.tagNames);
+      await this.writeExtra(userId, subscriberId, { keySkills: this.csvWithin(typed, 1000) });
+
       const allTags = await this.db.mstrTags.findMany();
-      const wanted = new Set(dto.tagNames.map((t) => t.trim().toLowerCase()));
+      const wanted = new Set(typed.map((t) => t.toLowerCase()));
       const matched = allTags.filter((t) => wanted.has(t.tagName.toLowerCase()));
       await this.db.subscriberTags.deleteMany({ where: { subscriberID: subscriberId } });
       if (matched.length) {
@@ -573,6 +775,7 @@ export class CandidatesService {
 
   /** Port of spSubscriberCVUpdate_Education — create when no id, else update in place. */
   async upsertEducation(userId: number, subscriberId: number, dto: UpsertEducationDto) {
+    await this.validateEducation(subscriberId, dto);
     const now = new Date();
     // Conditional, because two editors write this row and they do not show the same fields.
     // An unconditional mapping made the CV manager blank the institute and passing year it
@@ -583,6 +786,8 @@ export class CandidatesService {
       degreeID: dto.degreeId,
       ...(dto.instituteName !== undefined && { instituteName: dto.instituteName.trim() || null }),
       ...(dto.passingYear !== undefined && { passingYear: dto.passingYear }),
+      ...(dto.startYear !== undefined && { startYear: dto.startYear }),
+      ...(dto.specialization !== undefined && { specialization: dto.specialization.trim() || null }),
       ...(dto.courseMode !== undefined && { courseMode: dto.courseMode || null }),
       ...(dto.marks !== undefined && { marks: dto.marks.trim() || null }),
     };
@@ -1234,7 +1439,21 @@ export class CandidatesService {
 
   /** Get notification preferences, returning defaults if none stored. */
   async notificationPrefs(subscriberId: number) {
-    const defaults = { emailAlerts: true, pushAlerts: true, smsAlerts: false, jobAlertFrequency: 'Daily' as const };
+    const defaults = {
+      emailAlerts: true,
+      pushAlerts: true,
+      smsAlerts: false,
+      jobAlertFrequency: 'Daily' as const,
+      newJobAlerts: true,
+      weeklyJobDigest: true,
+      profileViewAlerts: true,
+      applicationStatusUpdates: true,
+      recruiterMessages: true,
+      interviewReminders: true,
+      productUpdates: true,
+      // Opt-in, not opt-out.
+      marketingOffers: false,
+    };
     try {
       const row = await this.db.notificationPreference.findUnique({
         where: { subscriberID: subscriberId },
@@ -1245,6 +1464,14 @@ export class CandidatesService {
         pushAlerts: row.pushAlerts ?? defaults.pushAlerts,
         smsAlerts: row.smsAlerts ?? defaults.smsAlerts,
         jobAlertFrequency: row.jobAlertFrequency ?? defaults.jobAlertFrequency,
+        newJobAlerts: row.newJobAlerts ?? defaults.newJobAlerts,
+        weeklyJobDigest: row.weeklyJobDigest ?? defaults.weeklyJobDigest,
+        profileViewAlerts: row.profileViewAlerts ?? defaults.profileViewAlerts,
+        applicationStatusUpdates: row.applicationStatusUpdates ?? defaults.applicationStatusUpdates,
+        recruiterMessages: row.recruiterMessages ?? defaults.recruiterMessages,
+        interviewReminders: row.interviewReminders ?? defaults.interviewReminders,
+        productUpdates: row.productUpdates ?? defaults.productUpdates,
+        marketingOffers: row.marketingOffers ?? defaults.marketingOffers,
       };
     } catch {
       // Table may not exist yet if migration hasn't run — return defaults gracefully.

@@ -27,10 +27,10 @@ export function PreferencesStep({
 
   const [currentCtc, setCurrentCtc] = useState(toLakh(pro?.currentCtc));
   const [expectedCtc, setExpectedCtc] = useState(toLakh(cp.preferredSalary));
-  const [workModes, setWorkModes] = useState<string[]>(cp.preferredWorkModes);
+  const [workModes, setWorkModes] = useState<string[]>(cp.preferredWorkModes ?? []);
   const [notice, setNotice] = useState(pro?.noticePeriod != null ? String(pro.noticePeriod) : '');
-  const [jobTypes, setJobTypes] = useState<string[]>(cp.desiredJobType);
-  const [cityIds, setCityIds] = useState<number[]>(cp.preferredCityIds);
+  const [jobTypes, setJobTypes] = useState<string[]>(cp.desiredJobType ?? []);
+  const [cityIds, setCityIds] = useState<number[]>(cp.preferredCityIds ?? []);
   const [relocate, setRelocate] = useState(!!pro?.flgReadyToRelocate);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,7 +90,7 @@ export function PreferencesStep({
           <Input
             id="currentCtc"
             inputMode="numeric"
-            placeholder="e.g. 1500000"
+            placeholder="e.g. 15,00,000"
             value={currentCtc}
             onChange={(e) => setCurrentCtc(e.target.value.replace(/\D/g, ''))}
           />
@@ -100,7 +100,7 @@ export function PreferencesStep({
           <Input
             id="expectedCtc"
             inputMode="numeric"
-            placeholder="e.g. 2000000"
+            placeholder="e.g. 20,00,000"
             value={expectedCtc}
             onChange={(e) => setExpectedCtc(e.target.value.replace(/\D/g, ''))}
           />

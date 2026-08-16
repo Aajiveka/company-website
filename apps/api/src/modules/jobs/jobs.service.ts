@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CandidatesService } from '@/modules/candidates/candidates.service';
 import { JOB_STATUS_ACTIVE } from '@/shared/status';
-import { JobApplicationsService } from './job-application.service';
+import { JobApplicationsService, type JobApplicationDetails } from './job-application.service';
 import type { JobSearchQueryDto, FullTextSearchQueryDto, SuggestionsQueryDto } from './dto/jobs.dto';
 
 /** A job as the public site shows it (tblClientJobs joined out to its lookups). */
@@ -30,10 +30,21 @@ export interface PublicJobWithRank extends PublicJob {
 export interface JobDetail extends PublicJob {
   description: string | null;
   candidateProfile: string | null;
+  /** The remaining two of the job page's four headed sections. */
+  keyResponsibilities: string | null;
+  preferredQualifications: string | null;
   maxExp: number | null;
   skills: string[];
   educationTypes: string[];
   companyLogo: string | null;
+  /** The "Job overview" panel on the job page. Every one of these is optional on the row. */
+  educationDetail: string | null;
+  department: string | null;
+  subDepartment: string | null;
+  reportTo: string | null;
+  teamSize: number | null;
+  /** One entry per interview round, in order. Empty when the employer left it blank. */
+  interviewRounds: string[];
 }
 
 @Injectable()
@@ -158,7 +169,13 @@ export class JobsService {
         ? { maxCTC: 'desc' as const }
         : q.sortBy === 'salary_low'
           ? { minCTC: 'asc' as const }
-          : { timestampIns: 'desc' as const };
+          : // Experience sorts read from the end of the band the candidate would be judged
+            // against: ascending uses the floor, descending the ceiling.
+            q.sortBy === 'exp_low'
+            ? { minExp: 'asc' as const }
+            : q.sortBy === 'exp_high'
+              ? { maxExp: 'desc' as const }
+              : { timestampIns: 'desc' as const };
 
     const [rows, total] = await Promise.all([
       this.db.clientJobs.findMany({
@@ -296,6 +313,10 @@ export class JobsService {
       ? 'j."MaxCTC" DESC'
       : q.sortBy === 'salary_low'
         ? 'j."MinCTC" ASC'
+        : q.sortBy === 'exp_low'
+        ? 'j."MinExp" ASC NULLS LAST'
+        : q.sortBy === 'exp_high'
+        ? 'j."MaxExp" DESC NULLS LAST'
         : q.sortBy === 'newest'
           ? 'j."TimestampIns" DESC'
           : 'rank DESC, j."TimestampIns" DESC';
@@ -505,22 +526,37 @@ export class JobsService {
       workMode: j.workMode?.descr ?? '',
       employmentType: j.employeeType?.descr ?? '',
       minExp: j.minExp ?? 0,
-      maxExp: j.maxEmp ?? null,
+      // Was reading maxEmp — the headcount cap, not the experience ceiling — so every
+      // listing showed the wrong upper bound for "5–8 yrs".
+      maxExp: j.maxExp ?? null,
       minCtc: j.minCTC,
       maxCtc: j.maxCTC,
       postedOn: j.timestampIns.toISOString().slice(0, 10),
       description: j.jobDescr ?? null,
       candidateProfile: j.jobCandidateProfile ?? null,
+      keyResponsibilities: j.keyResponsibilities ?? null,
+      preferredQualifications: j.preferredQualifications ?? null,
       skills: j.ClientJobSkill.map((s) => s.skill?.descr).filter((s): s is string => !!s),
       educationTypes: j.ClientJobs_EducationType.map((e) => e.educationType?.descr).filter((e): e is string => !!e),
       companyLogo: j.client?.companyLogo ?? null,
+      educationDetail: j.educationDetail ?? null,
+      department: j.department ?? null,
+      subDepartment: j.subDepartment ?? null,
+      reportTo: j.reportTo ?? null,
+      teamSize: j.teamSize ?? null,
+      // One round per line — the column is free text, so the shape is agreed by convention
+      // rather than enforced, and the UI numbers whatever lines it finds.
+      interviewRounds: (j.interviewProcess ?? '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean),
     };
   }
 
   /** Candidate self-apply (applyforjob.aspx's structured-application counterpart). */
-  async apply(userId: number, jobId: number) {
+  async apply(userId: number, jobId: number, details?: JobApplicationDetails) {
     const subscriberId = await this.candidates.subscriberIdFor(userId);
-    return this.applications.apply(subscriberId, jobId, userId);
+    return this.applications.apply(subscriberId, jobId, userId, details);
   }
 
   /** Recommended jobs for the signed-in candidate, based on skills, city, and industry. */

@@ -34,7 +34,7 @@ export default function InterviewsPage() {
     setParams(next, { replace: true });
   };
 
-  const { upcoming, past, all } = useMemo(() => split(data ?? []), [data]);
+  const { upcoming, past, all } = useMemo(() => split(Array.isArray(data) ? data : []), [data]);
 
   return (
     <>
@@ -236,17 +236,17 @@ function CalendarView({ interviews }: { interviews: Interview[] }) {
           <button
             type="button"
             onClick={() => shift(-1)}
-            aria-label="Previous month"
-            className="rounded-md p-1.5 text-slate-500 hover:bg-aj-canvas dark:hover:bg-gray-700"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[13px] font-medium text-slate-500 hover:bg-aj-canvas hover:text-aj-blue dark:hover:bg-gray-700"
           >
             <ChevronLeft className="size-4" aria-hidden />
+            Prev
           </button>
           <button
             type="button"
             onClick={() => shift(1)}
-            aria-label="Next month"
-            className="rounded-md p-1.5 text-slate-500 hover:bg-aj-canvas dark:hover:bg-gray-700"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[13px] font-medium text-slate-500 hover:bg-aj-canvas hover:text-aj-blue dark:hover:bg-gray-700"
           >
+            Next
             <ChevronRight className="size-4" aria-hidden />
           </button>
         </div>
@@ -291,10 +291,10 @@ function CalendarView({ interviews }: { interviews: Interview[] }) {
                 {events.map((e) => (
                   <p
                     key={`${e.jobId}-${e.when.toISOString()}`}
-                    title={`${e.role} · ${e.company} · ${timeOf(e.when)}`}
+                    title={`${e.company} – ${e.role} · ${timeOf(e.when)}`}
                     className="mt-0.5 truncate text-[10px] font-medium text-slate-700 dark:text-gray-200"
                   >
-                    {e.role}
+                    {e.company} – {e.role}
                   </p>
                 ))}
               </div>

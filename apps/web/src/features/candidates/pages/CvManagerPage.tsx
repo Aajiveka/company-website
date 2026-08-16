@@ -271,6 +271,8 @@ function EducationSection({ rows, masters }: { rows: CvEducationEntry[]; masters
                 degreeId: null,
                 instituteName: '',
                 passingYear: null,
+                startYear: null,
+                specialization: '',
                 courseMode: '',
                 marks: '',
               },

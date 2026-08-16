@@ -70,6 +70,8 @@ type FormState = {
   department: string;
   subDepartment: string;
   description: string;
+  keyResponsibilities: string;
+  preferredQualifications: string;
 };
 
 const emptyForm: FormState = {
@@ -88,6 +90,8 @@ const emptyForm: FormState = {
   department: '',
   subDepartment: '',
   description: '',
+  keyResponsibilities: '',
+  preferredQualifications: '',
 };
 
 export function AddJobPage() {
@@ -126,6 +130,8 @@ export function AddJobPage() {
       department: existing.department ?? '',
       subDepartment: existing.subDepartment ?? '',
       description: existing.description ?? '',
+      keyResponsibilities: existing.keyResponsibilities ?? '',
+      preferredQualifications: existing.preferredQualifications ?? '',
     });
     setSkillIds(existing.skillIds ?? []);
     setRounds(
@@ -205,6 +211,8 @@ export function AddJobPage() {
       minCtc: Number.isNaN(minCtc) ? 0 : minCtc,
       maxCtc: Number.isNaN(maxCtc) ? 0 : maxCtc,
       description: form.description.trim(),
+      keyResponsibilities: form.keyResponsibilities.trim() || undefined,
+      preferredQualifications: form.preferredQualifications.trim() || undefined,
       educationDetail: form.educationDetail.trim() || undefined,
       reportTo: form.reportTo.trim() || undefined,
       teamSize: teamSize != null && !Number.isNaN(teamSize) ? teamSize : undefined,
@@ -285,6 +293,8 @@ export function AddJobPage() {
       department: form.department,
       subDepartment: form.subDepartment,
       description: form.description,
+      keyResponsibilities: form.keyResponsibilities,
+      preferredQualifications: form.preferredQualifications,
       skills: (masters?.skills ?? []).filter((s) => skillIds.includes(s.id)).map((s) => s.label),
       interviewRounds: rounds.filter((r) => r.process.trim()).map((r) => ({ round: r.id, process: r.process.trim() })),
     }),
@@ -524,11 +534,36 @@ export function AddJobPage() {
           <Field label="Job Description" required className="sm:col-span-2 lg:col-span-3">
             <textarea
               className={`${fieldClass} h-auto min-h-[96px] py-1.5`}
-              placeholder="Role overview, responsibilities…"
+              placeholder="About the role — what the team does and why the role exists…"
               required
               disabled={loadingForm}
               value={form.description}
               onChange={(e) => setField('description', e.target.value)}
+            />
+          </Field>
+
+          {/*
+            The public job page renders four headed sections. Description covers "About the
+            role" and the skill picker feeds Requirements; without these two the other
+            headings had nowhere to get their text and always rendered empty.
+          */}
+          <Field label="Key Responsibilities" className="sm:col-span-2 lg:col-span-3">
+            <textarea
+              className={`${fieldClass} h-auto min-h-[96px] py-1.5`}
+              placeholder="One per line — each line becomes a numbered point on the job page."
+              disabled={loadingForm}
+              value={form.keyResponsibilities}
+              onChange={(e) => setField('keyResponsibilities', e.target.value)}
+            />
+          </Field>
+
+          <Field label="Preferred Qualifications" className="sm:col-span-2 lg:col-span-3">
+            <textarea
+              className={`${fieldClass} h-auto min-h-[96px] py-1.5`}
+              placeholder="Nice-to-haves, one per line."
+              disabled={loadingForm}
+              value={form.preferredQualifications}
+              onChange={(e) => setField('preferredQualifications', e.target.value)}
             />
           </Field>
 

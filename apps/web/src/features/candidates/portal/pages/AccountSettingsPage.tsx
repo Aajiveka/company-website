@@ -12,6 +12,7 @@ import {
   useCvEditProfile,
 } from '../../candidate.api';
 import {
+  type PrivacySettings,
   usePrivacySettings,
   useRequestAccountDeletion,
   useRequestDataExport,
@@ -23,6 +24,19 @@ import { ToggleRow } from './EmailPreferencesPage';
 import { longDate } from '../format';
 
 type TabKey = 'personal' | 'security' | 'privacy' | 'danger';
+
+/**
+ * The design asks for First and Last name, the CV stores one `fullName`. Splitting on the
+ * last space keeps multi-word given names ("Rahul Kumar Sharma" → "Rahul Kumar" + "Sharma")
+ * intact, and joining back is lossless for everything except trailing whitespace.
+ */
+function splitName(full: string): { firstName: string; lastName: string } {
+  const parts = (full ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return { firstName: parts[0] ?? '', lastName: '' };
+  return { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] };
+}
+
+const joinName = (first: string, last: string) => [first.trim(), last.trim()].filter(Boolean).join(' ');
 
 const TABS = [
   { key: 'personal' as const, label: 'Personal Info' },
@@ -66,10 +80,10 @@ function PersonalInfoTab() {
   const { notify } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({ fullName: '', email: '', mobile: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', mobile: '' });
 
   useEffect(() => {
-    if (profile) setForm({ fullName: profile.fullName, email: profile.email, mobile: profile.mobile });
+    if (profile) setForm({ ...splitName(profile.fullName), email: profile.email, mobile: profile.mobile });
   }, [profile]);
 
   if (isLoading || !profile) {
@@ -82,15 +96,15 @@ function PersonalInfoTab() {
     );
   }
 
-  const dirty =
-    form.fullName !== profile.fullName || form.email !== profile.email || form.mobile !== profile.mobile;
+  const fullName = joinName(form.firstName, form.lastName);
+  const dirty = fullName !== profile.fullName || form.email !== profile.email || form.mobile !== profile.mobile;
 
   const onSave = () => {
     // The personal endpoint replaces the whole record, so the fields this tab does not
     // show are carried through from the CV rather than being blanked.
     savePersonal.mutate(
       {
-        fullName: form.fullName,
+        fullName,
         email: form.email,
         mobile: form.mobile,
         dob: cv?.personal?.dob ?? '',
@@ -150,11 +164,18 @@ function PersonalInfoTab() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Full Name" htmlFor="acctName">
+          <Field label="First Name" htmlFor="acctFirstName">
             <Input
-              id="acctName"
-              value={form.fullName}
-              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              id="acctFirstName"
+              value={form.firstName}
+              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            />
+          </Field>
+          <Field label="Last Name" htmlFor="acctLastName">
+            <Input
+              id="acctLastName"
+              value={form.lastName}
+              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
             />
           </Field>
           <Field label="Email" htmlFor="acctEmail">
@@ -180,7 +201,7 @@ function PersonalInfoTab() {
         <div className="mt-5 flex justify-end gap-3">
           <Btn
             variant="secondary"
-            onClick={() => setForm({ fullName: profile.fullName, email: profile.email, mobile: profile.mobile })}
+            onClick={() => setForm({ ...splitName(profile.fullName), email: profile.email, mobile: profile.mobile })}
             disabled={!dirty}
           >
             Discard
@@ -282,7 +303,7 @@ function SecurityTab() {
         <CardBody className="divide-y divide-aj-line-soft dark:divide-gray-700">
           <ToggleRow
             title="Two-factor authentication"
-            blurb="Require a one-time code in addition to your password"
+            blurb="Extra layer of account security"
             checked={false}
             onChange={() => undefined}
             disabled
@@ -322,8 +343,13 @@ function PrivacyTab() {
   const { data, isLoading } = usePrivacySettings();
   const save = useUpdatePrivacy();
   const { notify } = useToast();
+  const [draft, setDraft] = useState<PrivacySettings | null>(null);
 
-  if (isLoading || !data) {
+  useEffect(() => {
+    if (data && !draft) setDraft(data);
+  }, [data, draft]);
+
+  if (isLoading || !draft) {
     return (
       <Card>
         <CardBody>
@@ -333,8 +359,12 @@ function PrivacyTab() {
     );
   }
 
-  const update = (patch: Partial<typeof data>) =>
-    save.mutate(patch, { onError: () => notify('Could not save that setting.', 'error') });
+  // The design commits these with an explicit button rather than on toggle, so a half-made
+  // decision is never persisted and Discard is meaningful.
+  const dirty =
+    !!data &&
+    (draft.showCurrentEmployer !== data.showCurrentEmployer ||
+      draft.allowRecruiterMessages !== data.allowRecruiterMessages);
 
   return (
     <Card>
@@ -342,19 +372,39 @@ function PrivacyTab() {
       <CardBody className="divide-y divide-aj-line-soft dark:divide-gray-700">
         <ToggleRow
           title="Show Current Employer"
-          blurb="Display your current company on your public profile"
-          checked={data.showCurrentEmployer}
-          onChange={(v) => update({ showCurrentEmployer: v })}
-          disabled={save.isPending}
+          blurb="Display current company publicly"
+          checked={draft.showCurrentEmployer}
+          onChange={(v) => setDraft({ ...draft, showCurrentEmployer: v })}
         />
         <ToggleRow
           title="Allow Recruiter Messages"
-          blurb="Let recruiters contact you directly about roles"
-          checked={data.allowRecruiterMessages}
-          onChange={(v) => update({ allowRecruiterMessages: v })}
-          disabled={save.isPending}
+          blurb="Recruiters can contact you directly"
+          checked={draft.allowRecruiterMessages}
+          onChange={(v) => setDraft({ ...draft, allowRecruiterMessages: v })}
         />
       </CardBody>
+      <div className="flex justify-end gap-3 border-t border-aj-line-soft px-5 py-4 dark:border-gray-700">
+        <Btn variant="secondary" onClick={() => data && setDraft(data)} disabled={!dirty}>
+          Discard
+        </Btn>
+        <Btn
+          onClick={() =>
+            save.mutate(
+              {
+                showCurrentEmployer: draft.showCurrentEmployer,
+                allowRecruiterMessages: draft.allowRecruiterMessages,
+              },
+              {
+                onSuccess: () => notify('Privacy settings saved.', 'success'),
+                onError: () => notify('Could not save your privacy settings.', 'error'),
+              },
+            )
+          }
+          disabled={!dirty || save.isPending}
+        >
+          {save.isPending ? 'Saving…' : 'Save Privacy Settings'}
+        </Btn>
+      </div>
     </Card>
   );
 }

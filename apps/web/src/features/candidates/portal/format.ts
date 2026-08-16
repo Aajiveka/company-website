@@ -51,6 +51,23 @@ export function labelOf(options: CvMasterOption[] | undefined, id: number | null
   return options?.find((o) => o.id === id)?.label ?? null;
 }
 
+/**
+ * How one education entry is titled — the qualification, not the branch.
+ *
+ * Back when the masters held four education *levels* and eight courses, either column could
+ * stand in for the other and the screens showed whichever was set. Now that they are the
+ * qualification and the branch within it, only one of them is the headline: "B.Tech" is what an
+ * employer scans a profile for, while "Computer Science and Engineering" on its own never says
+ * what was actually awarded. The branch belongs on the detail line with the years and marks.
+ */
+export function educationTitle(
+  degrees: CvMasterOption[] | undefined,
+  courses: CvMasterOption[] | undefined,
+  entry: { degreeId: number | null; courseTypeId: number | null },
+): string {
+  return labelOf(degrees, entry.degreeId) ?? labelOf(courses, entry.courseTypeId) ?? 'Qualification';
+}
+
 /** Joins the non-empty parts with a middle dot, the separator the design uses throughout. */
 export function dotted(...parts: (string | null | undefined)[]): string {
   return parts.filter(Boolean).join(' · ');
@@ -91,4 +108,10 @@ export function avatarTone(seed: string): string {
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   return AVATAR_TONES[hash % AVATAR_TONES.length];
+}
+
+/** "2014 – 2018", or just the end year when only that is known. */
+export function years(start: number | null | undefined, end: number | null | undefined): string | null {
+  if (start && end) return `${start} – ${end}`;
+  return start ? `${start} – Present` : end ? String(end) : null;
 }

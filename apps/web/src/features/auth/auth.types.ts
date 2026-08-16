@@ -59,14 +59,22 @@ export const registerSchema = (t: TFunction) =>
       country: z.string().length(2),
       // 4–15 is the E.164 envelope: no national number is shorter than four digits, and 15 is
       // the standard's ceiling as well as the width of RegistrationMobileNo.
-      mobile: z.string().regex(/^\d{4,15}$/, t('validation.mobileDigits')),
+      //
+      // The empty case is spelled out rather than left to the regex, which would answer a blank
+      // field with the digit-range sentence, and to zod's own default, which answers an untouched
+      // one with a bare untranslated "Required" — the only field on this form that did.
+      mobile: z
+        .string({ required_error: t('validation.mobileRequired') })
+        .min(1, t('validation.mobileRequired'))
+        .regex(/^\d{4,15}$/, t('validation.mobileDigits')),
       password: z.string().min(8, t('validation.min8Chars')).max(72),
     })
-    // India is the primary market and its numbers are always exactly ten digits, so a nine-digit
-    // typo should still be caught there rather than passed to the API. Everywhere else the
-    // range above is all we can assert without shipping per-country numbering plans.
+    // India is the primary market and its numbers are always exactly ten digits opening with 6–9
+    // (TRAI's mobile series), so a nine-digit typo or a landline/garbage number like 1234567890
+    // should be caught here rather than passed to the API, which happily sent it an OTP.
+    // Everywhere else the range above is all we can assert without shipping per-country plans.
     .superRefine((v, ctx) => {
-      if (v.country === 'IN' && !/^\d{10}$/.test(v.mobile)) {
+      if (v.country === 'IN' && !/^[6-9]\d{9}$/.test(v.mobile)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['mobile'],

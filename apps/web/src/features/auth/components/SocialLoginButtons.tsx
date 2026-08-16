@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { env } from '@/lib/env';
 
 interface Props {
   mode: 'login' | 'register';
@@ -38,6 +39,11 @@ function LinkedInIcon() {
 function SocialLoginButtons({ mode: _mode }: Props) {
   const { t } = useTranslation('auth');
 
+  // These routes do not exist on the API. Rather than sending people to a 404, the buttons
+  // render as the design shows them but are disabled until VITE_OAUTH_ENABLED is set.
+  const enabled = env.oauthEnabled;
+  const unavailable = t('social.unavailable', 'Social sign-in is not enabled yet — use your email and password below.');
+
   const handleGoogle = () => {
     window.location.href = '/auth/google';
   };
@@ -51,7 +57,9 @@ function SocialLoginButtons({ mode: _mode }: Props) {
       <button
         type="button"
         onClick={handleGoogle}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+        disabled={!enabled}
+        title={enabled ? undefined : unavailable}
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-white dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
       >
         <GoogleIcon />
         {t('social.google')}
@@ -60,11 +68,15 @@ function SocialLoginButtons({ mode: _mode }: Props) {
       <button
         type="button"
         onClick={handleLinkedIn}
-        className="flex w-full items-center justify-center gap-3 rounded-lg bg-[#0A66C2] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#004182]"
+        disabled={!enabled}
+        title={enabled ? undefined : unavailable}
+        className="flex w-full items-center justify-center gap-3 rounded-lg bg-[#0A66C2] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#004182] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#0A66C2]"
       >
         <LinkedInIcon />
         {t('social.linkedin')}
       </button>
+
+      {!enabled && <p className="text-center text-xs text-gray-500 dark:text-gray-400">{unavailable}</p>}
 
       <div className="relative my-4">
         <div className="absolute inset-0 flex items-center">

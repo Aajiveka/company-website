@@ -136,6 +136,10 @@ export function PhoneInput({
             id={inputId}
             type="tel"
             inputMode="numeric"
+            // E.164 caps a national number at 15 digits, so anything past that is a typo or a
+            // pasted number that still carries its country code. Stopping the field there beats
+            // accepting 20 digits and only rejecting them on submit.
+            maxLength={15}
             autoComplete={autoComplete}
             placeholder={placeholder}
             aria-invalid={!!error}

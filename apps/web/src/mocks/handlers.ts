@@ -31,6 +31,7 @@ import {
   COMPANY_PROFILE,
   CV_EDIT_PROFILE,
   CV_MASTERS,
+  searchInstitutes,
   deactivateCompanyJob,
   decideApplicant,
   decideCandidate,
@@ -238,6 +239,11 @@ export const handlers = [
     return HttpResponse.json({ ok: true });
   }),
   http.get(`${BASE}/candidates/me/cv-masters`, () => HttpResponse.json(CV_MASTERS)),
+  http.get(`${BASE}/candidates/me/institutes`, ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const stateId = params.get('stateId');
+    return HttpResponse.json(searchInstitutes(params.get('q') ?? '', stateId ? Number(stateId) : null));
+  }),
   http.get(`${BASE}/candidates/me/cv-edit`, () => HttpResponse.json(CV_EDIT_PROFILE)),
   http.put(`${BASE}/candidates/me/personal`, async ({ request }) => {
     updateCvPersonal((await request.json()) as CvPersonal);
@@ -471,7 +477,13 @@ export const handlers = [
       return HttpResponse.json({ message: 'Already applied to this job' }, { status: 400 });
     }
     addAppliedJob(job);
-    return HttpResponse.json({ ok: true });
+    // Must mirror ApplyResult: the confirmation screen prints `reference`, and returning
+    // `{ ok: true }` left it rendering the em-dash placeholder in every mocked run.
+    const jobSubscriberMapId = 900_000 + job.jobId;
+    return HttpResponse.json({
+      jobSubscriberMapId,
+      reference: `AJ-${String(jobSubscriberMapId).padStart(6, '0')}`,
+    });
   }),
 
   http.get(`${BASE}/recruitment/qc1/stats`, () => HttpResponse.json(QC1_STATS)),

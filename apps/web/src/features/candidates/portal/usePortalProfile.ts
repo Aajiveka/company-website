@@ -21,9 +21,12 @@ export interface PortalProfile {
   email: string | null;
   phone: string | null;
   linkedIn: string | null;
+  gitHub: string | null;
   photoUrl: string | null;
   hasResume: boolean;
   resumeFileName: string;
+  /** Public profile URL, for the hero's Share Profile action. */
+  shareUrl: string;
   verified: boolean;
   /** True while the profile is still essentially untouched. */
   isNew: boolean;
@@ -50,6 +53,13 @@ const SECTION_LABELS: Record<string, string> = {
 
 const lpa = (rupees: number | null | undefined) =>
   rupees && rupees > 0 ? `${(rupees / 100_000).toFixed(1).replace(/\.0$/, '')} LPA Expected` : null;
+
+/** First online-profile accomplishment whose URL points at the given host. */
+function onlineProfile(cv: CvEditProfile | undefined, host: string): string | undefined {
+  return cv?.accomplishments?.find(
+    (a) => a.kind === 'ONLINE_PROFILE' && (a.url ?? '').toLowerCase().includes(host),
+  )?.url;
+}
 
 /**
  * Profile links are shown the way the design writes them — "linkedin.com/in/name", not the
@@ -104,10 +114,13 @@ export function derivePortalProfile(profile: CandidateProfile, cv: CvEditProfile
     expectedCtc: lpa(cv?.careerProfile?.preferredSalary ?? profile.currentCtc),
     email: profile.email?.trim() || null,
     phone: profile.mobile?.trim() || null,
-    linkedIn: tidyUrl(cv?.accomplishments?.find((a) => a.kind === 'ONLINE_PROFILE')?.url),
+    // Online profiles all share one accomplishment kind, so they are told apart by host.
+    linkedIn: tidyUrl(onlineProfile(cv, 'linkedin')),
+    gitHub: tidyUrl(onlineProfile(cv, 'github')),
     photoUrl: profile.photoUrl,
     hasResume: !!profile.resumeUrl,
     resumeFileName: profile.resumeFileName || `${name || 'resume'}.pdf`,
+    shareUrl: `${typeof window === 'undefined' ? '' : window.location.origin}/candidates/${profile.subscriberId}`,
     verified: profile.emailVerified && percent >= 50,
     isNew: percent === 0,
     percent,

@@ -20,6 +20,8 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createPrismaClient } from '../src/prisma/prisma.client';
 import { JOB_STATUS_ACTIVE } from '../src/shared/status';
+import { QUALIFICATIONS } from './data/india-education';
+import { INSTITUTES_BY_STATE, instituteSearchKey, instituteSearchText } from './data/india-institutes';
 
 const prisma = createPrismaClient();
 const SEED_DIR = resolve(__dirname, '../../../db/seed');
@@ -113,6 +115,72 @@ async function seedMasterData() {
         .catch(() => undefined);
     }
   }
+}
+
+/**
+ * India-wide education masters — qualifications, their courses, and the institution list.
+ *
+ * The rows themselves live in prisma/data/, which the production migration is generated from,
+ * so a seeded dev database and a migrated production database end up with the same reference
+ * data. Written here as `skipDuplicates` inserts keyed on the NATURAL key (the qualification's
+ * name, the (qualification, course) pair, the institution's search key) rather than on the id —
+ * so re-seeding is a no-op and can never repoint a live tblSubscriberEducation row.
+ */
+async function seedIndiaEducation() {
+  await prisma.mstrEducationType.createMany({
+    data: QUALIFICATIONS.map((q) => ({
+      educationTypeID: q.id,
+      descr: q.label,
+      highestSeq: q.seq,
+      category: q.category,
+    })),
+    skipDuplicates: true,
+  });
+  // The explicit ids above leave the identity sequence behind; the next insert would collide.
+  await prisma.$executeRawUnsafe(
+    `SELECT setval(pg_get_serial_sequence('"tblMstrEducationType"', 'EducationTypeID'),
+       GREATEST((SELECT MAX("EducationTypeID") FROM "tblMstrEducationType"), 1), true)`,
+  );
+
+  const levels = await prisma.mstrEducationType.findMany({ select: { educationTypeID: true, descr: true } });
+  const levelId = new Map(levels.map((l) => [l.descr, l.educationTypeID]));
+  await prisma.mstrCourse.createMany({
+    data: QUALIFICATIONS.flatMap((q) => {
+      const id = levelId.get(q.label);
+      // ShortForm is NOT NULL in the legacy schema and a branch has no agreed acronym.
+      return id === undefined ? [] : q.courses.map((c) => ({ degreeName: c, shortForm: '', educationTypeID: id }));
+    }),
+    skipDuplicates: true,
+  });
+
+  const states = await prisma.mstrState.findMany({ select: { stateID: true, descr: true } });
+  const stateId = new Map(states.map((s) => [s.descr, s.stateID]));
+  const cities = await prisma.mstrCily.findMany({ select: { cityID: true, descr: true, stateID: true } });
+  // tblMstrCily is a district list, so this matches only where a campus city IS its district.
+  const cityId = new Map(cities.map((c) => [`${c.stateID}|${(c.descr ?? '').toLowerCase()}`, c.cityID]));
+
+  await prisma.mstrInstitute.createMany({
+    data: Object.entries(INSTITUTES_BY_STATE).flatMap(([state, list]) => {
+      const sid = stateId.get(state);
+      return sid === undefined
+        ? []
+        : list.map((i) => ({
+            name: i.name,
+            searchKey: instituteSearchKey(i.name),
+            searchText: instituteSearchText(i.name),
+            kind: i.kind,
+            stateID: sid,
+            city: i.city,
+            cityID: cityId.get(`${sid}|${i.city.toLowerCase()}`) ?? null,
+          }));
+    }),
+    skipDuplicates: true,
+  });
+
+  console.log(
+    `  education masters            ${QUALIFICATIONS.length} qualifications, ` +
+      `${await prisma.mstrCourse.count()} courses, ${await prisma.mstrInstitute.count()} institutions`,
+  );
 }
 
 /** The three logins the e2e suite drives. Password == username, as in the legacy data. */
@@ -293,6 +361,7 @@ async function seedDemoJob() {
 async function main() {
   console.log('seeding master data (real values from the restored backup)');
   await seedMasterData();
+  await seedIndiaEducation();
   await seedPlans();
 
   if (process.env.SEED_DEMO_USERS === '1') {

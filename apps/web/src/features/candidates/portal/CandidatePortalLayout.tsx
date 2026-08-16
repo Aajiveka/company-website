@@ -4,7 +4,7 @@ import { RouteAnnouncer } from '@/components/RouteAnnouncer';
 import { useCvMasters, useDownloadResume } from '../candidate.api';
 import { PortalHeader } from './components/PortalHeader';
 import { ProfileHero } from './components/ProfileHero';
-import { PortalSidebar } from './components/PortalSidebar';
+import { ModuleTiles, PortalSidebar } from './components/PortalSidebar';
 import { ProfileAsideCards } from './components/ProfileAsideCards';
 import { ErrorState } from './components/primitives';
 import { usePortalProfile } from './usePortalProfile';
@@ -24,8 +24,11 @@ export default function CandidatePortalLayout() {
   const { notify } = useToast();
   const { pathname } = useLocation();
 
-  // Only the profile overview swaps the rail's lower half for its at-a-glance cards;
-  // every other module keeps the "My Modules" tiles so navigation stays reachable.
+  // Only the profile overview adds its at-a-glance cards to the rail; every screen keeps the
+  // "My Modules" tiles below them. The profile page used to replace the tiles rather than sit
+  // above them, which left Interviews, Documents, Refer a Friend, the tracker and email
+  // preferences with no link at all on the portal's own landing screen — the header and avatar
+  // menu do not carry them either, so the only way in was a detour through Account Settings.
   const showProfileCards = pathname === '/candidate/profile';
 
   const onDownloadResume = () => {
@@ -45,7 +48,7 @@ export default function CandidatePortalLayout() {
       </a>
       <RouteAnnouncer />
 
-      <PortalHeader initials={portal?.initials || 'AJ'} />
+      <PortalHeader profile={portal} />
 
       {isError ? (
         <main id="portal-content" className="flex-1">
@@ -60,7 +63,10 @@ export default function CandidatePortalLayout() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
               <PortalSidebar profile={portal}>
                 {showProfileCards && profile && cv ? (
-                  <ProfileAsideCards profile={profile} cv={cv} masters={masters} />
+                  <>
+                    <ProfileAsideCards profile={profile} cv={cv} masters={masters} />
+                    <ModuleTiles />
+                  </>
                 ) : undefined}
               </PortalSidebar>
               <div className="min-w-0 flex-1 space-y-4">

@@ -121,14 +121,42 @@ export interface CvCourseOption extends CvMasterOption {
   degreeId: number;
 }
 
+/**
+ * A qualification, with the group it belongs to.
+ *
+ * The list runs to ~90 entries across India — 10th through Ph.D. — and a flat dropdown that
+ * long is unusable, so the wizard renders one <optgroup> per category. Null for rows added
+ * outside the reference data; those fall under "Other".
+ */
+export interface CvDegreeOption extends CvMasterOption {
+  category: string | null;
+}
+
+/** The order the Education dropdown's <optgroup>s run in. Mirrors CATEGORY_ORDER on the API. */
+export const DEGREE_CATEGORIES = [
+  'School',
+  'Diploma',
+  'Undergraduate',
+  'Postgraduate',
+  'Doctorate',
+  'Other',
+] as const;
+
+/** One row from the institution master — the Education step's typeahead suggestions. */
+export interface CvInstituteOption extends CvMasterOption {
+  kind: string | null;
+  city: string | null;
+  stateId: number | null;
+}
+
 export interface CvMasters {
   states: CvMasterOption[];
   cities: CvCityOption[];
   subFunctions: CvMasterOption[];
   industries: CvMasterOption[];
   skills: CvMasterOption[];
-  /** Education levels — the "Degree" dropdown (10th, 12th, Graduation, Post Graduation). */
-  degrees: CvMasterOption[];
+  /** Qualifications — the "Education" dropdown (10th, ITI, B.Tech, MBA, Ph.D., …). */
+  degrees: CvDegreeOption[];
   /** Courses, each tagged with the degree level it belongs to so the UI can cascade. */
   courses: CvCourseOption[];
   designations: CvMasterOption[];
@@ -169,6 +197,8 @@ export interface CvEducationEntry {
   degreeId: number | null;
   instituteName: string;
   passingYear: number | null;
+  startYear: number | null;
+  specialization: string;
   courseMode: string;
   marks: string;
 }
@@ -204,7 +234,24 @@ export interface CvCertificateEntry {
  * Closed vocabularies. None of these has a master table in the schema — they are fixed lists
  * a candidate picks from, and the API validates against the same values.
  */
-export const COURSE_MODES = ['Full Time', 'Part Time', 'Correspondence'] as const;
+/**
+ * How a course was studied. Mirrors COURSE_MODES in the API's candidates.dto.ts, which validates
+ * against the same list.
+ *
+ * "Regular" is deliberately absent: in Indian usage it means Full Time, and offering both would
+ * split identical candidates across two values no employer filter could reconcile.
+ */
+export const COURSE_MODES = ['Full Time', 'Part Time', 'Distance', 'Online', 'Correspondence'] as const;
+
+/**
+ * Education year bounds, mirroring EDUCATION_MIN_YEAR / EDUCATION_MAX_YEAR_AHEAD on the API.
+ *
+ * The ceiling is relative to today so a candidate still studying can record the year they
+ * expect to finish — there is no "currently pursuing" flag in the schema, so an ongoing course
+ * is expressed by leaving the end year blank or by giving its expected year.
+ */
+export const EDUCATION_MIN_YEAR = 1950;
+export const EDUCATION_MAX_YEAR_AHEAD = 8;
 export const JOB_TYPES = ['Permanent', 'Contractual'] as const;
 export const EMPLOYMENT_TYPES = ['Full Time', 'Part Time'] as const;
 export const SHIFTS = ['Day', 'Night', 'Flexible'] as const;

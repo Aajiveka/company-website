@@ -33,7 +33,16 @@ import {
  */
 const orBlank = <T extends readonly string[]>(values: T) => ['', ...values];
 
-export const COURSE_MODES = ['Full Time', 'Part Time', 'Correspondence'] as const;
+/**
+ * How a course was studied.
+ *
+ * "Regular" is dropped deliberately: in Indian usage it is the same thing as Full Time, and
+ * offering both would split identical candidates across two values that no employer filter can
+ * reconcile. Distance and Correspondence are kept apart because UGC-DEB treats them as
+ * different modes (Correspondence is the older postal programme), and Correspondence already
+ * has rows in the database.
+ */
+export const COURSE_MODES = ['Full Time', 'Part Time', 'Distance', 'Online', 'Correspondence'] as const;
 export const JOB_TYPES = ['Permanent', 'Contractual'] as const;
 export const EMPLOYMENT_TYPES = ['Full Time', 'Part Time'] as const;
 export const SHIFTS = ['Day', 'Night', 'Flexible'] as const;
@@ -55,6 +64,17 @@ export const MILITARY_STATUSES = ['Not applicable', 'Currently serving', 'Vetera
 export const CAREER_BREAK_STATUSES = ['Have not taken', 'Have taken'] as const;
 /** Read / write / speak are stored as the legacy 'Y'/'N' chars, so they are booleans here. */
 export const LANGUAGE_PROFICIENCIES = [1, 2, 3] as const;
+
+/**
+ * Education year bounds.
+ *
+ * The floor is a sanity check on a mistyped year, not a real limit. The ceiling is relative to
+ * today rather than a fixed year, so a candidate can record the expected graduation of a course
+ * they are still studying — the schema has no "currently pursuing" flag, and an ongoing degree
+ * is expressed either by leaving the end year blank or by giving the year it will finish.
+ */
+export const EDUCATION_MIN_YEAR = 1950;
+export const EDUCATION_MAX_YEAR_AHEAD = 8;
 
 export class CreateJobAlertDto {
   @ApiProperty()
@@ -174,39 +194,91 @@ export class UpsertEducationDto {
 
   @ApiPropertyOptional({
     description:
-      'tblMstrCourseType.CourseTypeID — nullable column; no real master data was recovered for this table, so the UI has nothing to offer here yet',
+      'tblMstrCourse.DegreeID — the branch/stream, e.g. "Computer Science and Engineering" under B.Tech. ' +
+      'Despite the column name this is NOT tblMstrCourseType, which has no rows. Must belong to degreeId.',
   })
   @IsOptional()
   @IsInt()
   courseTypeId?: number;
 
-  @ApiProperty({ description: 'tblMstrEducationDegree.DegreeID' })
+  @ApiProperty({
+    description: 'tblMstrEducationType.EducationTypeID — the qualification, e.g. B.Tech, MBA, ITI, 12th',
+  })
   @IsInt()
   degreeId!: number;
 
-  @ApiPropertyOptional({ description: 'University / board / school' })
+  @ApiPropertyOptional({
+    description:
+      'University / board / school. Free text on purpose — tblMstrInstitute suggests, it does not gate, ' +
+      'because no list of Indian institutions is complete and a candidate must never be blocked from ' +
+      'naming a real one that is missing from it.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)
   instituteName?: string;
 
-  @ApiPropertyOptional({ description: 'Year the course was completed' })
+  @ApiPropertyOptional({
+    description: `Year the course was completed. Must not be before startYear, and not beyond ${EDUCATION_MAX_YEAR_AHEAD} years ahead (an ongoing course has an expected graduation year).`,
+  })
   @IsOptional()
   @IsInt()
-  @Min(1950)
-  @Max(2100)
+  @Min(EDUCATION_MIN_YEAR)
   passingYear?: number;
+
+  @ApiPropertyOptional({ description: 'Year the course was started. Never in the future.' })
+  @IsOptional()
+  @IsInt()
+  @Min(EDUCATION_MIN_YEAR)
+  startYear?: number;
+
+  @ApiPropertyOptional({ description: 'Branch of study, e.g. Information Technology' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  specialization?: string;
 
   @ApiPropertyOptional({ enum: COURSE_MODES })
   @IsOptional()
   @IsIn(orBlank(COURSE_MODES))
   courseMode?: string;
 
-  @ApiPropertyOptional({ description: 'Percentage, CGPA or grade, as the candidate states it' })
+  @ApiPropertyOptional({
+    description:
+      'Percentage (0-100, up to two decimals) or a CGPA the candidate states as "8.5 CGPA" / "8.5/10". ' +
+      'Kept as text because the legacy column is text and already holds both forms; the range is checked in the service.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   marks?: string;
+}
+
+/** Query for the institution typeahead. */
+export class InstituteSearchDto {
+  @ApiPropertyOptional({ description: 'What the candidate has typed so far. Blank lists the top institutions.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  q?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'tblMstrState.StateID to prioritise. Institutions in this state sort first — it never excludes the rest, ' +
+      'because plenty of candidates studied outside the state they now live in.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  stateId?: number;
+
+  @ApiPropertyOptional({ description: 'Max rows to return (1-50, default 20)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number;
 }
 
 export class UpsertEmploymentDto {
@@ -354,6 +426,48 @@ export class UpdateNotificationPrefsDto {
   @IsOptional()
   @IsIn(['Daily', 'Weekly', 'Instant'])
   jobAlertFrequency?: 'Daily' | 'Weekly' | 'Instant';
+
+  /* Per-topic opt-outs — every one optional so a single switch can be saved alone. */
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  newJobAlerts?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  weeklyJobDigest?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  profileViewAlerts?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  applicationStatusUpdates?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  recruiterMessages?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  interviewReminders?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  productUpdates?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  marketingOffers?: boolean;
 }
 
 /* ------------------------------------------------------------------------- *
@@ -375,9 +489,15 @@ export class UpdateSummaryDto {
 }
 
 export class UpdateKeySkillsDto {
-  @ApiProperty({ type: [String], description: 'Matched against tblMstrTags.TagName; unmatched names are dropped' })
+  @ApiProperty({
+    type: [String],
+    description:
+      'Stored as typed. Names that match tblMstrTags.TagName are also written to the tag ' +
+      'index so recruiter search finds them; the rest are kept for display only.',
+  })
   @IsArray()
   @IsString({ each: true })
+  @MaxLength(100, { each: true })
   tagNames!: string[];
 }
 

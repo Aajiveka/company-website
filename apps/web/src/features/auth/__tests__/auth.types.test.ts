@@ -111,6 +111,38 @@ describe('registerSchema', () => {
     expect(schema.safeParse({ ...valid, mobile: '98765432101' }).success).toBe(false);
   });
 
+  // TRAI allocates 6–9 to mobile services, so a ten-digit number opening 0–5 is a landline or
+  // simply made up. 1234567890 passed the length rule and got as far as an OTP being sent.
+  it('rejects an Indian number that does not start 6-9', () => {
+    for (const mobile of ['1234567890', '0987654321', '5876543210']) {
+      expect(schema.safeParse({ ...valid, mobile }).success).toBe(false);
+    }
+  });
+
+  it('accepts every Indian mobile series', () => {
+    for (const first of ['6', '7', '8', '9']) {
+      expect(schema.safeParse({ ...valid, mobile: `${first}876543210` }).success).toBe(true);
+    }
+  });
+
+  // The prefix rule is India's alone — it must not leak into the generic E.164 branch.
+  it('does not apply the 6-9 prefix rule to other countries', () => {
+    expect(schema.safeParse({ ...valid, country: 'US', mobile: '2125551234' }).success).toBe(true);
+  });
+
+  // An untouched field is `undefined`, which zod answers with a bare, untranslated "Required"
+  // unless the message is spelled out — this was the only field on the form that did that.
+  it('reports a translated message for an empty or missing mobile', () => {
+    for (const input of [{ ...valid, mobile: '' }, { fullName: valid.fullName, email: valid.email, country: 'IN', password: valid.password }]) {
+      const result = schema.safeParse(input);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const message = result.error.issues.find((i) => i.path[0] === 'mobile')?.message;
+        expect(message).toBe('validation.mobileRequired');
+      }
+    }
+  });
+
   it('accepts national numbers that are not 10 digits for other countries', () => {
     // UAE mobile numbers are 9 digits; this used to be rejected outright.
     expect(schema.safeParse({ ...valid, country: 'AE', mobile: '501234567' }).success).toBe(true);

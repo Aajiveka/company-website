@@ -7,7 +7,41 @@ import {
   Matches,
   MaxLength,
   MinLength,
+  registerDecorator,
+  type ValidationArguments,
 } from 'class-validator';
+
+/**
+ * Narrows the mobile number to India's own numbering plan when the dial code is +91: ten digits
+ * opening 6–9, which is the range TRAI allocates to mobile services.
+ *
+ * The generic 4–15 envelope on `mobile` has to stay for every other country, and it accepted
+ * 1234567890 — not a number anyone can be reached on, yet enough to get an OTP sent. This is a
+ * custom constraint rather than `@ValidateIf` + `@Matches` because ValidateIf switches off
+ * *every* validator on the property, which would have left non-Indian numbers unchecked.
+ *
+ * Any other dial code passes straight through; per-country numbering plans are not worth
+ * shipping for markets the product does not serve yet.
+ */
+function IsIndianMobileWhenDial91() {
+  return function (target: object, propertyName: string) {
+    registerDecorator({
+      name: 'isIndianMobileWhenDial91',
+      target: target.constructor,
+      propertyName,
+      validator: {
+        validate(value: unknown, args: ValidationArguments) {
+          const dial = (args.object as { countryCode?: string }).countryCode;
+          // countryCode is optional and defaults to +91, so an absent one is India too.
+          const isIndia = dial == null || dial.replace(/^\+/, '') === '91';
+          if (!isIndia) return true;
+          return typeof value === 'string' && /^[6-9][0-9]{9}$/.test(value);
+        },
+        defaultMessage: () => 'Enter a 10-digit Indian mobile number starting with 6, 7, 8 or 9',
+      },
+    });
+  };
+}
 
 export class LoginDto {
   @ApiProperty({ example: '9876543210' })
@@ -54,10 +88,16 @@ export class RegisterDto {
    * 4–15 digits is the E.164 envelope rather than India's fixed 10: the signup form offers every
    * country's dial code, and national number lengths vary (UAE 9, US 10, Germany up to 11).
    * 15 is both the standard's ceiling and the width of RegistrationMobileNo.
+   *
+   * +91 is then narrowed to India's own plan — ten digits opening 6–9, per TRAI's mobile series.
+   * The envelope alone accepted 1234567890, which is not a number anyone can be reached on, and
+   * the account went as far as having an OTP sent to it. The web form enforces the same rule;
+   * this is the copy that holds for any other client.
    */
   @ApiProperty({ example: '9876543210', description: 'UserName on tblSecUser for candidates' })
   @IsString()
   @Matches(/^[0-9]{4,15}$/, { message: 'Mobile must be 4 to 15 digits' })
+  @IsIndianMobileWhenDial91()
   mobile!: string;
 
   /**

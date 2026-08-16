@@ -11,11 +11,32 @@ import { longDate } from '../format';
 /**
  * Documents — Figma nodes 7:5916 (empty), 7:5476 (categories) and 7:5635 (one category).
  *
- * The design groups uploads into categories; the schema's unit is a *requested document*
- * (`CandidateDocumentMap` → `MstrDocuments`), so each requirement is presented as its own
- * card and drilling in shows that requirement's upload state. That keeps the design's
- * two-level shape without inventing a category table.
+ * The design groups uploads into three named categories; the schema's unit is a *requested
+ * document* (`CandidateDocumentMap` → `MstrDocuments`), which an employer configures. So each
+ * requirement renders as its own card and the design's explanatory blurbs are matched onto it
+ * by name — a requirement the design never anticipated still gets a card, just without a
+ * hand-written description.
  */
+const BLURBS: { match: RegExp; blurb: string }[] = [
+  {
+    match: /certificat|course|award/i,
+    blurb: 'Professional certifications, course completions & awards',
+  },
+  {
+    match: /aadhaar|aadhar|pan|passport|identity|govt|government|id proof/i,
+    blurb: 'Aadhaar, PAN card, passport or any official identity proof',
+  },
+  {
+    match: /offer|noc|experience letter|relieving|other/i,
+    blurb: 'Offer letters, NOC, experience letters or any other files',
+  },
+];
+
+const blurbFor = (name: string) =>
+  BLURBS.find((b) => b.match.test(name))?.blurb ?? 'Upload the file your employer has requested';
+
+const ACCEPTED = '.pdf,.jpg,.png';
+
 export default function DocumentsPage() {
   const { data, isLoading, isError, refetch } = useCandidateDocuments();
   const [openId, setOpenId] = useState<number | null>(null);
@@ -30,7 +51,7 @@ export default function DocumentsPage() {
         title="Documents"
         action={
           <span className="text-xs text-slate-500">
-            {uploaded.length} of {docs.length} uploaded
+            {uploaded.length} {uploaded.length === 1 ? 'file' : 'files'} uploaded
           </span>
         }
       />
@@ -74,25 +95,34 @@ const TONE = {
 } as const;
 
 function DocumentCard({ doc, onOpen }: { doc: CandidateDocument; onOpen: () => void }) {
+  const hasFile = !!doc.uploadedOn;
+
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="flex flex-col gap-3 rounded-xl border border-aj-line bg-white p-4 text-left shadow-aj-card transition-colors hover:border-aj-blue dark:border-gray-700 dark:bg-gray-800"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className="flex size-10 items-center justify-center rounded-lg bg-aj-canvas text-aj-blue dark:bg-gray-700">
-          <FileText className="size-5" aria-hidden />
-        </span>
-        <Pill tone={TONE[doc.status]}>{doc.status}</Pill>
-      </div>
-      <div>
-        <p className="font-display text-sm font-bold text-slate-800 dark:text-gray-100">{doc.name}</p>
-        <p className="mt-0.5 text-xs text-slate-500">
-          {doc.uploadedOn ? `Uploaded ${longDate(doc.uploadedOn)}` : 'No file yet'}
-        </p>
-      </div>
-    </button>
+    <Card className="flex flex-col">
+      <CardBody className="flex flex-1 flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-aj-canvas text-aj-blue dark:bg-gray-700">
+            <FileText className="size-5" aria-hidden />
+          </span>
+          {/* The design labels an untouched requirement "No files" rather than "Pending". */}
+          <Pill tone={hasFile ? TONE[doc.status] : 'slate'}>{hasFile ? doc.status : 'No files'}</Pill>
+        </div>
+
+        <div className="flex-1">
+          <p className="font-display text-sm font-bold text-slate-800 dark:text-gray-100">{doc.name}</p>
+          <p className="mt-0.5 text-xs leading-snug text-slate-500">{blurbFor(doc.name)}</p>
+          {hasFile && <p className="mt-1.5 text-xs text-slate-400">Uploaded {longDate(doc.uploadedOn)}</p>}
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpen}
+          className="self-start text-xs font-semibold text-aj-blue transition-colors hover:text-aj-blue-hover"
+        >
+          {hasFile ? 'Manage files' : 'Upload'}
+        </button>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -130,28 +160,27 @@ function DocumentDetail({ doc, onBack }: { doc: CandidateDocument; onBack: () =>
             className="inline-flex items-center gap-1 text-xs font-semibold text-aj-blue hover:text-aj-blue-hover"
           >
             <ArrowLeft className="size-3.5" aria-hidden />
-            All documents
+            All Categories
           </button>
         }
       />
       <CardBody>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <Pill tone={TONE[doc.status]}>{doc.status}</Pill>
-            <p className="mt-1.5 text-xs text-slate-500">
-              {doc.uploadedOn ? `Uploaded ${longDate(doc.uploadedOn)}` : 'Nothing uploaded yet'}
-            </p>
-          </div>
+        <p className="text-[13px] text-slate-500">{blurbFor(doc.name)}</p>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <Pill tone={doc.uploadedOn ? TONE[doc.status] : 'slate'}>
+            {doc.uploadedOn ? doc.status : 'No files'}
+          </Pill>
           <Btn onClick={() => inputRef.current?.click()} disabled={upload.isPending || doc.documentTypeId == null}>
             <Upload className="size-4" aria-hidden />
-            {upload.isPending ? 'Uploading…' : doc.uploadedOn ? 'Replace file' : 'Upload file'}
+            {upload.isPending ? 'Uploading…' : doc.uploadedOn ? 'Replace file' : 'Upload File'}
           </Btn>
         </div>
 
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
+          accept={ACCEPTED}
           className="sr-only"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -160,7 +189,24 @@ function DocumentDetail({ doc, onBack }: { doc: CandidateDocument; onBack: () =>
           }}
         />
 
-        <p className="mt-3 text-xs text-slate-400">Accepted: .pdf, .jpg, .png</p>
+        <div className="mt-5 border-t border-aj-line-soft pt-4 dark:border-gray-700">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Uploaded Files</p>
+          {doc.uploadedOn ? (
+            <div className="mt-3 flex items-center gap-3 rounded-lg border border-aj-line bg-aj-surface-soft px-3.5 py-3 dark:border-gray-700 dark:bg-gray-900">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-aj-blue text-white">
+                <FileText className="size-4.5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-gray-100">{doc.name}</p>
+                <p className="truncate text-xs text-slate-500">Uploaded {longDate(doc.uploadedOn)}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-2 text-xs italic text-slate-400">No files</p>
+          )}
+        </div>
+
+        <p className="mt-3 text-xs text-slate-400">Accepted: {ACCEPTED}</p>
         {doc.documentTypeId == null && (
           <p className="mt-2 text-xs text-amber-600">
             This requirement has no document type configured, so it cannot be uploaded yet.

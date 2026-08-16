@@ -116,6 +116,11 @@ model ClientJobs {
   department                   String? @db.VarChar(200)           @map("Department")
   subDepartment                String? @db.VarChar(200)           @map("SubDepartment")
   interviewProcess             String? @db.Text                   @map("InterviewProcess")
+  /// The job page splits the posting into four headed sections. JobDescr and
+  /// JobCandidateProfile carried two of them; these are the other two, so an employer no
+  /// longer has to cram responsibilities and nice-to-haves into the same paragraph.
+  keyResponsibilities          String? @db.Text                   @map("KeyResponsibilities")
+  preferredQualifications      String? @db.Text                   @map("PreferredQualifications")
 
 
   client                       ClientMstr                         @relation("ClientJobsToClientMstr", fields: [clientID], references: [clientID])
@@ -239,6 +244,7 @@ model JobSubscriberMapping {
   JobSubscriberStatus          JobSubscriberStatus[]              @relation("JobSubscriberStatusToJobSubscriberMapping")
   SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToJobSubscriberMapping")
   ApplicantNote                ApplicantNote[]                    @relation("ApplicantNoteToJobSubscriberMapping")
+  JobApplicationDetail         JobApplicationDetail?              @relation("JobApplicationDetailToJobSubscriberMapping")
   @@index([jobID])
   @@index([subscriberID])
   @@index([jobMapStatusID])
@@ -272,6 +278,7 @@ model MstrCily {
   SubscriberCVDetails_CityID   SubscriberCVDetails[]              @relation("SubscriberCVDetails_CityID_To_MstrCily")
   SubscriberCVDetails_CurrentCityID SubscriberCVDetails[]              @relation("SubscriberCVDetails_CurrentCityID_To_MstrCily")
   SubscriberPrefferedLocations SubscriberPrefferedLocations[]     @relation("SubscriberPrefferedLocationsToMstrCily")
+  MstrInstitute                MstrInstitute[]                    @relation("MstrInstituteToMstrCily")
   @@index([stateID])
   @@map("tblMstrCily")
 }
@@ -292,6 +299,12 @@ model MstrCourse {
 
   educationType                MstrEducationType                  @relation("MstrCourseToMstrEducationType", fields: [educationTypeID], references: [educationTypeID])
   SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToMstrCourse")
+  /// A course is identified by its name WITHIN a qualification: "Data Science" is a distinct
+  /// row under B.Tech and under M.Sc., but must never appear twice under either. Seeding keys
+  /// on this pair rather than on the id, so re-running the seed can never repoint a live
+  /// tblSubscriberEducation row at a different course.
+  @@unique([educationTypeID, degreeName])
+  @@index([educationTypeID])
   @@map("tblMstrCourse")
 }
 
@@ -357,12 +370,57 @@ model MstrEducationType {
   educationTypeID              Int                                @id @default(autoincrement()) @map("EducationTypeID")
   descr                        String @db.VarChar(100)            @map("Descr")
   highestSeq                   Int? @db.SmallInt                  @map("HighestSeq")
+  /// School / Diploma / Undergraduate / Postgraduate / Doctorate / Other — the group a
+  /// qualification belongs to. The legacy table held four rows and needed no grouping; an
+  /// India-wide list is ~90 qualifications, and an ungrouped dropdown that long is unusable,
+  /// so the wizard renders one <optgroup> per category. Nullable because rows added straight
+  /// to the table (or restored from the legacy backup) have no category to state.
+  category                     String? @db.VarChar(50)            @map("Category")
 
   ClientJobs_EducationType     ClientJobs_EducationType[]         @relation("ClientJobs_EducationTypeToMstrEducationType")
   MstrCourse                   MstrCourse[]                       @relation("MstrCourseToMstrEducationType")
   MstrEducationDegree          MstrEducationDegree[]              @relation("MstrEducationDegreeToMstrEducationType")
   SubscriberEducation          SubscriberEducation[]              @relation("SubscriberEducationToMstrEducationType")
+  @@unique([descr])
   @@map("tblMstrEducationType")
+}
+
+/// Institution / university master.
+///
+/// The legacy schema had none: "Institution / University name" was a free-text column on
+/// tblSubscriberEducation, so one university arrived under a dozen spellings and nothing could
+/// be filtered or counted on it. Rows are seeded from prisma/data/india-institutes.ts (real
+/// UGC/AICTE-listed institutions, all 36 states and union territories).
+///
+/// This master suggests, it does not gate: the Education step still saves whatever the
+/// candidate types, because no list of Indian institutions is ever complete.
+model MstrInstitute {
+  instituteID                  Int                                @id @default(autoincrement()) @map("InstituteID")
+  name                         String @db.VarChar(300)            @map("Name")
+  /// Lowercased, punctuation-stripped name. UNIQUE, which is what keeps "Dr. A.P.J. Abdul
+  /// Kalam Technical University" and "Dr APJ Abdul Kalam Technical University" from becoming
+  /// two rows.
+  searchKey                    String @db.VarChar(300)            @map("SearchKey")
+  /// searchKey plus the name's initialism ("indian institute technology patna iitp"), which is
+  /// what the typeahead matches. Candidates type "IIT Patna", never the expanded name, so
+  /// matching the name alone returns nothing for the best-known institutions in the country.
+  /// Not unique — two institutions may share an initialism.
+  searchText                   String? @db.VarChar(400)           @map("SearchText")
+  /// University / Institute / College.
+  kind                         String? @db.VarChar(50)            @map("Kind")
+  stateID                      Int?                               @map("StateID")  // FK -> MstrState
+  /// The city as it is written on the degree certificate. Kept as text alongside cityID
+  /// because tblMstrCily is a DISTRICT list — Bhubaneswar sits in Khordha and Roorkee in
+  /// Haridwar, so a district id alone cannot print the place the candidate would recognise.
+  city                         String? @db.VarChar(150)           @map("City")
+  cityID                       Int?                               @map("CityID")  // FK -> MstrCily
+  flgActive                    Int @db.SmallInt @default(1)       @map("FlgActive")
+
+  state                        MstrState?                         @relation("MstrInstituteToMstrState", fields: [stateID], references: [stateID])
+  cityRef                      MstrCily?                          @relation("MstrInstituteToMstrCily", fields: [cityID], references: [cityID])
+  @@unique([searchKey])
+  @@index([stateID])
+  @@map("tblMstrInstitute")
 }
 
 model MstrEmpType {
@@ -454,6 +512,7 @@ model MstrState {
 
   country                      MstrCountry?                       @relation("MstrStateToMstrCountry", fields: [countryID], references: [countryID])
   MstrCily                     MstrCily[]                         @relation("MstrCilyToMstrState")
+  MstrInstitute                MstrInstitute[]                    @relation("MstrInstituteToMstrState")
   @@map("tblMstrState")
 }
 
@@ -765,6 +824,11 @@ model SubscriberEducation {
   /// nothing to print under a degree — no board/university, no year. It derived the year from
   /// TimestampIns, i.e. when the row was typed in, which is not when the candidate graduated.
   instituteName                String? @db.VarChar(500)           @map("InstituteName")
+  /// The design asks for the years attended, not just the year awarded. PassingYear already
+  /// existed; without a start year a profile cannot show "2014 – 2018".
+  startYear                    Int?                               @map("StartYear")
+  /// Free text: a course id fixes the qualification ("B.E."), never the branch it was in.
+  specialization               String? @db.VarChar(300)           @map("Specialization")
   passingYear                  Int?                               @map("PassingYear")
   /// Full Time / Part Time / Correspondence — how the course was studied, free text against a
   /// fixed UI list rather than a master table, because no such master exists in the schema.
@@ -976,6 +1040,14 @@ model SubscriberProfileExtra {
   /// Comma-separated role names. Preferred *locations* are not here — they already have their
   /// own table, tblSubscriberPrefferedLocations.
   preferredJobRoles            String? @db.VarChar(1000)          @map("PreferredJobRoles")
+
+  /// Comma-separated key skills, exactly as the candidate typed them.
+  ///
+  /// tblSubscriberTags stays the searchable index, but it can only hold names that already
+  /// exist in tblMstrTags — so a candidate typing "reactjs" saved nothing and the chips came
+  /// back empty. The typed list is kept here verbatim and is what the profile renders; the
+  /// tag join is still written for whatever matched, so recruiter search is unaffected.
+  keySkills                    String? @db.VarChar(1000)          @map("KeySkills")
 
   // ── Personal details ──
   maritalStatus                String? @db.VarChar(50)            @map("MaritalStatus")
@@ -1291,10 +1363,25 @@ model SavedSearch {
 /// Candidate notification preferences.
 model NotificationPreference {
   subscriberID                 Int                                @id @map("SubscriberID")
+  /// Delivery channels.
   emailAlerts                  Boolean                            @default(true) @map("EmailAlerts")
   pushAlerts                   Boolean                            @default(true) @map("PushAlerts")
   smsAlerts                    Boolean                            @default(false) @map("SmsAlerts")
   jobAlertFrequency            String                             @default("Daily") @map("JobAlertFrequency")
+
+  /// Per-topic opt-outs. A channel switch says *how* we reach the candidate; these say
+  /// *what about*. Kept as separate columns rather than a JSON blob so an unsubscribe can be
+  /// enforced in a query — a mail job has to be able to filter on "who wants this topic".
+  newJobAlerts                 Boolean                            @default(true) @map("NewJobAlerts")
+  weeklyJobDigest              Boolean                            @default(true) @map("WeeklyJobDigest")
+  profileViewAlerts            Boolean                            @default(true) @map("ProfileViewAlerts")
+  applicationStatusUpdates     Boolean                            @default(true) @map("ApplicationStatusUpdates")
+  recruiterMessages            Boolean                            @default(true) @map("RecruiterMessages")
+  interviewReminders           Boolean                            @default(true) @map("InterviewReminders")
+  /// Marketing defaults to off — opt-in, not opt-out.
+  productUpdates               Boolean                            @default(true) @map("ProductUpdates")
+  marketingOffers              Boolean                            @default(false) @map("MarketingOffers")
+
   @@map("tblNotificationPreference")
 }
 
@@ -1369,4 +1456,34 @@ model CandidatePrivacy {
   subscriber                   SubscriberRegistration             @relation("CandidatePrivacyToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
 
   @@map("tblCandidatePrivacy")
+}
+
+/// The application form a candidate submitted for one job.
+///
+/// The apply flow captures a snapshot — name, contact, expected salary, notice period,
+/// links, resume filename and cover letter — that must NOT track later profile edits: what
+/// the recruiter received is what the candidate sent on that day. Hence a 1:1 side table on
+/// the mapping rather than reading these off the live CV.
+model JobApplicationDetail {
+  jobSubscriberMapID           BigInt                             @id @map("JobSubscriberMapID")
+  fullName                     String   @db.VarChar(200)          @map("FullName")
+  email                        String   @db.VarChar(320)          @map("Email")
+  phone                        String   @db.VarChar(20)           @map("Phone")
+  totalExperience              String?  @db.VarChar(50)           @map("TotalExperience")
+  currentLocation              String?  @db.VarChar(200)          @map("CurrentLocation")
+  /// Free text: candidates write "20 LPA", "2000000" and "negotiable" in equal measure.
+  expectedSalary               String?  @db.VarChar(100)          @map("ExpectedSalary")
+  noticePeriod                 String?  @db.VarChar(50)           @map("NoticePeriod")
+  linkedInUrl                  String?  @db.VarChar(2000)         @map("LinkedInUrl")
+  portfolioUrl                 String?  @db.VarChar(2000)         @map("PortfolioUrl")
+  /// Name of the resume on file at submission time, so a later re-upload is still traceable.
+  resumeFileName               String?  @db.VarChar(400)          @map("ResumeFileName")
+  coverLetter                  String?  @db.Text                  @map("CoverLetter")
+  submittedAt                  DateTime @db.Timestamp(6)          @default(now()) @map("SubmittedAt")
+
+  /// Cascade: deleting the application should take its submitted form with it — the form
+  /// has no meaning without the application it was sent for.
+  mapping                      JobSubscriberMapping               @relation("JobApplicationDetailToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID], onDelete: Cascade)
+
+  @@map("tblJobApplicationDetail")
 }

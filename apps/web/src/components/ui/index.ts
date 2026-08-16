@@ -1,6 +1,8 @@
 export { Button } from './Button';
 export { buttonVariants } from './button-variants';
 export { Input } from './Input';
+export { PasswordInput } from './PasswordInput';
+export type { PasswordInputProps } from './PasswordInput';
 export { PhoneInput } from './PhoneInput';
 export type { PhoneInputProps } from './PhoneInput';
 export { Select } from './Select';

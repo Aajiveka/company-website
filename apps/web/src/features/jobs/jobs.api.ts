@@ -1,7 +1,9 @@
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/axios';
 import { queryKeys } from '@/lib/queryClient';
 import type {
+  ApplyFormValues,
+  ApplyResult,
   FullTextSearchQuery,
   JobDetail,
   JobFilters,
@@ -83,7 +85,14 @@ export function useJob(id: string | number) {
 
 /** Candidate self-apply. */
 export function useApplyToJob(id: string | number) {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post(`/jobs/${id}/apply`).then((r) => r.data),
+    mutationFn: (payload: ApplyFormValues & { resumeFileName?: string }) =>
+      api.post<ApplyResult>(`/jobs/${id}/apply`, payload).then((r) => r.data),
+    // The tracker and the applied-jobs list both change the moment this succeeds.
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['candidate', 'applied-jobs'] });
+      void qc.invalidateQueries({ queryKey: ['candidate', 'dashboard'] });
+    },
   });
 }

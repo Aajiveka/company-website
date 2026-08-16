@@ -259,6 +259,8 @@ const blankEducation: CvEducationEntry = {
   degreeId: null,
   instituteName: '',
   passingYear: null,
+  startYear: null,
+  specialization: '',
   courseMode: '',
   marks: '',
 };

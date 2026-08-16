@@ -7,6 +7,10 @@ import { ModuleHeader } from '../components/ModuleFrame';
 import { Btn, Card, CardBody, CardHeader, ErrorState, SkeletonRows } from '../components/primitives';
 
 type Frequency = NotificationPrefs['jobAlertFrequency'];
+/** Only the boolean switches — the frequency and the id are handled separately. */
+type ToggleKey = {
+  [K in keyof NotificationPrefs]: NotificationPrefs[K] extends boolean ? K : never;
+}[keyof NotificationPrefs];
 
 const FREQUENCIES: { key: Frequency; label: string; blurb: string }[] = [
   { key: 'Instant', label: 'Real-time', blurb: 'As soon as something happens' },
@@ -14,12 +18,50 @@ const FREQUENCIES: { key: Frequency; label: string; blurb: string }[] = [
   { key: 'Weekly', label: 'Weekly', blurb: 'A summary every Monday' },
 ];
 
+/** The design's three topic groups, in its order (Figma node 7:7981). */
+const GROUPS: { title: string; items: { key: ToggleKey; title: string; blurb: string }[] }[] = [
+  {
+    title: 'Job Recommendations',
+    items: [
+      { key: 'newJobAlerts', title: 'New Job Alerts', blurb: 'Roles matching your saved preferences' },
+      { key: 'weeklyJobDigest', title: 'Weekly Job Digest', blurb: 'Top opportunities every Monday' },
+      { key: 'profileViewAlerts', title: 'Profile View Alerts', blurb: 'When a recruiter visits your profile' },
+    ],
+  },
+  {
+    title: 'Applications & Interviews',
+    items: [
+      {
+        key: 'applicationStatusUpdates',
+        title: 'Application Status Updates',
+        blurb: 'When your application status changes',
+      },
+      { key: 'recruiterMessages', title: 'Recruiter Messages', blurb: 'When a recruiter reaches out to you' },
+      { key: 'interviewReminders', title: 'Interview Reminders', blurb: '24h and 1h before your interviews' },
+    ],
+  },
+  {
+    title: 'Platform',
+    items: [
+      { key: 'productUpdates', title: 'Product Updates', blurb: 'New features and improvements' },
+      { key: 'marketingOffers', title: 'Marketing & Offers', blurb: 'Promotions and success stories' },
+    ],
+  },
+];
+
+const CHANNELS: { key: ToggleKey; title: string; blurb: string }[] = [
+  { key: 'emailAlerts', title: 'Email', blurb: 'Send the topics above to your inbox' },
+  { key: 'pushAlerts', title: 'Push notifications', blurb: 'Push them to this device' },
+  { key: 'smsAlerts', title: 'SMS', blurb: 'Text the time-critical ones, such as interview reschedules' },
+];
+
 /**
  * Email Preferences — Figma node 7:7981.
  *
- * The design lists eight individual toggles; the stored preference record has three
- * channels plus a digest frequency, so the toggles are grouped onto the channel each
- * one is actually delivered over. Nothing here renders a switch that saves nowhere.
+ * Two axes, which is why the screen has both sections: the topic switches say *what* we
+ * contact the candidate about, the channel switches say *how*. Turning every channel off
+ * silences everything regardless of the topics, so that case is called out rather than
+ * leaving the topic list looking live when nothing can reach them.
  */
 export default function EmailPreferencesPage() {
   const { data, isLoading, isError, refetch } = useNotificationPrefs();
@@ -58,6 +100,8 @@ export default function EmailPreferencesPage() {
   }
 
   const dirty = !!data && JSON.stringify(draft) !== JSON.stringify(data);
+  const allChannelsOff = !draft.emailAlerts && !draft.pushAlerts && !draft.smsAlerts;
+  const set = (key: ToggleKey, value: boolean) => setDraft({ ...draft, [key]: value });
 
   const onSave = () => {
     save.mutate(draft, {
@@ -96,28 +140,41 @@ export default function EmailPreferencesPage() {
         </CardBody>
       </Card>
 
+      {GROUPS.map((group) => (
+        <Card key={group.title}>
+          <CardHeader title={group.title} />
+          <CardBody className="divide-y divide-aj-line-soft dark:divide-gray-700">
+            {group.items.map((item) => (
+              <ToggleRow
+                key={item.key}
+                title={item.title}
+                blurb={item.blurb}
+                checked={draft[item.key]}
+                onChange={(v) => set(item.key, v)}
+              />
+            ))}
+          </CardBody>
+        </Card>
+      ))}
+
       <Card>
-        <CardHeader title="Channels" />
+        <CardHeader title="Delivery" />
         <CardBody className="divide-y divide-aj-line-soft dark:divide-gray-700">
-          <ToggleRow
-            title="Email alerts"
-            blurb="Job recommendations, application updates and interview reminders by email"
-            checked={draft.emailAlerts}
-            onChange={(v) => setDraft({ ...draft, emailAlerts: v })}
-          />
-          <ToggleRow
-            title="Push notifications"
-            blurb="Recruiter messages and status changes pushed to this device"
-            checked={draft.pushAlerts}
-            onChange={(v) => setDraft({ ...draft, pushAlerts: v })}
-          />
-          <ToggleRow
-            title="SMS alerts"
-            blurb="Time-critical updates such as interview reschedules"
-            checked={draft.smsAlerts}
-            onChange={(v) => setDraft({ ...draft, smsAlerts: v })}
-          />
+          {CHANNELS.map((c) => (
+            <ToggleRow
+              key={c.key}
+              title={c.title}
+              blurb={c.blurb}
+              checked={draft[c.key]}
+              onChange={(v) => set(c.key, v)}
+            />
+          ))}
         </CardBody>
+        {allChannelsOff && (
+          <p className="border-t border-aj-line-soft px-5 py-3 text-xs text-amber-600 dark:border-gray-700">
+            Every delivery channel is off, so none of the topics above will reach you.
+          </p>
+        )}
       </Card>
 
       <div className="flex flex-wrap justify-end gap-3">

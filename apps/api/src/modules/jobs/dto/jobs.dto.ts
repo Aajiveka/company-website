@@ -1,5 +1,5 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class JobSearchQueryDto {
@@ -96,10 +96,10 @@ export class JobSearchQueryDto {
   @IsIn(['24h', '7d', '30d'])
   postedWithin?: '24h' | '7d' | '30d';
 
-  @ApiPropertyOptional({ description: 'Sort order', enum: ['newest', 'salary_high', 'salary_low', 'relevance'] })
+  @ApiPropertyOptional({ description: 'Sort order', enum: ['newest', 'salary_high', 'salary_low', 'exp_low', 'exp_high', 'relevance'] })
   @IsOptional()
-  @IsIn(['newest', 'salary_high', 'salary_low', 'relevance'])
-  sortBy?: 'newest' | 'salary_high' | 'salary_low' | 'relevance';
+  @IsIn(['newest', 'salary_high', 'salary_low', 'exp_low', 'exp_high', 'relevance'])
+  sortBy?: 'newest' | 'salary_high' | 'salary_low' | 'exp_low' | 'exp_high' | 'relevance';
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
@@ -200,10 +200,10 @@ export class FullTextSearchQueryDto {
   @IsIn(['24h', '7d', '30d'])
   postedWithin?: '24h' | '7d' | '30d';
 
-  @ApiPropertyOptional({ description: 'Sort order', enum: ['newest', 'salary_high', 'salary_low', 'relevance'] })
+  @ApiPropertyOptional({ description: 'Sort order', enum: ['newest', 'salary_high', 'salary_low', 'exp_low', 'exp_high', 'relevance'] })
   @IsOptional()
-  @IsIn(['newest', 'salary_high', 'salary_low', 'relevance'])
-  sortBy?: 'newest' | 'salary_high' | 'salary_low' | 'relevance';
+  @IsIn(['newest', 'salary_high', 'salary_low', 'exp_low', 'exp_high', 'relevance'])
+  sortBy?: 'newest' | 'salary_high' | 'salary_low' | 'exp_low' | 'exp_high' | 'relevance';
 }
 
 export class SuggestionsQueryDto {
@@ -211,4 +211,78 @@ export class SuggestionsQueryDto {
   @IsOptional()
   @IsString()
   q?: string;
+}
+
+/**
+ * The apply form submitted from the job apply screen.
+ *
+ * Every field is stored verbatim as a snapshot of what the recruiter received, so the salary
+ * and experience fields are strings — candidates write "20 LPA", "2000000" and "negotiable",
+ * and coercing that to a number would silently drop two of the three.
+ */
+export class ApplyToJobDto {
+  @ApiProperty({ example: 'Rahul Sharma' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  fullName!: string;
+
+  @ApiProperty({ example: 'rahul.sharma@email.com' })
+  @IsEmail()
+  @MaxLength(320)
+  email!: string;
+
+  @ApiProperty({ example: '+91 98765 43210' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  phone!: string;
+
+  @ApiPropertyOptional({ example: '6' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  totalExperience?: string;
+
+  @ApiPropertyOptional({ example: 'Pune, Maharashtra' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  currentLocation?: string;
+
+  @ApiPropertyOptional({ example: '20 LPA' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  expectedSalary?: string;
+
+  @ApiPropertyOptional({ example: '30 Days' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  noticePeriod?: string;
+
+  @ApiPropertyOptional({ example: 'https://linkedin.com/in/rahulsharma' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  linkedInUrl?: string;
+
+  @ApiPropertyOptional({ example: 'https://rahul.dev' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  portfolioUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Rahul_Sharma_Resume.pdf' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  resumeFileName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  coverLetter?: string;
 }

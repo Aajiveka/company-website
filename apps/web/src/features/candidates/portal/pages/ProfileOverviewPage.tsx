@@ -3,7 +3,7 @@ import { Award, Pencil, Plus } from 'lucide-react';
 import { useCvEditProfile, useCvMasters, useDashboard } from '../../candidate.api';
 import type { CvEditProfile, CvMasters } from '../../candidate.types';
 import { Card, CardBody, CardHeader, EmptyState, InitialAvatar, SkeletonRows, StatTile } from '../components/primitives';
-import { avatarTone, dotted, duration, labelOf, lpa, monthYear } from '../format';
+import { avatarTone, dotted, duration, educationTitle, labelOf, lpa, monthYear, years } from '../format';
 import { stepHref, type WizardStepKey } from '../wizardSteps';
 
 /**
@@ -143,7 +143,6 @@ function EducationCard({ cv, masters }: { cv: CvEditProfile; masters: CvMasters 
         {cv.education.length ? (
           cv.education.map((e, i) => {
             const course = labelOf(masters?.courses, e.courseTypeId);
-            const degree = labelOf(masters?.degrees, e.degreeId);
             return (
               <div
                 key={e.subscriberEducationId}
@@ -155,11 +154,19 @@ function EducationCard({ cv, masters }: { cv: CvEditProfile; masters: CvMasters 
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-display text-sm font-bold text-slate-800 dark:text-gray-100">
-                          {course ?? degree ?? 'Qualification'}
+                          {educationTitle(masters?.degrees, masters?.courses, e)}
                         </p>
                         <p className="truncate text-[13px] font-medium text-aj-blue">{e.instituteName}</p>
                         <p className="mt-0.5 text-xs text-slate-500">
-                          {dotted(e.passingYear ? String(e.passingYear) : null, e.courseMode || null, e.marks || null)}
+                          {dotted(
+                            // The branch sits here now that the qualification is the headline —
+                            // "Computer Science and Engineering" alone never said what was awarded.
+                            course,
+                            e.specialization || null,
+                            years(e.startYear, e.passingYear),
+                            e.courseMode || null,
+                            e.marks || null,
+                          )}
                         </p>
                       </div>
                       <SectionAction step="education" label="Edit" />
@@ -214,7 +221,7 @@ function CertificationsCard({ cv }: { cv: CvEditProfile }) {
 function PreferencesCard({ cv, masters }: { cv: CvEditProfile; masters: CvMasters | undefined }) {
   const cp = cv.careerProfile;
   const pro = cv.professional;
-  const cities = cp.preferredCityIds
+  const cities = (cp.preferredCityIds ?? [])
     .map((id) => labelOf(masters?.cities, id))
     .filter(Boolean)
     .join(', ');
@@ -222,8 +229,8 @@ function PreferencesCard({ cv, masters }: { cv: CvEditProfile; masters: CvMaster
   const cells: [string, string | null][] = [
     ['Expected CTC', lpa(cp.preferredSalary)],
     ['Notice Period', pro?.noticePeriod != null ? `${pro.noticePeriod} Days` : null],
-    ['Work Mode', cp.preferredWorkModes.join(' / ') || null],
-    ['Job Type', cp.desiredJobType.join(' / ') || null],
+    ['Work Mode', (cp.preferredWorkModes ?? []).join(' / ') || null],
+    ['Job Type', (cp.desiredJobType ?? []).join(' / ') || null],
     ['Preferred Cities', cities || null],
     ['Open to Relocation', pro ? (pro.flgReadyToRelocate ? 'Yes' : 'No') : null],
   ];

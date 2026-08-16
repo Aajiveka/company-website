@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BadgeCheck, Briefcase, IndianRupee, MapPin, Pencil } from 'lucide-react';
+import { useToast } from '@/components/ui';
+import { BadgeCheck, Briefcase, Check, IndianRupee, MapPin, Pencil, Share2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Btn } from './primitives';
 import type { PortalProfile } from '../usePortalProfile';
@@ -16,6 +18,31 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
   onDownloadResume: () => void;
   downloading: boolean;
 }) {
+  const { notify } = useToast();
+  const [shared, setShared] = useState(false);
+
+  /**
+   * Share Profile — the design shows it on nearly every frame. Uses the native share sheet
+   * where the browser has one (phones), and falls back to copying the link, which is what a
+   * desktop user would otherwise do by hand.
+   */
+  const onShare = async () => {
+    const url = profile.shareUrl;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${profile.name} on Aajiveka`, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    } catch (err) {
+      // A cancelled share sheet is not an error worth telling anyone about.
+      if ((err as { name?: string })?.name === 'AbortError') return;
+      notify('Could not share your profile link.', 'error');
+    }
+  };
+
   const { name, initials, title, city, experience, expectedCtc, photoUrl, isNew, verified, percent, nextStep } =
     profile;
 
@@ -99,6 +126,17 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
                 Edit Profile
               </Btn>
             </Link>
+            <Btn shape="pill" variant="onBlueOutline" onClick={onShare}>
+              {shared ? (
+                <>
+                  <Check className="size-4" aria-hidden /> Link copied
+                </>
+              ) : (
+                <>
+                  <Share2 className="size-4" aria-hidden /> Share Profile
+                </>
+              )}
+            </Btn>
           </div>
         </div>
 

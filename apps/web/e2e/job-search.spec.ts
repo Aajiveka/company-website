@@ -4,7 +4,8 @@ test.describe('Job Search', () => {
   test('job search page loads with search bar', async ({ page }) => {
     await page.goto('/jobs');
     await expect(page.locator('h1').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /search/i }).first()).toBeVisible();
+    // The redesigned search is a single always-live field, not a field plus a submit button.
+    await expect(page.getByRole('searchbox', { name: /search jobs/i })).toBeVisible();
   });
 
   test('job search page shows results or empty state', async ({ page }) => {

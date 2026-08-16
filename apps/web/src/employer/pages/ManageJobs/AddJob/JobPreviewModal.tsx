@@ -27,6 +27,8 @@ export type JobPreviewData = {
   department: string;
   subDepartment: string;
   description: string;
+  keyResponsibilities: string;
+  preferredQualifications: string;
   skills: string[];
   interviewRounds: { round: number; process: string }[];
 };
@@ -74,6 +76,26 @@ export function JobPreviewModal({
             <Row label="Education" value={data.educationDetail} />
             <Row label="Skills" value={data.skills.length ? data.skills.join(', ') : '—'} />
             <Row label="Description" value={<span className="whitespace-pre-wrap">{data.description}</span>} />
+            <Row
+              label="Responsibilities"
+              value={
+                data.keyResponsibilities ? (
+                  <span className="whitespace-pre-wrap">{data.keyResponsibilities}</span>
+                ) : (
+                  '—'
+                )
+              }
+            />
+            <Row
+              label="Preferred"
+              value={
+                data.preferredQualifications ? (
+                  <span className="whitespace-pre-wrap">{data.preferredQualifications}</span>
+                ) : (
+                  '—'
+                )
+              }
+            />
             <Row
               label="Interview"
               value={

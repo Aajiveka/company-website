@@ -23,6 +23,7 @@ import {
   CreateJobAlertDto,
   CreateReferralDto,
   CreateSavedSearchDto,
+  InstituteSearchDto,
   UpdateCareerProfileDto,
   UpdateDiversityDto,
   UpdateHeadlineDto,
@@ -72,6 +73,18 @@ export class CandidatesController {
   @ApiOperation({ summary: 'id-backed lookup lists for the CV editor' })
   cvMasters() {
     return this.candidates.cvMasters();
+  }
+
+  @Get('me/institutes')
+  @ApiOperation({
+    summary: 'Search the institution / university master',
+    description:
+      'Server-side typeahead for the Education step. Kept out of cv-masters because the list runs to hundreds ' +
+      'of rows and only grows. `stateId` sorts a state to the top without excluding anywhere else, and an ' +
+      'institution missing from the master can still be typed in — the field stores free text.',
+  })
+  searchInstitutes(@Query() dto: InstituteSearchDto) {
+    return this.candidates.searchInstitutes(dto);
   }
 
   @Get('me/cv-edit')

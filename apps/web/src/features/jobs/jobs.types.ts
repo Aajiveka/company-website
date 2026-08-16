@@ -19,10 +19,21 @@ export interface PublicJob {
 export interface JobDetail extends PublicJob {
   description: string | null;
   candidateProfile: string | null;
+  /** The remaining two of the job page's four headed sections. */
+  keyResponsibilities: string | null;
+  preferredQualifications: string | null;
   maxExp: number | null;
   skills: string[];
   educationTypes: string[];
   companyLogo: string | null;
+  /** The "Job overview" panel. Every one of these is optional on the row. */
+  educationDetail: string | null;
+  department: string | null;
+  subDepartment: string | null;
+  reportTo: string | null;
+  teamSize: number | null;
+  /** One entry per interview round, in order. Empty when the employer left it blank. */
+  interviewRounds: string[];
 }
 
 export interface JobsQuery {
@@ -56,7 +67,7 @@ export interface JobsQuery {
   /** Posted within period. */
   postedWithin?: '24h' | '7d' | '30d';
   /** Sort order. */
-  sortBy?: 'newest' | 'salary_high' | 'salary_low' | 'relevance';
+  sortBy?: 'newest' | 'salary_high' | 'salary_low' | 'exp_low' | 'exp_high' | 'relevance';
   page: number;
   pageSize: number;
 }
@@ -74,7 +85,7 @@ export interface FullTextSearchQuery {
   minExp?: number;
   maxExp?: number;
   postedWithin?: '24h' | '7d' | '30d';
-  sortBy?: 'newest' | 'salary_high' | 'salary_low' | 'relevance';
+  sortBy?: 'newest' | 'salary_high' | 'salary_low' | 'exp_low' | 'exp_high' | 'relevance';
 }
 
 export interface JobsPage {
@@ -113,4 +124,28 @@ export interface SavedSearch {
   query: string;
   filters: Record<string, unknown>;
   createdAt: string;
+}
+
+/**
+ * The apply form (Figma 28:4658 / 28:4794). All strings, including salary and experience:
+ * candidates write "20 LPA", "2000000" and "negotiable" in equal measure, and coercing to a
+ * number would silently drop two of the three.
+ */
+export interface ApplyFormValues {
+  fullName: string;
+  email: string;
+  phone: string;
+  totalExperience: string;
+  currentLocation: string;
+  expectedSalary: string;
+  noticePeriod: string;
+  linkedInUrl: string;
+  portfolioUrl: string;
+  coverLetter: string;
+}
+
+/** What POST /jobs/:id/apply returns — the reference shown on the confirmation screen. */
+export interface ApplyResult {
+  jobSubscriberMapId: number;
+  reference: string;
 }

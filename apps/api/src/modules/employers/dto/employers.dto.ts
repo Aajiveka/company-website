@@ -114,6 +114,17 @@ export class CreateJobDto {
   @IsString()
   candidateProfile?: string;
 
+  /** One responsibility per line — the job page numbers whatever lines it finds. */
+  @ApiPropertyOptional({ description: 'Key responsibilities, one per line' })
+  @IsOptional()
+  @IsString()
+  keyResponsibilities?: string;
+
+  @ApiPropertyOptional({ description: 'Preferred (nice-to-have) qualifications, one per line' })
+  @IsOptional()
+  @IsString()
+  preferredQualifications?: string;
+
   @ApiPropertyOptional({ type: [Number], description: 'tblMstrSkills.SkillID' })
   @IsOptional()
   @IsArray()
@@ -220,6 +231,17 @@ export class UpdateJobDto {
   @IsOptional()
   @IsString()
   candidateProfile?: string;
+
+  /** One responsibility per line — the job page numbers whatever lines it finds. */
+  @ApiPropertyOptional({ description: 'Key responsibilities, one per line' })
+  @IsOptional()
+  @IsString()
+  keyResponsibilities?: string;
+
+  @ApiPropertyOptional({ description: 'Preferred (nice-to-have) qualifications, one per line' })
+  @IsOptional()
+  @IsString()
+  preferredQualifications?: string;
 
   @ApiPropertyOptional({ type: [Number], description: 'tblMstrSkills.SkillID' })
   @IsOptional()

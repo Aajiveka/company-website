@@ -30,6 +30,9 @@ export interface JobListing {
   industryTypeId: number | null;
   description: string;
   candidateProfile: string;
+  /** The remaining two of the job page's four headed sections, one item per line. */
+  keyResponsibilities: string;
+  preferredQualifications: string;
   openings: number | null;
   skillIds: number[];
   minExp: number;
@@ -80,6 +83,9 @@ export interface JobPostInput {
   openings?: number;
   description: string;
   candidateProfile?: string;
+  /** One item per line — the public job page numbers whatever lines it finds. */
+  keyResponsibilities?: string;
+  preferredQualifications?: string;
   skillIds?: number[];
   educationDetail?: string;
   reportTo?: string;

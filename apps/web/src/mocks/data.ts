@@ -121,24 +121,42 @@ export const CV_MASTERS = {
     { id: 2, label: 'Node.js' },
     { id: 3, label: 'SQL' },
   ],
-  // Mirrors tblMstrEducationType — the "Degree" dropdown is education LEVEL, per
-  // reference/MainProject/candidate-profile.aspx (fnBindDegreeDropdown).
+  // Mirrors tblMstrEducationType — the "Education" dropdown is the QUALIFICATION, and `category`
+  // is the <optgroup> it sits under. A representative slice of the ~90 rows the real master
+  // holds (prisma/data/india-education.ts); enough to exercise the cascade without restating it.
   degrees: [
-    { id: 1, label: '10th' },
-    { id: 2, label: '12th' },
-    { id: 3, label: 'Gradution' },
-    { id: 4, label: 'Post Graduation' },
+    { id: 1, label: '10th', category: 'School' },
+    { id: 2, label: '12th', category: 'School' },
+    { id: 112, label: 'ITI', category: 'Diploma' },
+    { id: 3, label: 'Graduation', category: 'Undergraduate' },
+    { id: 132, label: 'B.Com.', category: 'Undergraduate' },
+    { id: 136, label: 'B.Tech', category: 'Undergraduate' },
+    { id: 145, label: 'MBBS', category: 'Undergraduate' },
+    { id: 4, label: 'Post Graduation', category: 'Postgraduate' },
+    { id: 183, label: 'MBA', category: 'Postgraduate' },
+    { id: 231, label: 'Ph.D.', category: 'Doctorate' },
   ],
-  // Mirrors tblMstrCourse; degreeId is EducationTypeID, which fnDegree() filters on.
+  // Mirrors tblMstrCourse; degreeId is EducationTypeID, i.e. the qualification the branch
+  // belongs to. This is what makes B.Tech offer engineering branches and MBBS offer medicine.
   courses: [
-    { id: 8, label: '10th', degreeId: 1 },
-    { id: 9, label: '12th', degreeId: 2 },
+    { id: 8, label: 'General', degreeId: 1 },
+    { id: 9, label: 'General', degreeId: 2 },
     { id: 1, label: 'Bachelor of Computer Applications', degreeId: 3 },
     { id: 2, label: 'Bachelor of Arts', degreeId: 3 },
     { id: 4, label: 'Bachelor of Commerce', degreeId: 3 },
     { id: 5, label: 'Masters of Computer Applications', degreeId: 4 },
     { id: 6, label: 'Masters of Arts', degreeId: 4 },
     { id: 7, label: 'Masters of Commerce', degreeId: 4 },
+    { id: 1001, label: 'Electrician', degreeId: 112 },
+    { id: 1010, label: 'Accounting and Finance', degreeId: 132 },
+    { id: 1011, label: 'Taxation', degreeId: 132 },
+    { id: 1020, label: 'Computer Science and Engineering', degreeId: 136 },
+    { id: 1021, label: 'Information Technology', degreeId: 136 },
+    { id: 1022, label: 'Mechanical Engineering', degreeId: 136 },
+    { id: 1030, label: 'Medicine and Surgery', degreeId: 145 },
+    { id: 1040, label: 'Finance', degreeId: 183 },
+    { id: 1041, label: 'Marketing', degreeId: 183 },
+    { id: 1050, label: 'Computer Science', degreeId: 231 },
   ],
   designations: [
     { id: 1, label: 'Software Engineer' },
@@ -159,12 +177,35 @@ export const CV_MASTERS = {
   ],
 };
 
+/**
+ * Institution master rows behind GET /candidates/me/institutes.
+ *
+ * Separate from CV_MASTERS because the real endpoint is a server-side search — the master runs
+ * to hundreds of rows, so it is never shipped inside the masters payload. `stateId` matches the
+ * states above, which lets a test assert that a candidate's own state sorts first.
+ */
+export const CV_INSTITUTES = [
+  { id: 1, label: 'Savitribai Phule Pune University', kind: 'University', city: 'Pune', stateId: 1 },
+  { id: 2, label: 'University of Mumbai', kind: 'University', city: 'Mumbai', stateId: 1 },
+  { id: 3, label: 'Indian Institute of Technology Bombay', kind: 'Institute', city: 'Mumbai', stateId: 1 },
+  { id: 4, label: 'Patna University', kind: 'University', city: 'Patna', stateId: 2 },
+  { id: 5, label: 'Indian Institute of Technology Patna', kind: 'Institute', city: 'Patna', stateId: 2 },
+];
+
+/** The same token-and-state ranking the API applies, so the mock behaves like the real search. */
+export function searchInstitutes(query: string, stateId: number | null, limit = 20) {
+  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return CV_INSTITUTES.filter((i) => tokens.every((t) => i.label.toLowerCase().includes(t)))
+    .sort((a, b) => Number(b.stateId === stateId) - Number(a.stateId === stateId))
+    .slice(0, limit);
+}
+
 export let CV_EDIT_PROFILE: CvEditProfile = {
   personal: { fullName: 'Rahul Sharma', email: 'rahul@example.com', mobile: '9876543210', dob: '1994-05-12', gender: 'M', address: 'Pune, Maharashtra', cityId: 1 },
   professional: { subFunctionId: 1, skillId: 1, totalExp: 6, currentCtc: 1800000, currentCityId: 1, flgReadyToRelocate: true, noticePeriod: 30, industryTypeId: 1, preferredCityIds: [1, 2], tagNames: ['React', 'Node.js'] },
   education: [
-    { subscriberEducationId: 1, courseTypeId: 1, degreeId: 1, instituteName: 'University of Pune', passingYear: 2018, courseMode: 'Full Time', marks: '78%' },
-    { subscriberEducationId: 2, courseTypeId: 1, degreeId: 2, instituteName: 'Fergusson College', passingYear: 2014, courseMode: 'Full Time', marks: '' },
+    { subscriberEducationId: 1, courseTypeId: 1, degreeId: 1, instituteName: 'University of Pune', passingYear: 2018, startYear: null, specialization: '', courseMode: 'Full Time', marks: '78%' },
+    { subscriberEducationId: 2, courseTypeId: 1, degreeId: 2, instituteName: 'Fergusson College', passingYear: 2014, startYear: null, specialization: '', courseMode: 'Full Time', marks: '' },
   ],
   employment: [
     { subscriberEmployerId: 1, employer: 'Acme Corp', designationId: 2, employeeTypeId: 1, joiningDate: '2021-01-01', releavingDate: '', flgCurrent: true, salary: 1800000, jobDescr: '', noticePeriodDays: 30 },
@@ -268,6 +309,8 @@ export function upsertCvEducation(payload: Partial<CvEducationEntry> & { degreeI
       degreeId: payload.degreeId,
       instituteName: payload.instituteName ?? '',
       passingYear: payload.passingYear ?? null,
+      startYear: null,
+      specialization: '',
       courseMode: payload.courseMode ?? '',
       marks: payload.marks ?? '',
     };
@@ -512,9 +555,9 @@ export const COMPANY_MASTERS: CompanyMasters = {
 };
 
 export let COMPANY_JOBS: JobListing[] = [
-  { jobId: 101, designation: 'Frontend Engineer', designationId: 1, city: 'Bengaluru', cityId: 1, workMode: 'Hybrid', workModeId: 2, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Build and ship customer-facing UI.', candidateProfile: '', openings: 2, skillIds: [1], minExp: 3, maxExp: 6, minCtc: 1200000, maxCtc: 1800000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'Engineering Manager', teamSize: 6, department: 'Engineering', subDepartment: 'Frontend', interviewProcess: [], status: 'Active', applicants: 24, postedOn: '2026-06-20' },
-  { jobId: 102, designation: 'Backend Engineer', designationId: 2, city: 'Pune', cityId: 2, workMode: 'Remote', workModeId: 3, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Own the core API and data layer.', candidateProfile: '', openings: 1, skillIds: [2, 3], minExp: 4, maxExp: 8, minCtc: 1500000, maxCtc: 2200000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'Engineering Manager', teamSize: 5, department: 'Engineering', subDepartment: 'Backend', interviewProcess: [], status: 'Active', applicants: 18, postedOn: '2026-06-25' },
-  { jobId: 103, designation: 'QA Analyst', designationId: 3, city: 'Bengaluru', cityId: 1, workMode: 'On-site', workModeId: 1, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Own test planning and release quality.', candidateProfile: '', openings: 1, skillIds: [], minExp: 2, maxExp: 4, minCtc: 800000, maxCtc: 1200000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'QA Manager', teamSize: 4, department: 'Engineering', subDepartment: 'Quality Assurance', interviewProcess: [], status: 'Closed', applicants: 9, postedOn: '2026-07-01' },
+  { jobId: 101, designation: 'Frontend Engineer', designationId: 1, city: 'Bengaluru', cityId: 1, workMode: 'Hybrid', workModeId: 2, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Build and ship customer-facing UI.', candidateProfile: '', keyResponsibilities: '', preferredQualifications: '', openings: 2, skillIds: [1], minExp: 3, maxExp: 6, minCtc: 1200000, maxCtc: 1800000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'Engineering Manager', teamSize: 6, department: 'Engineering', subDepartment: 'Frontend', interviewProcess: [], status: 'Active', applicants: 24, postedOn: '2026-06-20' },
+  { jobId: 102, designation: 'Backend Engineer', designationId: 2, city: 'Pune', cityId: 2, workMode: 'Remote', workModeId: 3, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Own the core API and data layer.', candidateProfile: '', keyResponsibilities: '', preferredQualifications: '', openings: 1, skillIds: [2, 3], minExp: 4, maxExp: 8, minCtc: 1500000, maxCtc: 2200000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'Engineering Manager', teamSize: 5, department: 'Engineering', subDepartment: 'Backend', interviewProcess: [], status: 'Active', applicants: 18, postedOn: '2026-06-25' },
+  { jobId: 103, designation: 'QA Analyst', designationId: 3, city: 'Bengaluru', cityId: 1, workMode: 'On-site', workModeId: 1, employmentType: 'Full-time', employmentTypeId: 1, industryTypeId: 1, description: 'Own test planning and release quality.', candidateProfile: '', keyResponsibilities: '', preferredQualifications: '', openings: 1, skillIds: [], minExp: 2, maxExp: 4, minCtc: 800000, maxCtc: 1200000, educationDetail: 'Bachelor\'s degree in Computer Science or equivalent.', reportTo: 'QA Manager', teamSize: 4, department: 'Engineering', subDepartment: 'Quality Assurance', interviewProcess: [], status: 'Closed', applicants: 9, postedOn: '2026-07-01' },
 ];
 
 export function updateCompanyJob(jobId: number, patch: Partial<JobListing>) {

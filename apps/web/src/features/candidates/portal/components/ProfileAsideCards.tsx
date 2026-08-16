@@ -91,8 +91,8 @@ function JobPreferencesCard({ cv, masters }: { cv: CvEditProfile; masters: CvMas
   const rows: [string, string | null][] = [
     ['Expected CTC', lpa(cp.preferredSalary)],
     ['Notice Period', pro?.noticePeriod != null ? `${pro.noticePeriod} Days` : null],
-    ['Work Mode', cp.preferredWorkModes.join(' / ') || null],
-    ['Job Type', cp.desiredJobType.join(' / ') || null],
+    ['Work Mode', (cp.preferredWorkModes ?? []).join(' / ') || null],
+    ['Job Type', (cp.desiredJobType ?? []).join(' / ') || null],
   ];
   const visible = rows.filter(([, v]) => v);
   if (!visible.length && !masters) return null;

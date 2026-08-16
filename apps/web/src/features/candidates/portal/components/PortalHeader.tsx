@@ -1,26 +1,26 @@
 import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Bell, LogOut, Menu, User, X } from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Bell, CircleHelp, Menu, Wallet as WalletIcon, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { useAuthStore } from '@/features/auth/auth.store';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { PORTAL_NAV } from '../portalModules';
+import { ProfilePanel } from './ProfilePanel';
+import type { PortalProfile } from '../usePortalProfile';
 
 /**
- * Portal top bar — Figma node 1:778.
+ * Portal top bar — Figma node 1:778, as revised in the August update.
  *
- * 64px tall, white, 1px #D1DDF0 hairline plus a soft drop shadow. Site links on
- * the left, the outlined "Alerts" pill and the avatar on the right. Below `md`
- * the links collapse into a disclosure panel so the bar still fits a 320px screen.
+ * 64px tall, white, 1px #D1DDF0 hairline plus a soft drop shadow. Icon-led nav on the left,
+ * help / alerts / avatar menu on the right.
+ *
+ * The full bar needs the design's 1194px to fit: four labelled links plus Wallet, Alerts and
+ * the avatar overflow a 834px tablet. So the links collapse into a disclosure below `lg`, and
+ * the two pill labels only appear once there is room for them.
  */
-export function PortalHeader({ initials }: { initials: string }) {
+export function PortalHeader({ profile }: { profile: PortalProfile | null }) {
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
-  const logout = useAuthStore((s) => s.logout);
-
-  const onLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const { pathname } = useLocation();
+  const { unreadCount: unread } = useRealtimeNotifications();
 
   return (
     <header className="sticky top-0 z-50 border-b border-aj-line bg-white shadow-[0_1px_1.5px_rgb(0_0_0/0.1)] dark:border-gray-700 dark:bg-gray-800">
@@ -38,70 +38,75 @@ export function PortalHeader({ initials }: { initials: string }) {
             <span className="font-display text-xl font-bold tracking-[-0.5px] text-aj-blue">Aajiveka</span>
           </Link>
 
-          <ul className="hidden items-center gap-1 md:flex">
-            {PORTAL_NAV.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={'end' in item ? item.end : undefined}
-                  className={({ isActive }) =>
-                    cn(
-                      'rounded-md px-4 py-2 text-sm font-medium transition-colors',
-                      isActive
+          <ul className="hidden items-center gap-1 lg:flex">
+            {PORTAL_NAV.map((item) => {
+              const Icon = item.icon;
+              // `end` only for Home — every other item stays lit across its sub-routes.
+              const active = item.end ? pathname === item.match : pathname.startsWith(item.match);
+              return (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    className={cn(
+                      'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors lg:px-4',
+                      active
                         ? 'bg-blue-50 text-aj-blue dark:bg-blue-950'
                         : 'text-slate-600 hover:bg-aj-canvas hover:text-slate-800 dark:text-gray-300 dark:hover:bg-gray-700',
-                    )
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0" aria-hidden />
+                    {item.label}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
-            to="/candidate/all-notifications"
-            className="inline-flex items-center gap-2 rounded-full border border-aj-blue px-3 py-2 text-sm font-medium text-aj-blue transition-colors hover:bg-blue-50 sm:px-4 dark:hover:bg-blue-950"
+            to="/help"
+            aria-label="Help and support"
+            className="hidden rounded-full p-2 text-slate-400 transition-colors hover:bg-aj-canvas hover:text-slate-600 sm:inline-flex dark:hover:bg-gray-700"
           >
-            <Bell className="size-4" aria-hidden />
-            <span className="hidden sm:inline">Alerts</span>
+            <CircleHelp className="size-5" aria-hidden />
           </Link>
 
-          <div className="group relative">
-            <Link
-              to="/candidate/profile"
-              aria-label="Your profile"
-              className="flex size-9 items-center justify-center rounded-full bg-aj-blue text-sm font-bold text-white shadow-[0_0_0_2px_var(--color-aj-ring)]"
-            >
-              {initials}
-            </Link>
-            <div className="invisible absolute right-0 top-full z-10 w-44 pt-2 opacity-0 transition-[opacity,visibility] group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-              <div className="overflow-hidden rounded-xl border border-aj-line bg-white py-1 shadow-aj-pop dark:border-gray-700 dark:bg-gray-800">
-                <Link
-                  to="/candidate/profile"
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-aj-canvas dark:text-gray-200 dark:hover:bg-gray-700"
-                >
-                  <User className="size-4" aria-hidden /> My Profile
-                </Link>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                >
-                  <LogOut className="size-4" aria-hidden /> Log out
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* The design gives Wallet its own orange pill, set apart from Alerts by a rule. */}
+          <Link
+            to="/candidate/subscription"
+            className="inline-flex items-center gap-2 rounded-full bg-[#FF8245] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#f4703a] sm:px-4"
+          >
+            <WalletIcon className="size-4" aria-hidden />
+            <span className="hidden lg:inline">Wallet</span>
+          </Link>
+
+          <span aria-hidden className="hidden h-6 w-px bg-aj-line lg:block dark:bg-gray-700" />
+
+          <Link
+            to="/candidate/all-notifications"
+            className="relative inline-flex items-center gap-2 rounded-full border border-aj-blue px-3 py-2 text-sm font-medium text-aj-blue transition-colors hover:bg-blue-50 sm:px-4 dark:hover:bg-blue-950"
+          >
+            <Bell className="size-4" aria-hidden />
+            <span className="hidden lg:inline">Alerts</span>
+            {unread > 0 && (
+              <span
+                aria-label={`${unread} unread`}
+                className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold text-white"
+              >
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </Link>
+
+          <ProfilePanel profile={profile} />
 
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-label={open ? 'Close menu' : 'Open menu'}
-            className="rounded-md p-2 text-slate-600 hover:bg-aj-canvas md:hidden dark:text-gray-300"
+            className="rounded-md p-2 text-slate-600 hover:bg-aj-canvas lg:hidden dark:text-gray-300"
           >
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -109,24 +114,26 @@ export function PortalHeader({ initials }: { initials: string }) {
       </nav>
 
       {open && (
-        <ul className="border-t border-aj-line-soft bg-white px-4 pb-3 md:hidden dark:border-gray-700 dark:bg-gray-800">
-          {PORTAL_NAV.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={'end' in item ? item.end : undefined}
-                onClick={() => setOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    'block rounded-md px-3 py-2.5 text-sm font-medium',
-                    isActive ? 'bg-blue-50 text-aj-blue dark:bg-blue-950' : 'text-slate-600 dark:text-gray-300',
-                  )
-                }
-              >
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
+        <ul className="border-t border-aj-line-soft bg-white px-4 pb-3 lg:hidden dark:border-gray-700 dark:bg-gray-800">
+          {PORTAL_NAV.map((item) => {
+            const Icon = item.icon;
+            const active = item.end ? pathname === item.match : pathname.startsWith(item.match);
+            return (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    'flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium',
+                    active ? 'bg-blue-50 text-aj-blue dark:bg-blue-950' : 'text-slate-600 dark:text-gray-300',
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" aria-hidden />
+                  {item.label}
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
       )}
     </header>

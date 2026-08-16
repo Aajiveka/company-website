@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isAxiosError } from 'axios';
 import { useDeleteProject, useUpsertProject } from '../../candidate.api';
 import {
   EMPLOYMENT_TYPES,
@@ -49,19 +50,42 @@ const splitMonth = (value: string): { month?: number; year?: number } => {
   return Number.isFinite(year) ? { year, month: Number.isFinite(month) ? month : 1 } : {};
 };
 
+/**
+ * Keeps a stored value only when it is still one of the options the select offers.
+ *
+ * A `<select>` whose value matches no option renders blank, but the draft would keep holding
+ * the stale string and send it on save — the API rejects it with `@IsIn`, and the candidate
+ * sees a save that fails every time against a field that looks empty and correct. Anything
+ * unrecognised is cleared so the dropdown and the draft agree.
+ */
+const known = (value: string, options: readonly string[]) => (options.includes(value) ? value : '');
+
 const toDraft = (p: CvProjectEntry): Draft => ({
   subscriberProjectId: p.subscriberProjectId,
   title: p.title,
   clientName: p.clientName,
   workedFrom: monthValue(p.workedFromMonth, p.workedFromYear),
   workedTill: monthValue(p.workedTillMonth, p.workedTillYear),
-  projectStatus: p.projectStatus,
-  projectSite: p.projectSite,
-  natureOfEmployment: p.natureOfEmployment,
+  projectStatus: known(p.projectStatus, PROJECT_STATUSES),
+  projectSite: known(p.projectSite, PROJECT_SITES),
+  natureOfEmployment: known(p.natureOfEmployment, EMPLOYMENT_TYPES),
   teamSize: p.teamSize ? String(p.teamSize) : '',
   skillsUsed: p.skillsUsed.join(', '),
   details: p.details,
 });
+
+/**
+ * The API answers a rejected field with `message: ["natureOfEmployment must be one of …"]`.
+ * Showing it beats "Please try again", which invites the candidate to press Save repeatedly
+ * against a validation error that will never clear on its own.
+ */
+const saveErrorMessage = (err: unknown): string => {
+  const fallback = 'Could not save this project. Please try again.';
+  if (!isAxiosError(err) || err.response?.status !== 400) return fallback;
+  const message = (err.response?.data as { message?: string | string[] } | undefined)?.message;
+  const first = Array.isArray(message) ? message[0] : message;
+  return first ? `Could not save this project — ${first}` : fallback;
+};
 
 /** Step 7 — Projects (Figma 7:8408). */
 export function ProjectsStep({
@@ -106,8 +130,8 @@ export function ProjectsStep({
         details: draft.details,
       });
       return true;
-    } catch {
-      setError('Could not save this project. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err));
       return false;
     }
   };

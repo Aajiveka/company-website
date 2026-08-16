@@ -1,14 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, Eye, Pencil } from 'lucide-react';
+import { Download, Eye, Pencil, Plus } from 'lucide-react';
 import { useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useCvEditProfile, useCvMasters } from '../../candidate.api';
 import type { CvEditProfile, CvMasters } from '../../candidate.types';
 import { ModuleHeader } from '../components/ModuleFrame';
 import { Btn, Card, CardBody, CardHeader, Chip, SkeletonRows } from '../components/primitives';
+import { CertificationEditor } from '../components/CertificationEditor';
 import { computeResumeScore, type SectionState } from '../resumeScore';
-import { dotted, duration, labelOf, monthYear } from '../format';
+import { dotted, duration, educationTitle, labelOf, monthYear, years } from '../format';
 import { stepHref, type WizardStepKey } from '../wizardSteps';
 
 type Template = 'classic' | 'ats';
@@ -132,6 +133,15 @@ export default function ResumeBuilderPage() {
                   {s.label}
                 </button>
               ))}
+              {/* "Add Section" in the design opens the wizard, which is where a section that
+                  has no content yet actually gets filled in. */}
+              <Link
+                to={stepHref('personal')}
+                className="mt-1 flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold text-aj-blue transition-colors hover:bg-blue-50 dark:hover:bg-blue-950"
+              >
+                <Plus className="size-4" aria-hidden />
+                Add Section
+              </Link>
             </CardBody>
           </Card>
 
@@ -181,21 +191,31 @@ export default function ResumeBuilderPage() {
             }
           />
           <CardBody>
-            <div
-              ref={sheetRef}
-              className={cn(
-                'bg-white p-6 text-slate-800',
-                template === 'ats' ? 'font-sans' : 'font-sans',
-              )}
-            >
-              {preview ? (
-                SECTIONS.map((s) => (
-                  <SectionBody key={s.id} id={s.id} cv={cv} masters={masters} template={template} />
-                ))
-              ) : (
-                <SectionBody id={section} cv={cv} masters={masters} template={template} />
-              )}
-            </div>
+            {!preview && section === 'experience' && (
+              <div className="mb-4">
+                <Link
+                  to={stepHref('experience')}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-aj-blue px-4 py-2 text-[13px] font-semibold text-aj-blue transition-colors hover:bg-blue-50 dark:hover:bg-blue-950"
+                >
+                  <Plus className="size-4" aria-hidden />
+                  Add Experience
+                </Link>
+              </div>
+            )}
+            {!preview && section === 'certifications' ? (
+              // The only section the design gives its own form rather than a preview.
+              <CertificationEditor rows={cv.certificates} />
+            ) : (
+              <div ref={sheetRef} className="bg-white p-6 font-sans text-slate-800">
+                {preview ? (
+                  SECTIONS.map((s) => (
+                    <SectionBody key={s.id} id={s.id} cv={cv} masters={masters} template={template} />
+                  ))
+                ) : (
+                  <SectionBody id={section} cv={cv} masters={masters} template={template} />
+                )}
+              </div>
+            )}
           </CardBody>
         </Card>
 
@@ -312,10 +332,17 @@ function SectionBody({
             ? cv.education.map((e) => (
                 <div key={e.subscriberEducationId} className="mb-2">
                   <p className="text-[13px] font-bold">
-                    {labelOf(masters?.courses, e.courseTypeId) ?? labelOf(masters?.degrees, e.degreeId) ?? 'Course'}
+                    {educationTitle(masters?.degrees, masters?.courses, e)}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {dotted(e.instituteName, e.passingYear ? String(e.passingYear) : null, e.marks || null)}
+                    {dotted(
+                      e.instituteName,
+                      // The branch, now that the qualification is the headline above it.
+                      labelOf(masters?.courses, e.courseTypeId),
+                      e.specialization || null,
+                      years(e.startYear, e.passingYear),
+                      e.marks || null,
+                    )}
                   </p>
                 </div>
               ))

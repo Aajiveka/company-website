@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Globe, Mail, Pencil, Phone } from 'lucide-react';
+import { Code2, Globe, Mail, Pencil, Phone } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card, CardBody, CardHeader } from './primitives';
 import { PORTAL_MODULES } from '../portalModules';
@@ -33,6 +33,12 @@ function ContactCard({ profile }: { profile: PortalProfile }) {
       placeholder: 'LinkedIn profile',
       // The label is stored protocol-less for display, so the scheme goes back on the href.
       href: profile.linkedIn && `https://${profile.linkedIn}`,
+    },
+    {
+      icon: Code2,
+      value: profile.gitHub,
+      placeholder: 'GitHub profile',
+      href: profile.gitHub && `https://${profile.gitHub}`,
     },
   ];
 
@@ -75,7 +81,7 @@ function ContactCard({ profile }: { profile: PortalProfile }) {
   );
 }
 
-function ModuleTiles() {
+export function ModuleTiles() {
   const { pathname } = useLocation();
 
   return (

@@ -1,11 +1,10 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { MapPin, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '@/lib/axios';
 import { cn } from '@/lib/cn';
-import { Badge, Button, Card, Skeleton, useToast } from '@/components/ui';
+import { Badge, Button, Card, Skeleton } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 
 interface RecommendedJob {
@@ -38,17 +37,14 @@ function useRecommendedJobs() {
   });
 }
 
-function useQuickApply() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (jobId: number) =>
-      api.post(`/jobs/${jobId}/apply`).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['candidate', 'applied-jobs'] });
-      qc.invalidateQueries({ queryKey: ['candidate', 'recommendations'] });
-    },
-  });
-}
+/*
+ * There is no body-less quick apply any more.
+ *
+ * POST /jobs/:id/apply now takes the apply form (fullName, email and phone are required) and
+ * stores it as the snapshot the recruiter reads back, so firing it with no body returns 400.
+ * Applying is a screen, not a button: this card links to it the same way the job cards and
+ * the job detail page do.
+ */
 
 function JobCardSkeleton() {
   return (
@@ -71,21 +67,6 @@ function JobCardSkeleton() {
 export default function JobRecommendations() {
   const { t } = useTranslation('dashboard');
   const { data: jobs, isLoading, refetch, isFetching } = useRecommendedJobs();
-  const quickApply = useQuickApply();
-  const { notify } = useToast();
-  const [appliedIds, setAppliedIds] = useState<Set<number>>(new Set());
-
-  const handleApply = (jobId: number) => {
-    quickApply.mutate(jobId, {
-      onSuccess: () => {
-        setAppliedIds((prev) => new Set(prev).add(jobId));
-        notify(t('recommendations.applySuccess'), 'success');
-      },
-      onError: () => {
-        notify(t('recommendations.applyFailed'), 'error');
-      },
-    });
-  };
 
   return (
     <section>
@@ -162,15 +143,10 @@ export default function JobRecommendations() {
                     {t('recommendations.viewDetails')}
                   </Link>
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleApply(job.jobId)}
-                  isLoading={quickApply.isPending && quickApply.variables === job.jobId}
-                  disabled={appliedIds.has(job.jobId)}
-                >
-                  {appliedIds.has(job.jobId)
-                    ? t('recommendations.applied')
-                    : t('recommendations.quickApply')}
+                <Button size="sm" asChild>
+                  <Link to={`/jobs/${job.jobId}/apply`}>
+                    {t('recommendations.quickApply')}
+                  </Link>
                 </Button>
               </div>
             </Card>
