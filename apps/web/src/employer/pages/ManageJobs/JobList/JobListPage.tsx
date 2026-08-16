@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Archive, Eye, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Archive, ArchiveRestore, Eye, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import {
   EmployerBadge,
   EmptyState,
@@ -19,6 +19,7 @@ import {
   useCompanyJobs,
   useDeleteJob,
   useSetJobStatus,
+  useUnarchiveJob,
 } from '@/employer/services/employer.api';
 import type { JobListing, JobListParams } from '@/employer/services/employer.types';
 import { DebouncedSearch } from '@/components/DebouncedSearch';
@@ -117,29 +118,36 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
   const [visibleKeys, setVisibleKeys] = useState<string[]>(() =>
     loadColumnVisibility(COL_STORAGE, DEFAULT_VISIBLE),
   );
-  const [viewJobId, setViewJobId] = useState<number | null>(null);
+  const [viewJob, setViewJob] = useState<{ jobId: number; displayIndex: number } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | {
-    type: 'archive' | 'delete';
+    type: 'archive' | 'unarchive' | 'delete';
     jobId: number;
     title: string;
   }>(null);
 
   useEffect(() => {
-    setStatusTab(pathStatus ?? 'All');
-    setPage(1);
-  }, [pathStatus]);
+    const fromNav = (location.state as { statusTab?: JobStatus | 'All' } | null)?.statusTab;
+    if (fromNav) {
+      setStatusTab(fromNav);
+      setPage(1);
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
+    // Sync only when entering Draft/Archived routes (sidebar). Do not reset to All when
+    // leaving those routes — that was overwriting Active/Closed tab clicks.
+    if (pathStatus) {
+      setStatusTab(pathStatus);
+      setPage(1);
+    }
+  }, [pathStatus, location.state, location.pathname, navigate]);
 
   useEffect(() => {
     saveColumnVisibility(COL_STORAGE, visibleKeys);
   }, [visibleKeys]);
 
   const queryStatus: JobListParams['status'] | undefined =
-    pathStatus === 'Draft' || pathStatus === 'Archived'
-      ? pathStatus
-      : statusTab === 'All'
-        ? undefined
-        : statusTab;
+    statusTab === 'All' ? undefined : statusTab;
 
   const { data, isLoading, isError, isFetching } = useCompanyJobs({
     q: search || undefined,
@@ -150,6 +158,7 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
   });
   const setStatus = useSetJobStatus();
   const archiveJob = useArchiveJob();
+  const unarchiveJob = useUnarchiveJob();
   const deleteJob = useDeleteJob();
 
   const jobs = data?.items ?? [];
@@ -157,7 +166,8 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
   const cities = data?.cities ?? [];
   const total = data?.total ?? 0;
   const pageCount = data?.pageCount ?? 0;
-  const busy = setStatus.isPending || archiveJob.isPending || deleteJob.isPending;
+  const busy =
+    setStatus.isPending || archiveJob.isPending || unarchiveJob.isPending || deleteJob.isPending;
 
   const runAction = async (fn: () => Promise<unknown>) => {
     setActionError(null);
@@ -173,12 +183,19 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
       {
         key: 'designation',
         header: 'Job Title',
-        render: (row) => (
-          <button type="button" className="text-left" onClick={() => setViewJobId(row.jobId)}>
-            <p className="font-medium text-slate-800 hover:text-[#1A56DB]">{row.designation}</p>
-            <p className="text-xs text-slate-400">#{row.jobId}</p>
-          </button>
-        ),
+        render: (row, index) => {
+          const displayIndex = (page - 1) * pageSize + index + 1;
+          return (
+            <button
+              type="button"
+              className="text-left"
+              onClick={() => setViewJob({ jobId: row.jobId, displayIndex })}
+            >
+              <p className="font-medium text-slate-800 hover:text-[#1A56DB]">{row.designation}</p>
+              <p className="text-xs text-slate-400">#{displayIndex}</p>
+            </button>
+          );
+        },
       },
       { key: 'city', header: 'Location', render: (row) => row.city || '—' },
       {
@@ -216,51 +233,72 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
       {
         key: 'actions',
         header: 'Actions',
-        render: (row) => (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#1A56DB]"
-              title="View"
-              onClick={() => setViewJobId(row.jobId)}
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-            <Link
-              to={employerPaths.editJob(row.jobId)}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#1A56DB]"
-              title="Edit"
-            >
-              <Pencil className="h-4 w-4" />
-            </Link>
-            <button
-              type="button"
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
-              title={row.status === 'Archived' ? 'Already archived' : 'Archive'}
-              disabled={busy || row.status === 'Archived'}
-              onClick={() =>
-                setConfirm({ type: 'archive', jobId: row.jobId, title: row.designation })
-              }
-            >
-              <Archive className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600"
-              title="Delete"
-              disabled={busy}
-              onClick={() =>
-                setConfirm({ type: 'delete', jobId: row.jobId, title: row.designation })
-              }
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
+        render: (row, index) => {
+          const archived = row.status === 'Archived';
+          return (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#1A56DB]"
+                title="View"
+                onClick={() =>
+                  setViewJob({ jobId: row.jobId, displayIndex: (page - 1) * pageSize + index + 1 })
+                }
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+              {archived ? (
+                <button
+                  type="button"
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700"
+                  title="Unarchive"
+                  disabled={busy}
+                  onClick={() =>
+                    setConfirm({ type: 'unarchive', jobId: row.jobId, title: row.designation })
+                  }
+                >
+                  <ArchiveRestore className="h-4 w-4" />
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to={employerPaths.editJob(row.jobId)}
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#1A56DB]"
+                    title="Edit"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Link>
+                  <button
+                    type="button"
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+                    title="Archive"
+                    disabled={busy}
+                    onClick={() =>
+                      setConfirm({ type: 'archive', jobId: row.jobId, title: row.designation })
+                    }
+                  >
+                    <Archive className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600"
+                title="Delete"
+                disabled={busy}
+                onClick={() =>
+                  setConfirm({ type: 'delete', jobId: row.jobId, title: row.designation })
+                }
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        },
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [busy, setStatus, archiveJob, deleteJob],
+    [busy, setStatus, archiveJob, unarchiveJob, deleteJob, page, pageSize],
   );
 
   const columnOptions = useMemo(
@@ -319,9 +357,14 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
                 ['Archived', counts.archived, 'Archived'] as const,
               ]
             ).map(([label, count, tab]) => {
-              const active = (pathStatus ?? statusTab) === tab || (tab === 'All' && !pathStatus && statusTab === 'All');
+              const active = statusTab === tab;
               const go = () => {
                 setPage(1);
+                // Leaving Draft/Archived routes remounts this page — pass tab via location state.
+                if (pathStatus === 'Draft' || pathStatus === 'Archived') {
+                  navigate(employerPaths.jobList, { state: { statusTab: tab } });
+                  return;
+                }
                 if (tab === 'Draft') {
                   navigate(employerPaths.draftJobs);
                   return;
@@ -331,7 +374,6 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
                   return;
                 }
                 setStatusTab(tab);
-                if (pathStatus === 'Draft' || pathStatus === 'Archived') navigate(employerPaths.jobList);
               };
               return (
                 <button
@@ -364,7 +406,7 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
               setCity(e.target.value);
               setPage(1);
             }}
-            className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-[#1A56DB]"
+            className="h-8 rounded-lg border border-slate-500 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-[#1A56DB]"
           >
             <option value="all">All locations</option>
             {cities.map((loc) => (
@@ -417,12 +459,12 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
       />
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] text-slate-500">
+        <p className="text-xs text-slate-500">
           {isFetching && !isLoading ? 'Updating… · ' : ''}
           Showing {from}–{to} of {total}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-[11px] text-slate-600">
+          <label className="flex items-center gap-1.5 text-xs text-slate-500">
             Rows
             <select
               value={pageSize}
@@ -430,28 +472,48 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
                 setPageSize(Number(e.target.value));
                 setPage(1);
               }}
-              className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-[#1A56DB]"
+              className="h-8 rounded-lg border border-slate-500 bg-white px-2 text-xs text-slate-800 outline-none transition focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
             </select>
           </label>
-          <Pagination page={page} pageCount={Math.max(pageCount, 1)} onChange={setPage} />
+          <Pagination
+            variant="compact"
+            page={page}
+            pageCount={Math.max(pageCount, 1)}
+            onChange={setPage}
+          />
         </div>
       </div>
 
-      <JobViewModal jobId={viewJobId} open={viewJobId != null} onClose={() => setViewJobId(null)} />
+      <JobViewModal
+        jobId={viewJob?.jobId ?? null}
+        displayIndex={viewJob?.displayIndex}
+        open={viewJob != null}
+        onClose={() => setViewJob(null)}
+      />
 
       <ConfirmDialog
         open={confirm != null}
-        title={confirm?.type === 'delete' ? 'Delete job?' : 'Archive job?'}
+        title={
+          confirm?.type === 'delete'
+            ? 'Delete job?'
+            : confirm?.type === 'unarchive'
+              ? 'Unarchive job?'
+              : 'Archive job?'
+        }
         description={
           confirm?.type === 'delete'
             ? `Permanently delete “${confirm.title}”? This cannot be undone.`
-            : `Archive “${confirm?.title}”? It will move to the Archived list.`
+            : confirm?.type === 'unarchive'
+              ? `Restore “${confirm?.title}” to Active? It will leave the Archived list.`
+              : `Archive “${confirm?.title}”? It will move to the Archived list.`
         }
-        confirmLabel={confirm?.type === 'delete' ? 'Delete' : 'Archive'}
+        confirmLabel={
+          confirm?.type === 'delete' ? 'Delete' : confirm?.type === 'unarchive' ? 'Unarchive' : 'Archive'
+        }
         cancelLabel="Cancel"
         tone={confirm?.type === 'delete' ? 'danger' : 'primary'}
         loading={busy}
@@ -460,9 +522,11 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
           if (!confirm) return;
           const { type, jobId } = confirm;
           setConfirm(null);
-          void runAction(() =>
-            type === 'delete' ? deleteJob.mutateAsync(jobId) : archiveJob.mutateAsync(jobId),
-          );
+          void runAction(() => {
+            if (type === 'delete') return deleteJob.mutateAsync(jobId);
+            if (type === 'unarchive') return unarchiveJob.mutateAsync(jobId);
+            return archiveJob.mutateAsync(jobId);
+          });
         }}
       />
     </div>

@@ -185,6 +185,56 @@
   .dark .sidebar-scroll:hover::-webkit-scrollbar-thumb {
     background: rgb(255 255 255 / 0.14);
   }
+
+  /* Thin scrollbar for modals / overflow panels */
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(100 116 139 / 0.45) transparent;
+  }
+  .thin-scroll::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .thin-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .thin-scroll::-webkit-scrollbar-thumb {
+    background: rgb(100 116 139 / 0.45);
+    border-radius: 9999px;
+  }
+  .thin-scroll:hover::-webkit-scrollbar-thumb {
+    background: rgb(100 116 139 / 0.65);
+  }
+
+  /* Employer portal: every interactive control shows a pointer cursor.
+     :has() also covers Radix portals (modals) rendered outside the layout root. */
+  body:has(.employer-portal) :is(
+      a[href],
+      button:not(:disabled),
+      [role='button']:not([aria-disabled='true']),
+      [role='link'],
+      [role='tab'],
+      [role='menuitem'],
+      [role='option'],
+      [role='switch']:not(:disabled),
+      [role='checkbox']:not(:disabled),
+      label[for],
+      summary,
+      select:not(:disabled),
+      input[type='checkbox']:not(:disabled),
+      input[type='radio']:not(:disabled),
+      input[type='file']:not(:disabled),
+      input[type='submit']:not(:disabled),
+      input[type='button']:not(:disabled),
+      input[type='reset']:not(:disabled)
+    ) {
+    cursor: pointer;
+  }
+
+  body:has(.employer-portal) :is(button, select, input, [role='button'], [role='switch']):disabled,
+  body:has(.employer-portal) [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
 }
 
 /* ------------------------------------------------------------------ */

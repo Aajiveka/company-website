@@ -211,12 +211,13 @@ export class ExportsController {
     @Res() res: Response,
   ) {
     const rows = await this.clients.applicants(user.userId);
+    const list = Array.isArray(rows) ? rows : rows.items;
     await this.audit.record({
       userId: user.userId,
       action: 'export.applicants',
-      detail: { format, rows: rows.length },
+      detail: { format, rows: list.length },
     });
-    await this.send(res, format, 'applicants', rows, CANDIDATE_COLUMNS);
+    await this.send(res, format, 'applicants', list, CANDIDATE_COLUMNS);
   }
 
   /* ------------------------------------------------------------------ */

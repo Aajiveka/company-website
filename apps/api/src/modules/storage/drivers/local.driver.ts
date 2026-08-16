@@ -14,7 +14,9 @@ export class LocalStorageDriver implements StorageDriver {
    */
   private resolveKey(key: string) {
     const full = resolve(join(this.root, normalize(key)));
-    if (full !== this.root && !full.startsWith(this.root + '/')) {
+    // Compare with platform separator so Windows paths (D:\storage\file) are not rejected.
+    const rootWithSep = this.root.endsWith('\\') || this.root.endsWith('/') ? this.root : this.root + (process.platform === 'win32' ? '\\' : '/');
+    if (full !== this.root && !full.startsWith(rootWithSep)) {
       throw new NotFoundException('Invalid file path');
     }
     return full;

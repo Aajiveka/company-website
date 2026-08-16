@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { EmployerSidebar } from '@/employer/components/Sidebar/EmployerSidebar';
 import { EmployerHeader } from '@/employer/components/Header/EmployerHeader';
+import { useApplicants } from '@/employer/services/employer.api';
 
 const COLLAPSE_KEY = 'aaj.employer.sidebar.collapsed';
 
@@ -17,6 +18,8 @@ export function EmployerLayout() {
     }
   });
   const location = useLocation();
+  const { data: applicantsRes } = useApplicants({ page: 1, pageSize: 1 });
+  const applicantCount = applicantsRes?.total ?? 0;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -43,14 +46,9 @@ export function EmployerLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="employer-portal min-h-screen bg-slate-50 text-slate-900">
       <meta name="robots" content="noindex,nofollow" />
-      <div
-        className={cn(
-          'fixed inset-x-0 top-0 z-50 transition-[padding] duration-200',
-          collapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-60',
-        )}
-      >
+      <div className="fixed inset-x-0 top-0 z-50">
         <EmployerHeader collapsed={collapsed} onMenuClick={() => setMobileOpen((o) => !o)} />
       </div>
 
@@ -58,7 +56,7 @@ export function EmployerLayout() {
         open={mobileOpen}
         collapsed={collapsed}
         onToggleCollapse={toggleCollapsed}
-        badges={{ applicants: 12, messages: 3, notifications: 5 }}
+        badges={{ applicants: applicantCount, messages: 0, notifications: 0 }}
       />
 
       {mobileOpen && (
@@ -67,11 +65,14 @@ export function EmployerLayout() {
 
       <main
         className={cn(
-          'px-3 pb-4 pt-16 transition-[padding] duration-200 lg:pr-4',
-          collapsed ? 'lg:pl-20' : 'lg:pl-[15.5rem]',
+          'px-4 pb-4 pt-16 transition-[padding] duration-200',
+          /* Match left gap (after sidebar) to right page padding (1.5rem / pr-6) */
+          collapsed ? 'lg:pl-24 lg:pr-6' : 'lg:pl-[14.5rem] lg:pr-6',
         )}
       >
-        <Outlet />
+        <div className="mx-auto w-full max-w-6xl 2xl:max-w-7xl">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

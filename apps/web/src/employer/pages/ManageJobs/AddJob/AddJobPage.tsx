@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Eye, FileEdit, Plus, Send, Trash2 } from 'lucide-react';
 import {
@@ -6,6 +6,8 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '@/employer/components/Cards/ui';
+import { SearchableSelect, SkillTagInput, type SkillTagOption } from '@/components/ui';
+import { cn } from '@/lib/cn';
 import { employerPaths } from '@/employer/constants/paths';
 import {
   useCompanyJob,
@@ -13,46 +15,81 @@ import {
   usePostJob,
   useUpdateJob,
 } from '@/employer/services/employer.api';
-import type { JobPostInput } from '@/employer/services/employer.types';
+import type { JobPostInput, InterviewMode } from '@/employer/services/employer.types';
+import { INTERVIEW_MODE_OPTIONS } from '@/employer/services/employer.types';
 import { getErrorMessage } from '@/lib/axios';
 import { JobPreviewModal, type JobPreviewData } from './JobPreviewModal';
 
+const DESC_MAX = 1000;
+
 const fieldClass =
-  'mt-0.5 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 shadow-sm outline-none transition focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20 disabled:bg-slate-50';
+  'mt-0.5 h-8 w-full rounded-lg border border-slate-500 bg-white px-2.5 text-xs text-slate-800 outline-none transition focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20 disabled:bg-slate-50';
+const fieldErrorClass =
+  'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20';
 const labelClass = 'text-[11px] font-medium text-slate-600';
+
+type FieldKey =
+  | 'designationId'
+  | 'employmentTypeId'
+  | 'workModeId'
+  | 'minExp'
+  | 'cityId'
+  | 'educationDetail'
+  | 'industryTypeId'
+  | 'department'
+  | 'skills'
+  | 'description';
+
+const FIELD_ORDER: FieldKey[] = [
+  'designationId',
+  'employmentTypeId',
+  'workModeId',
+  'minExp',
+  'cityId',
+  'educationDetail',
+  'industryTypeId',
+  'department',
+  'skills',
+  'description',
+];
 
 function Field({
   label,
   required,
   children,
   className = '',
+  invalid,
+  fieldKey,
 }: {
   label: string;
   required?: boolean;
   children: ReactNode;
   className?: string;
+  invalid?: boolean;
+  fieldKey?: FieldKey;
 }) {
   return (
-    <label className={`block ${className}`}>
-      <span className={labelClass}>
+    <div className={cn('block', className)} data-field={fieldKey}>
+      <span className={cn(labelClass, invalid && 'text-rose-600')}>
         {label}
         {required ? <span className="text-rose-600">*</span> : null}
       </span>
       {children}
-    </label>
+    </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
-      <h2 className="mb-2 text-xs font-semibold text-slate-800">{title}</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+    <section className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm sm:p-4">
+      <h2 className="mb-3 text-xs font-semibold text-slate-800">{title}</h2>
+      {/* 1 col mobile → 2 tablet → 3 desktop; page shell caps width on ultra-wide monitors */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
     </section>
   );
 }
 
-type Round = { id: number; process: string };
+type Round = { id: number; process: string; mode: InterviewMode | '' };
 
 type FormState = {
   designationId: string;
@@ -106,14 +143,20 @@ export function AddJobPage() {
   const updateJob = useUpdateJob(jobId ?? 0);
 
   const [error, setError] = useState<string | null>(null);
-  const [rounds, setRounds] = useState<Round[]>([{ id: 1, process: '' }]);
-  const [skillIds, setSkillIds] = useState<number[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, boolean>>>({});
+  const [rounds, setRounds] = useState<Round[]>([{ id: 1, process: '', mode: '' }]);
+  const [selectedSkills, setSelectedSkills] = useState<SkillTagOption[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [hydrated, setHydrated] = useState(!isEdit);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!isEdit || !existing || hydrated) return;
+    const labels = existing.skills ?? [];
+    const ids = existing.skillIds ?? [];
+    if (!labels.length && ids.length && !masters?.skills?.length) return;
+
     setForm({
       designationId: String(existing.designationId || ''),
       employmentTypeId: String(existing.employmentTypeId || ''),
@@ -129,48 +172,120 @@ export function AddJobPage() {
       teamSize: existing.teamSize != null ? String(existing.teamSize) : '',
       department: existing.department ?? '',
       subDepartment: existing.subDepartment ?? '',
-      description: existing.description ?? '',
+      description: (existing.description ?? '').slice(0, DESC_MAX),
       keyResponsibilities: existing.keyResponsibilities ?? '',
       preferredQualifications: existing.preferredQualifications ?? '',
     });
-    setSkillIds(existing.skillIds ?? []);
+    setSelectedSkills(
+      labels.length
+        ? labels.map((label, i) => ({ id: ids[i], label }))
+        : ids.map((id) => {
+            const fromMaster = masters?.skills?.find((s) => s.id === id);
+            return { id, label: fromMaster?.label ?? `Skill #${id}` };
+          }),
+    );
     setRounds(
       existing.interviewProcess?.length
-        ? existing.interviewProcess.map((r) => ({ id: r.round, process: r.process }))
-        : [{ id: 1, process: '' }],
+        ? existing.interviewProcess.map((r) => ({
+            id: r.round,
+            process: r.process,
+            mode: (INTERVIEW_MODE_OPTIONS.some((o) => o.id === r.mode) ? r.mode : '') as InterviewMode | '',
+          }))
+        : [{ id: 1, process: '', mode: '' }],
     );
     setHydrated(true);
-  }, [isEdit, existing, hydrated]);
+  }, [isEdit, existing, hydrated, masters?.skills]);
+
+  const clearFieldError = (key: FieldKey) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if ((FIELD_ORDER as string[]).includes(key as string)) {
+      clearFieldError(key as FieldKey);
+    }
   };
 
   const employmentOptions = useMemo(() => masters?.employmentTypes ?? [], [masters]);
   const workModeOptions = useMemo(() => masters?.workModes ?? [], [masters]);
 
   const addRound = () => {
-    setRounds((prev) => [...prev, { id: prev.length + 1, process: '' }]);
+    setRounds((prev) => [...prev, { id: prev.length + 1, process: '', mode: '' }]);
   };
 
   const removeRound = (roundId: number) => {
     setRounds((prev) =>
-      prev.length <= 1 ? prev : prev.filter((r) => r.id !== roundId).map((r, i) => ({ ...r, id: i + 1 })),
+      prev.length <= 1
+        ? prev
+        : prev.filter((r) => r.id !== roundId).map((r, i) => ({ ...r, id: i + 1 })),
     );
   };
 
-  const updateRound = (roundId: number, process: string) => {
-    setRounds((prev) => prev.map((r) => (r.id === roundId ? { ...r, process } : r)));
+  const updateRound = (roundId: number, patch: Partial<Pick<Round, 'process' | 'mode'>>) => {
+    setRounds((prev) => prev.map((r) => (r.id === roundId ? { ...r, ...patch } : r)));
   };
 
-  const toggleSkill = (skillId: number) => {
-    setSkillIds((prev) => (prev.includes(skillId) ? prev.filter((x) => x !== skillId) : [...prev, skillId]));
+  const onSkillsChange = (next: SkillTagOption[]) => {
+    setSelectedSkills(next);
+    if (next.length) clearFieldError('skills');
   };
 
   const masterLabel = (list: { id: number; label: string }[] | undefined, id: string) =>
     list?.find((o) => String(o.id) === id)?.label ?? '';
 
+  const scrollToFirstError = (errors: Partial<Record<FieldKey, boolean>>) => {
+    const first = FIELD_ORDER.find((k) => errors[k]);
+    if (!first) return;
+    window.requestAnimationFrame(() => {
+      const el = formRef.current?.querySelector(`[data-field="${first}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
+  const collectPublishErrors = (): Partial<Record<FieldKey, boolean>> => {
+    const errors: Partial<Record<FieldKey, boolean>> = {};
+    if (!Number(form.designationId)) errors.designationId = true;
+    if (!Number(form.employmentTypeId)) errors.employmentTypeId = true;
+    if (!Number(form.workModeId)) errors.workModeId = true;
+    if (form.minExp.trim() === '' || Number.isNaN(Number(form.minExp))) errors.minExp = true;
+    if (!Number(form.cityId)) errors.cityId = true;
+    if (!form.educationDetail.trim()) errors.educationDetail = true;
+    if (!Number(form.industryTypeId)) errors.industryTypeId = true;
+    if (!form.department.trim()) errors.department = true;
+    if (!selectedSkills.length) errors.skills = true;
+    if (!form.description.trim()) errors.description = true;
+    return errors;
+  };
+
+  const collectDraftErrors = (): Partial<Record<FieldKey, boolean>> => {
+    const errors: Partial<Record<FieldKey, boolean>> = {};
+    if (!Number(form.designationId)) errors.designationId = true;
+    if (!Number(form.employmentTypeId)) errors.employmentTypeId = true;
+    if (!Number(form.workModeId)) errors.workModeId = true;
+    if (!Number(form.cityId)) errors.cityId = true;
+    return errors;
+  };
+
   const buildPayload = (asDraft: boolean): JobPostInput | null => {
+    const errors = asDraft ? collectDraftErrors() : collectPublishErrors();
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      setError(
+        asDraft
+          ? 'To save a draft, select Position, Employment type, Work mode, and Location.'
+          : 'Please fill the highlighted required fields.',
+      );
+      scrollToFirstError(errors);
+      return null;
+    }
+    setFieldErrors({});
+
     const designationId = Number(form.designationId);
     const employmentTypeId = Number(form.employmentTypeId);
     const workModeId = Number(form.workModeId);
@@ -182,25 +297,7 @@ export function AddJobPage() {
     const maxCtc = Number(form.maxCtc);
     const teamSize = form.teamSize.trim() === '' ? undefined : Number(form.teamSize);
 
-    // Drafts still need FK fields (DB non-null); publish needs the full required set.
-    if (!designationId || !employmentTypeId || !workModeId || !cityId) {
-      setError(
-        asDraft
-          ? 'To save a draft, select Position, Employment type, Work mode, and Location.'
-          : 'Please fill all required dropdowns (Position, Employment type, Work mode, Location, Industry).',
-      );
-      return null;
-    }
-    if (!asDraft && !industryTypeId) {
-      setError('Please fill all required dropdowns (Position, Employment type, Work mode, Location, Industry).');
-      return null;
-    }
-    if (!asDraft && !skillIds.length) {
-      setError('Select at least one skill.');
-      return null;
-    }
-
-    const payload: JobPostInput = {
+    return {
       designationId,
       employmentTypeId,
       workModeId,
@@ -210,7 +307,7 @@ export function AddJobPage() {
       maxExp: maxExp != null && !Number.isNaN(maxExp) ? maxExp : undefined,
       minCtc: Number.isNaN(minCtc) ? 0 : minCtc,
       maxCtc: Number.isNaN(maxCtc) ? 0 : maxCtc,
-      description: form.description.trim(),
+      description: form.description.trim().slice(0, DESC_MAX),
       keyResponsibilities: form.keyResponsibilities.trim() || undefined,
       preferredQualifications: form.preferredQualifications.trim() || undefined,
       educationDetail: form.educationDetail.trim() || undefined,
@@ -218,18 +315,15 @@ export function AddJobPage() {
       teamSize: teamSize != null && !Number.isNaN(teamSize) ? teamSize : undefined,
       department: form.department.trim() || undefined,
       subDepartment: form.subDepartment.trim() || undefined,
-      skillIds,
+      skills: selectedSkills.map((s) => s.label.trim()).filter(Boolean),
       interviewProcess: rounds
-        .filter((r) => r.process.trim())
-        .map((r) => ({ round: r.id, process: r.process.trim() })),
+        .filter((r) => r.process.trim() || r.mode)
+        .map((r) => ({
+          round: r.id,
+          process: r.process.trim(),
+          ...(r.mode ? { mode: r.mode } : {}),
+        })),
     };
-
-    if (!asDraft && (!payload.description || !payload.educationDetail || !payload.department)) {
-      setError('Education Detail, Department, and Job Description are required.');
-      return null;
-    }
-
-    return payload;
   };
 
   const persist = async (asDraft: boolean) => {
@@ -295,10 +389,12 @@ export function AddJobPage() {
       description: form.description,
       keyResponsibilities: form.keyResponsibilities,
       preferredQualifications: form.preferredQualifications,
-      skills: (masters?.skills ?? []).filter((s) => skillIds.includes(s.id)).map((s) => s.label),
-      interviewRounds: rounds.filter((r) => r.process.trim()).map((r) => ({ round: r.id, process: r.process.trim() })),
+      skills: selectedSkills.map((s) => s.label),
+      interviewRounds: rounds
+        .filter((r) => r.process.trim() || r.mode)
+        .map((r) => ({ round: r.id, process: r.process.trim(), ...(r.mode ? { mode: r.mode } : {}) })),
     }),
-    [masters, form, skillIds, rounds],
+    [masters, form, selectedSkills, rounds],
   );
 
   const saving = postJob.isPending || updateJob.isPending;
@@ -324,52 +420,55 @@ export function AddJobPage() {
         </p>
       )}
 
-      <form onSubmit={submit} className="space-y-3">
+      <form ref={formRef} onSubmit={submit} noValidate className="space-y-3">
         <Section title="Job details">
-          <Field label="Position" required className="sm:col-span-2 lg:col-span-3">
-            <select
-              className={fieldClass}
+          <Field label="Position" required fieldKey="designationId" invalid={!!fieldErrors.designationId}>
+            <SearchableSelect
               required
               disabled={loadingForm}
-              value={form.designationId}
-              onChange={(e) => setField('designationId', e.target.value)}
-            >
-              <option value="" disabled>
-                Select position
-              </option>
-              {(masters?.designations ?? []).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              invalid={!!fieldErrors.designationId}
+              options={masters?.designations ?? []}
+              value={form.designationId || null}
+              onChange={(id) => setField('designationId', id)}
+              placeholder="Select position"
+              searchPlaceholder="Search position…"
+              aria-label="Position"
+            />
           </Field>
 
-          <Field label="Employment type" required>
-            <select
-              className={fieldClass}
+          <Field label="Employment type" required fieldKey="employmentTypeId" invalid={!!fieldErrors.employmentTypeId}>
+            <SearchableSelect
               required
               disabled={loadingForm}
-              value={form.employmentTypeId}
-              onChange={(e) => setField('employmentTypeId', e.target.value)}
-            >
-              <option value="" disabled>
-                Select
-              </option>
-              {employmentOptions.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              invalid={!!fieldErrors.employmentTypeId}
+              options={employmentOptions}
+              value={form.employmentTypeId || null}
+              onChange={(id) => setField('employmentTypeId', id)}
+              placeholder="Select"
+              searchPlaceholder="Search employment type…"
+              aria-label="Employment type"
+            />
           </Field>
 
-          <Field label="Experience (min yrs)" required>
+          <Field label="Work mode" required fieldKey="workModeId" invalid={!!fieldErrors.workModeId}>
+            <SearchableSelect
+              required
+              disabled={loadingForm}
+              invalid={!!fieldErrors.workModeId}
+              options={workModeOptions}
+              value={form.workModeId || null}
+              onChange={(id) => setField('workModeId', id)}
+              placeholder="Select"
+              searchPlaceholder="Search work mode…"
+              aria-label="Work mode"
+            />
+          </Field>
+
+          <Field label="Experience (min yrs)" required fieldKey="minExp" invalid={!!fieldErrors.minExp}>
             <input
-              className={fieldClass}
+              className={cn(fieldClass, fieldErrors.minExp && fieldErrorClass)}
               type="number"
               min={0}
-              required
               disabled={loadingForm}
               value={form.minExp}
               onChange={(e) => setField('minExp', e.target.value)}
@@ -388,23 +487,18 @@ export function AddJobPage() {
             />
           </Field>
 
-          <Field label="Work mode" required>
-            <select
-              className={fieldClass}
+          <Field label="Location" required fieldKey="cityId" invalid={!!fieldErrors.cityId}>
+            <SearchableSelect
               required
               disabled={loadingForm}
-              value={form.workModeId}
-              onChange={(e) => setField('workModeId', e.target.value)}
-            >
-              <option value="" disabled>
-                Select
-              </option>
-              {workModeOptions.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              invalid={!!fieldErrors.cityId}
+              options={masters?.cities ?? []}
+              value={form.cityId || null}
+              onChange={(id) => setField('cityId', id)}
+              placeholder="Select city"
+              searchPlaceholder="Search city…"
+              aria-label="Location"
+            />
           </Field>
 
           <Field label="CTC (min)">
@@ -431,14 +525,47 @@ export function AddJobPage() {
             />
           </Field>
 
-          <Field label="Education Detail" required className="sm:col-span-2 lg:col-span-3">
+          <Field label="Education Detail" required fieldKey="educationDetail" invalid={!!fieldErrors.educationDetail}>
             <input
-              className={fieldClass}
+              className={cn(fieldClass, fieldErrors.educationDetail && fieldErrorClass)}
               placeholder="e.g. B.Tech / MCA / Equivalent"
-              required
               disabled={loadingForm}
               value={form.educationDetail}
               onChange={(e) => setField('educationDetail', e.target.value)}
+            />
+          </Field>
+
+          <Field label="Industry type" required fieldKey="industryTypeId" invalid={!!fieldErrors.industryTypeId}>
+            <SearchableSelect
+              required
+              disabled={loadingForm}
+              invalid={!!fieldErrors.industryTypeId}
+              options={masters?.industryTypes ?? []}
+              value={form.industryTypeId || null}
+              onChange={(id) => setField('industryTypeId', id)}
+              placeholder="Select"
+              searchPlaceholder="Search industry…"
+              aria-label="Industry type"
+            />
+          </Field>
+
+          <Field label="Department" required fieldKey="department" invalid={!!fieldErrors.department}>
+            <input
+              className={cn(fieldClass, fieldErrors.department && fieldErrorClass)}
+              placeholder="e.g. Engineering"
+              disabled={loadingForm}
+              value={form.department}
+              onChange={(e) => setField('department', e.target.value)}
+            />
+          </Field>
+
+          <Field label="Sub-Department">
+            <input
+              className={fieldClass}
+              placeholder="e.g. Frontend"
+              disabled={loadingForm}
+              value={form.subDepartment}
+              onChange={(e) => setField('subDepartment', e.target.value)}
             />
           </Field>
 
@@ -464,82 +591,48 @@ export function AddJobPage() {
             />
           </Field>
 
-          <Field label="Industry type" required>
-            <select
-              className={fieldClass}
-              required
+          <Field label="Skills" required className="sm:col-span-2 xl:col-span-3" fieldKey="skills" invalid={!!fieldErrors.skills}>
+            <SkillTagInput
+              options={masters?.skills ?? []}
+              value={selectedSkills}
+              onChange={onSkillsChange}
               disabled={loadingForm}
-              value={form.industryTypeId}
-              onChange={(e) => setField('industryTypeId', e.target.value)}
-            >
-              <option value="" disabled>
-                Select
-              </option>
-              {(masters?.industryTypes ?? []).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Department" required>
-            <input
-              className={fieldClass}
-              placeholder="e.g. Engineering"
-              required
-              disabled={loadingForm}
-              value={form.department}
-              onChange={(e) => setField('department', e.target.value)}
+              invalid={!!fieldErrors.skills}
+              placeholder={mastersLoading ? 'Loading skills…' : 'Type to search or add a skill…'}
+              suggestCount={5}
             />
+            <p className={cn('mt-1 text-[11px]', fieldErrors.skills ? 'text-rose-600' : 'text-slate-400')}>
+              {selectedSkills.length
+                ? `${selectedSkills.length} selected — click × to remove`
+                : fieldErrors.skills
+                  ? 'Add at least one skill'
+                  : 'Focus for suggestions, or type a new skill and press Enter'}
+            </p>
           </Field>
 
-          <Field label="Sub-Department">
-            <input
-              className={fieldClass}
-              placeholder="e.g. Frontend"
-              disabled={loadingForm}
-              value={form.subDepartment}
-              onChange={(e) => setField('subDepartment', e.target.value)}
-            />
-          </Field>
-
-          <Field label="Skills" required className="sm:col-span-2 lg:col-span-3">
-            <div className="mt-0.5 max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
-              <div className="flex flex-wrap gap-1.5">
-                {(masters?.skills ?? []).slice(0, 80).map((s) => {
-                  const on = skillIds.includes(s.id);
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      disabled={loadingForm}
-                      onClick={() => toggleSkill(s.id)}
-                      className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
-                        on ? 'bg-[#1A56DB] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {!masters?.skills?.length && (
-                <p className="text-[11px] text-slate-400">{mastersLoading ? 'Loading skills…' : 'No skills found'}</p>
-              )}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-400">{skillIds.length} selected</p>
-          </Field>
-
-          <Field label="Job Description" required className="sm:col-span-2 lg:col-span-3">
+          <Field
+            label="Job Description"
+            required
+            className="sm:col-span-2 xl:col-span-3"
+            fieldKey="description"
+            invalid={!!fieldErrors.description}
+          >
             <textarea
-              className={`${fieldClass} h-auto min-h-[96px] py-1.5`}
+              className={cn(fieldClass, 'h-auto min-h-[96px] py-1.5', fieldErrors.description && fieldErrorClass)}
               placeholder="About the role — what the team does and why the role exists…"
-              required
               disabled={loadingForm}
+              maxLength={DESC_MAX}
               value={form.description}
-              onChange={(e) => setField('description', e.target.value)}
+              onChange={(e) => setField('description', e.target.value.slice(0, DESC_MAX))}
             />
+            <p
+              className={cn(
+                'mt-1 text-right text-[11px]',
+                form.description.length >= DESC_MAX ? 'text-rose-600' : 'text-slate-400',
+              )}
+            >
+              {form.description.length}/{DESC_MAX}
+            </p>
           </Field>
 
           {/*
@@ -566,25 +659,6 @@ export function AddJobPage() {
               onChange={(e) => setField('preferredQualifications', e.target.value)}
             />
           </Field>
-
-          <Field label="Location" required className="sm:col-span-2 lg:col-span-3">
-            <select
-              className={fieldClass}
-              required
-              disabled={loadingForm}
-              value={form.cityId}
-              onChange={(e) => setField('cityId', e.target.value)}
-            >
-              <option value="" disabled>
-                Select city
-              </option>
-              {(masters?.cities ?? []).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </Field>
         </Section>
 
         <section className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
@@ -598,18 +672,39 @@ export function AddJobPage() {
 
           <div className="space-y-2">
             {rounds.map((round) => (
-              <div key={round.id} className="grid gap-2 sm:grid-cols-[7rem_1fr_auto] sm:items-end">
+              <div
+                key={round.id}
+                className="grid gap-2 sm:grid-cols-[6.5rem_minmax(0,1fr)_minmax(9rem,11rem)_auto] sm:items-end"
+              >
                 <Field label="Interview round">
                   <input className={fieldClass} value={round.id} readOnly />
                 </Field>
-                <Field label={`Interview Process (Round ${round.id})`}>
+                <Field label="Interview process">
                   <input
                     className={fieldClass}
-                    placeholder={`e.g. Round ${round.id} — HR / Technical / Manager`}
+                    placeholder={`e.g. HR screen / Technical / Hiring manager`}
                     value={round.process}
                     disabled={loadingForm}
-                    onChange={(e) => updateRound(round.id, e.target.value)}
+                    onChange={(e) => updateRound(round.id, { process: e.target.value })}
                   />
+                </Field>
+                <Field label="Interview mode">
+                  <select
+                    className={fieldClass}
+                    disabled={loadingForm}
+                    value={round.mode}
+                    onChange={(e) =>
+                      updateRound(round.id, { mode: e.target.value as InterviewMode | '' })
+                    }
+                    aria-label={`Interview mode for round ${round.id}`}
+                  >
+                    <option value="">Select mode…</option>
+                    {INTERVIEW_MODE_OPTIONS.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
                 <button
                   type="button"

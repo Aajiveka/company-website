@@ -25,7 +25,7 @@ export class CompaniesService {
       clientName: c.clientName ?? '',
       industry: c.industryType?.industryType ?? '',
       city: c.city?.descr ?? '',
-      logoUrl: c.companyLogo?.trim() ? `/files/${c.companyLogo}` : null,
+      logoUrl: c.companyLogo?.trim() ? `/api/clients/${Number(c.clientID)}/logo` : null,
     }));
   }
 
@@ -52,7 +52,7 @@ export class CompaniesService {
       website: c.companyWebsite ?? '',
       city: c.city?.descr ?? '',
       address: c.clientAddress ?? '',
-      logoUrl: c.companyLogo?.trim() ? `/files/${c.companyLogo}` : null,
+      logoUrl: c.companyLogo?.trim() ? `/api/clients/${Number(c.clientID)}/logo` : null,
       description: c.companyDescr ?? '',
       activeJobs,
     };

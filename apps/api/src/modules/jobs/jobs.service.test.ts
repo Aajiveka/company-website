@@ -59,6 +59,9 @@ async function buildService(): Promise<JobsService> {
 // ── Sample data ─────────────────────────────────────────────────────────────
 const sampleJobRow = {
   jobID: 1n,
+  // ClientJobs.clientID is a scalar column, so `include` returns it alongside the
+  // relation. byId builds the logo URL from it — without it the mock yields NaN.
+  clientID: 1n,
   statusID: 1,
   minCTC: 300000,
   maxCTC: 600000,
@@ -67,7 +70,7 @@ const sampleJobRow = {
   timestampIns: new Date('2025-06-01'),
   jobDescr: 'Build things',
   jobCandidateProfile: 'Engineer',
-  client: { clientName: 'ACME Corp', companyLogo: 'logo.png' },
+  client: { clientID: 1n, clientName: 'ACME Corp', companyLogo: 'logo.png' },
   jobCity: { descr: 'Mumbai' },
   designation: { descr: 'Software Engineer' },
   industryType: { industryType: 'IT' },
@@ -199,7 +202,7 @@ describe('JobsService', () => {
       assert.equal(result.company, 'ACME Corp');
       assert.deepEqual(result.skills, ['TypeScript', 'Node.js']);
       assert.deepEqual(result.educationTypes, ['B.Tech']);
-      assert.equal(result.companyLogo, 'logo.png');
+      assert.equal(result.companyLogo, '/api/clients/1/logo');
       assert.equal(result.description, 'Build things');
     });
 

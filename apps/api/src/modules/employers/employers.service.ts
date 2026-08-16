@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
+import { StorageService } from '@/modules/storage/storage.service';
 import {
   JOB_STATUS_ACTIVE,
   JOB_STATUS_ARCHIVED,
@@ -15,10 +17,44 @@ import type {
   ApplicantNoteDto,
   CreateJobDto,
   InterviewRoundDto,
+  ListApplicantsQueryDto,
   ListJobsQueryDto,
   UpdateBrandingDto,
+  UpdateCompanyProfileDto,
   UpdateJobDto,
 } from './dto/employers.dto';
+
+type PipelineStatus = 'New' | 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+
+const INTERVIEW_MAP_STATUSES: number[] = [
+  JobMapStatus.INTERVIEW_SCHEDULED,
+  JobMapStatus.INTERVIEW_ATTENDED,
+  JobMapStatus.RESCHEDULE_REQUESTED,
+  JobMapStatus.RESCHEDULED,
+];
+
+function pipelineStatus(statusId: number | null | undefined): PipelineStatus {
+  if (statusId === JobMapStatus.SHORTLISTED) return 'Shortlisted';
+  if (statusId != null && INTERVIEW_MAP_STATUSES.includes(statusId)) return 'Interview';
+  if (statusId === JobMapStatus.SELECTED) return 'Hired';
+  if (statusId === JobMapStatus.REJECTED) return 'Rejected';
+  return 'New';
+}
+
+/** Public img-friendly URL — browser <img> cannot send Authorization headers. */
+function companyLogoApiPath(clientId: number, key: string | null | undefined): string | null {
+  if (!key?.trim()) return null;
+  // Include /api so <img src> works through the Vite/nginx proxy without a bearer token.
+  return `/api/clients/${clientId}/logo`;
+}
+
+function jobMapIdsForPipeline(status: PipelineStatus): number[] {
+  if (status === 'Shortlisted') return [JobMapStatus.SHORTLISTED];
+  if (status === 'Interview') return INTERVIEW_MAP_STATUSES;
+  if (status === 'Hired') return [JobMapStatus.SELECTED];
+  if (status === 'Rejected') return [JobMapStatus.REJECTED];
+  return [JobMapStatus.MAPPED];
+}
 
 const jobStatus = (statusId: number | null) => {
   if (statusId === JOB_STATUS_ACTIVE) return 'Active';
@@ -29,7 +65,13 @@ const jobStatus = (statusId: number | null) => {
 
 function encodeInterviewProcess(rounds?: InterviewRoundDto[] | null): string | null {
   if (!rounds?.length) return null;
-  return JSON.stringify(rounds.map((r) => ({ round: r.round, process: r.process ?? '' })));
+  return JSON.stringify(
+    rounds.map((r) => ({
+      round: r.round,
+      process: r.process ?? '',
+      ...(r.mode ? { mode: r.mode } : {}),
+    })),
+  );
 }
 
 function decodeInterviewProcess(raw: string | null | undefined): InterviewRoundDto[] {
@@ -40,6 +82,7 @@ function decodeInterviewProcess(raw: string | null | undefined): InterviewRoundD
       return parsed.map((r, i) => ({
         round: Number(r.round) || i + 1,
         process: String(r.process ?? ''),
+        ...(r.mode ? { mode: String(r.mode) } : {}),
       }));
     }
   } catch {
@@ -53,16 +96,34 @@ function decodeInterviewProcess(raw: string | null | undefined): InterviewRoundD
 
 /** Normalize labels so "Full time" ≈ "Full Time", "In-office" ≈ "Work From Office", etc. */
 function normalizeMasterLabel(label: string): string {
-  const s = label.toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
-  if (['full time', 'fulltime'].includes(s)) return 'full time';
+  const s = label
+    .normalize('NFKC')
+    .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
+    .toLowerCase()
+    .replace(/[-_/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (['full time', 'fulltime', 'full time employment', 'permanent'].includes(s)) return 'full time';
   if (['part time', 'parttime'].includes(s)) return 'part time';
   if (['internship', 'intern'].includes(s)) return 'internship';
-  if (['contract', 'contractual'].includes(s)) return 'contract';
+  if (['contract', 'contractual', 'contractor'].includes(s)) return 'contract';
+
   if (['in office', 'onsite', 'on site', 'work from office', 'wfo'].includes(s)) return 'in office';
   if (['remote', 'work from home', 'wfh'].includes(s)) return 'remote';
   if (['hybrid'].includes(s)) return 'hybrid';
-  // City aliases used in CSVs / Naukri-style dumps
-  if (['bangalore', 'bengaluru', 'bengalooru'].includes(s)) return 'bengaluru';
+  // City aliases used in CSVs / Naukri-style dumps (district names from legacy seed too)
+  if (
+    s === 'bangalore' ||
+    s === 'bengaluru' ||
+    s === 'bengalooru' ||
+    s === 'bangalore urban' ||
+    s === 'bangalore rural' ||
+    s.startsWith('bangalore ') ||
+    s.startsWith('bengaluru ')
+  ) {
+    return 'bengaluru';
+  }
+  if (s === 'noida' || s === 'gautam buddha nagar' || s === 'gautam budh nagar') return 'noida';
   if (['gurgaon', 'gurugram'].includes(s)) return 'gurugram';
   if (['bombay', 'mumbai'].includes(s)) return 'mumbai';
   if (['calcutta', 'kolkata'].includes(s)) return 'kolkata';
@@ -72,6 +133,19 @@ function normalizeMasterLabel(label: string): string {
     return 'database admin';
   }
   return s;
+}
+
+function normalizeInterviewMode(raw: string): 'Telephonic' | 'Face to face' | 'Video call' | undefined {
+  const s = raw
+    .toLowerCase()
+    .replace(/[-_/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!s) return undefined;
+  if (['telephonic', 'telephone', 'phone', 'call'].includes(s)) return 'Telephonic';
+  if (['face to face', 'in person', 'f2f', 'onsite interview'].includes(s)) return 'Face to face';
+  if (['video call', 'video', 'meet', 'google meet', 'zoom', 'teams'].includes(s)) return 'Video call';
+  return undefined;
 }
 
 function parseCsvLine(line: string): string[] {
@@ -116,10 +190,35 @@ export class EmployersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly applications: JobApplicationsService,
+    private readonly storage: StorageService,
   ) {}
 
   private get db() {
     return this.prisma.client;
+  }
+
+  /** Match skill labels case-insensitively; create missing rows in tblMstrSkills (max 100 chars). */
+  private async resolveSkillIds(
+    tx: Prisma.TransactionClient,
+    skillIds?: number[],
+    skillNames?: string[],
+  ): Promise<number[]> {
+    const ids = new Set<number>();
+    for (const id of skillIds ?? []) {
+      if (Number.isInteger(id) && id > 0) ids.add(id);
+    }
+    for (const raw of skillNames ?? []) {
+      const name = raw.trim().slice(0, 100);
+      if (!name) continue;
+      let row = await tx.mstrSkills.findFirst({
+        where: { descr: { equals: name, mode: 'insensitive' } },
+      });
+      if (!row) {
+        row = await tx.mstrSkills.create({ data: { descr: name } });
+      }
+      ids.add(row.skillID);
+    }
+    return [...ids];
   }
 
   /**
@@ -154,22 +253,178 @@ export class EmployersService {
       include: {
         city: { select: { descr: true } },
         industryType: { select: { industryType: true } },
+        ClientContacts: {
+          where: { contactPersonRole: { equals: 'HR', mode: 'insensitive' } },
+          take: 1,
+          orderBy: { clientContactsID: 'desc' },
+        },
       },
     });
     if (!c) throw new NotFoundException('Company not found');
+
+    const hr = c.ClientContacts[0];
 
     return {
       clientId: Number(c.clientID),
       clientName: c.clientName ?? '',
       industry: c.industryType?.industryType ?? '',
+      industryTypeId: c.industryTypeID,
       email: c.emailID ?? '',
       contactNo: c.contactNo ?? '',
+      hrEmail: hr?.emailID ?? '',
+      hrContactNo: hr?.mobile?.trim() || hr?.phoneNo?.trim() || '',
+      hrContactName: hr?.contactPerName ?? '',
       website: c.companyWebsite ?? '',
       city: c.city?.descr ?? '',
+      cityId: c.cityID,
       address: c.clientAddress ?? '',
-      logoUrl: c.companyLogo?.trim() ? `/files/${c.companyLogo}` : null,
+      logoUrl: companyLogoApiPath(Number(c.clientID), c.companyLogo),
+      companyLogo: c.companyLogo ?? '',
       description: c.companyDescr ?? '',
     };
+  }
+
+  /** Stream company logo for <img src> (no bearer token — logos are public branding). */
+  async streamCompanyLogo(clientId: number) {
+    const c = await this.db.clientMstr.findUnique({
+      where: { clientID: clientId },
+      select: { companyLogo: true },
+    });
+    const key = c?.companyLogo?.trim();
+    if (!key) throw new NotFoundException('Logo not found');
+
+    const body = await this.storage.read(key);
+    const lower = key.toLowerCase();
+    const contentType = lower.endsWith('.png')
+      ? 'image/png'
+      : lower.endsWith('.jpg') || lower.endsWith('.jpeg')
+        ? 'image/jpeg'
+        : lower.endsWith('.webp')
+          ? 'image/webp'
+          : 'application/octet-stream';
+    const fileName = key.split('/').pop() || 'logo';
+    return { body, contentType, fileName };
+  }
+
+  /** Update owned company profile fields on tblClientMstr (+ HR contact row). */
+  async updateProfile(userId: number, dto: UpdateCompanyProfileDto) {
+    const clientId = await this.clientIdFor(userId);
+    await this.db.clientMstr.update({
+      where: { clientID: clientId },
+      data: {
+        ...(dto.clientName !== undefined && { clientName: dto.clientName.trim() }),
+        ...(dto.email !== undefined && { emailID: dto.email.trim() || null }),
+        ...(dto.contactNo !== undefined && { contactNo: dto.contactNo.trim() || null }),
+        ...(dto.website !== undefined && { companyWebsite: dto.website.trim() || null }),
+        ...(dto.address !== undefined && { clientAddress: dto.address.trim() || null }),
+        ...(dto.description !== undefined && { companyDescr: dto.description.trim() || null }),
+        ...(dto.cityId !== undefined && { cityID: dto.cityId }),
+        ...(dto.industryTypeId !== undefined && { industryTypeID: dto.industryTypeId }),
+        ...(dto.companyLogo !== undefined && { companyLogo: dto.companyLogo.trim() || null }),
+        timestampUpd: new Date(),
+        loginIDUpd: userId,
+      },
+    });
+
+    if (
+      dto.hrEmail !== undefined ||
+      dto.hrContactNo !== undefined ||
+      dto.hrContactName !== undefined
+    ) {
+      await this.upsertHrContact(clientId, {
+        name: dto.hrContactName,
+        phone: dto.hrContactNo,
+        email: dto.hrEmail,
+      });
+    }
+
+    await this.audit.record({
+      userId,
+      action: 'company.profile.update',
+      entity: 'ClientMstr',
+      entityId: Number(clientId),
+    });
+    return this.profile(userId);
+  }
+
+  private async upsertHrContact(
+    clientId: bigint,
+    input: { name?: string; phone?: string; email?: string },
+  ) {
+    const existing = await this.db.clientContacts.findFirst({
+      where: { clientID: clientId, contactPersonRole: { equals: 'HR', mode: 'insensitive' } },
+      orderBy: { clientContactsID: 'desc' },
+    });
+    const phone = input.phone?.trim() || null;
+    const email = input.email?.trim() || null;
+    const name = input.name?.trim() || existing?.contactPerName || 'HR Contact';
+
+    if (existing) {
+      await this.db.clientContacts.update({
+        where: { clientContactsID: existing.clientContactsID },
+        data: {
+          contactPerName: name,
+          ...(input.phone !== undefined && { phoneNo: phone, mobile: phone }),
+          ...(input.email !== undefined && { emailID: email }),
+          contactPersonRole: 'HR',
+        },
+      });
+      return;
+    }
+
+    if (!phone && !email) return;
+
+    await this.db.clientContacts.create({
+      data: {
+        clientID: clientId,
+        contactPerName: name,
+        phoneNo: phone,
+        mobile: phone,
+        emailID: email,
+        roleID: 4,
+        contactPersonRole: 'HR',
+      },
+    });
+  }
+
+  /** Upload company logo image and persist path on tblClientMstr.CompanyLogo. */
+  async uploadLogo(userId: number, file: Express.Multer.File) {
+    if (!file?.buffer?.length) throw new BadRequestException('No file uploaded');
+    if (!['image/jpeg', 'image/png'].includes(file.mimetype)) {
+      throw new BadRequestException('Logo must be a JPEG or PNG image');
+    }
+
+    const photoDocType = await this.db.mstrDocuments.findFirst({
+      where: {
+        OR: [
+          { documentName: { contains: 'Logo', mode: 'insensitive' } },
+          { documentName: { contains: 'Photo', mode: 'insensitive' } },
+        ],
+      },
+      select: { documentID: true },
+    });
+    const docTypeId = photoDocType ? Number(photoDocType.documentID) : 1;
+    const stored = await this.storage.upload(docTypeId, userId, file);
+
+    const clientId = await this.clientIdFor(userId);
+    await this.db.clientMstr.update({
+      where: { clientID: clientId },
+      data: {
+        companyLogo: stored.key,
+        timestampUpd: new Date(),
+        loginIDUpd: userId,
+      },
+    });
+
+    await this.audit.record({
+      userId,
+      action: 'company.logo_uploaded',
+      entity: 'ClientMstr',
+      entityId: Number(clientId),
+      detail: { key: stored.key },
+    });
+
+    return this.profile(userId);
   }
 
   /** Port of spClientGetJoblisting — paginated company openings with search/filters. */
@@ -333,10 +588,11 @@ export class EmployersService {
         },
       });
 
-      if (dto.skillIds?.length) {
+      const resolvedSkills = await this.resolveSkillIds(tx, dto.skillIds, dto.skills);
+      if (resolvedSkills.length) {
         // tblClientJobSkill is just (JobSkillID, JobID, SkillID) — it carries no audit columns.
         await tx.clientJobSkill.createMany({
-          data: dto.skillIds.map((skillID) => ({ jobID: job.jobID, skillID })),
+          data: resolvedSkills.map((skillID) => ({ jobID: job.jobID, skillID })),
         });
       }
 
@@ -345,37 +601,359 @@ export class EmployersService {
   }
 
   /** Candidates who applied to any of this company's jobs (spClientGetJobSubscribers). */
-  async applicants(userId: number) {
+  async applicants(userId: number, query: ListApplicantsQueryDto = {}) {
     const clientId = await this.clientIdFor(userId);
+    const statusFilter = query.status;
+    const q = query.q?.trim() ?? '';
+    const jobId = query.jobId && query.jobId > 0 ? query.jobId : undefined;
+    const cityFilter = query.city?.trim() ?? '';
+    const minExp = query.minExp != null && query.minExp >= 0 ? query.minExp : undefined;
+    const maxNotice = query.maxNotice != null && query.maxNotice >= 0 ? query.maxNotice : undefined;
+
+    const where: Record<string, unknown> = {
+      job: {
+        clientID: clientId,
+        ...(jobId ? { jobID: jobId } : {}),
+      },
+    };
+    if (statusFilter) {
+      where.jobMapStatusID = { in: jobMapIdsForPipeline(statusFilter) };
+    }
+
     const rows = await this.db.jobSubscriberMapping.findMany({
-      where: { job: { clientID: clientId } },
+      where,
       orderBy: { mapDate: 'desc' },
       include: {
         jobMapStatus: { select: { descr: true } },
-        job: { include: { designation: { select: { descr: true } } } },
+        job: {
+          include: {
+            designation: { select: { descr: true } },
+            jobCity: { select: { descr: true } },
+          },
+        },
         subscriber: {
           include: {
             SubscriberCVDetails: {
-              include: { city: { select: { descr: true } } },
+              include: {
+                city: { select: { descr: true } },
+                skill: { select: { descr: true } },
+              },
+            },
+            SubscriberEmployer: {
+              orderBy: { timestampIns: 'desc' },
+              take: 1,
+              include: { designation: { select: { descr: true } } },
+            },
+            SubscriberTags: {
+              include: { tag: { select: { tagName: true } } },
             },
           },
         },
       },
     });
 
-    return rows.map((r) => {
+    let mapped = rows.map((r) => {
       const cv = r.subscriber?.SubscriberCVDetails;
+      const current = r.subscriber?.SubscriberEmployer?.[0];
+      const status = pipelineStatus(r.jobMapStatusID);
+      const primary = cv?.skill?.descr?.trim();
+      const tagSkills = (r.subscriber?.SubscriberTags ?? [])
+        .map((t) => t.tag?.tagName?.trim())
+        .filter(Boolean) as string[];
+      const skills = [...new Set([...(primary ? [primary] : []), ...tagSkills])];
+      const noticeDays = cv?.noticePeriod ?? current?.noticePeriodDays ?? null;
       return {
+        jobSubscriberMapId: Number(r.jobSubscriberMapID),
         subscriberId: Number(r.subscriberID ?? 0),
+        jobId: Number(r.jobID ?? 0),
         fullName: cv?.fullName?.trim() || cv?.mobileNo1 || '',
         designation: r.job?.designation?.descr ?? '',
+        jobCity: r.job?.jobCity?.descr ?? '',
         city: cv?.city?.descr ?? '',
         experience: cv?.totalExp != null ? `${cv.totalExp} yrs` : '',
+        totalExp: cv?.totalExp ?? null,
         jobStatus: r.jobMapStatus?.descr ?? 'Applied',
+        status,
+        skills,
+        company: current?.employer ?? '',
+        notice: noticeDays != null ? `${noticeDays} days` : '',
+        noticePeriodDays: noticeDays,
         appliedOn: r.mapDate?.toISOString().slice(0, 10) ?? '',
-        jobSubscriberMapId: Number(r.jobSubscriberMapID),
+        email: cv?.emailID ?? '',
+        mobile: cv?.mobileNo1 ?? '',
       };
     });
+
+    if (q) {
+      const needle = q.toLowerCase();
+      mapped = mapped.filter(
+        (a) =>
+          a.fullName.toLowerCase().includes(needle) ||
+          a.designation.toLowerCase().includes(needle) ||
+          a.city.toLowerCase().includes(needle) ||
+          a.jobCity.toLowerCase().includes(needle) ||
+          a.company.toLowerCase().includes(needle) ||
+          a.skills.some((s) => s.toLowerCase().includes(needle)) ||
+          (a.email ?? '').toLowerCase().includes(needle),
+      );
+    }
+
+    if (cityFilter) {
+      const needle = cityFilter.toLowerCase();
+      mapped = mapped.filter(
+        (a) => a.city.toLowerCase().includes(needle) || a.jobCity.toLowerCase().includes(needle),
+      );
+    }
+
+    if (minExp != null) {
+      mapped = mapped.filter((a) => (a.totalExp ?? -1) >= minExp);
+    }
+
+    if (maxNotice != null) {
+      mapped = mapped.filter((a) => a.noticePeriodDays != null && a.noticePeriodDays <= maxNotice);
+    }
+
+    const page = query.page && query.page > 0 ? query.page : 1;
+    const pageSize = query.pageSize && query.pageSize > 0 ? Math.min(query.pageSize, 100) : 10;
+    const total = mapped.length;
+    const pageCount = Math.ceil(total / pageSize) || 0;
+    const start = (page - 1) * pageSize;
+    const items = mapped.slice(start, start + pageSize);
+
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+      pageCount,
+    };
+  }
+
+  /** Single owned applicant application + CV summary. */
+  async getApplicant(userId: number, jobSubscriberMapId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const r = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: {
+        jobMapStatus: { select: { descr: true } },
+        job: {
+          include: {
+            designation: { select: { descr: true } },
+            jobCity: { select: { descr: true } },
+          },
+        },
+        subscriber: {
+          include: {
+            SubscriberCVDetails: {
+              include: {
+                city: { select: { descr: true } },
+                currentCity: { select: { descr: true } },
+                skill: { select: { descr: true } },
+                industryType: { select: { industryType: true } },
+                subFunction: { select: { descr: true } },
+              },
+            },
+            SubscriberCVUploaded: true,
+            SubscriberProfileExtra: true,
+            SubscriberEducation: {
+              orderBy: { timestampIns: 'desc' },
+              include: {
+                course: { select: { degreeName: true } },
+                degree: { select: { descr: true } },
+              },
+            },
+            SubscriberEmployer: {
+              orderBy: { timestampIns: 'desc' },
+              include: { designation: { select: { descr: true } } },
+            },
+            SubscriberITSkill: { orderBy: { timestampIns: 'desc' } },
+            SubscriberCertificate: { orderBy: { timestampIns: 'desc' } },
+            SubscriberProject: { orderBy: { timestampIns: 'desc' } },
+            SubscriberAccomplishment: { orderBy: { timestampIns: 'desc' } },
+            SubscriberPrefferedLocations: {
+              include: { city: { select: { descr: true } } },
+            },
+            SubscriberTags: {
+              include: { tag: { select: { tagName: true } } },
+            },
+            SubscriberStatusHistory: {
+              where: { clientID: clientId },
+              orderBy: { timestampIns: 'desc' },
+              take: 20,
+              include: { status: { select: { descr: true } } },
+            },
+          },
+        },
+      },
+    });
+    if (!r || Number(r.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const cv = r.subscriber?.SubscriberCVDetails;
+    const uploaded = r.subscriber?.SubscriberCVUploaded;
+    const extra = r.subscriber?.SubscriberProfileExtra;
+    const status = pipelineStatus(r.jobMapStatusID);
+    const tagSkills = (r.subscriber?.SubscriberTags ?? [])
+      .map((t) => t.tag?.tagName?.trim())
+      .filter(Boolean) as string[];
+    const primarySkill = cv?.skill?.descr?.trim();
+    const skills = [...new Set([...(primarySkill ? [primarySkill] : []), ...tagSkills])];
+    const hasResume = Boolean(uploaded?.latestCVPath?.trim() || cv?.cVPath?.trim());
+    const genderRaw = cv?.gender?.trim() ?? '';
+    const gender =
+      genderRaw.toUpperCase() === 'M'
+        ? 'Male'
+        : genderRaw.toUpperCase() === 'F'
+          ? 'Female'
+          : genderRaw || '';
+
+    return {
+      jobSubscriberMapId: Number(r.jobSubscriberMapID),
+      subscriberId: Number(r.subscriberID ?? 0),
+      fullName: cv?.fullName?.trim() || cv?.mobileNo1 || '',
+      email: cv?.emailID ?? '',
+      mobile: cv?.mobileNo1 ?? '',
+      gender,
+      dateOfBirth: cv?.dOB?.toISOString().slice(0, 10) ?? null,
+      address: cv?.addressLine1?.trim() ?? '',
+      designation: r.job?.designation?.descr ?? cv?.subFunction?.descr ?? '',
+      currentDesignation: cv?.subFunction?.descr ?? '',
+      jobCity: r.job?.jobCity?.descr ?? '',
+      city: cv?.city?.descr ?? cv?.currentCity?.descr ?? '',
+      currentCity: cv?.currentCity?.descr ?? '',
+      experience: cv?.totalExp != null ? `${cv.totalExp} yrs` : '',
+      totalExp: cv?.totalExp ?? null,
+      currentCtc: cv?.currentCTC != null ? Number(cv.currentCTC) : null,
+      notice: cv?.noticePeriod != null ? `${cv.noticePeriod} days` : '',
+      noticePeriodDays: cv?.noticePeriod ?? null,
+      readyToRelocate: cv?.flgReadyToRelocate === 1,
+      skills,
+      industry: cv?.industryType?.industryType ?? '',
+      status,
+      jobStatus: r.jobMapStatus?.descr ?? 'Applied',
+      appliedOn: r.mapDate?.toISOString().slice(0, 10) ?? '',
+      hasResume,
+      resumeFileName: uploaded?.cVName?.trim() || (hasResume ? 'Resume.pdf' : null),
+      resumeUploadedAt: uploaded
+        ? (uploaded.tImestampUpd ?? uploaded.timestampIns)?.toISOString() ?? null
+        : null,
+      resumeUrl: hasResume ? `/clients/me/applicants/${jobSubscriberMapId}/resume` : null,
+      cvPath: hasResume ? `/clients/me/applicants/${jobSubscriberMapId}/resume` : null,
+      photoUrl: cv?.photoName?.trim() ? `/files/${cv.photoName}` : null,
+      resumeHeadline: extra?.resumeHeadline?.trim() ?? '',
+      profileSummary: extra?.profileSummary?.trim() ?? '',
+      department: extra?.department?.trim() ?? '',
+      roleCategory: extra?.roleCategory?.trim() ?? '',
+      jobRole: extra?.jobRole?.trim() ?? '',
+      desiredJobType: extra?.desiredJobType?.trim() ?? '',
+      desiredEmploymentType: extra?.desiredEmploymentType?.trim() ?? '',
+      preferredShift: extra?.preferredShift?.trim() ?? '',
+      preferredWorkModes: extra?.preferredWorkModes?.trim() ?? '',
+      preferredSalary: extra?.preferredSalary != null ? Number(extra.preferredSalary) : null,
+      preferredJobRoles: extra?.preferredJobRoles?.trim() ?? '',
+      maritalStatus: extra?.maritalStatus?.trim() ?? '',
+      preferredLocations: (r.subscriber?.SubscriberPrefferedLocations ?? [])
+        .map((p) => p.city?.descr?.trim())
+        .filter(Boolean) as string[],
+      itSkills: (r.subscriber?.SubscriberITSkill ?? []).map((s) => ({
+        name: s.skillName,
+        version: s.version ?? '',
+        lastUsedYear: s.lastUsedYear,
+        expYears: s.expYears,
+        expMonths: s.expMonths,
+      })),
+      certificates: (r.subscriber?.SubscriberCertificate ?? []).map((c) => ({
+        name: c.certificateName,
+        url: c.certificateUrl ?? '',
+        certificationId: c.certificationID ?? '',
+        validFrom:
+          c.validFromMonth && c.validFromYear ? `${c.validFromMonth}/${c.validFromYear}` : '',
+        validTill: c.flgNeverExpires
+          ? 'Does not expire'
+          : c.validTillMonth && c.validTillYear
+            ? `${c.validTillMonth}/${c.validTillYear}`
+            : '',
+      })),
+      projects: (r.subscriber?.SubscriberProject ?? []).map((p) => ({
+        title: p.title,
+        clientName: p.clientName ?? '',
+        status: p.projectStatus ?? '',
+        from:
+          p.workedFromMonth && p.workedFromYear
+            ? `${p.workedFromMonth}/${p.workedFromYear}`
+            : '',
+        to:
+          p.workedTillMonth && p.workedTillYear
+            ? `${p.workedTillMonth}/${p.workedTillYear}`
+            : '',
+        role: p.roleDescr ?? '',
+        skillsUsed: p.skillsUsed ?? '',
+        details: p.details ?? '',
+        teamSize: p.teamSize,
+      })),
+      accomplishments: (r.subscriber?.SubscriberAccomplishment ?? []).map((a) => ({
+        kind: a.kind,
+        title: a.title,
+        url: a.url ?? '',
+        description: a.descr ?? '',
+        when: a.eventMonth && a.eventYear ? `${a.eventMonth}/${a.eventYear}` : '',
+      })),
+      employment: (r.subscriber?.SubscriberEmployer ?? []).map((e) => ({
+        employer: e.employer,
+        designation: e.designation?.descr ?? '',
+        from: e.joiningDate?.toISOString().slice(0, 10) ?? '',
+        to: e.releavingDate?.toISOString().slice(0, 10) ?? '',
+        salary: e.salary,
+        description: e.jobDescr ?? '',
+        current: e.flgCurrent === 1 || e.releavingDate == null,
+      })),
+      education: (r.subscriber?.SubscriberEducation ?? []).map((ed) => ({
+        degree: ed.degree?.descr ?? '',
+        course: ed.course?.degreeName ?? '',
+        institute: ed.instituteName ?? '',
+        year: ed.passingYear,
+        mode: ed.courseMode ?? '',
+        marks: ed.marks ?? '',
+      })),
+      timeline: (r.subscriber?.SubscriberStatusHistory ?? []).map((h) => ({
+        status: h.status?.descr ?? '',
+        at: h.timestampIns?.toISOString() ?? '',
+        comments: h.comments ?? '',
+      })),
+      company: r.subscriber?.SubscriberEmployer?.[0]?.employer ?? '',
+    };
+  }
+
+  /** Stream an applicant's uploaded resume when the application belongs to this employer. */
+  async getApplicantResume(userId: number, jobSubscriberMapId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const r = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: {
+        job: { select: { clientID: true } },
+        subscriber: {
+          include: {
+            SubscriberCVUploaded: true,
+            SubscriberCVDetails: { select: { cVPath: true, fullName: true } },
+          },
+        },
+      },
+    });
+    if (!r || Number(r.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const uploaded = r.subscriber?.SubscriberCVUploaded;
+    const key = uploaded?.latestCVPath?.trim() || r.subscriber?.SubscriberCVDetails?.cVPath?.trim();
+    if (!key) throw new NotFoundException('No resume uploaded');
+
+    const body = await this.storage.read(key);
+    const fallbackName = `${(r.subscriber?.SubscriberCVDetails?.fullName ?? 'resume').trim().replace(/\s+/g, '_') || 'resume'}.pdf`;
+    return {
+      body,
+      fileName: uploaded?.cVName?.trim() || fallbackName,
+    };
   }
 
   /** id-backed lookup lists for the job post/edit form (fixes free-text fields that never matched CreateJobDto's ints). */
@@ -448,11 +1026,12 @@ export class EmployersService {
         },
       });
 
-      if (dto.skillIds) {
+      if (dto.skillIds !== undefined || dto.skills !== undefined) {
+        const resolvedSkills = await this.resolveSkillIds(tx, dto.skillIds, dto.skills);
         await tx.clientJobSkill.deleteMany({ where: { jobID: jobId } });
-        if (dto.skillIds.length) {
+        if (resolvedSkills.length) {
           await tx.clientJobSkill.createMany({
-            data: dto.skillIds.map((skillID) => ({ jobID: jobId, skillID })),
+            data: resolvedSkills.map((skillID) => ({ jobID: jobId, skillID })),
           });
         }
       }
@@ -569,7 +1148,7 @@ export class EmployersService {
     return { ok: true };
   }
 
-  /** Client-side shortlist/reject of an applicant (spClientShortListRejectSubscriber, RoleID=4 branch). */
+  /** Client-side pipeline decision on an applicant. */
   async decideApplicant(userId: number, jobSubscriberMapId: number, dto: ApplicantDecisionDto) {
     const clientId = await this.clientIdFor(userId);
     const mapping = await this.db.jobSubscriberMapping.findUnique({
@@ -580,9 +1159,20 @@ export class EmployersService {
       throw new NotFoundException('Application not found');
     }
 
-    const jobMapStatusId = dto.decision === 'Shortlisted' ? JobMapStatus.SHORTLISTED : JobMapStatus.REJECTED;
-    const historyStatusId = dto.decision === 'Shortlisted' ? SubscriberStatus.SHORTLISTED : SubscriberStatus.REJECTED;
-    await this.applications.transitionStatus(jobSubscriberMapId, jobMapStatusId, userId, historyStatusId);
+    const map: Record<
+      ApplicantDecisionDto['decision'],
+      { jobMapStatusId: number; historyStatusId: number }
+    > = {
+      Shortlisted: { jobMapStatusId: JobMapStatus.SHORTLISTED, historyStatusId: SubscriberStatus.SHORTLISTED },
+      Interview: {
+        jobMapStatusId: JobMapStatus.INTERVIEW_SCHEDULED,
+        historyStatusId: SubscriberStatus.INTERVIEW_SCHEDULED,
+      },
+      Hired: { jobMapStatusId: JobMapStatus.SELECTED, historyStatusId: SubscriberStatus.SELECTED },
+      Rejected: { jobMapStatusId: JobMapStatus.REJECTED, historyStatusId: SubscriberStatus.REJECTED },
+    };
+    const next = map[dto.decision];
+    await this.applications.transitionStatus(jobSubscriberMapId, next.jobMapStatusId, userId, next.historyStatusId);
     await this.audit.record({
       userId,
       action: 'applicant.decision',
@@ -590,7 +1180,7 @@ export class EmployersService {
       entityId: jobSubscriberMapId,
       detail: { decision: dto.decision },
     });
-    return { ok: true };
+    return { ok: true, status: dto.decision };
   }
 
   // ---------------------------------------------------------------------------
@@ -644,6 +1234,38 @@ export class EmployersService {
     });
   }
 
+  /** Make sure CSV labels like "Full Time" / "Bengaluru" exist (migrate-before-seed gap). */
+  private async ensureBulkImportMasters() {
+    const empTypes = ['Full Time', 'Part Time', 'Internship', 'Contract'];
+    for (const descr of empTypes) {
+      await this.db.$executeRaw`
+        INSERT INTO "tblMstrEmpType" ("Descr")
+        SELECT ${descr}
+        WHERE NOT EXISTS (
+          SELECT 1 FROM "tblMstrEmpType" e WHERE lower(trim(e."Descr")) = lower(trim(${descr}))
+        )
+      `;
+    }
+
+    const cities: { descr: string; stateId: number }[] = [
+      { descr: 'Bengaluru', stateId: 16 },
+      { descr: 'Bangalore', stateId: 16 },
+      { descr: 'Noida', stateId: 34 },
+      { descr: 'Mumbai', stateId: 21 },
+      { descr: 'Delhi', stateId: 9 },
+    ];
+    for (const { descr, stateId } of cities) {
+      await this.db.$executeRaw`
+        INSERT INTO "tblMstrCily" ("Descr", "StateID")
+        SELECT ${descr}, ${stateId}
+        WHERE EXISTS (SELECT 1 FROM "tblMstrState" st WHERE st."StateID" = ${stateId})
+          AND NOT EXISTS (
+            SELECT 1 FROM "tblMstrCily" c WHERE lower(trim(c."Descr")) = lower(trim(${descr}))
+          )
+      `;
+    }
+  }
+
   /** Bulk-upload jobs from a CSV that matches employer jobFields columns. */
   async bulkUploadJobs(userId: number, file: Express.Multer.File) {
     if (!file || !file.buffer) throw new BadRequestException('No file provided');
@@ -656,13 +1278,14 @@ export class EmployersService {
     const headers = parseCsvLine(lines[0]).map(headerKey);
     const dataLines = lines.slice(1);
 
-    const [designations, cities, workModes, empTypes, industries, skills] = await Promise.all([
+    await this.ensureBulkImportMasters();
+
+    const [designations, cities, workModes, empTypes, industries] = await Promise.all([
       this.db.mstrDesignation.findMany(),
       this.db.mstrCily.findMany(),
       this.db.mstrWorkMode.findMany(),
       this.db.mstrEmpType.findMany(),
       this.db.mstrIndustryType.findMany(),
-      this.db.mstrSkills.findMany(),
     ]);
 
     const findByLabel = <T extends { descr?: string | null; industryType?: string | null }>(
@@ -715,6 +1338,7 @@ export class EmployersService {
       const location = col(row, 'location', 'city');
       const interviewRoundRaw = col(row, 'interview round');
       const interviewProcessRaw = col(row, 'interview process');
+      const interviewModeRaw = col(row, 'interview mode');
 
       const missing: string[] = [];
       if (!position) missing.push('Position');
@@ -731,6 +1355,12 @@ export class EmployersService {
       if (missing.length) {
         errors.push({ row: rowNum, reason: `Missing required: ${missing.join(', ')}` });
         preview.push({ row: rowNum, position, location, status: 'Error', error: missing.join(', ') });
+        continue;
+      }
+
+      if (description.length > 1000) {
+        errors.push({ row: rowNum, reason: 'Job Description exceeds 1000 characters' });
+        preview.push({ row: rowNum, position, location, status: 'Error', error: 'Description too long' });
         continue;
       }
 
@@ -791,32 +1421,40 @@ export class EmployersService {
       const processes = interviewProcessRaw
         ? interviewProcessRaw.split('|').map((p) => p.trim())
         : [];
+      const modes = interviewModeRaw
+        ? interviewModeRaw.split('|').map((m) => m.trim())
+        : [];
       const interviewProcess =
-        rounds.length || processes.length
+        rounds.length || processes.length || modes.length
           ? encodeInterviewProcess(
-              (rounds.length ? rounds : processes.map((_, idx) => String(idx + 1))).map((r, idx) => ({
-                round: parseInt(r, 10) || idx + 1,
-                process: processes[idx] ?? '',
-              })),
+              (rounds.length
+                ? rounds
+                : (processes.length ? processes : modes).map((_, idx) => String(idx + 1))
+              ).map((r, idx) => {
+                const mode = normalizeInterviewMode(modes[idx] ?? '');
+                return {
+                  round: parseInt(r, 10) || idx + 1,
+                  process: processes[idx] ?? '',
+                  ...(mode ? { mode } : {}),
+                };
+              }),
             )
           : null;
 
       const skillNames = skillsRaw
         .split(/[,;]/)
-        .map((s) => s.trim())
+        .map((s) => s.trim().slice(0, 100))
         .filter(Boolean);
-      const skillIds = skillNames
-        .map((name) => findByLabel(skills, name, (s) => s.descr)?.skillID)
-        .filter((id): id is number => id != null);
-
-      if (!skillIds.length) {
-        errors.push({ row: rowNum, reason: `No matching Skills for "${skillsRaw}"` });
-        preview.push({ row: rowNum, position, location, status: 'Error', error: 'Unknown Skills' });
+      if (!skillNames.length) {
+        errors.push({ row: rowNum, reason: `No Skills provided` });
+        preview.push({ row: rowNum, position, location, status: 'Error', error: 'No Skills' });
         continue;
       }
 
       try {
         await this.db.$transaction(async (tx) => {
+          const skillIds = await this.resolveSkillIds(tx, undefined, skillNames);
+
           const job = await tx.clientJobs.create({
             data: {
               clientID: clientId,
@@ -825,7 +1463,7 @@ export class EmployersService {
               workModeID: mode.workModeID,
               jobCityID: city.cityID,
               industryTypeID: industry.industryTypeID,
-              jobDescr: description,
+              jobDescr: description.slice(0, 1000),
               minExp,
               maxExp,
               minCTC: Number.isNaN(minCtc) ? 0 : minCtc,
@@ -888,51 +1526,402 @@ export class EmployersService {
         jobID: true,
         statusID: true,
         designation: { select: { descr: true } },
+        jobCity: { select: { descr: true } },
         JobSubscriberMapping: {
-          select: { jobMapStatusID: true },
+          select: { jobMapStatusID: true, mapDate: true },
         },
       },
     });
 
     const totalJobs = jobs.length;
     const activeJobs = jobs.filter((j) => j.statusID === JOB_STATUS_ACTIVE).length;
+    const closedJobs = jobs.filter((j) => j.statusID === JOB_STATUS_CLOSED).length;
+    const draftJobs = jobs.filter((j) => j.statusID === JOB_STATUS_DRAFT).length;
+    const archivedJobs = jobs.filter((j) => j.statusID === JOB_STATUS_ARCHIVED).length;
 
     let totalApplications = 0;
     let shortlisted = 0;
     let interviewScheduled = 0;
     let selected = 0;
     let rejected = 0;
+    let mapped = 0;
+
+    const monthBuckets = new Map<string, number>();
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthBuckets.set(key, 0);
+    }
 
     const jobPerformance = jobs.map((j) => {
       const apps = j.JobSubscriberMapping;
       const jShortlisted = apps.filter((a) => a.jobMapStatusID === JobMapStatus.SHORTLISTED).length;
-      const jInterviewScheduled = apps.filter((a) => a.jobMapStatusID === JobMapStatus.INTERVIEW_SCHEDULED).length;
+      const jInterviewScheduled = apps.filter(
+        (a) => a.jobMapStatusID != null && INTERVIEW_MAP_STATUSES.includes(a.jobMapStatusID),
+      ).length;
       const jSelected = apps.filter((a) => a.jobMapStatusID === JobMapStatus.SELECTED).length;
       const jRejected = apps.filter((a) => a.jobMapStatusID === JobMapStatus.REJECTED).length;
+      const jMapped = apps.filter((a) => a.jobMapStatusID === JobMapStatus.MAPPED || a.jobMapStatusID == null).length;
+
+      for (const a of apps) {
+        if (!a.mapDate) continue;
+        const key = `${a.mapDate.getFullYear()}-${String(a.mapDate.getMonth() + 1).padStart(2, '0')}`;
+        if (monthBuckets.has(key)) monthBuckets.set(key, (monthBuckets.get(key) ?? 0) + 1);
+      }
 
       totalApplications += apps.length;
       shortlisted += jShortlisted;
       interviewScheduled += jInterviewScheduled;
       selected += jSelected;
       rejected += jRejected;
+      mapped += jMapped;
 
+      const appsCount = apps.length;
       return {
         jobId: Number(j.jobID),
         designation: j.designation?.descr ?? '',
-        applications: apps.length,
+        city: j.jobCity?.descr ?? '',
+        status: jobStatus(j.statusID),
+        applications: appsCount,
         shortlisted: jShortlisted,
+        interviewScheduled: jInterviewScheduled,
+        selected: jSelected,
+        rejected: jRejected,
+        mapped: jMapped,
+        shortlistRate: appsCount ? Math.round((jShortlisted / appsCount) * 1000) / 10 : 0,
+        hireRate: appsCount ? Math.round((jSelected / appsCount) * 1000) / 10 : 0,
       };
     });
+
+    jobPerformance.sort((a, b) => b.applications - a.applications);
+
+    const pct = (n: number, d: number) => (d ? Math.round((n / d) * 1000) / 10 : 0);
+
+    const applicationsByMonth = [...monthBuckets.entries()].map(([month, count]) => ({
+      month,
+      label: new Date(`${month}-01`).toLocaleString('en', { month: 'short', year: '2-digit' }),
+      count,
+    }));
 
     return {
       totalJobs,
       activeJobs,
+      closedJobs,
+      draftJobs,
+      archivedJobs,
       totalApplications,
+      mapped,
       shortlisted,
       interviewScheduled,
       selected,
       rejected,
+      rates: {
+        shortlistRate: pct(shortlisted, totalApplications),
+        interviewRate: pct(interviewScheduled, totalApplications),
+        hireRate: pct(selected, totalApplications),
+        rejectRate: pct(rejected, totalApplications),
+        interviewFromShortlist: pct(interviewScheduled, shortlisted || totalApplications),
+        hireFromInterview: pct(selected, interviewScheduled || totalApplications),
+      },
+      applicationsByMonth,
       jobPerformance,
+    };
+  }
+
+  /**
+   * Full analytics audit CSV: summary + funnel + job performance + every applicant row.
+   * Used by employers for internal audit / sharing with leadership.
+   */
+  async exportAnalyticsCsv(userId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const analytics = await this.analytics(userId);
+
+    const applicants = await this.db.jobSubscriberMapping.findMany({
+      where: { job: { clientID: clientId } },
+      orderBy: { mapDate: 'desc' },
+      include: {
+        jobMapStatus: { select: { descr: true } },
+        job: {
+          include: {
+            designation: { select: { descr: true } },
+            jobCity: { select: { descr: true } },
+          },
+        },
+        subscriber: {
+          include: {
+            SubscriberCVDetails: {
+              include: {
+                city: { select: { descr: true } },
+                skill: { select: { descr: true } },
+              },
+            },
+            SubscriberEmployer: {
+              orderBy: { timestampIns: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    const esc = (v: string | number | null | undefined) => {
+      const s = v == null ? '' : String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const line = (cells: Array<string | number | null | undefined>) => cells.map(esc).join(',');
+
+    const sections: string[] = [];
+    const generatedAt = new Date().toISOString();
+
+    sections.push('AAJIVEKA ANALYTICS AUDIT EXPORT');
+    sections.push(line(['GeneratedAt', generatedAt]));
+    sections.push('');
+
+    sections.push('SUMMARY');
+    sections.push(line(['Metric', 'Value']));
+    sections.push(line(['TotalJobs', analytics.totalJobs]));
+    sections.push(line(['ActiveJobs', analytics.activeJobs]));
+    sections.push(line(['ClosedJobs', analytics.closedJobs]));
+    sections.push(line(['DraftJobs', analytics.draftJobs]));
+    sections.push(line(['ArchivedJobs', analytics.archivedJobs]));
+    sections.push(line(['TotalApplications', analytics.totalApplications]));
+    sections.push(line(['Mapped', analytics.mapped]));
+    sections.push(line(['Shortlisted', analytics.shortlisted]));
+    sections.push(line(['InterviewScheduled', analytics.interviewScheduled]));
+    sections.push(line(['Hired', analytics.selected]));
+    sections.push(line(['Rejected', analytics.rejected]));
+    sections.push(line(['ShortlistRatePct', analytics.rates.shortlistRate]));
+    sections.push(line(['InterviewRatePct', analytics.rates.interviewRate]));
+    sections.push(line(['HireRatePct', analytics.rates.hireRate]));
+    sections.push(line(['RejectRatePct', analytics.rates.rejectRate]));
+    sections.push('');
+
+    sections.push('APPLICATIONS_BY_MONTH');
+    sections.push(line(['Month', 'Applications']));
+    for (const m of analytics.applicationsByMonth) {
+      sections.push(line([m.month, m.count]));
+    }
+    sections.push('');
+
+    sections.push('JOB_PERFORMANCE');
+    sections.push(
+      line([
+        'JobId',
+        'Designation',
+        'City',
+        'Status',
+        'Applications',
+        'Mapped',
+        'Shortlisted',
+        'Interview',
+        'Hired',
+        'Rejected',
+        'ShortlistRatePct',
+        'HireRatePct',
+      ]),
+    );
+    for (const j of analytics.jobPerformance) {
+      sections.push(
+        line([
+          j.jobId,
+          j.designation,
+          j.city,
+          j.status,
+          j.applications,
+          j.mapped,
+          j.shortlisted,
+          j.interviewScheduled,
+          j.selected,
+          j.rejected,
+          j.shortlistRate,
+          j.hireRate,
+        ]),
+      );
+    }
+    sections.push('');
+
+    sections.push('APPLICANTS_FULL');
+    sections.push(
+      line([
+        'ApplicationId',
+        'AppliedOn',
+        'CandidateName',
+        'Email',
+        'Mobile',
+        'City',
+        'ExperienceYrs',
+        'CurrentCompany',
+        'NoticeDays',
+        'PrimarySkill',
+        'JobId',
+        'JobTitle',
+        'JobCity',
+        'PipelineStatus',
+        'JobMapStatus',
+      ]),
+    );
+    for (const r of applicants) {
+      const cv = r.subscriber?.SubscriberCVDetails;
+      const emp = r.subscriber?.SubscriberEmployer?.[0];
+      const status = pipelineStatus(r.jobMapStatusID);
+      sections.push(
+        line([
+          Number(r.jobSubscriberMapID),
+          r.mapDate?.toISOString().slice(0, 10) ?? '',
+          cv?.fullName?.trim() || '',
+          cv?.emailID ?? '',
+          cv?.mobileNo1 ?? '',
+          cv?.city?.descr ?? '',
+          cv?.totalExp ?? '',
+          emp?.employer ?? '',
+          cv?.noticePeriod ?? emp?.noticePeriodDays ?? '',
+          cv?.skill?.descr ?? '',
+          Number(r.jobID ?? 0),
+          r.job?.designation?.descr ?? '',
+          r.job?.jobCity?.descr ?? '',
+          status,
+          r.jobMapStatus?.descr ?? '',
+        ]),
+      );
+    }
+
+    const stamp = generatedAt.slice(0, 10);
+    return {
+      fileName: `aajiveka-analytics-audit-${stamp}.csv`,
+      body: sections.join('\n'),
+    };
+  }
+
+  /**
+   * Billing for hired candidates — flat ₹5,000 per hire.
+   * Lists every application currently in Hired (SELECTED) status for this company.
+   */
+  async billing(userId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const hireFee = 5000;
+
+    const rows = await this.db.jobSubscriberMapping.findMany({
+      where: {
+        job: { clientID: clientId },
+        jobMapStatusID: JobMapStatus.SELECTED,
+      },
+      orderBy: { mapDate: 'desc' },
+      include: {
+        job: {
+          include: {
+            designation: { select: { descr: true } },
+            jobCity: { select: { descr: true } },
+          },
+        },
+        subscriber: {
+          include: {
+            SubscriberCVDetails: {
+              include: { city: { select: { descr: true } } },
+            },
+            SubscriberStatusHistory: {
+              where: {
+                clientID: clientId,
+                statusID: SubscriberStatus.SELECTED,
+              },
+              orderBy: { timestampIns: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    const hires = rows.map((r) => {
+      const cv = r.subscriber?.SubscriberCVDetails;
+      const hiredAt =
+        r.subscriber?.SubscriberStatusHistory?.[0]?.timestampIns ?? r.mapDate ?? null;
+      return {
+        jobSubscriberMapId: Number(r.jobSubscriberMapID),
+        subscriberId: Number(r.subscriberID ?? 0),
+        jobId: Number(r.jobID ?? 0),
+        fullName: cv?.fullName?.trim() || cv?.mobileNo1 || 'Candidate',
+        email: cv?.emailID ?? '',
+        mobile: cv?.mobileNo1 ?? '',
+        city: cv?.city?.descr ?? '',
+        designation: r.job?.designation?.descr ?? '',
+        jobCity: r.job?.jobCity?.descr ?? '',
+        hiredOn: hiredAt?.toISOString().slice(0, 10) ?? '',
+        fee: hireFee,
+        currency: 'INR',
+      };
+    });
+
+    const hireCount = hires.length;
+    const subtotal = hireCount * hireFee;
+
+    return {
+      hireFee,
+      currency: 'INR',
+      hireCount,
+      subtotal,
+      tax: 0,
+      total: subtotal,
+      hires,
+    };
+  }
+
+  /** CSV export of hire billing for accounts / audit. */
+  async exportBillingCsv(userId: number) {
+    const data = await this.billing(userId);
+    const esc = (v: string | number | null | undefined) => {
+      const s = v == null ? '' : String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const line = (cells: Array<string | number | null | undefined>) => cells.map(esc).join(',');
+    const lines: string[] = [];
+    const stamp = new Date().toISOString();
+
+    lines.push('AAJIVEKA HIRE BILLING');
+    lines.push(line(['GeneratedAt', stamp]));
+    lines.push(line(['HireFee', data.hireFee]));
+    lines.push(line(['Currency', data.currency]));
+    lines.push(line(['HireCount', data.hireCount]));
+    lines.push(line(['Subtotal', data.subtotal]));
+    lines.push(line(['Tax', data.tax]));
+    lines.push(line(['Total', data.total]));
+    lines.push('');
+    lines.push(
+      line([
+        'ApplicationId',
+        'HiredOn',
+        'CandidateName',
+        'Email',
+        'Mobile',
+        'City',
+        'JobId',
+        'JobTitle',
+        'JobCity',
+        'Fee',
+        'Currency',
+      ]),
+    );
+    for (const h of data.hires) {
+      lines.push(
+        line([
+          h.jobSubscriberMapId,
+          h.hiredOn,
+          h.fullName,
+          h.email,
+          h.mobile,
+          h.city,
+          h.jobId,
+          h.designation,
+          h.jobCity,
+          h.fee,
+          h.currency,
+        ]),
+      );
+    }
+
+    return {
+      fileName: `aajiveka-hire-billing-${stamp.slice(0, 10)}.csv`,
+      body: lines.join('\n'),
     };
   }
 
@@ -1041,7 +2030,7 @@ export class EmployersService {
       industry: c.industryType?.industryType ?? '',
       city: c.city?.descr ?? '',
       website: c.companyWebsite ?? '',
-      logoUrl: c.companyLogo?.trim() ? `/files/${c.companyLogo}` : null,
+      logoUrl: companyLogoApiPath(Number(c.clientID), c.companyLogo),
       description: c.companyDescr ?? '',
     };
   }

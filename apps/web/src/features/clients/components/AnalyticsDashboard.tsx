@@ -36,10 +36,10 @@ function HorizontalBar({ items, maxValue }: { items: BarItem[]; maxValue: number
 export function AnalyticsDashboard() {
   const { t } = useTranslation('dashboard');
   const { data: jobs } = useCompanyJobs();
-  const { data: applicants } = useApplicants();
+  const { data: applicants } = useApplicants({ page: 1, pageSize: 100 });
 
   const pipeline = useMemo(() => {
-    const list = applicants ?? [];
+    const list = applicants?.items ?? [];
     const applied = list.filter((a) => a.jobStatus === 'Applied' || a.jobStatus === 'Mapped').length;
     const shortlisted = list.filter((a) => a.jobStatus === 'Shortlisted').length;
     const interview = list.filter((a) => a.jobStatus === 'Interview').length;
