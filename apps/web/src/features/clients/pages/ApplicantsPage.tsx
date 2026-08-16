@@ -13,7 +13,8 @@ import { ScheduleInterviewModal } from '../components/ScheduleInterviewModal';
 /** Client — applicants for the company's jobs, with bulk actions. */
 export default function ApplicantsPage() {
   const { t } = useTranslation('dashboard');
-  const { data, isLoading } = useApplicants();
+  const { data, isLoading } = useApplicants({ page: 1, pageSize: 100 });
+  const rows = data?.items ?? [];
   const decide = useDecideApplicant();
   const bulkDecide = useBulkDecideApplicants();
   const { notify } = useToast();
@@ -23,7 +24,7 @@ export default function ApplicantsPage() {
   const [notesTarget, setNotesTarget] = useState<{ id: number; name: string } | null>(null);
   const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null);
 
-  const actionableRows = (data ?? []).filter((r) => r.jobStatus === 'Applied' || r.jobStatus === 'Mapped');
+  const actionableRows = rows.filter((r) => r.jobStatus === 'Applied' || r.jobStatus === 'Mapped');
   const allSelected = actionableRows.length > 0 && actionableRows.every((r) => selected.has(r.jobSubscriberMapId));
 
   const toggleAll = () => {
@@ -193,7 +194,7 @@ export default function ApplicantsPage() {
         </div>
       )}
 
-      <Table columns={columns} data={data ?? []} rowKey={(r) => r.jobSubscriberMapId} isLoading={isLoading} emptyMessage={t('applicants.noApplicants')} />
+      <Table columns={columns} data={rows} rowKey={(r) => r.jobSubscriberMapId} isLoading={isLoading} emptyMessage={t('applicants.noApplicants')} />
 
       {interviewTarget && (
         <ScheduleInterviewModal

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 // The portal uses page.route() fixtures, so service workers must remain disabled.
 test.use({ serviceWorkers: 'block' });
@@ -55,7 +55,7 @@ function jobListResponse(items: typeof POSTED_JOB[]) {
   };
 }
 
-async function mockAuthSession(page: import('@playwright/test').Page) {
+async function mockAuthSession(page: Page) {
   await page.addInitScript(() => localStorage.setItem('aaj.refresh', 'fake-refresh-token'));
   await page.route('**/api/auth/refresh', (route) => route.fulfill({
     status: 200,
@@ -67,6 +67,12 @@ async function mockAuthSession(page: import('@playwright/test').Page) {
     contentType: 'application/json',
     body: JSON.stringify({ userId: 1, fullName: 'Test Employer', roleId: 4 }),
   }));
+}
+
+/** Job form uses SearchableSelect (button + listbox), not native <select>. */
+async function pickSearchable(page: Page, label: RegExp, option: string) {
+  await page.getByLabel(label).click();
+  await page.getByRole('option', { name: option }).click();
 }
 
 test.describe('Job Posting Flow', () => {
@@ -88,37 +94,39 @@ test.describe('Job Posting Flow', () => {
     });
   });
 
-  test('shows native validation when submitting an empty form', async ({ page }) => {
+  test('shows validation when submitting an empty form', async ({ page }) => {
     await page.goto('/company/post-job');
     await expect(page.locator('form')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /publish/i }).click();
-    await expect(page.getByLabel(/position/i)).not.toHaveJSProperty('validationMessage', '');
+    await expect(page.getByLabel(/position/i)).toHaveAttribute('aria-invalid', 'true');
   });
 
   test('lists the cities supplied by the employer masters endpoint', async ({ page }) => {
     await page.goto('/company/post-job');
     await expect(page.locator('form')).toBeVisible({ timeout: 10_000 });
     const location = page.getByLabel(/location/i);
-    await expect(location.locator('option')).toHaveText(['Select city', 'Mumbai']);
-    await location.selectOption({ label: 'Mumbai' });
-    await expect(location).toHaveValue('100');
+    await location.click();
+    await expect(page.getByRole('option', { name: 'Mumbai' })).toBeVisible();
+    await page.getByRole('option', { name: 'Mumbai' }).click();
+    await expect(location).toContainText('Mumbai');
   });
 
   test('fills the employer form and publishes a job', async ({ page }) => {
     await page.goto('/company/post-job');
     await expect(page.locator('form')).toBeVisible({ timeout: 10_000 });
-    await page.getByLabel(/position/i).selectOption({ label: 'Software Engineer' });
-    await page.getByLabel(/employment type/i).selectOption({ label: 'Full-time' });
-    await page.getByLabel(/work mode/i).selectOption({ label: 'Remote' });
-    await page.getByLabel(/industry type/i).selectOption({ label: 'Technology' });
-    await page.getByLabel(/location/i).selectOption({ label: 'Mumbai' });
-    await page.getByLabel(/experience \(min yrs\)/i).fill('2');
-    await page.getByLabel(/ctc \(min\)/i).fill('500000');
-    await page.getByLabel(/ctc \(max\)/i).fill('1200000');
-    await page.getByLabel(/education detail/i).fill('B.Tech in Computer Science');
-    await page.getByLabel(/^department/i).fill('Engineering');
-    await page.getByRole('button', { name: /skills.*0 selected/i }).click();
-    await page.getByLabel(/job description/i).fill('A great role for experienced developers.');
+    await pickSearchable(page, /position/i, 'Software Engineer');
+    await pickSearchable(page, /employment type/i, 'Full-time');
+    await pickSearchable(page, /work mode/i, 'Remote');
+    await pickSearchable(page, /industry type/i, 'Technology');
+    await pickSearchable(page, /location/i, 'Mumbai');
+    await page.locator('[data-field="minExp"] input').fill('2');
+    await page.getByPlaceholder('e.g. 600000').fill('500000');
+    await page.getByPlaceholder('e.g. 1200000').fill('1200000');
+    await page.locator('[data-field="educationDetail"] input').fill('B.Tech in Computer Science');
+    await page.locator('[data-field="department"] input').fill('Engineering');
+    await page.getByLabel(/^skills$/i).click();
+    await page.getByRole('option', { name: 'React' }).click();
+    await page.locator('[data-field="description"] textarea').fill('A great role for experienced developers.');
     await page.getByRole('button', { name: /publish/i }).click();
     await expect(page.getByText('Software Engineer')).toBeVisible({ timeout: 10_000 });
   });

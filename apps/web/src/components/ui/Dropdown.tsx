@@ -25,7 +25,7 @@ export interface DropdownProps {
 export function Dropdown({ trigger, items, align = 'right' }: DropdownProps) {
   return (
     <Menu.Root>
-      <Menu.Trigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2">
+      <Menu.Trigger className="cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2">
         {trigger}
       </Menu.Trigger>
       <Menu.Portal>

@@ -177,8 +177,17 @@ export function SimpleBarChart({
 
 /** Shared compact form-field look for employer pages. */
 export const fieldClass =
-  'h-8 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#1A56DB] focus:ring-1 focus:ring-[#1A56DB]/25';
+  'h-8 w-full rounded-md border border-slate-500 bg-white px-2.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#1A56DB] focus:ring-1 focus:ring-[#1A56DB]/25';
 
 export const labelClass = 'mb-1 block text-[11px] font-medium text-slate-600';
 
 export const sectionClass = 'rounded-lg border border-slate-200/80 bg-white p-3 shadow-sm';
+
+/**
+ * Caps content width on large monitors (27–32"+) so forms/grids do not stretch edge-to-edge.
+ * Use inside EmployerLayout around page content.
+ */
+export const employerPageShellClass = 'mx-auto w-full max-w-6xl 2xl:max-w-7xl';
+
+/** Responsive field grid: 1 → 2 → 3 columns; cells stay readable on ultra-wide. */
+export const employerFormGridClass = 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3';

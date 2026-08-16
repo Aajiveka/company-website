@@ -90,7 +90,8 @@ const ApplicantCard = memo(function ApplicantCard({ applicant, onAction, onDragS
 
 export default function PipelineBoardPage() {
   const { t } = useTranslation('dashboard');
-  const { data, isLoading } = useApplicants();
+  const { data, isLoading } = useApplicants({ page: 1, pageSize: 100 });
+  const applicants = useMemo(() => data?.items ?? [], [data?.items]);
   const decide = useDecideApplicant();
   const { notify } = useToast();
   const qc = useQueryClient();
@@ -104,12 +105,12 @@ export default function PipelineBoardPage() {
   const columns = useMemo(() => {
     const map: Record<string, ApplicantRow[]> = {};
     STAGES.forEach((s) => { map[s] = []; });
-    (data ?? []).forEach((a) => {
+    (applicants ?? []).forEach((a) => {
       const stage = normalizeStatus(a.jobStatus);
       if (map[stage]) map[stage].push(a);
     });
     return map;
-  }, [data]);
+  }, [applicants]);
 
   // Wrap columns so items satisfy { id: string }
   const dndColumns = useMemo(() => {

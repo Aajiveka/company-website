@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
-  Building2,
   Briefcase,
   PlusCircle,
   UploadCloud,
@@ -41,7 +40,6 @@ export interface EmployerMenuItem {
 
 export const EMPLOYER_MENU: EmployerMenuItem[] = [
   { id: 'dashboard', label: 'Dashboard', to: employerPaths.dashboard, icon: LayoutDashboard },
-  { id: 'profile', label: 'Complete Profile', to: employerPaths.completeProfile, icon: Building2 },
   {
     id: 'jobs',
     label: 'Manage Jobs',

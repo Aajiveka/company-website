@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -10,9 +11,11 @@ import {
   ApplicantDecisionDto,
   ApplicantNoteDto,
   CreateJobDto,
+  ListApplicantsQueryDto,
   ListJobsQueryDto,
   SetJobStatusDto,
   UpdateBrandingDto,
+  UpdateCompanyProfileDto,
   UpdateJobDto,
 } from './dto/employers.dto';
 
@@ -37,6 +40,20 @@ export class EmployersController {
     return this.clients.profile(user.userId);
   }
 
+  @Patch('me')
+  @ApiOperation({ summary: 'Update the signed-in employer company profile' })
+  updateProfile(@CurrentUser() user: RequestUser, @Body() dto: UpdateCompanyProfileDto) {
+    return this.clients.updateProfile(user.userId, dto);
+  }
+
+  @Post('me/logo')
+  @ApiOperation({ summary: 'Upload company logo (JPEG/PNG)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadLogo(@CurrentUser() user: RequestUser, @UploadedFile() file: Express.Multer.File) {
+    return this.clients.uploadLogo(user.userId, file);
+  }
+
   @Get('me/jobs')
   @ApiOperation({ summary: 'The company\u2019s job openings (paginated + filters)' })
   jobs(@CurrentUser() user: RequestUser, @Query() query: ListJobsQueryDto) {
@@ -55,8 +72,41 @@ export class EmployersController {
 
   @Get('me/applicants')
   @ApiOperation({ summary: 'Candidates who applied to the company\u2019s jobs' })
-  applicants(@CurrentUser() user: RequestUser) {
-    return this.clients.applicants(user.userId);
+  applicants(@CurrentUser() user: RequestUser, @Query() query: ListApplicantsQueryDto) {
+    return this.clients.applicants(user.userId, query);
+  }
+
+  @Get('me/applicants/:jobSubscriberMapId')
+  @ApiOperation({ summary: 'One applicant application + full candidate profile' })
+  getApplicant(
+    @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.clients.getApplicant(user.userId, jobSubscriberMapId);
+  }
+
+  @Get('me/applicants/:jobSubscriberMapId/resume')
+  @ApiOperation({ summary: 'Download / preview an applicant resume (authenticated)' })
+  async getApplicantResume(
+    @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
+    @CurrentUser() user: RequestUser,
+    @Res() res: Response,
+    @Query('inline') inline?: string,
+  ) {
+    const { body, fileName } = await this.clients.getApplicantResume(user.userId, jobSubscriberMapId);
+    const disposition = inline === '1' || inline === 'true' ? 'inline' : 'attachment';
+    const lower = fileName.toLowerCase();
+    const contentType = lower.endsWith('.pdf')
+      ? 'application/pdf'
+      : lower.endsWith('.doc')
+        ? 'application/msword'
+        : lower.endsWith('.docx')
+          ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          : 'application/octet-stream';
+    res.setHeader('Content-Disposition', `${disposition}; filename="${encodeURIComponent(fileName)}"`);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(body);
   }
 
   @Get('masters')
@@ -119,7 +169,7 @@ export class EmployersController {
   }
 
   @Post('me/applicants/:jobSubscriberMapId/decision')
-  @ApiOperation({ summary: 'Shortlist or reject an applicant (spClientShortListRejectSubscriber)' })
+  @ApiOperation({ summary: 'Set applicant pipeline status (Shortlisted / Interview / Hired / Rejected)' })
   decideApplicant(
     @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
     @CurrentUser() user: RequestUser,
@@ -158,6 +208,30 @@ export class EmployersController {
     return this.clients.analytics(user.userId);
   }
 
+  @Get('me/analytics/export')
+  @ApiOperation({ summary: 'Download full analytics audit CSV (summary + jobs + all applicants)' })
+  async exportAnalytics(@CurrentUser() user: RequestUser, @Res() res: Response) {
+    const { fileName, body } = await this.clients.exportAnalyticsCsv(user.userId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(body);
+  }
+
+  @Get('me/billing')
+  @ApiOperation({ summary: 'Hire billing — ₹5,000 per hired candidate' })
+  billing(@CurrentUser() user: RequestUser) {
+    return this.clients.billing(user.userId);
+  }
+
+  @Get('me/billing/export')
+  @ApiOperation({ summary: 'Download hire billing CSV' })
+  async exportBilling(@CurrentUser() user: RequestUser, @Res() res: Response) {
+    const { fileName, body } = await this.clients.exportBillingCsv(user.userId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(body);
+  }
+
   @Get('me/branding')
   @ApiOperation({ summary: 'Get company branding data' })
   getBranding(@CurrentUser() user: RequestUser) {
@@ -190,6 +264,21 @@ export class EmployersController {
     @Body() dto: ApplicantNoteDto,
   ) {
     return this.clients.saveApplicantNote(user.userId, id, dto);
+  }
+
+  @Public()
+  @Get(':id/logo')
+  @ApiOperation({ summary: 'Public company logo image (no auth — for <img src>)' })
+  async companyLogo(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const { body, contentType, fileName } = await this.clients.streamCompanyLogo(id);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(body);
   }
 
   @Public()

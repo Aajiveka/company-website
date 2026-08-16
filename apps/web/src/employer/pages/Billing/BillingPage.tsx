@@ -1,99 +1,166 @@
-import { CreditCard, Download, FilePlus2 } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Download, IndianRupee, Users } from 'lucide-react';
 import {
-  EmployerBadge,
   EmptyState,
   PageHeader,
-  PrimaryButton,
   SecondaryButton,
   StatCard,
 } from '@/employer/components/Cards/ui';
-import { DataTable, type Column } from '@/employer/components/Tables/DataTable';
-import { mockInvoices } from '@/employer/constants/mockData';
+import { employerPaths } from '@/employer/constants/paths';
+import { downloadBillingCsv, useCompanyBilling } from '@/employer/services/employer.api';
+import { getErrorMessage } from '@/lib/axios';
 
-type Invoice = (typeof mockInvoices)[number];
-
-function tone(status: Invoice['status']): 'success' | 'warning' | 'danger' {
-  if (status === 'Paid') return 'success';
-  if (status === 'Pending') return 'warning';
-  return 'danger';
+function formatInr(amount: number) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
-const inr = (n: number) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
-
 export function BillingPage() {
-  const outstanding = mockInvoices.filter((i) => i.status === 'Outstanding');
-  const paid = mockInvoices.filter((i) => i.status === 'Paid');
-  const pending = mockInvoices.filter((i) => i.status === 'Pending');
+  const { data, isLoading, isError, error } = useCompanyBilling();
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
-  const sum = (rows: Invoice[]) => rows.reduce((acc, r) => acc + r.amount + r.gst, 0);
-
-  const columns: Column<Invoice>[] = [
-    {
-      key: 'id',
-      header: 'Invoice',
-      render: (row) => <span className="font-medium text-slate-800">{row.id}</span>,
-    },
-    { key: 'candidate', header: 'Candidate', render: (row) => row.candidate },
-    { key: 'job', header: 'Job', render: (row) => row.job },
-    { key: 'amount', header: 'Amount', render: (row) => inr(row.amount) },
-    { key: 'gst', header: 'GST', render: (row) => inr(row.gst) },
-    {
-      key: 'total',
-      header: 'Total',
-      render: (row) => <span className="font-semibold text-slate-800">{inr(row.amount + row.gst)}</span>,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (row) => <EmployerBadge tone={tone(row.status)}>{row.status}</EmployerBadge>,
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (row) => (
-        <div className="flex flex-wrap gap-1">
-          <SecondaryButton className="!px-2 !py-1 text-xs">
-            <Download className="h-3.5 w-3.5" />
-            Download
-          </SecondaryButton>
-          {row.status !== 'Paid' && (
-            <PrimaryButton className="!px-2 !py-1 text-xs">
-              <CreditCard className="h-3.5 w-3.5" />
-              Pay
-            </PrimaryButton>
-          )}
-        </div>
-      ),
-    },
-  ];
+  const onExport = async () => {
+    setExportError(null);
+    setExporting(true);
+    try {
+      await downloadBillingCsv();
+    } catch (err) {
+      setExportError(getErrorMessage(err, 'Failed to export billing CSV'));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div>
       <PageHeader
         title="Billing & Invoices"
-        subtitle="Track outstanding dues, pending invoices, and payment history."
+        subtitle={`₹${(data?.hireFee ?? 5000).toLocaleString('en-IN')} charged for each hired candidate.`}
         actions={
-          <PrimaryButton>
-            <FilePlus2 className="h-4 w-4" />
-            Generate Invoice
-          </PrimaryButton>
+          <SecondaryButton disabled={exporting || isLoading} onClick={() => void onExport()}>
+            <Download className="h-4 w-4" />
+            {exporting ? 'Exporting…' : 'Export CSV'}
+          </SecondaryButton>
         }
       />
 
-      <div className="grid gap-2 sm:grid-cols-3">
-        <StatCard label="Outstanding" value={inr(sum(outstanding))} delta={`${outstanding.length} invoices`} />
-        <StatCard label="Paid" value={inr(sum(paid))} delta={`${paid.length} invoices`} />
-        <StatCard label="Pending" value={inr(sum(pending))} delta={`${pending.length} invoices`} />
-      </div>
+      {isError && (
+        <p className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          {getErrorMessage(error, 'Failed to load billing')}
+        </p>
+      )}
+      {exportError && (
+        <p className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{exportError}</p>
+      )}
 
-      <div className="mt-3">
-        <DataTable
-          columns={columns}
-          rows={mockInvoices}
-          empty={<EmptyState title="No invoices" description="Generated invoices will appear here." />}
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Hired candidates"
+          value={isLoading ? '…' : data?.hireCount ?? 0}
+          icon={<Users className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Fee per hire"
+          value={isLoading ? '…' : formatInr(data?.hireFee ?? 5000)}
+          icon={<IndianRupee className="h-4 w-4" />}
+        />
+        <StatCard label="Subtotal" value={isLoading ? '…' : formatInr(data?.subtotal ?? 0)} />
+        <StatCard
+          label="Amount due"
+          value={isLoading ? '…' : formatInr(data?.total ?? 0)}
+          delta={data?.tax ? `Tax ${formatInr(data.tax)}` : 'No tax'}
         />
       </div>
+
+      <section className="mt-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+          <h3 className="text-xs font-semibold text-slate-800">Hired candidates</h3>
+          <p className="text-[11px] text-slate-400">
+            Each hire = {formatInr(data?.hireFee ?? 5000)}
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-xs">
+            <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-3 py-2">#</th>
+                <th className="px-3 py-2">Candidate</th>
+                <th className="px-3 py-2">Job</th>
+                <th className="px-3 py-2">Hired on</th>
+                <th className="px-3 py-2">City</th>
+                <th className="px-3 py-2 text-right">Fee</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {(data?.hires ?? []).map((h, i) => (
+                <tr key={h.jobSubscriberMapId} className="hover:bg-slate-50/80">
+                  <td className="px-3 py-2 tabular-nums text-slate-400">{i + 1}</td>
+                  <td className="px-3 py-2">
+                    <Link
+                      to={employerPaths.applicantProfile(h.jobSubscriberMapId)}
+                      className="font-medium text-slate-800 hover:text-[#1A56DB]"
+                    >
+                      {h.fullName}
+                    </Link>
+                    <p className="text-[11px] text-slate-400">{h.email || h.mobile || '—'}</p>
+                  </td>
+                  <td className="px-3 py-2 text-slate-700">
+                    {h.designation || `Job #${h.jobId}`}
+                    {h.jobCity ? (
+                      <span className="block text-[11px] text-slate-400">{h.jobCity}</span>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2 tabular-nums text-slate-600">{h.hiredOn || '—'}</td>
+                  <td className="px-3 py-2 text-slate-600">{h.city || '—'}</td>
+                  <td className="px-3 py-2 text-right font-medium tabular-nums text-slate-800">
+                    {formatInr(h.fee)}
+                  </td>
+                </tr>
+              ))}
+              {!isLoading && !data?.hires?.length && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-8">
+                    <EmptyState
+                      title="No hired candidates yet"
+                      description="When you mark a candidate as Hired, they appear here at ₹5,000 per hire."
+                      action={
+                        <Link to={employerPaths.hired}>
+                          <SecondaryButton>View hired list</SecondaryButton>
+                        </Link>
+                      }
+                    />
+                  </td>
+                </tr>
+              )}
+              {isLoading && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
+                    Loading billing…
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            {(data?.hires?.length ?? 0) > 0 && (
+              <tfoot className="border-t border-slate-200 bg-slate-50/80">
+                <tr>
+                  <td colSpan={5} className="px-3 py-2.5 text-right text-xs font-medium text-slate-600">
+                    Total ({data?.hireCount ?? 0} × {formatInr(data?.hireFee ?? 5000)})
+                  </td>
+                  <td className="px-3 py-2.5 text-right text-sm font-semibold tabular-nums text-slate-900">
+                    {formatInr(data?.total ?? 0)}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

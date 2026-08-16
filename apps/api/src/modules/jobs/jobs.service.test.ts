@@ -67,7 +67,7 @@ const sampleJobRow = {
   timestampIns: new Date('2025-06-01'),
   jobDescr: 'Build things',
   jobCandidateProfile: 'Engineer',
-  client: { clientName: 'ACME Corp', companyLogo: 'logo.png' },
+  client: { clientID: 1n, clientName: 'ACME Corp', companyLogo: 'logo.png' },
   jobCity: { descr: 'Mumbai' },
   designation: { descr: 'Software Engineer' },
   industryType: { industryType: 'IT' },
@@ -199,7 +199,7 @@ describe('JobsService', () => {
       assert.equal(result.company, 'ACME Corp');
       assert.deepEqual(result.skills, ['TypeScript', 'Node.js']);
       assert.deepEqual(result.educationTypes, ['B.Tech']);
-      assert.equal(result.companyLogo, 'logo.png');
+      assert.equal(result.companyLogo, '/api/clients/1/logo');
       assert.equal(result.description, 'Build things');
     });
 

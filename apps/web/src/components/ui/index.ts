@@ -26,6 +26,10 @@ export type { LocationSelectProps, LocationStateOption, LocationCityOption } fro
 export { LocationMultiSelect } from './LocationMultiSelect';
 export type { LocationMultiSelectProps } from './LocationMultiSelect';
 export { Autocomplete } from './Autocomplete';
+export { SearchableSelect } from './SearchableSelect';
+export type { SearchableSelectProps, SearchableSelectOption } from './SearchableSelect';
+export { SkillTagInput } from './SkillTagInput';
+export type { SkillTagInputProps, SkillTagOption } from './SkillTagInput';
 export { ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps } from './ConfirmDialog';
 export { ErrorSummary } from './ErrorSummary';
