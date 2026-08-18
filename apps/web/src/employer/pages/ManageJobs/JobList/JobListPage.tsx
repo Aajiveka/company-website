@@ -107,10 +107,19 @@ function StatusToggle({
 }
 
 export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null } = {}) {
+  const { pathname } = useLocation();
+  return <JobListBody key={pathname} filterStatus={filterStatus} />;
+}
+
+function JobListBody({ filterStatus }: { filterStatus?: JobStatus | null } = {}) {
   const location = useLocation();
   const navigate = useNavigate();
-  const pathStatus = filterStatus ?? statusFromPath(location.pathname);
-  const [statusTab, setStatusTab] = useState<JobStatus | 'All'>(pathStatus ?? 'All');
+  const pathLock = filterStatus ?? statusFromPath(location.pathname);
+  const [localTab, setLocalTab] = useState<JobStatus | 'All'>(() => {
+    const fromNav = (location.state as { statusTab?: JobStatus | 'All' } | null)?.statusTab;
+    return fromNav ?? 'All';
+  });
+  const statusTab: JobStatus | 'All' = pathLock ?? localTab;
   const [search, setSearch] = useState('');
   const [city, setCity] = useState('all');
   const [page, setPage] = useState(1);
@@ -128,19 +137,11 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
 
   useEffect(() => {
     const fromNav = (location.state as { statusTab?: JobStatus | 'All' } | null)?.statusTab;
-    if (fromNav) {
-      setStatusTab(fromNav);
-      setPage(1);
-      navigate(location.pathname, { replace: true, state: {} });
-      return;
-    }
-    // Sync only when entering Draft/Archived routes (sidebar). Do not reset to All when
-    // leaving those routes — that was overwriting Active/Closed tab clicks.
-    if (pathStatus) {
-      setStatusTab(pathStatus);
-      setPage(1);
-    }
-  }, [pathStatus, location.state, location.pathname, navigate]);
+    if (!fromNav) return;
+    setLocalTab(fromNav);
+    setPage(1);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     saveColumnVisibility(COL_STORAGE, visibleKeys);
@@ -317,7 +318,7 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
   }, [allColumns, visibleKeys]);
 
   const title =
-    pathStatus === 'Draft' ? 'Draft Jobs' : pathStatus === 'Archived' ? 'Archived Jobs' : 'Manage Jobs';
+    pathLock === 'Draft' ? 'Draft Jobs' : pathLock === 'Archived' ? 'Archived Jobs' : 'Manage Jobs';
 
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
@@ -360,8 +361,15 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
               const active = statusTab === tab;
               const go = () => {
                 setPage(1);
-                // Leaving Draft/Archived routes remounts this page — pass tab via location state.
-                if (pathStatus === 'Draft' || pathStatus === 'Archived') {
+                if (pathLock === 'Draft' || pathLock === 'Archived') {
+                  if (tab === 'Draft') {
+                    navigate(employerPaths.draftJobs);
+                    return;
+                  }
+                  if (tab === 'Archived') {
+                    navigate(employerPaths.archivedJobs);
+                    return;
+                  }
                   navigate(employerPaths.jobList, { state: { statusTab: tab } });
                   return;
                 }
@@ -373,7 +381,7 @@ export function JobListPage({ filterStatus }: { filterStatus?: JobStatus | null 
                   navigate(employerPaths.archivedJobs);
                   return;
                 }
-                setStatusTab(tab);
+                setLocalTab(tab);
               };
               return (
                 <button

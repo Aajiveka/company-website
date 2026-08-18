@@ -1256,8 +1256,8 @@ export class EmployersService {
     }
   }
 
-  /** Bulk-upload jobs from a CSV that matches employer jobFields columns. */
-  async bulkUploadJobs(userId: number, file: Express.Multer.File) {
+  /** Bulk-upload jobs from a CSV. `commit=false` validates/previews only — no jobs are written. */
+  async bulkUploadJobs(userId: number, file: Express.Multer.File, commit = false) {
     if (!file || !file.buffer) throw new BadRequestException('No file provided');
 
     const clientId = await this.clientIdFor(userId);
@@ -1297,6 +1297,7 @@ export class EmployersService {
     };
 
     let imported = 0;
+    let valid = 0;
     const errors: { row: number; reason: string }[] = [];
     const preview: Record<string, unknown>[] = [];
 
@@ -1442,42 +1443,45 @@ export class EmployersService {
       }
 
       try {
-        await this.db.$transaction(async (tx) => {
-          const skillIds = await this.resolveSkillIds(tx, undefined, skillNames);
+        if (commit) {
+          await this.db.$transaction(async (tx) => {
+            const skillIds = await this.resolveSkillIds(tx, undefined, skillNames);
 
-          const job = await tx.clientJobs.create({
-            data: {
-              clientID: clientId,
-              designationID: designation.designationID,
-              employeeTypeID: emp.employeeTypeID,
-              workModeID: mode.workModeID,
-              jobCityID: city.cityID,
-              industryTypeID: industry.industryTypeID,
-              jobDescr: description.slice(0, 1000),
-              minExp,
-              maxExp,
-              minCTC: Number.isNaN(minCtc) ? 0 : minCtc,
-              maxCTC: Number.isNaN(maxCtc) ? 0 : maxCtc,
-              educationDetail: educationDetail || null,
-              reportTo: reportTo || null,
-              teamSize: teamSize != null && !Number.isNaN(teamSize) ? teamSize : null,
-              department: department || null,
-              subDepartment: subDepartment || null,
-              interviewProcess,
-              statusID: JOB_STATUS_ACTIVE,
-              timestampIns: new Date(),
-              loginIDIns: userId,
-            },
-          });
-
-          if (skillIds.length) {
-            await tx.clientJobSkill.createMany({
-              data: skillIds.map((skillID) => ({ jobID: job.jobID, skillID })),
+            const job = await tx.clientJobs.create({
+              data: {
+                clientID: clientId,
+                designationID: designation.designationID,
+                employeeTypeID: emp.employeeTypeID,
+                workModeID: mode.workModeID,
+                jobCityID: city.cityID,
+                industryTypeID: industry.industryTypeID,
+                jobDescr: description.slice(0, 1000),
+                minExp,
+                maxExp,
+                minCTC: Number.isNaN(minCtc) ? 0 : minCtc,
+                maxCTC: Number.isNaN(maxCtc) ? 0 : maxCtc,
+                educationDetail: educationDetail || null,
+                reportTo: reportTo || null,
+                teamSize: teamSize != null && !Number.isNaN(teamSize) ? teamSize : null,
+                department: department || null,
+                subDepartment: subDepartment || null,
+                interviewProcess,
+                statusID: JOB_STATUS_ACTIVE,
+                timestampIns: new Date(),
+                loginIDIns: userId,
+              },
             });
-          }
-        });
 
-        imported++;
+            if (skillIds.length) {
+              await tx.clientJobSkill.createMany({
+                data: skillIds.map((skillID) => ({ jobID: job.jobID, skillID })),
+              });
+            }
+          });
+          imported++;
+        }
+
+        valid++;
         preview.push({
           row: rowNum,
           position,
@@ -1500,6 +1504,7 @@ export class EmployersService {
 
     return {
       imported,
+      valid,
       skipped: errors.length,
       errors,
       preview,

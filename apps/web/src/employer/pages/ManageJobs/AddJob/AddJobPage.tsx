@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Eye, FileEdit, Plus, Send, Trash2 } from 'lucide-react';
 import {
   PageHeader,
@@ -128,9 +128,20 @@ const emptyForm: FormState = {
 };
 
 export function AddJobPage() {
+  const { pathname } = useLocation();
+  return <AddJobBody key={pathname} />;
+}
+
+function AddJobBody() {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const jobId = id && /^\d+$/.test(id) ? Number(id) : null;
+  const location = useLocation();
+  const params = useParams();
+  const fromPath = location.pathname.match(/\/company\/jobs\/(\d+)\/edit$/);
+  const jobId = fromPath
+    ? Number(fromPath[1])
+    : params.id && /^\d+$/.test(params.id)
+      ? Number(params.id)
+      : null;
   const isEdit = jobId != null;
 
   const { data: masters, isLoading: mastersLoading } = useCompanyMasters();

@@ -7,6 +7,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '@/employer/components/Cards/ui';
+import { ConfirmDialog } from '@/employer/components/ConfirmDialog';
 import {
   JOB_IMPORT_COLUMNS,
   downloadJobImportTemplate,
@@ -28,32 +29,44 @@ export function BulkImportPage() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [result, setResult] = useState<BulkUploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const goBack = () => setStep((s) => Math.max(s - 1, 0));
 
-  const runUpload = async (file: File) => {
+  const runUpload = async (next: File, commit: boolean) => {
     setError(null);
-    setFileName(file.name);
-    setProgress(0);
-    setResult(null);
-    setStep(1);
+    setFile(next);
+    setFileName(next.name);
+    if (!commit) {
+      setProgress(0);
+      setResult(null);
+      setStep(1);
+    }
     try {
       const data = await upload.mutateAsync({
-        file,
+        file: next,
+        commit,
         onProgress: (pct) => setProgress(pct),
       });
       setProgress(100);
       setResult(data);
-      setStep(2);
+      if (commit) {
+        setConfirmOpen(false);
+        setStep(4);
+      } else {
+        setStep(2);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed');
-      setProgress(0);
+      setError(e instanceof Error ? e.message : commit ? 'Import failed' : 'Upload failed');
+      if (!commit) setProgress(0);
     }
   };
 
   const previewRows = result?.preview ?? [];
-  const validCount = result?.imported ?? 0;
+  const validCount = result?.valid ?? previewRows.filter((r) => r.status === 'Valid').length;
+  const importedCount = result?.imported ?? 0;
   const errorCount = result?.skipped ?? previewRows.filter((r) => r.status === 'Error').length;
 
   return (
@@ -141,7 +154,7 @@ export function BulkImportPage() {
           <div>
             <h3 className="text-xs font-semibold text-slate-800">Step 2 — Upload File</h3>
             <p className="mt-0.5 text-[11px] text-slate-500">
-              File must include the same headers as the template. Valid rows are imported immediately.
+              File must include the same headers as the template. We only validate on upload — jobs are saved after you confirm on Preview.
             </p>
             <div
               onDragOver={(e) => {
@@ -153,7 +166,7 @@ export function BulkImportPage() {
                 e.preventDefault();
                 setDragging(false);
                 const f = e.dataTransfer.files?.[0];
-                if (f) void runUpload(f);
+                if (f) void runUpload(f, false);
               }}
               className={`mt-3 flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 transition ${
                 dragging ? 'border-[#1A56DB] bg-[#EBF2FF]' : 'border-slate-200 bg-slate-50/50'
@@ -172,7 +185,7 @@ export function BulkImportPage() {
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f) void runUpload(f);
+                    if (f) void runUpload(f, false);
                   }}
                 />
               </label>
@@ -199,11 +212,11 @@ export function BulkImportPage() {
           <div>
             <h3 className="text-xs font-semibold text-slate-800">Step 3 — Validation</h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              Imported {validCount} job(s). {errorCount} row(s) skipped.
+              {validCount} valid job(s) ready to import. {errorCount} row(s) will be skipped.
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <div className="rounded-lg bg-emerald-50 px-3 py-2">
-                <p className="text-[11px] text-emerald-700">Imported</p>
+                <p className="text-[11px] text-emerald-700">Valid</p>
                 <p className="text-lg font-semibold text-emerald-800">{validCount}</p>
               </div>
               <div className="rounded-lg bg-rose-50 px-3 py-2">
@@ -223,7 +236,7 @@ export function BulkImportPage() {
               ))}
               {!result.errors?.length && (
                 <li className="rounded-lg border border-emerald-100 bg-emerald-50/50 px-2.5 py-1.5 text-emerald-700">
-                  All rows imported successfully.
+                  All rows look valid. Nothing is saved until you confirm on Preview.
                 </li>
               )}
             </ul>
@@ -277,8 +290,11 @@ export function BulkImportPage() {
             </div>
             <div className="mt-3 flex justify-between">
               <SecondaryButton onClick={goBack}>Back</SecondaryButton>
-              <PrimaryButton onClick={goNext}>Done</PrimaryButton>
+              <PrimaryButton disabled={!validCount || !file || upload.isPending} onClick={() => setConfirmOpen(true)}>
+                Done
+              </PrimaryButton>
             </div>
+            {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
           </div>
         )}
 
@@ -289,7 +305,7 @@ export function BulkImportPage() {
             </div>
             <h3 className="mt-2 text-xs font-semibold text-slate-800">Step 5 — Complete</h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              {validCount} job(s) were imported as Active postings.
+              {importedCount} job(s) were imported as Active postings.
             </p>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
               <SecondaryButton
@@ -299,6 +315,8 @@ export function BulkImportPage() {
                   setProgress(0);
                   setResult(null);
                   setError(null);
+                  setFile(null);
+                  setConfirmOpen(false);
                 }}
               >
                 Import more
@@ -310,6 +328,25 @@ export function BulkImportPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Import these jobs?"
+        description={
+          validCount
+            ? `${validCount} valid job(s) will be published as Active. ${errorCount} row(s) will be skipped. This cannot be undone from this screen.`
+            : 'There are no valid rows to import.'
+        }
+        confirmLabel={upload.isPending ? 'Importing…' : 'Confirm import'}
+        cancelLabel="Cancel"
+        loading={upload.isPending}
+        onCancel={() => {
+          if (!upload.isPending) setConfirmOpen(false);
+        }}
+        onConfirm={() => {
+          if (file && validCount) void runUpload(file, true);
+        }}
+      />
     </div>
   );
 }

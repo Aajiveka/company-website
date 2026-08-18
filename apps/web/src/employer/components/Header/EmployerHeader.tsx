@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/auth.store';
 import { Dropdown } from '@/components/ui';
-import DarkModeToggle from '@/components/DarkModeToggle';
 import { cn } from '@/lib/cn';
 import { brand } from '@/employer/constants/brand';
 import { employerPaths } from '@/employer/constants/paths';
@@ -24,6 +23,7 @@ function greetingKey(hour: number) {
 }
 
 export function EmployerHeader({
+  collapsed,
   onMenuClick,
 }: {
   collapsed: boolean;
@@ -36,31 +36,47 @@ export function EmployerHeader({
   const hello = `${greetingKey(new Date().getHours())}, ${firstName(user.fullName)}`;
 
   return (
-    <header className="flex h-14 items-center gap-2 border-b border-slate-200 bg-white px-3">
-      <Link
-        to={employerPaths.dashboard}
-        className="flex shrink-0 items-center"
-        aria-label="Aajiveka home"
+    <header className="flex h-14 items-center border-b border-slate-200 bg-white">
+      <div
+        className={cn(
+          'flex h-full shrink-0 items-center border-slate-200 px-3 lg:border-r',
+          collapsed ? 'lg:w-[4.5rem] lg:justify-center lg:px-0' : 'lg:w-52',
+        )}
       >
-        <img
-          src="/image/aajiveka-logo.png"
-          alt="Aajiveka"
-          className="h-10 w-10 rounded-md object-cover object-top"
-        />
-      </Link>
-
-      <button
-        type="button"
-        className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100 lg:hidden"
-        onClick={onMenuClick}
-        aria-label="Toggle menu"
-      >
-        <MenuIcon className="h-5 w-5" />
-      </button>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900">{hello}</p>
+        <Link
+          to={employerPaths.dashboard}
+          className="flex items-center gap-2"
+          aria-label="Aajiveka home"
+        >
+          <img
+            src="/image/aajiveka-logo.svg"
+            alt=""
+            className="h-9 w-9 shrink-0"
+          />
+          <span
+            className={cn(
+              'hidden text-sm font-semibold text-slate-900 lg:inline',
+              collapsed && 'lg:hidden',
+            )}
+          >
+            Aajiveka
+          </span>
+        </Link>
       </div>
+
+      <div className="flex min-w-0 flex-1 items-center gap-2 px-3 lg:px-6">
+        <button
+          type="button"
+          className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100 lg:hidden"
+          onClick={onMenuClick}
+          aria-label="Toggle menu"
+        >
+          <MenuIcon className="h-5 w-5" />
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900">{hello}</p>
+        </div>
 
       {/* <div className="hidden max-w-[220px] flex-1 md:block lg:max-w-xs">
         <label className="relative block">
@@ -87,8 +103,6 @@ export function EmployerHeader({
         {/* <button type="button" className="hidden rounded-md p-1.5 text-slate-600 hover:bg-slate-100 sm:inline-flex" title="Help">
           <HelpCircle className="h-4 w-4" />
         </button> */}
-        <DarkModeToggle />
-
         <Dropdown
           trigger={
             <span className="flex cursor-pointer items-center gap-1.5 rounded-full py-0.5 pr-1.5 pl-0.5 hover:bg-slate-100">
@@ -110,6 +124,7 @@ export function EmployerHeader({
             { label: 'Logout', onSelect: () => void logout(), icon: <LogOut className="h-4 w-4" />, danger: true },
           ]}
         />
+      </div>
       </div>
     </header>
   );
