@@ -14,6 +14,11 @@ import { employerPaths } from '@/employer/constants/paths';
 import { useApplicants, useCompanyJobs, useDecideApplicant } from '@/employer/services/employer.api';
 import type { ApplicantDecision, ApplicantPipelineStatus, EmployerApplicant } from '@/employer/services/employer.types';
 import { decisionConfirm } from '@/employer/utils/decisionConfirm';
+import {
+  pipelineIconButtonClass,
+  pipelineIconClass,
+  applicantStatusTone,
+} from '@/employer/utils/pipelineActions';
 import { DebouncedSearch } from '@/components/DebouncedSearch';
 import { Pagination } from '@/components/ui/Pagination';
 import { SearchableSelect } from '@/components/ui';
@@ -25,14 +30,6 @@ function statusFromPath(pathname: string): ApplicantPipelineStatus | undefined {
   if (pathname.endsWith('/hired')) return 'Hired';
   if (pathname.endsWith('/rejected')) return 'Rejected';
   return undefined;
-}
-
-function statusTone(status: ApplicantPipelineStatus): 'neutral' | 'success' | 'warning' | 'danger' | 'primary' {
-  if (status === 'Hired') return 'success';
-  if (status === 'Shortlisted') return 'primary';
-  if (status === 'Interview') return 'warning';
-  if (status === 'Rejected') return 'danger';
-  return 'neutral';
 }
 
 const triggerClass =
@@ -187,7 +184,7 @@ export function ApplicantListPage() {
       {
         key: 'status',
         header: 'Status',
-        render: (row) => <EmployerBadge tone={statusTone(row.status)}>{row.status}</EmployerBadge>,
+        render: (row) => <EmployerBadge tone={applicantStatusTone(row.status)}>{row.status}</EmployerBadge>,
       },
       {
         key: 'actions',
@@ -205,37 +202,37 @@ export function ApplicantListPage() {
               type="button"
               disabled={decide.isPending}
               onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Shortlisted')}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40"
+              className={pipelineIconButtonClass('Shortlisted', row.status)}
               title="Shortlist"
             >
-              <ThumbsUp className="h-4 w-4" />
+              <ThumbsUp className={pipelineIconClass('Shortlisted', row.status)} />
             </button>
             <button
               type="button"
               disabled={decide.isPending}
               onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Interview')}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-amber-50 hover:text-amber-600 disabled:opacity-40"
+              className={pipelineIconButtonClass('Interview', row.status)}
               title="Mark Interview"
             >
-              <CalendarClock className="h-4 w-4" />
+              <CalendarClock className={pipelineIconClass('Interview', row.status)} />
             </button>
             <button
               type="button"
               disabled={decide.isPending}
               onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Hired')}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40"
+              className={pipelineIconButtonClass('Hired', row.status)}
               title="Hire"
             >
-              <UserCheck className="h-4 w-4" />
+              <UserCheck className={pipelineIconClass('Hired', row.status)} />
             </button>
             <button
               type="button"
               disabled={decide.isPending}
               onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Rejected')}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+              className={pipelineIconButtonClass('Rejected', row.status)}
               title="Reject"
             >
-              <ThumbsDown className="h-4 w-4" />
+              <ThumbsDown className={pipelineIconClass('Rejected', row.status)} />
             </button>
           </div>
         ),

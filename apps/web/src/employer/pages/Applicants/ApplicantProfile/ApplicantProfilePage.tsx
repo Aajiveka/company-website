@@ -31,17 +31,10 @@ import {
   useDecideApplicant,
   useSaveApplicantNote,
 } from '@/employer/services/employer.api';
-import type { ApplicantDecision, ApplicantPipelineStatus } from '@/employer/services/employer.types';
+import type { ApplicantDecision } from '@/employer/services/employer.types';
 import { decisionConfirm } from '@/employer/utils/decisionConfirm';
+import { pipelineActionButtonClass, pipelineIconClass, applicantStatusTone } from '@/employer/utils/pipelineActions';
 import { getErrorMessage } from '@/lib/axios';
-
-function statusTone(status: ApplicantPipelineStatus): 'neutral' | 'success' | 'warning' | 'danger' | 'primary' {
-  if (status === 'Hired') return 'success';
-  if (status === 'Shortlisted') return 'primary';
-  if (status === 'Interview') return 'warning';
-  if (status === 'Rejected') return 'danger';
-  return 'neutral';
-}
 
 function formatInr(amount: number | null | undefined) {
   if (amount == null || Number.isNaN(amount)) return '—';
@@ -173,21 +166,37 @@ export function ApplicantProfilePage() {
           .join(' · ')}
         actions={
           <>
-            <EmployerBadge tone={statusTone(applicant.status)}>{applicant.status}</EmployerBadge>
-            <SecondaryButton disabled={decide.isPending} onClick={() => setPendingDecision('Shortlisted')}>
-              <ThumbsUp className="h-4 w-4" />
+            <EmployerBadge tone={applicantStatusTone(applicant.status)}>{applicant.status}</EmployerBadge>
+            <SecondaryButton
+              disabled={decide.isPending}
+              className={pipelineActionButtonClass('Shortlisted', applicant.status)}
+              onClick={() => setPendingDecision('Shortlisted')}
+            >
+              <ThumbsUp className={pipelineIconClass('Shortlisted', applicant.status)} />
               Shortlist
             </SecondaryButton>
-            <SecondaryButton disabled={decide.isPending} onClick={() => setPendingDecision('Interview')}>
-              <CalendarClock className="h-4 w-4" />
+            <SecondaryButton
+              disabled={decide.isPending}
+              className={pipelineActionButtonClass('Interview', applicant.status)}
+              onClick={() => setPendingDecision('Interview')}
+            >
+              <CalendarClock className={pipelineIconClass('Interview', applicant.status)} />
               Interview
             </SecondaryButton>
-            <PrimaryButton disabled={decide.isPending} onClick={() => setPendingDecision('Hired')}>
-              <UserCheck className="h-4 w-4" />
+            <PrimaryButton
+              disabled={decide.isPending}
+              className={pipelineActionButtonClass('Hired', applicant.status)}
+              onClick={() => setPendingDecision('Hired')}
+            >
+              <UserCheck className={pipelineIconClass('Hired', applicant.status)} />
               Hire
             </PrimaryButton>
-            <SecondaryButton disabled={decide.isPending} onClick={() => setPendingDecision('Rejected')}>
-              <ThumbsDown className="h-4 w-4" />
+            <SecondaryButton
+              disabled={decide.isPending}
+              className={pipelineActionButtonClass('Rejected', applicant.status)}
+              onClick={() => setPendingDecision('Rejected')}
+            >
+              <ThumbsDown className={pipelineIconClass('Rejected', applicant.status)} />
               Reject
             </SecondaryButton>
             {applicant.hasResume ? (

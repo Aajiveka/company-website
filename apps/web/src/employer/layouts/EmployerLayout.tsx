@@ -33,6 +33,18 @@ export function EmployerLayout() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('dark');
+    return () => {
+      const stored = localStorage.getItem('theme');
+      const dark =
+        stored === 'dark' ||
+        (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      root.classList.toggle('dark', dark);
+    };
+  }, []);
+
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
       const next = !prev;
@@ -71,7 +83,7 @@ export function EmployerLayout() {
         )}
       >
         <div className="mx-auto w-full max-w-6xl 2xl:max-w-7xl">
-          <Outlet />
+          <Outlet key={location.pathname} />
         </div>
       </main>
     </div>

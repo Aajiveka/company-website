@@ -489,15 +489,24 @@ export function useDuplicateJob() {
   });
 }
 
-/** Upload a CSV/XLSX file for bulk job import (multipart/form-data). */
+/** Upload a CSV for bulk job import. Preview (commit=false) does not write jobs. */
 export function useUploadBulkJobs() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (pct: number) => void }) => {
+    mutationFn: ({
+      file,
+      commit = false,
+      onProgress,
+    }: {
+      file: File;
+      commit?: boolean;
+      onProgress?: (pct: number) => void;
+    }) => {
       const form = new FormData();
       form.append('file', file);
       return api
         .post<BulkUploadResult>('/clients/me/jobs/bulk-upload', form, {
+          params: { commit: commit ? 'true' : 'false' },
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (e) => {
             if (e.total && onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
@@ -505,6 +514,8 @@ export function useUploadBulkJobs() {
         })
         .then((r) => r.data);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['employer', 'jobs'] }),
+    onSuccess: (_data, vars) => {
+      if (vars.commit) void qc.invalidateQueries({ queryKey: ['employer', 'jobs'] });
+    },
   });
 }

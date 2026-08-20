@@ -192,14 +192,16 @@ export class EmployersController {
   }
 
   @Post('me/jobs/bulk-upload')
-  @ApiOperation({ summary: 'Bulk upload jobs from a CSV file' })
+  @ApiOperation({ summary: 'Validate (default) or commit a bulk job CSV. Pass commit=true to write jobs.' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
   bulkUploadJobs(
     @CurrentUser() user: RequestUser,
     @UploadedFile() file: Express.Multer.File,
+    @Query('commit') commit?: string,
   ) {
-    return this.clients.bulkUploadJobs(user.userId, file);
+    const write = commit === '1' || commit === 'true';
+    return this.clients.bulkUploadJobs(user.userId, file, write);
   }
 
   @Get('me/analytics')

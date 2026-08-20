@@ -20,6 +20,7 @@ import {
 } from '@/employer/components/Cards/ui';
 import { employerPaths } from '@/employer/constants/paths';
 import { useApplicants, useCompanyAnalytics } from '@/employer/services/employer.api';
+import { applicantStatusTone } from '@/employer/utils/pipelineActions';
 import { getErrorMessage } from '@/lib/axios';
 
 const statIcons: Record<string, ReactNode> = {
@@ -184,7 +185,7 @@ export function DashboardPage() {
                       {a.designation} · {a.experience || '—'}
                     </p>
                   </div>
-                  <EmployerBadge tone="neutral">{a.status}</EmployerBadge>
+                  <EmployerBadge tone={applicantStatusTone(a.status)}>{a.status}</EmployerBadge>
                 </li>
               ))}
             </ul>

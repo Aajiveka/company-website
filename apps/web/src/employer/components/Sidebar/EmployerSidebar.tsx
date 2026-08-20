@@ -151,6 +151,7 @@ export function EmployerSidebar({
                           key={child.id}
                           to={child.to}
                           end
+                          state={child.id === 'list' ? { statusTab: 'All' } : undefined}
                           className={({ isActive }) =>
                             cn(
                               'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] transition',

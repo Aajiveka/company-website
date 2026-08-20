@@ -345,6 +345,7 @@ export interface JobListResponse {
 
 export interface BulkUploadResult {
   imported: number;
+  valid?: number;
   skipped: number;
   errors: { row: number; reason: string }[];
   preview: Array<{
