@@ -28,6 +28,9 @@ COPY --from=build /repo/apps/api/prisma.config.ts apps/api/
 # import the shared Prisma client factory from it and run under tsx.
 COPY --from=build /repo/apps/api/src apps/api/src
 COPY --from=build /repo/apps/api/tsconfig.json apps/api/
+# Operational scripts run on the box under tsx, the same way the seed does — publishing a site
+# document has to happen where the S3 credentials and the RDS network are, not from a laptop.
+COPY --from=build /repo/apps/api/scripts apps/api/scripts
 # The seed's master data — real reference values dumped from the restored backup.
 COPY db/seed db/seed
 # generate/ holds the Prisma client that `prisma generate` emitted.
