@@ -570,7 +570,7 @@ export default function CvManagerPage() {
           <ProfessionalSection
             data={
               data.professional ?? {
-                subFunctionId: null, skillId: null, totalExp: 0, currentCtc: null, currentCityId: null,
+                subFunctionId: null, skillId: null, totalExp: 0, totalExpMonths: 0, currentCtc: null, currentCityId: null,
                 flgReadyToRelocate: false, noticePeriod: null, industryTypeId: null, preferredCityIds: [], tagNames: [],
               }
             }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { AlertTriangle, Download, Upload } from 'lucide-react';
-import { ConfirmDialog, useToast } from '@/components/ui';
+import { ConfirmDialog, ImageCropper, Modal, useToast } from '@/components/ui';
 import { useAuthStore } from '@/features/auth/auth.store';
 import {
   useCandidateProfile,
@@ -81,6 +81,8 @@ function PersonalInfoTab() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', mobile: '' });
+  /** Object URL of the picked file while the crop dialog is open. */
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) setForm({ ...splitName(profile.fullName), email: profile.email, mobile: profile.mobile });
@@ -119,13 +121,32 @@ function PersonalInfoTab() {
     );
   };
 
+  /**
+   * A picked file is not uploaded as-is: the avatar is rendered as a small square everywhere,
+   * so the candidate chooses which square before anything is sent.
+   */
   const onPhoto = (file: File | undefined) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
       notify('That image is larger than 5 MB.', 'error');
       return;
     }
-    uploadAvatar.mutate(file, {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const closeCropper = () => {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const onCropped = (blob: Blob) => {
+    closeCropper();
+    uploadAvatar.mutate(new File([blob], 'avatar.jpg', { type: 'image/jpeg' }), {
       onSuccess: () => notify('Photo updated.', 'success'),
       onError: () => notify('Could not upload that photo.', 'error'),
     });
@@ -157,11 +178,18 @@ function PersonalInfoTab() {
             className="sr-only"
             onChange={(e) => {
               const file = e.target.files?.[0];
+              // Cleared before the dialog opens so re-picking the same file still fires change.
               e.target.value = '';
               onPhoto(file);
             }}
           />
         </div>
+
+        {cropSrc && (
+          <Modal open onClose={closeCropper} title="Crop your photo" className="max-w-lg">
+            <ImageCropper src={cropSrc} aspect={1} onCrop={onCropped} onCancel={closeCropper} />
+          </Modal>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First Name" htmlFor="acctFirstName">

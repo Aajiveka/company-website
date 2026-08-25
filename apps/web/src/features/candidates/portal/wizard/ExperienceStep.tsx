@@ -3,7 +3,7 @@ import { useDeleteEmployment, useUpsertEmployment } from '../../candidate.api';
 import type { CvEditProfile, CvEmploymentEntry, CvMasters } from '../../candidate.types';
 import { Field, Input, Select, Textarea } from '../components/primitives';
 import { dotted, duration, labelOf, monthYear } from '../format';
-import { AddAnother, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
+import { AddAnother, DraftHeader, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
 
 /** A blank draft row. `id` absent means "create" when saved. */
 interface Draft {
@@ -104,6 +104,16 @@ export function ExperienceStep({
     if (await saveDraft()) setDraft(emptyDraft());
   };
 
+  /**
+   * Discards the open editor without saving. Only offered once a role is already
+   * saved — with an empty list the editor is the only thing on the step, so closing
+   * it would leave nothing to fill in.
+   */
+  const closeDraft = () => {
+    setError(null);
+    setDraft(null);
+  };
+
   return (
     <StepShell
       number={3}
@@ -141,6 +151,13 @@ export function ExperienceStep({
 
       {draft ? (
         <>
+          {cv.employment.length > 0 && (
+            <DraftHeader
+              title={draft.subscriberEmployerId ? 'Edit role' : 'New role'}
+              onClose={closeDraft}
+            />
+          )}
+
           <FieldGrid cols={2}>
             <Field label="Job Title" htmlFor="designationId">
               <Select

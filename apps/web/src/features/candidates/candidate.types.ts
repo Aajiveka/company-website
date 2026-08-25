@@ -181,7 +181,10 @@ export interface CvPersonal {
 export interface CvProfessional {
   subFunctionId: number | null;
   skillId: number | null;
+  /** Whole years of total work experience. Zero means fresher. */
   totalExp: number;
+  /** The 0-11 months on top of `totalExp`. Stored separately from the years — see the API. */
+  totalExpMonths: number;
   currentCtc: number | null;
   currentCityId: number | null;
   flgReadyToRelocate: boolean;

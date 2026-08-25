@@ -139,11 +139,18 @@ export class UpdateProfessionalDto {
   @IsInt()
   skillId?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Whole years of experience' })
   @IsOptional()
   @IsInt()
   @Min(0)
   totalExp?: number;
+
+  @ApiPropertyOptional({ description: 'Months on top of totalExp, 0-11' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(11)
+  totalExpMonths?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

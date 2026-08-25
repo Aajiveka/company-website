@@ -9,7 +9,15 @@
     "adminLogin": "Admin Login",
     "subscribeNow": "Subscribe Now",
     "tollFree": "Toll Free No:",
-    "tollFreeNumber": "18003093346"
+    "tollFreeNumber": "18003093346",
+    "student": "Student"
+  },
+  "student": {
+    "title": "Student Guide",
+    "subtitle": "The Aajivika handbook — read it here or download a copy.",
+    "download": "Download PDF",
+    "openInNewTab": "Open in new tab",
+    "noPreview": "Your browser cannot display the PDF inline."
   },
   "footer": {
     "followUs": "Follow us on :",
@@ -341,6 +349,7 @@
     "removeFile": "Remove file"
   },
   "imageCropper": {
+    "size": "Size",
     "preview": "Preview",
     "cancel": "Cancel",
     "cropSave": "Crop & Save"

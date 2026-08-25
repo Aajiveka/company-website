@@ -202,7 +202,7 @@ export function searchInstitutes(query: string, stateId: number | null, limit = 
 
 export let CV_EDIT_PROFILE: CvEditProfile = {
   personal: { fullName: 'Rahul Sharma', email: 'rahul@example.com', mobile: '9876543210', dob: '1994-05-12', gender: 'M', address: 'Pune, Maharashtra', cityId: 1 },
-  professional: { subFunctionId: 1, skillId: 1, totalExp: 6, currentCtc: 1800000, currentCityId: 1, flgReadyToRelocate: true, noticePeriod: 30, industryTypeId: 1, preferredCityIds: [1, 2], tagNames: ['React', 'Node.js'] },
+  professional: { subFunctionId: 1, skillId: 1, totalExp: 6, totalExpMonths: 3, currentCtc: 1800000, currentCityId: 1, flgReadyToRelocate: true, noticePeriod: 30, industryTypeId: 1, preferredCityIds: [1, 2], tagNames: ['React', 'Node.js'] },
   education: [
     { subscriberEducationId: 1, courseTypeId: 1, degreeId: 1, instituteName: 'University of Pune', passingYear: 2018, startYear: null, specialization: '', courseMode: 'Full Time', marks: '78%' },
     { subscriberEducationId: 2, courseTypeId: 1, degreeId: 2, instituteName: 'Fergusson College', passingYear: 2014, startYear: null, specialization: '', courseMode: 'Full Time', marks: '' },

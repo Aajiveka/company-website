@@ -31,6 +31,10 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
+/** 0–50 years and 0–11 months, the ranges every job portal offers for total experience. */
+const YEARS = Array.from({ length: 51 }, (_, i) => i);
+const MONTHS = Array.from({ length: 12 }, (_, i) => i);
+
 /** Step 1 — Personal Details (Figma 7:3777). */
 export function PersonalStep({
   cv,
@@ -46,7 +50,9 @@ export function PersonalStep({
   const existingLinkedIn = cv.accomplishments.find((a) => a.kind === 'ONLINE_PROFILE');
 
   const [cityId, setCityId] = useState<number | null>(personal?.cityId ?? null);
-  const [fresher, setFresher] = useState(!cv.professional?.totalExp);
+  const [fresher, setFresher] = useState(!cv.professional?.totalExp && !cv.professional?.totalExpMonths);
+  const [expYears, setExpYears] = useState(String(cv.professional?.totalExp ?? 0));
+  const [expMonths, setExpMonths] = useState(String(cv.professional?.totalExpMonths ?? 0));
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<Values>({
@@ -89,8 +95,10 @@ export function PersonalStep({
 
       // "I'm a fresher" is stored as zero total experience, which is also what gates
       // the Work Experience step — there is no separate flag in the schema.
-      if (fresher && cv.professional?.totalExp) {
-        await saveProfessional.mutateAsync({ ...cv.professional, totalExp: 0 });
+      const totalExp = fresher ? 0 : Number(expYears) || 0;
+      const totalExpMonths = fresher ? 0 : Number(expMonths) || 0;
+      if (totalExp !== (cv.professional?.totalExp ?? 0) || totalExpMonths !== (cv.professional?.totalExpMonths ?? 0)) {
+        await saveProfessional.mutateAsync({ ...cv.professional, totalExp, totalExpMonths });
       }
 
       if (values.linkedIn && values.linkedIn !== existingLinkedIn?.url) {
@@ -138,6 +146,31 @@ export function PersonalStep({
           blurb="I am a student / haven't worked after graduation"
         />
       </div>
+
+      {/* Only the experienced path asks for a duration; a fresher has none to give. */}
+      {!fresher && (
+        <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:max-w-md">
+          <Field label="Total Experience — Years" htmlFor="expYears">
+            <Select id="expYears" value={expYears} onChange={(e) => setExpYears(e.target.value)}>
+              {YEARS.map((y) => (
+                <option key={y} value={y}>
+                  {y === 1 ? '1 Year' : `${y} Years`}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field label="Months" htmlFor="expMonths">
+            <Select id="expMonths" value={expMonths} onChange={(e) => setExpMonths(e.target.value)}>
+              {MONTHS.map((m) => (
+                <option key={m} value={m}>
+                  {m === 1 ? '1 Month' : `${m} Months`}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+      )}
 
       <FieldGrid>
         <Field label="Full Name" htmlFor="fullName" required error={form.formState.errors.fullName?.message}>

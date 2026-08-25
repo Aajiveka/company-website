@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ShieldCheck, Building2, User } from 'lucide-react';
+import { ChevronDown, GraduationCap, ShieldCheck, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button, Dropdown, buttonVariants } from '@/components/ui';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -86,14 +86,22 @@ export function Navbar() {
                   <ChevronDown className="h-4 w-4" aria-hidden />
                 </span>
               }
-              items={LOGIN_PORTAL_ORDER.map((portal) => {
-                const Icon = PORTAL_ICON[portal];
-                return {
-                  label: t(LOGIN_PORTALS[portal].labelKey),
-                  icon: <Icon className="h-4 w-4" aria-hidden />,
-                  onSelect: () => navigate(`/login?${LOGIN_PORTAL_PARAM}=${portal}`),
-                };
-              })}
+              items={[
+                ...LOGIN_PORTAL_ORDER.map((portal) => {
+                  const Icon = PORTAL_ICON[portal];
+                  return {
+                    label: t(LOGIN_PORTALS[portal].labelKey),
+                    icon: <Icon className="h-4 w-4" aria-hidden />,
+                    onSelect: () => navigate(`/login?${LOGIN_PORTAL_PARAM}=${portal}`),
+                  };
+                }),
+                // Not a login door: students are sent to the handbook, which is public.
+                {
+                  label: t('nav.student'),
+                  icon: <GraduationCap className="h-4 w-4" aria-hidden />,
+                  onSelect: () => navigate('/student'),
+                },
+              ]}
             />
           </div>
           <Link to="/pricing" className="hidden sm:block">

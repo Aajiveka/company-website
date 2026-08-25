@@ -43,7 +43,7 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
     }
   };
 
-  const { name, initials, title, city, experience, expectedCtc, photoUrl, isNew, verified, percent, nextStep } =
+  const { name, initials, title, city, experience, expectedCtc, photoUrl, isNew, verified, percent } =
     profile;
 
   return (
@@ -162,11 +162,6 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
                 />
               </div>
             </div>
-            {nextStep && (
-              <p className="shrink-0 text-sm text-blue-200">
-                Add <span className="font-semibold text-white">{nextStep.label}</span> to reach {nextStep.target}%
-              </p>
-            )}
           </div>
         </div>
       </div>

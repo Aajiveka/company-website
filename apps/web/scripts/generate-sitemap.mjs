@@ -23,6 +23,7 @@ const staticRoutes = [
   '/terms',
   '/subscription',
   '/resume',
+  '/student',
   '/salary-insights',
   '/login',
   '/register',

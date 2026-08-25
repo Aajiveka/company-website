@@ -31,25 +31,7 @@ export interface PortalProfile {
   /** True while the profile is still essentially untouched. */
   isNew: boolean;
   percent: number;
-  nextStep: { label: string; target: number } | null;
 }
-
-/** Human labels for the weighted sections in `profileCompletion`. */
-const SECTION_LABELS: Record<string, string> = {
-  personalDetails: 'Personal Details',
-  professional: 'Professional Details',
-  headline: 'a Headline',
-  keySkills: 'Key Skills',
-  employment: 'Work Experience',
-  education: 'Education',
-  itSkills: 'IT Skills',
-  projects: 'Projects',
-  summary: 'a Summary',
-  resume: 'a Resume',
-  accomplishments: 'Certifications',
-  careerProfile: 'Job Preferences',
-  languages: 'Languages',
-};
 
 const lpa = (rupees: number | null | undefined) =>
   rupees && rupees > 0 ? `${(rupees / 100_000).toFixed(1).replace(/\.0$/, '')} LPA Expected` : null;
@@ -86,14 +68,7 @@ function formatExperience(value: string | null | undefined): string | null {
 }
 
 export function derivePortalProfile(profile: CandidateProfile, cv: CvEditProfile | undefined): PortalProfile {
-  const { sections, percent } = cv ? computeCompletion(cv) : { sections: [], percent: 0 };
-
-  // The banner nudges toward the single most valuable thing still missing, and shows
-  // where finishing it lands the meter — a bare "82%" gives the user nothing to act on.
-  const pending = sections.find((s) => !s.done);
-  const nextStep = pending
-    ? { label: SECTION_LABELS[pending.key] ?? pending.key, target: percent + pending.weight }
-    : null;
+  const { percent } = cv ? computeCompletion(cv) : { percent: 0 };
 
   const name = profile.fullName?.trim() || '';
   const title = profile.resumeHeadline?.trim() || profile.designation?.trim() || null;
@@ -124,7 +99,6 @@ export function derivePortalProfile(profile: CandidateProfile, cv: CvEditProfile
     verified: profile.emailVerified && percent >= 50,
     isNew: percent === 0,
     percent,
-    nextStep,
   };
 }
 

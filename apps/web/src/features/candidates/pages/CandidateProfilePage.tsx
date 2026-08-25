@@ -148,6 +148,7 @@ export default function CandidateProfilePage() {
                 subFunctionId: null,
                 skillId: null,
                 totalExp: 0,
+                totalExpMonths: 0,
                 currentCtc: null,
                 currentCityId: null,
                 flgReadyToRelocate: false,

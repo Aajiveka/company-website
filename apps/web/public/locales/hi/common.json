@@ -9,7 +9,15 @@
     "adminLogin": "एडमिन लॉगिन",
     "subscribeNow": "सब्सक्राइब करें",
     "tollFree": "टोल फ्री नं:",
-    "tollFreeNumber": "18003093346"
+    "tollFreeNumber": "18003093346",
+    "student": "छात्र"
+  },
+  "student": {
+    "title": "छात्र गाइड",
+    "subtitle": "आजीविका पुस्तिका — यहीं पढ़ें या डाउनलोड करें।",
+    "download": "PDF डाउनलोड करें",
+    "openInNewTab": "नए टैब में खोलें",
+    "noPreview": "आपका ब्राउज़र PDF को यहाँ नहीं दिखा सकता।"
   },
   "footer": {
     "followUs": "हमें फ़ॉलो करें:",
@@ -341,6 +349,7 @@
     "removeFile": "फ़ाइल हटाएं"
   },
   "imageCropper": {
+    "size": "आकार",
     "preview": "पूर्वावलोकन",
     "cancel": "रद्द करें",
     "cropSave": "क्रॉप और सहेजें"

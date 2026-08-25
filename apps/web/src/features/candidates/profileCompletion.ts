@@ -40,10 +40,12 @@ export function computeSections(cv: CvEditProfile): CompletionSection[] {
       done: !!(p && p.fullName && p.mobile && p.gender && p.cityId),
     },
     {
+      // Total experience is deliberately not part of this: "0 years" is a fresher's real
+      // answer, and requiring it above zero capped every fresher's profile at 90%.
       key: 'professional',
       anchor: 'professional',
       weight: 10,
-      done: !!(pr && (pr.subFunctionId || pr.skillId) && pr.totalExp > 0),
+      done: !!(pr && (pr.subFunctionId || pr.skillId)),
     },
     { key: 'headline', anchor: 'headline', weight: 8, done: !!text(cv.headline).trim() },
     { key: 'keySkills', anchor: 'key-skills', weight: 10, done: list(pr?.tagNames).length > 0 },
@@ -73,6 +75,11 @@ export function computeSections(cv: CvEditProfile): CompletionSection[] {
   ];
 }
 
+/**
+ * The weights add up to exactly 100, so a profile with every section filled reads 100%.
+ * `profileCompletion.test.ts` guards that — a new section with a weight has to take its
+ * points from the existing ones, or the meter can never be finished.
+ */
 export function computeCompletion(cv: CvEditProfile) {
   const sections = computeSections(cv);
   const percent = sections.reduce((sum, s) => sum + (s.done ? s.weight : 0), 0);

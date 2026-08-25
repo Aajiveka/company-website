@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Plus, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Btn } from '../components/primitives';
 
@@ -152,6 +152,29 @@ export function SavedRow({
           <Trash2 className="size-4" aria-hidden />
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Title bar for an open sub-form, with the ✕ that discards it.
+ *
+ * Only render it once the step already has a saved entry — with an empty list the
+ * editor is the only thing on the step, so closing it would leave nothing to fill in.
+ */
+export function DraftHeader({ title, onClose }: { title: string; onClose: () => void }) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <p className="text-[13px] font-semibold text-slate-700 dark:text-gray-200">{title}</p>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={`Close ${title.toLowerCase()}`}
+        title="Close"
+        className="rounded-md p-1 text-slate-400 transition-colors hover:bg-aj-surface-soft hover:text-slate-600 dark:hover:bg-gray-900 dark:hover:text-gray-200"
+      >
+        <X className="size-4" aria-hidden />
+      </button>
     </div>
   );
 }

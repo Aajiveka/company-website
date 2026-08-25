@@ -72,7 +72,6 @@ const MENU_ITEMS = [
 
 /** The links and pills sitting directly in the bar, left to right. */
 const HEADER_ITEMS = [
-  { name: 'Home', url: '/' },
   { name: 'Jobs', url: '/jobs' },
   { name: 'Applications', url: '/candidate/applications' },
   { name: 'Saved Jobs', url: '/candidate/saved-jobs' },

@@ -602,6 +602,9 @@ export class CandidatesService {
         subFunctionId: cv.subFunctionID,
         skillId: cv.skillID,
         totalExp: cv.totalExp ?? 0,
+        // Years live on the legacy CV row, months on the extras row — see the schema note
+        // on tblSubscriberProfileExtra.TotalExpMonths.
+        totalExpMonths: extra?.totalExpMonths ?? 0,
         currentCtc: cv.currentCTC != null ? Number(cv.currentCTC) : null,
         currentCityId: cv.currentCityID,
         flgReadyToRelocate: cv.flgReadyToRelocate === 1,
@@ -729,6 +732,11 @@ export class CandidatesService {
         loginIDUpd: userId,
       },
     });
+
+    // The months half has no column on the legacy CV row, so it goes to the extras row.
+    if (dto.totalExpMonths !== undefined) {
+      await this.writeExtra(userId, subscriberId, { totalExpMonths: dto.totalExpMonths });
+    }
 
     if (dto.preferredCityIds) {
       await this.db.subscriberPrefferedLocations.deleteMany({ where: { subscriberID: subscriberId } });

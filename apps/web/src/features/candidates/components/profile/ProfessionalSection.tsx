@@ -30,7 +30,14 @@ export function ProfessionalSection({ data, masters }: { data: CvProfessional; m
         <Field label={t('profile.professional.primarySkill')} value={name(data.skillId, masters?.skills)} />
         <Field
           label={t('profile.professional.totalExperience')}
-          value={data.totalExp ? t('profile.years', { count: data.totalExp }) : ''}
+          value={
+            [
+              data.totalExp ? t('profile.years', { count: data.totalExp }) : '',
+              data.totalExpMonths ? t('profile.months', { count: data.totalExpMonths }) : '',
+            ]
+              .filter(Boolean)
+              .join(' ')
+          }
         />
         <Field
           label={t('profile.professional.currentCtc')}
@@ -69,6 +76,14 @@ export function ProfessionalSection({ data, masters }: { data: CvProfessional; m
             min={0}
             value={draft.totalExp || ''}
             onChange={(e) => patch({ totalExp: e.target.value ? Number(e.target.value) : 0 })}
+          />
+          <Input
+            label={t('profile.professional.experienceMonths')}
+            type="number"
+            min={0}
+            max={11}
+            value={draft.totalExpMonths || ''}
+            onChange={(e) => patch({ totalExpMonths: e.target.value ? Number(e.target.value) : 0 })}
           />
           <Input
             label={t('profile.professional.currentCtc')}
@@ -112,6 +127,7 @@ export function ProfessionalSection({ data, masters }: { data: CvProfessional; m
                 skillId: draft.skillId,
                 industryTypeId: draft.industryTypeId,
                 totalExp: draft.totalExp,
+                totalExpMonths: draft.totalExpMonths,
                 currentCtc: draft.currentCtc,
                 currentCityId: draft.currentCityId,
                 noticePeriod: draft.noticePeriod,

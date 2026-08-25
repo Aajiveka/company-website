@@ -1023,6 +1023,11 @@ model SubscriberProfileExtra {
   resumeHeadline               String? @db.VarChar(500)           @map("ResumeHeadline")
   profileSummary               String? @db.VarChar(4000)          @map("ProfileSummary")
 
+  /// The months half of total work experience; the years half is tblSubscriberCVDetails.TotalExp,
+  /// which is a whole-number column the legacy schema has no room to extend. NULL and 0 both
+  /// mean "no extra months" — a fresher is 0 years and NULL months.
+  totalExpMonths               Int? @db.SmallInt                  @map("TotalExpMonths")
+
   // ── Career profile ──
   /// Free text against fixed UI lists. tblMstrSubFunctions covers function/designation, but
   /// department, role category and job role have no masters in this schema.

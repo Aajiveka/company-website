@@ -56,6 +56,7 @@ export function PreferencesStep({
         subFunctionId: pro?.subFunctionId ?? null,
         skillId: pro?.skillId ?? null,
         totalExp: pro?.totalExp ?? 0,
+        totalExpMonths: pro?.totalExpMonths ?? 0,
         currentCtc: currentCtc ? Number(currentCtc) : null,
         currentCityId: pro?.currentCityId ?? null,
         flgReadyToRelocate: relocate,

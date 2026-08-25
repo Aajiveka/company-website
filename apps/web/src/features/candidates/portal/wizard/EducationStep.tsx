@@ -11,7 +11,7 @@ import {
 import { Combobox } from '../components/Combobox';
 import { Field, Input, Select } from '../components/primitives';
 import { dotted, educationTitle, labelOf, years } from '../format';
-import { AddAnother, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
+import { AddAnother, DraftHeader, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
 import { educationDraftSchema, type EducationErrors } from './validation';
 
 interface Draft {
@@ -197,6 +197,13 @@ export function EducationStep({
     if (await saveDraft()) setDraft(emptyDraft());
   };
 
+  /** Discards the open editor without saving. */
+  const closeDraft = () => {
+    setError(null);
+    setErrors({});
+    setDraft(null);
+  };
+
   return (
     <StepShell
       number={4}
@@ -237,6 +244,13 @@ export function EducationStep({
 
       {draft ? (
         <>
+          {cv.education.length > 0 && (
+            <DraftHeader
+              title={draft.subscriberEducationId ? 'Edit education' : 'New education'}
+              onClose={closeDraft}
+            />
+          )}
+
           <FieldGrid cols={2}>
             <Field label="Education" htmlFor="degreeId" required error={errors.degreeId}>
               <Select

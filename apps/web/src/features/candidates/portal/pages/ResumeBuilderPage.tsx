@@ -13,16 +13,48 @@ import { dotted, duration, educationTitle, labelOf, monthYear, years } from '../
 import { stepHref, type WizardStepKey } from '../wizardSteps';
 
 type Template = 'classic' | 'ats';
-type SectionId = 'personal' | 'summary' | 'experience' | 'education' | 'skills' | 'certifications';
+type SectionId =
+  | 'personal'
+  | 'summary'
+  | 'experience'
+  | 'education'
+  | 'projects'
+  | 'skills'
+  | 'itSkills'
+  | 'certifications'
+  | 'accomplishments';
 
+/** The editor's left rail: the sections a wizard step owns, so "Edit" always has somewhere to go. */
 const SECTIONS: { id: SectionId; label: string; step: WizardStepKey }[] = [
   { id: 'personal', label: 'Personal Info', step: 'personal' },
   { id: 'summary', label: 'Summary', step: 'summary' },
   { id: 'experience', label: 'Work Experience', step: 'experience' },
   { id: 'education', label: 'Education', step: 'education' },
+  { id: 'projects', label: 'Projects', step: 'projects' },
   { id: 'skills', label: 'Skills', step: 'skills' },
   { id: 'certifications', label: 'Certifications', step: 'skills' },
 ];
+
+/**
+ * Everything that goes into the preview and the PDF, in print order.
+ *
+ * Wider than the left rail: IT skills and accomplishments are filled in on the profile page
+ * rather than in the wizard, but a candidate who entered them expects them on the resume.
+ */
+const RESUME_SECTIONS: SectionId[] = [
+  'personal',
+  'summary',
+  'experience',
+  'education',
+  'projects',
+  'skills',
+  'itSkills',
+  'certifications',
+  'accomplishments',
+];
+
+/** A4 at 96 dpi. Fixing the export width keeps the PDF identical on every screen size. */
+const SHEET_WIDTH = 794;
 
 /**
  * Resume Builder — Figma nodes 7:6743 through 7:7714.
@@ -45,7 +77,10 @@ export default function ResumeBuilderPage() {
   const scoring = useMemo(() => (cv ? computeResumeScore(cv) : null), [cv]);
 
   const onDownload = async () => {
-    if (!sheetRef.current || !cv) return;
+    if (!sheetRef.current || !cv) {
+      notify('Your resume is still loading. Try again in a moment.', 'error');
+      return;
+    }
     setExporting(true);
     try {
       const html2canvas = (await import('html2canvas-pro')).default;
@@ -206,10 +241,10 @@ export default function ResumeBuilderPage() {
               // The only section the design gives its own form rather than a preview.
               <CertificationEditor rows={cv.certificates} />
             ) : (
-              <div ref={sheetRef} className="bg-white p-6 font-sans text-slate-800">
+              <div className="bg-white p-6 font-sans text-slate-800">
                 {preview ? (
-                  SECTIONS.map((s) => (
-                    <SectionBody key={s.id} id={s.id} cv={cv} masters={masters} template={template} />
+                  RESUME_SECTIONS.map((id) => (
+                    <SectionBody key={id} id={id} cv={cv} masters={masters} template={template} />
                   ))
                 ) : (
                   <SectionBody id={section} cv={cv} masters={masters} template={template} />
@@ -243,6 +278,20 @@ export default function ResumeBuilderPage() {
           </CardBody>
         </Card>
       </div>
+
+      {/*
+        What Download exports, kept out of view and rendered whatever the editor is showing.
+        The visible sheet is only ever one section (and is replaced entirely by the form on
+        the Certifications tab), so exporting the on-screen node produced a one-section PDF —
+        or, on Certifications, no PDF at all.
+      */}
+      <div aria-hidden className="pointer-events-none fixed top-0 -left-[10000px]" style={{ width: SHEET_WIDTH }}>
+        <div ref={sheetRef} className="bg-white p-8 font-sans text-slate-800">
+          {RESUME_SECTIONS.map((id) => (
+            <SectionBody key={id} id={id} cv={cv} masters={masters} template={template} />
+          ))}
+        </div>
+      </div>
     </>
   );
 }
@@ -252,6 +301,14 @@ const STATE_CLASS: Record<SectionState, string> = {
   partial: 'text-amber-600',
   missing: 'text-slate-400',
 };
+
+const PROFICIENCY: Record<number, string> = { 1: 'Beginner', 2: 'Proficient', 3: 'Expert' };
+
+/** "3 yrs 6 mos" for an IT skill's depth; null when neither half was entered. */
+function expLength(yrs: number | null, months: number | null): string | null {
+  const parts = [yrs ? `${yrs} yr${yrs === 1 ? '' : 's'}` : null, months ? `${months} mo${months === 1 ? '' : 's'}` : null];
+  return parts.filter(Boolean).join(' ') || null;
+}
 
 function Heading({ children, template }: { children: string; template: Template }) {
   return (
@@ -280,16 +337,27 @@ function SectionBody({
   const empty = <p className="text-xs italic text-slate-400">Nothing added yet.</p>;
 
   switch (id) {
-    case 'personal':
+    case 'personal': {
+      // Online profiles are stored as accomplishments; on a resume they belong in the header.
+      const links = cv.accomplishments.filter((a) => a.kind === 'ONLINE_PROFILE' && a.url);
       return (
         <section>
           <h2 className="font-display text-xl font-bold text-slate-900">{cv.personal?.fullName || 'Your Name'}</h2>
           {cv.headline && <p className="text-sm font-semibold text-slate-600">{cv.headline}</p>}
           <p className="mt-1 text-xs text-slate-500">
-            {dotted(cv.personal?.email, cv.personal?.mobile, cv.personal?.address)}
+            {dotted(
+              cv.personal?.email,
+              cv.personal?.mobile,
+              labelOf(masters?.cities, cv.personal?.cityId),
+              cv.personal?.address,
+            )}
           </p>
+          {links.length > 0 && (
+            <p className="mt-0.5 text-xs text-slate-500">{links.map((a) => a.url).join(' · ')}</p>
+          )}
         </section>
       );
+    }
 
     case 'summary':
       return (
@@ -323,6 +391,77 @@ function SectionBody({
             : empty}
         </section>
       );
+
+    case 'projects':
+      return (
+        <section>
+          <Heading template={template}>Projects</Heading>
+          {cv.projects.length
+            ? cv.projects.map((p) => (
+                <div key={p.subscriberProjectId} className="mb-3">
+                  <p className="text-[13px] font-bold">
+                    {dotted(p.title, p.clientName || null)}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {dotted(
+                      years(p.workedFromYear, p.workedTillYear),
+                      p.projectStatus || null,
+                      p.projectSite || null,
+                      p.natureOfEmployment || null,
+                      p.teamSize ? `Team of ${p.teamSize}` : null,
+                    )}
+                  </p>
+                  {p.skillsUsed.length > 0 && (
+                    <p className="text-xs text-slate-500">Skills: {p.skillsUsed.join(', ')}</p>
+                  )}
+                  {p.roleDescr && <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed">{p.roleDescr}</p>}
+                  {p.details && <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed">{p.details}</p>}
+                </div>
+              ))
+            : empty}
+        </section>
+      );
+
+    case 'itSkills':
+      return (
+        <section>
+          <Heading template={template}>Technical Skills</Heading>
+          {cv.itSkills.length
+            ? cv.itSkills.map((s) => {
+                const meta = dotted(
+                  s.version || null,
+                  expLength(s.expYears, s.expMonths),
+                  s.lastUsedYear ? `last used ${s.lastUsedYear}` : null,
+                );
+                return (
+                  <p key={s.subscriberItSkillId} className="mb-1 text-[13px]">
+                    <span className="font-bold">{s.skillName}</span>
+                    {meta && <span className="text-slate-500"> · {meta}</span>}
+                  </p>
+                );
+              })
+            : empty}
+        </section>
+      );
+
+    case 'accomplishments': {
+      // The header already carries the online profiles, so this lists the rest.
+      const rows = cv.accomplishments.filter((a) => a.kind !== 'ONLINE_PROFILE');
+      return (
+        <section>
+          <Heading template={template}>Accomplishments</Heading>
+          {rows.length
+            ? rows.map((a) => (
+                <div key={a.subscriberAccomplishmentId} className="mb-2">
+                  <p className="text-[13px] font-bold">{dotted(a.title, a.eventYear ? String(a.eventYear) : null)}</p>
+                  {a.descr && <p className="whitespace-pre-line text-[13px] leading-relaxed">{a.descr}</p>}
+                  {a.url && <p className="text-xs text-slate-500">{a.url}</p>}
+                </div>
+              ))
+            : empty}
+        </section>
+      );
+    }
 
     case 'education':
       return (
@@ -370,7 +509,10 @@ function SectionBody({
           )}
           {cv.languages.length > 0 && (
             <p className="mt-2 text-xs text-slate-500">
-              Languages: {cv.languages.map((l) => l.languageName).join(', ')}
+              Languages:{' '}
+              {cv.languages
+                .map((l) => [l.languageName, PROFICIENCY[l.proficiencyId]].filter(Boolean).join(' — '))
+                .join(', ')}
             </p>
           )}
         </section>
@@ -382,10 +524,18 @@ function SectionBody({
           <Heading template={template}>Certifications</Heading>
           {cv.certificates.length
             ? cv.certificates.map((c) => (
-                <p key={c.subscriberCertificateId} className="mb-1 text-[13px]">
-                  <span className="font-bold">{c.certificateName}</span>
-                  {c.validFromYear ? <span className="text-slate-500"> · {c.validFromYear}</span> : null}
-                </p>
+                <div key={c.subscriberCertificateId} className="mb-1.5">
+                  <p className="text-[13px] font-bold">{c.certificateName}</p>
+                  <p className="text-xs text-slate-500">
+                    {dotted(
+                      c.certificationId || null,
+                      c.validFromYear
+                        ? `${c.validFromYear}${c.neverExpires ? ' · no expiry' : c.validTillYear ? ` – ${c.validTillYear}` : ''}`
+                        : null,
+                      c.certificateUrl || null,
+                    )}
+                  </p>
+                </div>
               ))
             : empty}
         </section>

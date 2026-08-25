@@ -5,7 +5,6 @@ import {
   CircleCheckBig,
   FileText,
   FolderClosed,
-  Home,
   Mail,
   Search,
   Settings,
@@ -54,15 +53,15 @@ export const PORTAL_MODULES: PortalModule[] = [
  */
 export interface PortalNavItem {
   to: string;
-  /** Path prefix that lights the item up; `end` makes it an exact match. */
+  /** Path prefix that lights the item up. */
   match: string;
   label: string;
   icon: LucideIcon;
-  end?: boolean;
 }
 
+// The public marketing home is deliberately absent: the header logo already links to it, and
+// a signed-in candidate's working set is what belongs in this bar.
 export const PORTAL_NAV: PortalNavItem[] = [
-  { to: '/', match: '/', label: 'Home', icon: Home, end: true },
   { to: '/jobs', match: '/jobs', label: 'Jobs', icon: Search },
   { to: '/candidate/applications', match: '/candidate/applications', label: 'Applications', icon: CircleCheckBig },
   { to: '/candidate/saved-jobs', match: '/candidate/saved-jobs', label: 'Saved Jobs', icon: Bookmark },

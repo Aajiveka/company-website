@@ -66,15 +66,36 @@ export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropper
     });
   }, [imgLoaded, aspect]);
 
-  // Clamp crop rect within image bounds
+  /**
+   * The largest crop that still fits inside the displayed image, and a floor that keeps the
+   * box grabbable. Both are 0 until the image has loaded and been measured.
+   */
+  const maxSize = Math.max(0, Math.min(imgDisplay.width, imgDisplay.height * aspect));
+  const minSize = maxSize ? Math.max(40, maxSize * 0.15) : 0;
+
+  // Clamp the crop rect — size first, then position — so it always sits inside the image.
   const clampCrop = useCallback(
     (c: CropRect): CropRect => {
-      const cropH = c.size / aspect;
-      const x = Math.max(imgDisplay.offsetX, Math.min(c.x, imgDisplay.offsetX + imgDisplay.width - c.size));
+      const size = maxSize ? Math.max(minSize, Math.min(c.size, maxSize)) : c.size;
+      const cropH = size / aspect;
+      const x = Math.max(imgDisplay.offsetX, Math.min(c.x, imgDisplay.offsetX + imgDisplay.width - size));
       const y = Math.max(imgDisplay.offsetY, Math.min(c.y, imgDisplay.offsetY + imgDisplay.height - cropH));
-      return { ...c, x, y };
+      return { size, x, y };
     },
-    [imgDisplay, aspect],
+    [imgDisplay, aspect, maxSize, minSize],
+  );
+
+  /** Resizes around the box's own centre, so the slider zooms rather than drags. */
+  const resizeCrop = useCallback(
+    (size: number) =>
+      setCrop((prev) =>
+        clampCrop({
+          size,
+          x: prev.x + (prev.size - size) / 2,
+          y: prev.y + (prev.size / aspect - size / aspect) / 2,
+        }),
+      ),
+    [clampCrop, aspect],
   );
 
   // Mouse / touch dragging
@@ -215,7 +236,7 @@ export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropper
             {/* Crop rectangle */}
             <div
               role="application"
-              aria-label="Crop area. Use arrow keys to move."
+              aria-label="Crop area. Use arrow keys to move, plus and minus to resize."
               tabIndex={0}
               className={cn(
                 'absolute border-2 border-white focus:outline-none focus:ring-2 focus:ring-primary/70',
@@ -239,6 +260,16 @@ export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropper
                   case 'ArrowRight': dx = step; break;
                   case 'ArrowUp': dy = -step; break;
                   case 'ArrowDown': dy = step; break;
+                  case '+':
+                  case '=':
+                    e.preventDefault();
+                    resizeCrop(crop.size + step * 2);
+                    return;
+                  case '-':
+                  case '_':
+                    e.preventDefault();
+                    resizeCrop(crop.size - step * 2);
+                    return;
                   default: return;
                 }
                 e.preventDefault();
@@ -254,6 +285,25 @@ export function ImageCropper({ src, onCrop, onCancel, aspect = 1 }: ImageCropper
           </>
         )}
       </div>
+
+      {/* Size control — the box can be dragged, and this is how it is zoomed. */}
+      {imgLoaded && !imgError && (
+        <div className="flex items-center gap-3">
+          <label htmlFor="cropSize" className="shrink-0 text-sm font-medium text-navy dark:text-gray-200">
+            {t('imageCropper.size')}
+          </label>
+          <input
+            id="cropSize"
+            type="range"
+            min={minSize}
+            max={maxSize}
+            step={1}
+            value={crop.size}
+            onChange={(e) => resizeCrop(Number(e.target.value))}
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-primary dark:bg-gray-700"
+          />
+        </div>
+      )}
 
       {/* Preview + actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">

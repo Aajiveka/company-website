@@ -3,13 +3,20 @@ import { Trash2 } from 'lucide-react';
 import { useDeleteLanguage, useUpdateKeySkills, useUpsertLanguage } from '../../candidate.api';
 import type { CvEditProfile, LanguageProficiency } from '../../candidate.types';
 import { Btn, Chip, Field, Input, Select } from '../components/primitives';
-import { AddAnother, StepShell, type StepProps } from './StepShell';
+import { AddAnother, DraftHeader, StepShell, type StepProps } from './StepShell';
 
 const PROFICIENCIES: { id: LanguageProficiency; label: string }[] = [
   { id: 1, label: 'Beginner' },
   { id: 2, label: 'Proficient' },
   { id: 3, label: 'Expert' },
 ];
+
+interface LangDraft {
+  name: string;
+  proficiencyId: string;
+}
+
+const emptyLangDraft = (): LangDraft => ({ name: '', proficiencyId: '2' });
 
 /** Step 5 — Skills & languages (Figma 7:4501). */
 export function SkillsStep({
@@ -25,7 +32,7 @@ export function SkillsStep({
   const [entry, setEntry] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const [langDraft, setLangDraft] = useState<{ name: string; proficiencyId: string } | null>(null);
+  const [langDraft, setLangDraft] = useState<LangDraft | null>(null);
 
   const saveSkills = useUpdateKeySkills();
   const saveLanguage = useUpsertLanguage();
@@ -42,6 +49,28 @@ export function SkillsStep({
     setEntry('');
   };
 
+  /** Persists the open language editor. Returns false when it could not be saved. */
+  const saveLangDraft = async (): Promise<boolean> => {
+    const name = langDraft?.name.trim();
+    if (!name) return true;
+    try {
+      await saveLanguage.mutateAsync({
+        languageName: name,
+        proficiencyId: (Number(langDraft?.proficiencyId) || 2) as LanguageProficiency,
+      });
+      return true;
+    } catch {
+      setError('Could not save this language. Please try again.');
+      return false;
+    }
+  };
+
+  /** Commits what is on screen before clearing the editor, so nothing is silently lost. */
+  const addAnotherLanguage = async () => {
+    setError(null);
+    if (await saveLangDraft()) setLangDraft(emptyLangDraft());
+  };
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -56,17 +85,12 @@ export function SkillsStep({
         finalSkills.length !== (cv.professional?.tagNames.length ?? 0) ||
         finalSkills.some((s, i) => s !== cv.professional?.tagNames[i]);
       if (changed) await saveSkills.mutateAsync({ tagNames: finalSkills });
-
-      if (langDraft?.name.trim()) {
-        await saveLanguage.mutateAsync({
-          languageName: langDraft.name.trim(),
-          proficiencyId: (Number(langDraft.proficiencyId) || 2) as LanguageProficiency,
-        });
-      }
-      onNext();
     } catch {
       setError('Could not save your skills. Please try again.');
+      return;
     }
+
+    if (await saveLangDraft()) onNext();
   };
 
   return (
@@ -145,31 +169,47 @@ export function SkillsStep({
         )}
 
         {langDraft ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Language" htmlFor="langName">
-              <Input
-                id="langName"
-                placeholder="e.g. Hindi"
-                value={langDraft.name}
-                onChange={(e) => setLangDraft({ ...langDraft, name: e.target.value })}
+          <>
+            {cv.languages.length > 0 && (
+              <DraftHeader
+                title="New language"
+                onClose={() => {
+                  setError(null);
+                  setLangDraft(null);
+                }}
               />
-            </Field>
-            <Field label="Proficiency" htmlFor="langProf">
-              <Select
-                id="langProf"
-                value={langDraft.proficiencyId}
-                onChange={(e) => setLangDraft({ ...langDraft, proficiencyId: e.target.value })}
-              >
-                {PROFICIENCIES.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Language" htmlFor="langName">
+                <Input
+                  id="langName"
+                  placeholder="e.g. Hindi"
+                  value={langDraft.name}
+                  onChange={(e) => setLangDraft({ ...langDraft, name: e.target.value })}
+                />
+              </Field>
+              <Field label="Proficiency" htmlFor="langProf">
+                <Select
+                  id="langProf"
+                  value={langDraft.proficiencyId}
+                  onChange={(e) => setLangDraft({ ...langDraft, proficiencyId: e.target.value })}
+                >
+                  {PROFICIENCIES.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+
+            <div className="mt-3">
+              <AddAnother label="Add another language" onClick={addAnotherLanguage} />
+            </div>
+          </>
         ) : (
-          <AddAnother label="Add language" onClick={() => setLangDraft({ name: '', proficiencyId: '2' })} />
+          <AddAnother label="Add language" onClick={() => setLangDraft(emptyLangDraft())} />
         )}
       </div>
     </StepShell>

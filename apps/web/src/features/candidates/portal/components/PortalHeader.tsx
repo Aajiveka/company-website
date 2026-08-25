@@ -41,8 +41,8 @@ export function PortalHeader({ profile }: { profile: PortalProfile | null }) {
           <ul className="hidden items-center gap-1 lg:flex">
             {PORTAL_NAV.map((item) => {
               const Icon = item.icon;
-              // `end` only for Home — every other item stays lit across its sub-routes.
-              const active = item.end ? pathname === item.match : pathname.startsWith(item.match);
+              // Prefix match: an item stays lit across its sub-routes.
+              const active = pathname.startsWith(item.match);
               return (
                 <li key={item.to}>
                   <NavLink
@@ -117,7 +117,7 @@ export function PortalHeader({ profile }: { profile: PortalProfile | null }) {
         <ul className="border-t border-aj-line-soft bg-white px-4 pb-3 lg:hidden dark:border-gray-700 dark:bg-gray-800">
           {PORTAL_NAV.map((item) => {
             const Icon = item.icon;
-            const active = item.end ? pathname === item.match : pathname.startsWith(item.match);
+            const active = pathname.startsWith(item.match);
             return (
               <li key={item.to}>
                 <NavLink

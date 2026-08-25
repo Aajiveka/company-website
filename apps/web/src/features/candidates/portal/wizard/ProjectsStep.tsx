@@ -10,7 +10,7 @@ import {
 } from '../../candidate.types';
 import { Field, Input, Select, Textarea } from '../components/primitives';
 import { dotted } from '../format';
-import { AddAnother, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
+import { AddAnother, DraftHeader, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
 
 interface Draft {
   subscriberProjectId?: number;
@@ -147,6 +147,12 @@ export function ProjectsStep({
     if (await saveDraft()) setDraft(emptyDraft());
   };
 
+  /** Discards the open editor without saving. */
+  const closeDraft = () => {
+    setError(null);
+    setDraft(null);
+  };
+
   return (
     <StepShell
       number={7}
@@ -183,6 +189,13 @@ export function ProjectsStep({
 
       {draft ? (
         <>
+          {cv.projects.length > 0 && (
+            <DraftHeader
+              title={draft.subscriberProjectId ? 'Edit project' : 'New project'}
+              onClose={closeDraft}
+            />
+          )}
+
           <FieldGrid cols={2}>
             <Field label="Project Title" htmlFor="title" required>
               <Input

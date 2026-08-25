@@ -72,6 +72,7 @@ const CareerPage = lazy(() => import('@/features/public/pages/CareerPage'));
 const PricingPage = lazy(() => import('@/features/public/pages/PricingPage'));
 const SubscriptionPage = lazy(() => import('@/features/public/pages/SubscriptionPage'));
 const ResumePage = lazy(() => import('@/features/public/pages/ResumePage'));
+const StudentGuidePage = lazy(() => import('@/features/public/pages/StudentGuidePage'));
 const TestimonialPage = lazy(() => import('@/features/public/pages/TestimonialPage'));
 const LegalPage = lazy(() => import('@/features/public/pages/LegalPage'));
 const BlogsPage = lazy(() => import('@/features/public/pages/BlogsPage'));
@@ -158,6 +159,7 @@ export const router = createBrowserRouter([
           { path: '/terms', element: withSuspense(<LegalPage variant="terms" />) },
           { path: '/subscription', element: withSuspense(<SubscriptionPage />) },
           { path: '/resume', element: withSuspense(<ResumePage />) },
+          { path: '/student', element: withSuspense(<StudentGuidePage />) },
           { path: '/salary-insights', element: withSuspense(<SalaryInsightsPage />) },
           { path: '/payment/return', element: withSuspense(<PaymentReturnPage />) },
         ],
