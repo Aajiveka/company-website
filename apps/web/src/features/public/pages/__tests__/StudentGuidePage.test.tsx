@@ -18,7 +18,7 @@ describe('StudentGuidePage', () => {
   it('embeds the handbook', () => {
     const { container } = renderPage();
     const embed = container.querySelector('object');
-    expect(embed).toHaveAttribute('data', '/docs/aajivika-book.pdf');
+    expect(embed).toHaveAttribute('data', '/api/site-docs/aajivika-book');
     expect(embed).toHaveAttribute('type', 'application/pdf');
   });
 
@@ -27,7 +27,7 @@ describe('StudentGuidePage', () => {
     const downloads = container.querySelectorAll('a[download]');
     expect(downloads.length).toBe(2);
     downloads.forEach((a) => {
-      expect(a).toHaveAttribute('href', '/docs/aajivika-book.pdf');
+      expect(a).toHaveAttribute('href', '/api/site-docs/aajivika-book/download');
       expect(a).toHaveAttribute('download', 'Aajivika-Book.pdf');
     });
   });
@@ -38,7 +38,7 @@ describe('StudentGuidePage', () => {
     const external = container.querySelectorAll('a[target="_blank"]');
     expect(external.length).toBe(2);
     external.forEach((a) => {
-      expect(a).toHaveAttribute('href', '/docs/aajivika-book.pdf');
+      expect(a).toHaveAttribute('href', '/api/site-docs/aajivika-book');
       expect(a).toHaveAttribute('rel', 'noreferrer');
     });
   });

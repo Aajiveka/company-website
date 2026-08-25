@@ -1240,6 +1240,33 @@ model AuditLog {
   @@map("tblAuditLog")
 }
 
+/// Files the public site serves — the company brochure today, anything similar later.
+///
+/// The bytes live in object storage under `storageKey`; this row is the stable, slug-addressed
+/// handle the site links to. Keeping them here rather than in `apps/web/public` means a
+/// multi-megabyte binary never enters the repo, and swapping the file is a storage upload plus
+/// one UPDATE rather than a redeploy.
+model SiteDocument {
+  siteDocumentID               Int                                @id @default(autoincrement()) @map("SiteDocumentID")
+  /// URL-addressable id, e.g. `/api/site-docs/aajivika-book`.
+  slug                         String @db.VarChar(80)             @unique @map("Slug")
+  title                        String @db.VarChar(200)            @map("Title")
+  /// Key handed to StorageService — a path under the local root, or an S3 object key.
+  storageKey                   String @db.VarChar(500)            @map("StorageKey")
+  /// Checked against an allowlist before anything is served inline, so a stored document can
+  /// never be rendered as something the browser will execute on our origin.
+  mimeType                     String @db.VarChar(120)            @map("MimeType")
+  sizeBytes                    Int                                @map("SizeBytes")
+  /// What a download is saved as.
+  fileName                     String @db.VarChar(200)            @map("FileName")
+  active                       Boolean                            @default(true) @map("Active")
+
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+  timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
+
+  @@map("tblSiteDocument")
+}
+
 /// Subscription plans. ALL NEW — the legacy database has no payment, order or subscription
 /// table anywhere; the prices lived only in Pricing.aspx markup. Putting them in the
 /// database means an order references a plan and the amount is never taken from the client.

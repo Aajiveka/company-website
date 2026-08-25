@@ -4,8 +4,15 @@ import { Button } from '@/components/ui';
 import { Seo } from '@/components/Seo';
 import { PageBanner } from '../components/PageBanner';
 
-/** Served from `public/`, so it is a plain static file rather than an API download. */
-const BOOK_URL = '/docs/aajivika-book.pdf';
+/**
+ * Served from tblSiteDocument through the API, not from `public/`.
+ *
+ * The bytes live in object storage, so replacing the book is an upload plus one row update
+ * rather than a redeploy — and a 7 MB binary stays out of the repo. The API sets the inline
+ * headers, which is why the viewer and the download are two routes rather than one URL.
+ */
+const BOOK_URL = '/api/site-docs/aajivika-book';
+const BOOK_DOWNLOAD_URL = `${BOOK_URL}/download`;
 const BOOK_FILENAME = 'Aajivika-Book.pdf';
 
 /**
@@ -21,7 +28,7 @@ export default function StudentGuidePage() {
 
   const actions = (
     <div className="flex flex-wrap justify-center gap-3">
-      <a href={BOOK_URL} download={BOOK_FILENAME}>
+      <a href={BOOK_DOWNLOAD_URL} download={BOOK_FILENAME}>
         <Button variant="accent">
           <Download className="mr-2 h-4 w-4" aria-hidden />
           {t('student.download')}

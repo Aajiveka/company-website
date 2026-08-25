@@ -24,6 +24,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { RequestLoggerMiddleware } from '@/common/middleware/request-logger.middleware';
 import { AdminModule } from '@/modules/admin/admin.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
+import { SiteDocumentsModule } from '@/modules/site-documents/site-documents.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { CompaniesModule } from '@/modules/companies/companies.module';
     PaymentsModule,
     AdminModule,
     CompaniesModule,
+    SiteDocumentsModule,
   ],
   controllers: [HealthController],
   providers: [
