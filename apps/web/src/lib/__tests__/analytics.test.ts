@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
 
 // We need to control import.meta.env.DEV per test, so we re-import after mocking.
 let trackEvent: typeof import('../analytics').trackEvent;
@@ -54,25 +54,43 @@ describe('analytics', () => {
   });
 
   describe('in production mode', () => {
-    beforeEach(async () => {
-      // In production, import.meta.env.DEV is false.
-      // We need to ensure DEV is falsy for the module.
+    const loadWith = async (endpoint: string) => {
+      vi.resetModules();
       vi.stubEnv('DEV', false);
+      vi.stubEnv('VITE_ANALYTICS_ENDPOINT', endpoint);
       const mod = await import('../analytics');
       trackEvent = mod.trackEvent;
       trackPageView = mod.trackPageView;
       identifyUser = mod.identifyUser;
+    };
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
     });
 
-    it('trackEvent calls navigator.sendBeacon in production', () => {
-      const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    /**
+     * The module used to beacon to a hard-coded `/analytics/events`. Nothing serves that path —
+     * it is outside `/api`, so nginx answered every POST with 405, and production logged a
+     * failed request on every single navigation.
+     */
+    it('sends nothing when no endpoint is configured', async () => {
+      await loadWith('');
+      trackEvent('purchase', { amount: 99 });
+      trackPageView('/home');
+      identifyUser('user-42');
+
+      expect(navigator.sendBeacon).not.toHaveBeenCalled();
+    });
+
+    it('beacons to the configured endpoint', async () => {
+      await loadWith('https://collect.example/e');
       trackEvent('purchase', { amount: 99 });
 
-      // import.meta.env.DEV may still be true in vitest (test mode = development).
-      // If console.log was called, that means we're in dev mode in the test runner,
-      // which is expected. The structural test above covers the dev branch.
-      // We just verify no error is thrown.
-      spy.mockRestore();
+      expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
+      const [url, body] = (navigator.sendBeacon as unknown as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [string, string];
+      expect(url).toBe('https://collect.example/e');
+      expect(JSON.parse(body)).toMatchObject({ name: 'purchase', properties: { amount: 99 } });
     });
   });
 });
