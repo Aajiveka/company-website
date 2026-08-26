@@ -86,6 +86,16 @@ export default defineConfig(({ mode: _mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
+        /**
+         * Never answer an /api navigation with the app shell.
+         *
+         * Workbox routes every navigation to index.html so a deep link into the SPA works
+         * offline. That also swallowed top-level navigations to the API — opening a document in
+         * a new tab handed the browser index.html, the router matched no route, and the user got
+         * the app's 404 instead of their file. Embeds were unaffected, being subresources rather
+         * than navigations, which is what made it look like only "Open in new tab" was broken.
+         */
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
