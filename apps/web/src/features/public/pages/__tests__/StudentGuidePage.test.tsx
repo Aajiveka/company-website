@@ -4,8 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import StudentGuidePage from '../StudentGuidePage';
 
 /**
- * The student handbook page reached from the navbar's Login menu: the book has to be shown
- * inline AND offered as a download, since most mobile browsers refuse to embed a PDF.
+ * The student handbook page: the book fills the screen AND is offered as a download, since
+ * most mobile browsers refuse to embed a PDF at all.
  */
 describe('StudentGuidePage', () => {
   const renderPage = () =>
@@ -20,6 +20,14 @@ describe('StudentGuidePage', () => {
     const embed = container.querySelector('object');
     expect(embed).toHaveAttribute('data', '/api/site-docs/aajivika-book');
     expect(embed).toHaveAttribute('type', 'application/pdf');
+  });
+
+  // A 10-page A4 brochure is unreadable in a card, so the embed grows to fill the column
+  // instead of taking a fixed height.
+  it('gives the viewer the screen', () => {
+    const { container } = renderPage();
+    expect(container.querySelector('object')?.className).toContain('flex-1');
+    expect(container.querySelector('.h-screen')).not.toBeNull();
   });
 
   it('offers the download under the viewer, and again as the no-preview fallback', () => {

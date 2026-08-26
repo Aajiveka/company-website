@@ -19,7 +19,14 @@ const PORTAL_ICON = {
 } as const;
 
 /** Pages with a light background rather than a dark hero behind the header. */
-const SOLID_HEADER_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
+const SOLID_HEADER_ROUTES = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  // The handbook viewer starts at the top of the page, so there is no hero to sit on either.
+  '/student',
+];
 
 /**
  * Public site header — mirrors FrontMaster.Master:
@@ -73,6 +80,13 @@ export function Navbar() {
               {t('nav.findJobs')}
             </Button>
           </Link>
+          {/* The handbook is a public resource, not a login door — it sits with the other links. */}
+          <Link to="/student">
+            <Button variant="accent" size="sm">
+              <GraduationCap className="h-4 w-4" aria-hidden />
+              {t('nav.student')}
+            </Button>
+          </Link>
           <Link to="/register" className="hidden sm:block">
             <Button variant="accent" size="sm">
               {t('nav.registerNow')}
@@ -86,22 +100,14 @@ export function Navbar() {
                   <ChevronDown className="h-4 w-4" aria-hidden />
                 </span>
               }
-              items={[
-                ...LOGIN_PORTAL_ORDER.map((portal) => {
-                  const Icon = PORTAL_ICON[portal];
-                  return {
-                    label: t(LOGIN_PORTALS[portal].labelKey),
-                    icon: <Icon className="h-4 w-4" aria-hidden />,
-                    onSelect: () => navigate(`/login?${LOGIN_PORTAL_PARAM}=${portal}`),
-                  };
-                }),
-                // Not a login door: students are sent to the handbook, which is public.
-                {
-                  label: t('nav.student'),
-                  icon: <GraduationCap className="h-4 w-4" aria-hidden />,
-                  onSelect: () => navigate('/student'),
-                },
-              ]}
+              items={LOGIN_PORTAL_ORDER.map((portal) => {
+                const Icon = PORTAL_ICON[portal];
+                return {
+                  label: t(LOGIN_PORTALS[portal].labelKey),
+                  icon: <Icon className="h-4 w-4" aria-hidden />,
+                  onSelect: () => navigate(`/login?${LOGIN_PORTAL_PARAM}=${portal}`),
+                };
+              })}
             />
           </div>
           <Link to="/pricing" className="hidden sm:block">
