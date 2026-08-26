@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '@/config/env';
-import type { StorageDriver } from '../storage.types';
+import type { RedirectOptions, StorageDriver } from '../storage.types';
 
 /** Used when STORAGE_DRIVER=s3 and the bucket is configured. */
 @Injectable()
@@ -33,5 +33,24 @@ export class S3StorageDriver implements StorageDriver {
     return getSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
       expiresIn: 300,
     });
+  }
+
+  /**
+   * The same signed URL, but with the response headers pinned.
+   *
+   * Without the overrides S3 would answer with whatever type it stored and no disposition, so
+   * the redirect would lose the framing the API is responsible for.
+   */
+  async redirectUrl(key: string, opts: RedirectOptions): Promise<string> {
+    return getSignedUrl(
+      this.client,
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ResponseContentType: opts.contentType,
+        ResponseContentDisposition: `${opts.disposition}; filename="${encodeURIComponent(opts.fileName)}"`,
+      }),
+      { expiresIn: 300 },
+    );
   }
 }

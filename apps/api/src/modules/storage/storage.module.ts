@@ -25,6 +25,9 @@ const logger = new Logger('StorageModule');
       inject: [LocalStorageDriver],
     },
   ],
-  exports: [StorageService],
+  // The driver token travels with the service: a consumer that needs to hand the browser a URL
+  // rather than the bytes has to ask the driver directly, and only the driver knows whether it
+  // has one to give.
+  exports: [StorageService, STORAGE_DRIVER],
 })
 export class StorageModule {}

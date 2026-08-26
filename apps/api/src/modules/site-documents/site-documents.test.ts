@@ -22,7 +22,12 @@ const mockDb = { siteDocument: { findFirst: mock.fn(), findMany: mock.fn() } };
 const mockPrisma = { get client() { return mockDb; } };
 const mockStorage = { read: mock.fn(async () => Buffer.from('%PDF-1.7')) };
 
-const build = () => new SiteDocumentsService(mockPrisma as any, mockStorage as any);
+/** The local driver has no redirectUrl; the S3 one does. Both shapes are exercised below. */
+const localDriver = {};
+const s3Driver = { redirectUrl: mock.fn(async () => 'https://s3.example/signed?sig=abc') };
+
+const build = (driver: object = localDriver) =>
+  new SiteDocumentsService(mockPrisma as any, mockStorage as any, driver as any);
 
 /** Captures what the controller writes, so the headers can be asserted. */
 function fakeRes() {
@@ -30,14 +35,18 @@ function fakeRes() {
   return {
     headers,
     body: undefined as unknown,
+    redirectedTo: undefined as string | undefined,
+    redirectStatus: undefined as number | undefined,
     setHeader(k: string, v: string) { headers[k.toLowerCase()] = v; },
     send(b: unknown) { this.body = b; },
+    redirect(status: number, url: string) { this.redirectStatus = status; this.redirectedTo = url; },
   };
 }
 
 beforeEach(() => {
   mockDb.siteDocument.findFirst.mock.resetCalls();
   mockStorage.read.mock.resetCalls();
+  s3Driver.redirectUrl.mock.resetCalls();
 });
 
 describe('SiteDocumentsService', () => {
@@ -96,5 +105,39 @@ describe('SiteDocumentsController', () => {
     await new SiteDocumentsController(build()).download('aajivika-book', res as any);
 
     assert.match(res.headers['content-disposition'], /^attachment;/);
+  });
+
+  /**
+   * Proxying the bytes was what made a 7 MB brochure take tens of seconds and left the PDF
+   * viewer blank throughout. With a store that can serve the object itself, the API must get
+   * out of the way — and must not read the object to do it.
+   */
+  it('redirects instead of proxying when the store can serve the object', async () => {
+    mockDb.siteDocument.findFirst.mock.mockImplementation(async () => row());
+    const res = fakeRes();
+    await new SiteDocumentsController(build(s3Driver)).view('aajivika-book', res as any);
+
+    assert.equal(res.redirectStatus, 302);
+    assert.equal(res.redirectedTo, 'https://s3.example/signed?sig=abc');
+    assert.equal(mockStorage.read.mock.calls.length, 0, 'must not pull the object into memory');
+    // The signed URL expires, so a cached redirect would send the next visitor to a dead link.
+    assert.equal(res.headers['cache-control'], 'no-store');
+  });
+
+  it('asks the store to pin the disposition it would have set itself', async () => {
+    mockDb.siteDocument.findFirst.mock.mockImplementation(async () => row());
+    await new SiteDocumentsController(build(s3Driver)).download('aajivika-book', fakeRes() as any);
+    assert.equal(s3Driver.redirectUrl.mock.calls[0].arguments[1].disposition, 'attachment');
+
+    s3Driver.redirectUrl.mock.resetCalls();
+    await new SiteDocumentsController(build(s3Driver)).view('aajivika-book', fakeRes() as any);
+    assert.equal(s3Driver.redirectUrl.mock.calls[0].arguments[1].disposition, 'inline');
+  });
+
+  it('keeps the allowlist on the redirect path too', async () => {
+    mockDb.siteDocument.findFirst.mock.mockImplementation(async () => row({ mimeType: 'text/html' }));
+    await new SiteDocumentsController(build(s3Driver)).view('x', fakeRes() as any);
+
+    assert.equal(s3Driver.redirectUrl.mock.calls[0].arguments[1].disposition, 'attachment');
   });
 });

@@ -16,30 +16,16 @@ import { NestFactory } from '@nestjs/core';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { StorageModule } from '../src/modules/storage/storage.module';
-import { LocalStorageDriver } from '../src/modules/storage/drivers/local.driver';
-import { S3StorageDriver } from '../src/modules/storage/drivers/s3.driver';
 import { STORAGE_DRIVER, type StorageDriver } from '../src/modules/storage/storage.types';
-import { env } from '../src/config/env';
 
 /**
  * Just the two pieces this script needs. Booting the whole AppModule would drag in the queues,
  * mailer and health probes, none of which a one-shot upload has any business starting.
  *
- * StorageModule keeps its driver private, so the choice is repeated here rather than exported
- * — the same env var decides it, so the script writes wherever the running API reads.
+ * The driver comes from StorageModule, so the same env var that decides where the running API
+ * reads from decides where this writes to.
  */
-@Module({
-  imports: [PrismaModule, StorageModule],
-  providers: [
-    LocalStorageDriver,
-    {
-      provide: STORAGE_DRIVER,
-      useFactory: (local: LocalStorageDriver) =>
-        env.STORAGE_DRIVER === 's3' ? new S3StorageDriver() : local,
-      inject: [LocalStorageDriver],
-    },
-  ],
-})
+@Module({ imports: [PrismaModule, StorageModule] })
 class PublishModule {}
 
 const MIME_BY_EXT: Record<string, string> = {

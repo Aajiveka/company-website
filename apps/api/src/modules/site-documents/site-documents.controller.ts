@@ -19,17 +19,33 @@ export class SiteDocumentsController {
   @Public()
   @Get(':slug')
   @ApiOperation({ summary: 'Serve a published document, inline where the type allows it' })
-  async view(@Param('slug') slug: string, @Res() res: Response) {
-    const { doc, body, canInline } = await this.docs.fetch(slug);
-    this.send(res, doc.mimeType, doc.fileName, body, canInline ? 'inline' : 'attachment');
+  view(@Param('slug') slug: string, @Res() res: Response) {
+    return this.serve(slug, 'inline', res);
   }
 
   @Public()
   @Get(':slug/download')
   @ApiOperation({ summary: 'Download a published document' })
-  async download(@Param('slug') slug: string, @Res() res: Response) {
+  download(@Param('slug') slug: string, @Res() res: Response) {
+    return this.serve(slug, 'attachment', res);
+  }
+
+  /**
+   * Redirects to the object store where there is one, and streams the bytes otherwise.
+   *
+   * The redirect is deliberately not cached: the URL it points at is signed and short-lived, so
+   * a browser replaying it from cache would follow an expired link. The object it lands on is
+   * cacheable on its own terms.
+   */
+  private async serve(slug: string, want: 'inline' | 'attachment', res: Response) {
+    const located = await this.docs.locate(slug, want);
+    if (located.url) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.redirect(302, located.url);
+      return;
+    }
     const { doc, body } = await this.docs.fetch(slug);
-    this.send(res, doc.mimeType, doc.fileName, body, 'attachment');
+    this.send(res, doc.mimeType, doc.fileName, body, located.disposition);
   }
 
   private send(

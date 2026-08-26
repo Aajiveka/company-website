@@ -97,7 +97,11 @@ export default defineConfig(({ mode: _mode }) => ({
             },
           },
           {
-            urlPattern: /\/api\/.*/i,
+            // Everything under /api except the document routes. A published brochure is
+            // multi-megabyte binary: caching it would evict a hundred real API responses, and a
+            // service-worker-mediated response cannot answer the range requests a PDF viewer
+            // makes. The negative lookahead leaves those requests to the network untouched.
+            urlPattern: /\/api\/(?!site-docs\/).*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
