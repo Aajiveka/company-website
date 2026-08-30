@@ -149,6 +149,11 @@ export class FilesController {
    * appear on public candidate profiles, so this exposes nothing those pages do not.
    */
   @Public()
+  // Photos are images, not API calls, and a recruiter's applicant list asks for a screenful
+  // at once — under the global 60/min they rate-limit the page that renders them. Cheap to
+  // serve and cached for an hour a request, so they get their own, much larger budget rather
+  // than sharing the one meant for writes.
+  @Throttle({ default: { limit: 300, ttl: 60_000 } })
   @Get('avatar/:subscriberId')
   @ApiOperation({ summary: "Serve a candidate's profile photo inline" })
   async avatar(@Param('subscriberId') subscriberId: string, @Res() res: Response) {

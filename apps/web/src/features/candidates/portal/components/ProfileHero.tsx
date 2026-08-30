@@ -120,7 +120,10 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
             >
               {downloading ? 'Preparing…' : 'Download Resume'}
             </Btn>
-            <Link to="/candidate/profile" className="contents">
+            {/* The wizard, not this page: the hero renders on the profile screen, so pointing
+                Edit Profile at /candidate/profile made it a button that goes nowhere. Every
+                section's own Edit link already opens the wizard on its step. */}
+            <Link to="/candidate/onboarding" className="contents">
               <Btn shape="pill" variant="onBlueOutline" block>
                 Edit Profile
               </Btn>

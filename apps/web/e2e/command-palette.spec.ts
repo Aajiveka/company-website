@@ -104,15 +104,20 @@ test.describe('Command Palette', () => {
     const dialog = await openPalette(page);
 
     // Filter to "jobs" to narrow the list
+    const options = dialog.locator('[role="option"]');
+    const unfiltered = await options.count();
     const input = dialog.locator('input[type="text"]');
     await input.fill('jobs');
 
-    // Wait for debounce (150ms) to filter the list — "jobs" matches fewer than the full 12 items
-    const options = dialog.locator('[role="option"]');
+    // Wait for the 150ms debounce to actually narrow the list. Measured against the palette's
+    // own unfiltered length, not a hardcoded one: this used to read `toBeLessThan(12)`, and
+    // when the palette dropped to eight entries the condition was true before the debounce had
+    // fired. The wait returned immediately, Enter picked the unfiltered first item — Home — and
+    // the test only failed later, on a URL that had never changed.
     await expect(async () => {
       const count = await options.count();
       expect(count).toBeGreaterThan(0);
-      expect(count).toBeLessThan(12);
+      expect(count).toBeLessThan(unfiltered);
     }).toPass({ timeout: 3_000 });
 
     // Press Enter to select the first matching result
