@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import argon2 from 'argon2';
 import { PrismaService } from '@/prisma/prisma.service';
 import { StorageService } from '@/modules/storage/storage.service';
+import { avatarUrl } from '@/modules/files/avatar-url';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobMapStatus, SubscriberStatus, JOB_STATUS_ACTIVE } from '@/shared/status';
 import { EDUCATION_MAX_YEAR_AHEAD, EDUCATION_MIN_YEAR } from './dto/candidates.dto';
@@ -26,6 +27,13 @@ import type {
   UpsertLanguageDto,
   UpsertProjectDto,
 } from './dto/candidates.dto';
+
+/** Image types the avatar route will serve inline, keyed by stored extension. */
+const AVATAR_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+};
 
 /* ------------------------------------------------------------------ *
  * Activity timeline
@@ -198,7 +206,7 @@ export class CandidatesService {
       city: cv.city?.descr ?? '',
       designation: cv.subFunction?.descr ?? '',
       totalExperience: cv.totalExp != null ? String(cv.totalExp) : '',
-      photoUrl: cv.photoName?.trim() ? `/files/${cv.photoName}` : null,
+      photoUrl: avatarUrl(subscriberId, cv.photoName),
       // The header block the profile page renders above the fold.
       resumeHeadline: extra?.resumeHeadline ?? '',
       currentCompany: current?.employer ?? '',
@@ -597,6 +605,8 @@ export class CandidatesService {
         gender: (cv.gender?.trim() === 'F' ? 'F' : 'M') as 'M' | 'F',
         address: cv.addressLine1 ?? '',
         cityId: cv.cityID,
+        // Profile completion scores the photo, and it derives everything from this payload.
+        photoUrl: avatarUrl(subscriberId, cv.photoName),
       },
       professional: cv && {
         subFunctionId: cv.subFunctionID,
@@ -1919,6 +1929,27 @@ export class CandidatesService {
     });
 
     return { url: await this.storage.url(stored.key) };
+  }
+
+  /**
+   * The candidate's profile photo, for the public avatar route.
+   *
+   * Only the image types the uploader accepts are handed back. A row still pointing at a
+   * document from some older import must not be replayed to the browser as an image.
+   */
+  async avatarFile(subscriberId: number) {
+    // The route is public, so the id arrives straight from the URL and may be anything.
+    if (!Number.isInteger(subscriberId) || subscriberId <= 0) {
+      throw new NotFoundException('No profile photo');
+    }
+    const cv = await this.db.subscriberCVDetails.findUnique({
+      where: { subscriberID: subscriberId },
+      select: { photoName: true },
+    });
+    const key = cv?.photoName?.trim();
+    const mimeType = key ? AVATAR_TYPES[key.slice(key.lastIndexOf('.')).toLowerCase()] : undefined;
+    if (!key || !mimeType) throw new NotFoundException('No profile photo');
+    return { body: await this.storage.read(key), mimeType };
   }
 
   /* ----------------------------------------------------------------------- *

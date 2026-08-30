@@ -4,6 +4,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
 import { StorageService } from '@/modules/storage/storage.service';
+import { avatarUrl } from '@/modules/files/avatar-url';
 import {
   JOB_STATUS_ACTIVE,
   JOB_STATUS_ARCHIVED,
@@ -840,7 +841,7 @@ export class EmployersService {
         : null,
       resumeUrl: hasResume ? `/clients/me/applicants/${jobSubscriberMapId}/resume` : null,
       cvPath: hasResume ? `/clients/me/applicants/${jobSubscriberMapId}/resume` : null,
-      photoUrl: cv?.photoName?.trim() ? `/files/${cv.photoName}` : null,
+      photoUrl: avatarUrl(r.subscriberID, cv?.photoName),
       resumeHeadline: extra?.resumeHeadline?.trim() ?? '',
       profileSummary: extra?.profileSummary?.trim() ?? '',
       department: extra?.department?.trim() ?? '',

@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
+import { Public } from '@/common/decorators/public.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/shared/roles';
 import { StorageService } from '@/modules/storage/storage.service';
@@ -138,5 +139,28 @@ export class FilesController {
   ) {
     const subscriberId = await this.candidates.subscriberIdFor(user.userId);
     return this.candidates.uploadAvatar(user.userId, subscriberId, file);
+  }
+
+  /**
+   * A candidate's profile photo, inline and unauthenticated.
+   *
+   * The generic download route cannot stand in for this: an <img> tag sends no Authorization
+   * header, and that route frames every file as an octet-stream attachment. Photos already
+   * appear on public candidate profiles, so this exposes nothing those pages do not.
+   */
+  @Public()
+  @Get('avatar/:subscriberId')
+  @ApiOperation({ summary: "Serve a candidate's profile photo inline" })
+  async avatar(@Param('subscriberId') subscriberId: string, @Res() res: Response) {
+    const { body, mimeType } = await this.candidates.avatarFile(Number(subscriberId));
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', 'inline');
+    // The type above comes from the allowlist, not from the bytes, so sniffing must not win.
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', 'sandbox');
+    // The URL carries the storage key's random tail, so a replaced photo is a different URL
+    // and this can be cached hard.
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(body);
   }
 }

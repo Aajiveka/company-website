@@ -106,7 +106,10 @@ export function useCvEditProfile(options?: { enabled?: boolean }) {
 export function useUpdatePersonal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CvPersonal) => api.put('/candidates/me/personal', payload).then((r) => r.data),
+    // photoUrl is server-derived and uploaded through /files/avatar — it is never part of
+    // what this endpoint saves.
+    mutationFn: (payload: Omit<CvPersonal, 'photoUrl'>) =>
+      api.put('/candidates/me/personal', payload).then((r) => r.data),
     onSuccess: () => invalidateCv(qc),
   });
 }
@@ -448,7 +451,9 @@ export function useUploadAvatar() {
         })
         .then((r) => r.data);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile('me') }),
+    // The cv-edit payload carries photoUrl too, and profile completion scores it from there,
+    // so refreshing only the profile query would leave the percentage a step behind.
+    onSuccess: () => invalidateCv(qc),
   });
 }
 

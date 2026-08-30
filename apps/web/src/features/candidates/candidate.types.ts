@@ -176,6 +176,8 @@ export interface CvPersonal {
   gender: 'M' | 'F';
   address: string;
   cityId: number | null;
+  /** Null until a photo is uploaded. Profile completion scores it. */
+  photoUrl: string | null;
 }
 
 export interface CvProfessional {
