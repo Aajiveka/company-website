@@ -116,7 +116,7 @@ export function ExperienceStep({
 
   return (
     <StepShell
-      number={3}
+      number={stepIndex + 1}
       title="Work Experience"
       blurb="Past & current roles"
       onSubmit={onSubmit}

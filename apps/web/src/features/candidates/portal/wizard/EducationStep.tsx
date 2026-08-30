@@ -4,6 +4,8 @@ import { useDeleteEducation, useInstituteSearch, useUpsertEducation } from '../.
 import {
   COURSE_MODES,
   DEGREE_CATEGORIES,
+  EDUCATION_MAX_YEAR_AHEAD,
+  EDUCATION_MIN_YEAR,
   type CvEditProfile,
   type CvEducationEntry,
   type CvMasters,
@@ -43,11 +45,19 @@ const toDraft = (e: CvEducationEntry): Draft => ({
   courseTypeId: e.courseTypeId ? String(e.courseTypeId) : '',
   instituteName: e.instituteName,
   startYear: e.startYear ? String(e.startYear) : '',
-  passingYear: e.passingYear ? String(e.passingYear) : '',
+  // A legacy row can hold an end year that precedes its start year — the two fields were
+  // free text before, and older writers never checked. The End Year list cannot offer it,
+  // so an empty field asking to be filled beats a control showing blank for a value that is
+  // still there and still invalid.
+  passingYear: e.passingYear && !(e.startYear && e.passingYear < e.startYear) ? String(e.passingYear) : '',
   specialization: e.specialization ?? '',
   courseMode: e.courseMode,
   marks: e.marks,
 });
+
+/** Selectable years, newest first — a recent year is the common answer, so it comes first. */
+const yearsBetween = (from: number, to: number) =>
+  to < from ? [] : Array.from({ length: to - from + 1 }, (_, i) => to - i);
 
 /**
  * Step 4 — Education (Figma 7:4302).
@@ -88,6 +98,40 @@ export function EducationStep({
     // Clear this field's message as soon as it is edited; leaving it up while the candidate
     // fixes it reads as though the fix did not take.
     setErrors((e) => (e[key] ? { ...e, [key]: undefined } : e));
+  };
+
+  /* -- years ----------------------------------------------------------- */
+
+  const thisYear = new Date().getFullYear();
+
+  // A course cannot have started after today, so the Start Year list stops there.
+  const startYears = useMemo(() => yearsBetween(EDUCATION_MIN_YEAR, thisYear), [thisYear]);
+
+  // End Year begins at the chosen start year: an end before the start is not a mistake to
+  // catch on submit, it is a year that should never have been on offer. The ceiling runs
+  // ahead of today on purpose — an ongoing course has an expected graduation year, and the
+  // schema has no "currently pursuing" flag to record it any other way.
+  const endYears = useMemo(
+    () => yearsBetween(Number(draft?.startYear) || EDUCATION_MIN_YEAR, thisYear + EDUCATION_MAX_YEAR_AHEAD),
+    [draft?.startYear, thisYear],
+  );
+
+  /**
+   * Moving the start year past the end year drops the end year rather than leaving it
+   * behind: the option is gone from the list, so the control would read blank while the
+   * draft still carried the old value into the save.
+   */
+  const setStartYear = (value: string) => {
+    setDraft((d) =>
+      d
+        ? {
+            ...d,
+            startYear: value,
+            passingYear: d.passingYear && Number(d.passingYear) < Number(value) ? '' : d.passingYear,
+          }
+        : d,
+    );
+    setErrors((e) => ({ ...e, startYear: undefined, passingYear: undefined }));
   };
 
   /* -- location -------------------------------------------------------- */
@@ -206,7 +250,7 @@ export function EducationStep({
 
   return (
     <StepShell
-      number={4}
+      number={stepIndex + 1}
       title="Education"
       blurb="Degrees & institutions"
       onSubmit={onSubmit}
@@ -326,25 +370,35 @@ export function EducationStep({
             </Field>
 
             <Field label="Start Year" htmlFor="startYear" error={errors.startYear}>
-              <Input
+              <Select
                 id="startYear"
-                inputMode="numeric"
-                placeholder="2016"
-                invalid={!!errors.startYear}
                 value={draft.startYear}
-                onChange={(e) => set('startYear', e.target.value.replace(/\D/g, '').slice(0, 4))}
-              />
+                invalid={!!errors.startYear}
+                onChange={(e) => setStartYear(e.target.value)}
+              >
+                <option value="">Select</option>
+                {startYears.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </Select>
             </Field>
 
             <Field label="End Year" htmlFor="passingYear" error={errors.passingYear}>
-              <Input
+              <Select
                 id="passingYear"
-                inputMode="numeric"
-                placeholder="2020"
-                invalid={!!errors.passingYear}
                 value={draft.passingYear}
-                onChange={(e) => set('passingYear', e.target.value.replace(/\D/g, '').slice(0, 4))}
-              />
+                invalid={!!errors.passingYear}
+                onChange={(e) => set('passingYear', e.target.value)}
+              >
+                <option value="">Select</option>
+                {endYears.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </Select>
             </Field>
 
             <Field label="Specialization" htmlFor="specialization" required error={errors.specialization}>

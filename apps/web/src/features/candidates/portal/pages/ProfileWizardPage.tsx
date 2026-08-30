@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Sparkles } from 'lucide-react';
@@ -8,7 +8,8 @@ import { useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useCvEditProfile, useCvMasters, useCandidateProfile, useDashboard } from '../../candidate.api';
 import { Card, CardBody, CardHeader, SkeletonRows, StatTile } from '../components/primitives';
-import { STEP_KEYS, WIZARD_STEPS, isStepKey, stepIndex, type WizardStepKey } from '../wizardSteps';
+import { isFresherProfile } from '../../fresher';
+import { isStepKey, visibleSteps, type WizardStepKey } from '../wizardSteps';
 import { PersonalStep } from '../wizard/PersonalStep';
 import { SummaryStep } from '../wizard/SummaryStep';
 import { ExperienceStep } from '../wizard/ExperienceStep';
@@ -38,9 +39,20 @@ export default function ProfileWizardPage() {
   const { data: masters } = useCvMasters();
   const { data: profile } = useCandidateProfile();
 
+  // The fresher answer lives on step 1 and only reaches `cv` once that step is saved, so
+  // the local choice wins while it is unsaved — picking "I'm a fresher" has to drop the
+  // Work Experience chip there and then, not one save later.
+  const [fresherChoice, setFresherChoice] = useState<boolean | null>(null);
+  const fresher = fresherChoice ?? isFresherProfile(cv);
+  const steps = visibleSteps(fresher);
+  const stepKeys = steps.map((s) => s.key);
+
   const requested = params.get('step');
-  const current: WizardStepKey = isStepKey(requested) ? requested : 'personal';
-  const index = stepIndex(current);
+  // A fresher who follows an old link to `?step=experience` lands on a step that is no
+  // longer part of their wizard; start them at the beginning rather than nowhere.
+  const current: WizardStepKey =
+    isStepKey(requested) && stepKeys.includes(requested) ? requested : 'personal';
+  const index = stepKeys.indexOf(current);
 
   const goTo = useCallback(
     (key: WizardStepKey) => {
@@ -64,12 +76,12 @@ export default function ProfileWizardPage() {
   });
 
   const onBack = () => {
-    if (index > 0) goTo(STEP_KEYS[index - 1]);
+    if (index > 0) goTo(stepKeys[index - 1]);
   };
 
   const onNext = () => {
-    if (index < STEP_KEYS.length - 1) {
-      goTo(STEP_KEYS[index + 1]);
+    if (index < stepKeys.length - 1) {
+      goTo(stepKeys[index + 1]);
       return;
     }
     // Last step. Already-onboarded candidates are just editing — send them back.
@@ -95,9 +107,9 @@ export default function ProfileWizardPage() {
     onBack,
     onNext,
     isFirst: index === 0,
-    isLast: index === STEP_KEYS.length - 1,
+    isLast: index === stepKeys.length - 1,
     stepIndex: index,
-    totalSteps: STEP_KEYS.length,
+    totalSteps: stepKeys.length,
   };
 
   return (
@@ -110,7 +122,7 @@ export default function ProfileWizardPage() {
           <div>
             <h2 className="font-display text-lg font-bold">Welcome to Aajiveka!</h2>
             <p className="text-sm text-blue-100">
-              Complete your profile in {STEP_KEYS.length} simple steps to get matched with top companies and enable
+              Complete your profile in {stepKeys.length} simple steps to get matched with top companies and enable
               recruiter visibility.
             </p>
           </div>
@@ -119,7 +131,7 @@ export default function ProfileWizardPage() {
 
       <Card>
         <CardBody className="flex flex-wrap gap-2">
-          {WIZARD_STEPS.map((step, i) => (
+          {steps.map((step, i) => (
             <button
               key={step.key}
               type="button"
@@ -140,7 +152,9 @@ export default function ProfileWizardPage() {
         </CardBody>
       </Card>
 
-      {current === 'personal' && <PersonalStep {...shared} cv={cv} masters={masters} />}
+      {current === 'personal' && (
+        <PersonalStep {...shared} cv={cv} masters={masters} onFresherChange={setFresherChoice} />
+      )}
       {current === 'summary' && <SummaryStep {...shared} cv={cv} />}
       {current === 'experience' && <ExperienceStep {...shared} cv={cv} masters={masters} />}
       {current === 'education' && <EducationStep {...shared} cv={cv} masters={masters} />}

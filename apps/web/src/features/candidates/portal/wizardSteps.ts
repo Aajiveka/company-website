@@ -16,7 +16,8 @@ export const WIZARD_STEPS = [
   { key: 'resume', title: 'Resume', blurb: 'Upload your latest CV' },
 ] as const;
 
-export type WizardStepKey = (typeof WIZARD_STEPS)[number]['key'];
+export type WizardStep = (typeof WIZARD_STEPS)[number];
+export type WizardStepKey = WizardStep['key'];
 
 export const STEP_KEYS = WIZARD_STEPS.map((s) => s.key) as readonly WizardStepKey[];
 
@@ -26,6 +27,15 @@ export function isStepKey(value: string | null | undefined): value is WizardStep
 
 export function stepIndex(key: WizardStepKey): number {
   return STEP_KEYS.indexOf(key);
+}
+
+/**
+ * The steps this candidate actually walks. A fresher has no roles to list, so Work
+ * Experience is dropped from the chips, the Back/Continue path and the step count
+ * rather than being shown as a step they are expected to leave empty.
+ */
+export function visibleSteps(fresher: boolean): WizardStep[] {
+  return WIZARD_STEPS.filter((s) => !(fresher && s.key === 'experience'));
 }
 
 /** Link to a wizard step — used by every "Edit" affordance on the profile page. */

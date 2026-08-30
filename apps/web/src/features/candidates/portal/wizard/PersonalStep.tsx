@@ -13,6 +13,7 @@ import {
 } from '../../candidate.api';
 import type { CvEditProfile, CvMasters } from '../../candidate.types';
 import { Field, Input, Select } from '../components/primitives';
+import { isFresherProfile } from '../../fresher';
 import { FieldGrid, StepShell, type StepProps } from './StepShell';
 import { optionalText } from './validation';
 
@@ -45,15 +46,31 @@ export function PersonalStep({
   isLast,
   stepIndex,
   totalSteps,
-}: StepProps & { cv: CvEditProfile; masters: CvMasters | undefined }) {
+  onFresherChange,
+}: StepProps & {
+  cv: CvEditProfile;
+  masters: CvMasters | undefined;
+  /** Lets the wizard add or drop the Work Experience step the moment the choice is made. */
+  onFresherChange: (fresher: boolean) => void;
+}) {
   const personal = cv.personal;
   const existingLinkedIn = cv.accomplishments.find((a) => a.kind === 'ONLINE_PROFILE');
 
   const [cityId, setCityId] = useState<number | null>(personal?.cityId ?? null);
-  const [fresher, setFresher] = useState(!cv.professional?.totalExp && !cv.professional?.totalExpMonths);
+  const [fresher, setFresher] = useState(() => isFresherProfile(cv));
   const [expYears, setExpYears] = useState(String(cv.professional?.totalExp ?? 0));
   const [expMonths, setExpMonths] = useState(String(cv.professional?.totalExpMonths ?? 0));
+  // Function and primary skill are what the "Professional details" slice of profile
+  // completion scores on — not the free-typed key skills, which is a different field.
+  const [subFunctionId, setSubFunctionId] = useState(String(cv.professional?.subFunctionId ?? ''));
+  const [skillId, setSkillId] = useState(String(cv.professional?.skillId ?? ''));
   const [error, setError] = useState<string | null>(null);
+
+  const chooseFresher = (value: boolean) => {
+    setFresher(value);
+    setError(null);
+    onFresherChange(value);
+  };
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -78,6 +95,18 @@ export function PersonalStep({
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);
+
+    // "I'm a fresher" is stored as zero total experience, which is also what gates the
+    // Work Experience step — there is no separate flag in the schema. That leaves
+    // "experienced, 0 years, 0 months" indistinguishable from a fresher on the next load,
+    // which would silently take the step away again, so it is not an answer we can accept.
+    const totalExp = fresher ? 0 : Number(expYears) || 0;
+    const totalExpMonths = fresher ? 0 : Number(expMonths) || 0;
+    if (!fresher && !totalExp && !totalExpMonths) {
+      setError('Add your total experience, or choose "I\'m a fresher".');
+      return;
+    }
+
     try {
       await savePersonal.mutateAsync({
         fullName: values.fullName,
@@ -93,12 +122,21 @@ export function PersonalStep({
         await saveHeadline.mutateAsync({ resumeHeadline: values.headline ?? '' });
       }
 
-      // "I'm a fresher" is stored as zero total experience, which is also what gates
-      // the Work Experience step — there is no separate flag in the schema.
-      const totalExp = fresher ? 0 : Number(expYears) || 0;
-      const totalExpMonths = fresher ? 0 : Number(expMonths) || 0;
-      if (totalExp !== (cv.professional?.totalExp ?? 0) || totalExpMonths !== (cv.professional?.totalExpMonths ?? 0)) {
-        await saveProfessional.mutateAsync({ ...cv.professional, totalExp, totalExpMonths });
+      const nextSubFunctionId = subFunctionId ? Number(subFunctionId) : null;
+      const nextSkillId = skillId ? Number(skillId) : null;
+      if (
+        totalExp !== (cv.professional?.totalExp ?? 0) ||
+        totalExpMonths !== (cv.professional?.totalExpMonths ?? 0) ||
+        nextSubFunctionId !== (cv.professional?.subFunctionId ?? null) ||
+        nextSkillId !== (cv.professional?.skillId ?? null)
+      ) {
+        await saveProfessional.mutateAsync({
+          ...cv.professional,
+          totalExp,
+          totalExpMonths,
+          subFunctionId: nextSubFunctionId,
+          skillId: nextSkillId,
+        });
       }
 
       if (values.linkedIn && values.linkedIn !== existingLinkedIn?.url) {
@@ -118,7 +156,7 @@ export function PersonalStep({
 
   return (
     <StepShell
-      number={1}
+      number={stepIndex + 1}
       title="Personal Details"
       blurb="Name, title & location"
       onSubmit={onSubmit}
@@ -133,14 +171,14 @@ export function PersonalStep({
       <div className="mb-5 grid gap-3 sm:grid-cols-2">
         <ExperienceChoice
           selected={!fresher}
-          onSelect={() => setFresher(false)}
+          onSelect={() => chooseFresher(false)}
           icon={<Briefcase className="size-5" aria-hidden />}
           title="I'm experienced"
           blurb="I have work experience (excluding internships)"
         />
         <ExperienceChoice
           selected={fresher}
-          onSelect={() => setFresher(true)}
+          onSelect={() => chooseFresher(true)}
           icon={<BookOpen className="size-5" aria-hidden />}
           title="I'm a fresher"
           blurb="I am a student / haven't worked after graduation"
@@ -216,6 +254,28 @@ export function PersonalStep({
 
         <Field label="Professional Title" htmlFor="headline">
           <Input id="headline" placeholder="e.g. Senior Full-Stack Engineer" {...form.register('headline')} />
+        </Field>
+
+        <Field label="Function / Department" htmlFor="subFunction">
+          <Select id="subFunction" value={subFunctionId} onChange={(e) => setSubFunctionId(e.target.value)}>
+            <option value="">Select</option>
+            {masters?.subFunctions?.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field label="Primary Skill" htmlFor="primarySkill">
+          <Select id="primarySkill" value={skillId} onChange={(e) => setSkillId(e.target.value)}>
+            <option value="">Select</option>
+            {masters?.skills?.map((sk) => (
+              <option key={sk.id} value={sk.id}>
+                {sk.label}
+              </option>
+            ))}
+          </Select>
         </Field>
 
         <Field label="Current Location">

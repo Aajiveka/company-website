@@ -239,17 +239,33 @@ describe('EducationStep', () => {
     expect(mutateAsync.mock.calls[0][0]).toMatchObject({ marks: '8.5 CGPA' });
   });
 
-  it('rejects an end year earlier than the start year', async () => {
+  // An end year before the start year is not a mistake to catch on submit — it is never on
+  // offer. The zod rule stays as the backstop for the other writers of this record.
+  it('never offers an end year earlier than the start year', async () => {
     const user = userEvent.setup();
     renderStep(cvWith([]));
 
-    await fillValidDraft(user);
-    await user.type(screen.getByLabelText(/start year/i), '2020');
-    await user.type(screen.getByLabelText(/end year/i), '2016');
-    await user.click(screen.getByRole('button', { name: /save & continue/i }));
+    await user.selectOptions(screen.getByLabelText(/start year/i), '2020');
 
-    expect(await screen.findByText('End year cannot be earlier than start year.')).toBeInTheDocument();
-    expect(mutateAsync).not.toHaveBeenCalled();
+    const endYear = screen.getByLabelText(/end year/i);
+    const offered = within(endYear)
+      .getAllByRole('option')
+      .map((o) => (o as HTMLOptionElement).value)
+      .filter(Boolean);
+    expect(offered).toContain('2020');
+    expect(offered.every((y) => Number(y) >= 2020)).toBe(true);
+  });
+
+  // Otherwise the control reads blank while the draft still carries the old year into the save.
+  it('drops an end year the start year has just overtaken', async () => {
+    const user = userEvent.setup();
+    renderStep(cvWith([]));
+
+    await user.selectOptions(screen.getByLabelText(/start year/i), '2016');
+    await user.selectOptions(screen.getByLabelText(/end year/i), '2018');
+    await user.selectOptions(screen.getByLabelText(/start year/i), '2020');
+
+    expect(screen.getByLabelText(/end year/i)).toHaveValue('');
   });
 
   it('allows an end year in the near future, for a course still being studied', async () => {
@@ -258,8 +274,8 @@ describe('EducationStep', () => {
     const nextYear = String(new Date().getFullYear() + 1);
 
     await fillValidDraft(user);
-    await user.type(screen.getByLabelText(/start year/i), '2024');
-    await user.type(screen.getByLabelText(/end year/i), nextYear);
+    await user.selectOptions(screen.getByLabelText(/start year/i), '2024');
+    await user.selectOptions(screen.getByLabelText(/end year/i), nextYear);
     await user.click(screen.getByRole('button', { name: /save & continue/i }));
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalled());

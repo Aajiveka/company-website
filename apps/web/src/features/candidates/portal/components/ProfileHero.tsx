@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useToast } from '@/components/ui';
+import { Modal, useToast } from '@/components/ui';
 import { BadgeCheck, Briefcase, Check, IndianRupee, MapPin, Pencil, Share2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import ProfilePhotoUpload from '@/features/candidates/components/ProfilePhotoUpload';
 import { Btn } from './primitives';
 import type { PortalProfile } from '../usePortalProfile';
 
@@ -20,6 +21,7 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
 }) {
   const { notify } = useToast();
   const [shared, setShared] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   /**
    * Share Profile — the design shows it on nearly every frame. Uses the native share sheet
@@ -50,8 +52,8 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
     <div className="bg-linear-to-r from-aj-blue to-aj-blue-end">
       <div className="mx-auto max-w-[1194px] px-4 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
-          {/* Avatar + online dot. `self-start` stops the wrapper stretching to full width
-              in the stacked mobile layout, which would strand the dot at the screen edge. */}
+          {/* Avatar + photo button. `self-start` stops the wrapper stretching to full width
+              in the stacked mobile layout, which would strand the button at the screen edge. */}
           <div className="relative shrink-0 self-start sm:self-auto">
             <div className="flex size-20 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-aj-pop sm:size-24">
               {photoUrl ? (
@@ -66,20 +68,17 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
                 </div>
               )}
             </div>
-            {isNew ? (
-              <Link
-                to="/candidate/onboarding"
-                aria-label="Complete your profile"
-                className="absolute -bottom-1 -right-1 flex size-7 items-center justify-center rounded-full border-2 border-white bg-slate-300 text-white transition-colors hover:bg-slate-400"
-              >
-                <Pencil className="size-3.5" aria-hidden />
-              </Link>
-            ) : (
-              <span
-                aria-hidden
-                className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full border-2 border-white bg-[#00D492]"
-              />
-            )}
+            {/* The pencil is the photo control in every state of the hero. It stands in for the
+                "online" dot the finished frames draw, because the corner of an avatar is where
+                people look for the way to change the picture, not for a status light. */}
+            <button
+              type="button"
+              onClick={() => setPhotoOpen(true)}
+              aria-label={photoUrl ? 'Change profile photo' : 'Upload a profile photo'}
+              className="absolute -bottom-1 -right-1 flex size-7 items-center justify-center rounded-full border-2 border-white bg-slate-300 text-white transition-colors hover:bg-slate-400"
+            >
+              <Pencil className="size-3.5" aria-hidden />
+            </button>
           </div>
 
           {/* Identity */}
@@ -121,7 +120,7 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
             >
               {downloading ? 'Preparing…' : 'Download Resume'}
             </Btn>
-            <Link to="/candidate/onboarding" className="contents">
+            <Link to="/candidate/profile" className="contents">
               <Btn shape="pill" variant="onBlueOutline" block>
                 Edit Profile
               </Btn>
@@ -165,6 +164,13 @@ export function ProfileHero({ profile, onDownloadResume, downloading }: {
           </div>
         </div>
       </div>
+
+      <Modal open={photoOpen} onClose={() => setPhotoOpen(false)} title="Profile photo">
+        <ProfilePhotoUpload
+          currentPhotoUrl={photoUrl ?? undefined}
+          onUploaded={() => setPhotoOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

@@ -354,6 +354,13 @@
     "cancel": "Cancel",
     "cropSave": "Crop & Save"
   },
+  "upload": {
+    "profilePhoto": "Profile photo",
+    "avatarHint": "JPG or PNG, up to 2 MB",
+    "cropHeading": "Crop your photo",
+    "avatarSuccess": "Profile photo updated.",
+    "avatarFailed": "Could not upload that photo. Please try again."
+  },
   "multiSelect": {
     "placeholder": "Select...",
     "search": "Search...",

@@ -53,12 +53,12 @@ const PortalResumeBuilderPage = lazy(() => import('@/features/candidates/portal/
 const PortalApplicationsPage = lazy(() => import('@/features/candidates/portal/pages/ApplicationsPage'));
 const PortalSavedJobsPage = lazy(() => import('@/features/candidates/portal/pages/SavedJobsPage'));
 
-const CandidateProfilePage = lazy(() => import('@/features/candidates/pages/CandidateProfilePage'));
-const CvManagerPage = lazy(() => import('@/features/candidates/pages/CvManagerPage'));
-const AppliedJobsPage = lazy(() => import('@/features/candidates/pages/AppliedJobsPage'));
-const ResumePreviewPage = lazy(() => import('@/features/candidates/pages/ResumePreviewPage'));
-const JobAlertsPage = lazy(() => import('@/features/candidates/pages/JobAlertsPage'));
-const ChangePasswordPage = lazy(() => import('@/features/candidates/pages/ChangePasswordPage'));
+// const CandidateProfilePage = lazy(() => import('@/features/candidates/pages/CandidateProfilePage'));
+// const CvManagerPage = lazy(() => import('@/features/candidates/pages/CvManagerPage'));
+// const AppliedJobsPage = lazy(() => import('@/features/candidates/pages/AppliedJobsPage'));
+// const ResumePreviewPage = lazy(() => import('@/features/candidates/pages/ResumePreviewPage'));
+// const JobAlertsPage = lazy(() => import('@/features/candidates/pages/JobAlertsPage'));
+// const ChangePasswordPage = lazy(() => import('@/features/candidates/pages/ChangePasswordPage'));
 const CandidatesListPage = lazy(() => import('@/features/recruitment/pages/CandidatesListPage'));
 const CandidateDetailsPage = lazy(() => import('@/features/recruitment/pages/CandidateDetailsPage'));
 const QC1DashboardPage = lazy(() => import('@/features/recruitment/pages/QC1DashboardPage'));
@@ -96,17 +96,17 @@ const NotificationsPage = lazy(() => import('@/features/candidates/pages/Notific
 const SalaryInsightsPage = lazy(() => import('@/features/public/pages/SalaryInsightsPage'));
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/AdminUsersPage'));
 const AdminJobsPage = lazy(() => import('@/features/admin/pages/AdminJobsPage'));
-const AssessmentsListPage = lazy(() => import('@/features/candidates/pages/AssessmentsListPage'));
-const SkillAssessmentPage = lazy(() => import('@/features/candidates/pages/SkillAssessmentPage'));
+// const AssessmentsListPage = lazy(() => import('@/features/candidates/pages/AssessmentsListPage'));
+// const SkillAssessmentPage = lazy(() => import('@/features/candidates/pages/SkillAssessmentPage'));
 const BlogCmsPage = lazy(() => import('@/features/admin/pages/BlogCmsPage'));
-const MessagingPage = lazy(() => import('@/features/messaging/MessagingPage'));
-const SavedSearchesPage = lazy(() => import('@/features/candidates/pages/SavedSearchesPage'));
-const SkillGapPage = lazy(() => import('@/features/candidates/pages/SkillGapPage'));
-const InterviewCalendarPage = lazy(() => import('@/features/candidates/pages/InterviewCalendarPage'));
-const ActivityTimelinePage = lazy(() => import('@/features/candidates/pages/ActivityTimelinePage'));
-const CareerPathPage = lazy(() => import('@/features/candidates/pages/CareerPathPage'));
-const CompanyComparisonPage = lazy(() => import('@/features/candidates/pages/CompanyComparisonPage'));
-const DashboardHome = lazy(() => import('@/features/dashboard/DashboardHome'));
+// const MessagingPage = lazy(() => import('@/features/messaging/MessagingPage'));
+// const SavedSearchesPage = lazy(() => import('@/features/candidates/pages/SavedSearchesPage'));
+// const SkillGapPage = lazy(() => import('@/features/candidates/pages/SkillGapPage'));
+// const InterviewCalendarPage = lazy(() => import('@/features/candidates/pages/InterviewCalendarPage'));
+// const ActivityTimelinePage = lazy(() => import('@/features/candidates/pages/ActivityTimelinePage'));
+// const CareerPathPage = lazy(() => import('@/features/candidates/pages/CareerPathPage'));
+// const CompanyComparisonPage = lazy(() => import('@/features/candidates/pages/CompanyComparisonPage'));
+// const DashboardHome = lazy(() => import('@/features/dashboard/DashboardHome'));
 const AdminSettingsPage = lazy(() => import('@/features/admin/pages/AdminSettingsPage'));
 const ReportsPage = lazy(() => import('@/features/admin/pages/ReportsPage'));
 const NotFoundPage = lazy(() => import('@/features/misc/NotFoundPage'));
@@ -199,6 +199,10 @@ export const router = createBrowserRouter([
                   { path: '/candidate/referrals', element: withSuspense(<PortalReferPage />) },
                   { path: '/candidate/account', element: withSuspense(<PortalAccountPage />) },
                   { path: '/candidate/notifications', element: withSuspense(<PortalEmailPrefsPage />) },
+                  // The portal header's Alerts bell. It lives here rather than on the dashboard
+                  // shell so clicking Alerts stays inside the portal instead of dropping the
+                  // banner and module rail for the legacy chrome.
+                  { path: '/candidate/all-notifications', element: withSuspense(<NotificationsPage />) },
                   { path: '/candidate/resume-builder', element: withSuspense(<PortalResumeBuilderPage />) },
                 ],
               },
@@ -215,24 +219,33 @@ export const router = createBrowserRouter([
                   // The full section-by-section CV editor. The portal profile covers the
                   // sections the design specifies; this keeps the rest (IT skills, diversity,
                   // personal details, accomplishments) editable rather than dropping them.
-                  { path: '/candidate/profile/advanced', element: withSuspense(<CandidateProfilePage />) },
-                  { path: '/candidate/cv-manager', element: withSuspense(<CvManagerPage />) },
-                  { path: '/candidate/applied-jobs', element: withSuspense(<AppliedJobsPage />) },
-                  { path: '/candidate/resume', element: withSuspense(<ResumePreviewPage />) },
-                  { path: '/candidate/job-alerts', element: withSuspense(<JobAlertsPage />) },
+                  // --- Screens outside the "Aajiveka UI" Figma, commented out on request. ---
+                  // Only what the design covers is routable; the page components are still in
+                  // the tree, so restoring a screen is uncommenting its line (and its lazy
+                  // import above). `/candidate/subscription` deliberately stays live below:
+                  // the portal header's Wallet pill links to it. (The Alerts bell's target
+                  // moved into the portal shell above.)
+                  //
+                  // Note: `/candidate/profile/advanced` was the only editor for IT skills,
+                  // diversity, personal details and accomplishments. With it off, those
+                  // sections cannot be filled and profile completion caps below 100%.
+                  // { path: '/candidate/profile/advanced', element: withSuspense(<CandidateProfilePage />) },
+                  // { path: '/candidate/cv-manager', element: withSuspense(<CvManagerPage />) },
+                  // { path: '/candidate/applied-jobs', element: withSuspense(<AppliedJobsPage />) },
+                  // { path: '/candidate/resume', element: withSuspense(<ResumePreviewPage />) },
+                  // { path: '/candidate/job-alerts', element: withSuspense(<JobAlertsPage />) },
                   { path: '/candidate/subscription', element: withSuspense(<MembershipPage />) },
-                  { path: '/candidate/change-password', element: withSuspense(<ChangePasswordPage />) },
-                  { path: '/candidate/all-notifications', element: withSuspense(<NotificationsPage />) },
-                  { path: '/candidate/assessments', element: withSuspense(<AssessmentsListPage />) },
-                  { path: '/candidate/assessments/:id', element: withSuspense(<SkillAssessmentPage />) },
-                  { path: '/candidate/messages', element: withSuspense(<MessagingPage />) },
-                  { path: '/candidate/saved-searches', element: withSuspense(<SavedSearchesPage />) },
-                  { path: '/candidate/skill-gap', element: withSuspense(<SkillGapPage />) },
-                  { path: '/candidate/interview-calendar', element: withSuspense(<InterviewCalendarPage />) },
-                  { path: '/candidate/activity', element: withSuspense(<ActivityTimelinePage />) },
-                  { path: '/candidate/career-path', element: withSuspense(<CareerPathPage />) },
-                  { path: '/candidate/compare-companies', element: withSuspense(<CompanyComparisonPage />) },
-                  { path: '/candidate/dashboard', element: withSuspense(<DashboardHome />) },
+                  // { path: '/candidate/change-password', element: withSuspense(<ChangePasswordPage />) },
+                  // { path: '/candidate/assessments', element: withSuspense(<AssessmentsListPage />) },
+                  // { path: '/candidate/assessments/:id', element: withSuspense(<SkillAssessmentPage />) },
+                  // { path: '/candidate/messages', element: withSuspense(<MessagingPage />) },
+                  // { path: '/candidate/saved-searches', element: withSuspense(<SavedSearchesPage />) },
+                  // { path: '/candidate/skill-gap', element: withSuspense(<SkillGapPage />) },
+                  // { path: '/candidate/interview-calendar', element: withSuspense(<InterviewCalendarPage />) },
+                  // { path: '/candidate/activity', element: withSuspense(<ActivityTimelinePage />) },
+                  // { path: '/candidate/career-path', element: withSuspense(<CareerPathPage />) },
+                  // { path: '/candidate/compare-companies', element: withSuspense(<CompanyComparisonPage />) },
+                  // { path: '/candidate/dashboard', element: withSuspense(<DashboardHome />) },
                 ],
               },
               // Client / Admin company area moved to Employer Portal (see sibling route tree)

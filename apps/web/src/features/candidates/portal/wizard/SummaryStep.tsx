@@ -36,7 +36,7 @@ export function SummaryStep({
 
   return (
     <StepShell
-      number={2}
+      number={stepIndex + 1}
       title="Profile Summary"
       blurb="Your professional bio"
       onSubmit={onSubmit}

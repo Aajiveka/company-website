@@ -4,12 +4,14 @@ import { useToast } from '@/components/ui';
 import { useDeleteResume, useDownloadResume } from '../../candidate.api';
 import type { CandidateProfile, CvEditProfile, CvMasters } from '../../candidate.types';
 import { Card, CardBody, CardHeader, Chip, Pill } from './primitives';
+import { ProfileCompletionCard } from './ProfileCompletionCard';
 import { longDate, lpa } from '../format';
 import { stepHref } from '../wizardSteps';
 
 /**
  * The profile page's left-column cards (Figma 8:12151): Key Skills, Languages,
- * Job Preferences and Resume. Module screens show "My Modules" here instead.
+ * Job Preferences and Resume, above them the breakdown behind the hero's completion
+ * percentage. Module screens show "My Modules" here instead.
  *
  * Every "Edit" deep-links into the matching wizard step, which is the design's
  * single editing surface — there is no second set of inline editors to keep in sync.
@@ -25,6 +27,7 @@ export function ProfileAsideCards({
 }) {
   return (
     <>
+      <ProfileCompletionCard cv={cv} />
       <KeySkillsCard cv={cv} />
       <LanguagesCard cv={cv} />
       <JobPreferencesCard cv={cv} masters={masters} />

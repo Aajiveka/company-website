@@ -155,7 +155,7 @@ export function ProjectsStep({
 
   return (
     <StepShell
-      number={7}
+      number={stepIndex + 1}
       title="Projects"
       blurb="Past & current worked"
       onSubmit={onSubmit}

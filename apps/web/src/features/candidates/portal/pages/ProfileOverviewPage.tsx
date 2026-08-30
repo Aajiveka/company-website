@@ -4,6 +4,7 @@ import { useCvEditProfile, useCvMasters, useDashboard } from '../../candidate.ap
 import type { CvEditProfile, CvMasters } from '../../candidate.types';
 import { Card, CardBody, CardHeader, EmptyState, InitialAvatar, SkeletonRows, StatTile } from '../components/primitives';
 import { avatarTone, dotted, duration, educationTitle, labelOf, lpa, monthYear, years } from '../format';
+import { isFresherProfile } from '../../fresher';
 import { stepHref, type WizardStepKey } from '../wizardSteps';
 
 /**
@@ -84,6 +85,11 @@ function SummaryCard({ cv }: { cv: CvEditProfile }) {
 }
 
 function ExperienceCard({ cv, masters }: { cv: CvEditProfile; masters: CvMasters | undefined }) {
+  // A fresher has told us they have no roles, and the wizard drops the step that would
+  // add them — so an empty card prompting for work experience has nothing to offer.
+  // Saved rows still show: they are what makes the candidate not a fresher.
+  if (!cv.employment.length && isFresherProfile(cv)) return null;
+
   return (
     <Card id="experience">
       <CardHeader title="Work Experience" action={<SectionAction step="experience" label="Add" />} />

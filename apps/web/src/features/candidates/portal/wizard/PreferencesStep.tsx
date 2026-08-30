@@ -74,7 +74,7 @@ export function PreferencesStep({
 
   return (
     <StepShell
-      number={6}
+      number={stepIndex + 1}
       title="Job Preferences"
       blurb="What you are looking for"
       onSubmit={onSubmit}

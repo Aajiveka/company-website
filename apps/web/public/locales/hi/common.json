@@ -354,6 +354,13 @@
     "cancel": "रद्द करें",
     "cropSave": "क्रॉप और सहेजें"
   },
+  "upload": {
+    "profilePhoto": "प्रोफ़ाइल फ़ोटो",
+    "avatarHint": "JPG या PNG, अधिकतम 2 MB",
+    "cropHeading": "अपनी फ़ोटो क्रॉप करें",
+    "avatarSuccess": "प्रोफ़ाइल फ़ोटो अपडेट हो गई।",
+    "avatarFailed": "फ़ोटो अपलोड नहीं हो सकी। कृपया दोबारा कोशिश करें।"
+  },
   "multiSelect": {
     "placeholder": "चुनें...",
     "search": "खोजें...",

@@ -7,14 +7,14 @@ import {
   Home,
   Briefcase,
   User,
-  FileText,
-  CheckSquare,
+  // FileText,
+  // CheckSquare,
   Bookmark,
-  MessageSquare,
+  // MessageSquare,
   Settings,
   PlusCircle,
   Bell,
-  Lock,
+  // Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -46,20 +46,22 @@ export default function CommandPalette() {
 
   const items = useMemo<PaletteItem[]>(
     () => [
+      // Pages. Commented-out entries point at candidate screens outside the "Aajiveka UI"
+      // Figma, whose routes are commented out in router.tsx.
       // Pages
       { id: 'home', label: t('nav.home'), icon: <Home className="h-4 w-4" />, section: 'pages', onSelect: () => go('/') },
       { id: 'jobs', label: t('nav.findJobs'), icon: <Briefcase className="h-4 w-4" />, section: 'pages', onSelect: () => go('/jobs') },
       { id: 'profile', label: t('sidebar.myProfile'), icon: <User className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/profile') },
-      { id: 'cv-manager', label: t('sidebar.cvManager'), icon: <FileText className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/cv-manager') },
-      { id: 'applied-jobs', label: t('sidebar.appliedJobs'), icon: <CheckSquare className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/applied-jobs') },
+      // { id: 'cv-manager', label: t('sidebar.cvManager'), icon: <FileText className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/cv-manager') },
+      // { id: 'applied-jobs', label: t('sidebar.appliedJobs'), icon: <CheckSquare className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/applied-jobs') },
       { id: 'saved-jobs', label: t('sidebar.savedJobs'), icon: <Bookmark className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/saved-jobs') },
-      { id: 'messages', label: t('sidebar.messages'), icon: <MessageSquare className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/messages') },
+      // { id: 'messages', label: t('sidebar.messages'), icon: <MessageSquare className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/messages') },
       { id: 'settings', label: t('breadcrumbs.settings'), icon: <Settings className="h-4 w-4" />, section: 'pages', onSelect: () => go('/candidate/settings') },
       // Actions
       { id: 'post-job', label: t('sidebar.postAJob'), icon: <PlusCircle className="h-4 w-4" />, section: 'actions', onSelect: () => go('/company/post-job') },
       { id: 'search-jobs', label: t('actions.search') + ' ' + t('nav.findJobs'), icon: <Search className="h-4 w-4" />, section: 'actions', onSelect: () => go('/jobs') },
       { id: 'notifications', label: t('breadcrumbs.notifications'), icon: <Bell className="h-4 w-4" />, section: 'actions', onSelect: () => go('/candidate/notifications') },
-      { id: 'change-password', label: t('sidebar.changePassword'), icon: <Lock className="h-4 w-4" />, section: 'actions', onSelect: () => go('/candidate/change-password') },
+      // { id: 'change-password', label: t('sidebar.changePassword'), icon: <Lock className="h-4 w-4" />, section: 'actions', onSelect: () => go('/candidate/change-password') },
     ],
     [t, go],
   );

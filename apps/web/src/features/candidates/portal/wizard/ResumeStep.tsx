@@ -63,7 +63,7 @@ export function ResumeStep({
 
   return (
     <StepShell
-      number={8}
+      number={stepIndex + 1}
       title="Resume"
       blurb="Upload your latest CV"
       onSubmit={onSubmit}

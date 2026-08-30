@@ -563,6 +563,7 @@ export default function CvManagerPage() {
             data={
               data.personal ?? {
                 fullName: '', email: '', mobile: '', dob: '', gender: 'M', address: '', cityId: null,
+                photoUrl: null,
               }
             }
             masters={masters}
