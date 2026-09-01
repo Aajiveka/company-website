@@ -504,6 +504,14 @@ export class PaymentsService {
     };
   }
 
+  /** Quick boolean check — does the subscriber have an active (not-yet-expired) subscription? */
+  async hasActiveSubscription(subscriberId: number): Promise<boolean> {
+    const count = await this.db.subscription.count({
+      where: { subscriberID: subscriberId, endsAt: { gt: new Date() } },
+    });
+    return count > 0;
+  }
+
   /** The caller's current subscription, if any. */
   async mySubscription(subscriberId: number) {
     const sub = await this.db.subscription.findFirst({

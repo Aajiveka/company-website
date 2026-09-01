@@ -9,9 +9,12 @@ import type {
   DocumentTypeOption,
   EligibleApplication,
   InterviewMode,
+  InterviewRoundRow,
   InterviewRow,
   JobOption,
+  OfferLetterRow,
   QC1Stats,
+  ReferralRow,
   RegistrationStatus,
 } from './recruitment.types';
 
@@ -43,12 +46,20 @@ export function useCandidateDetail(id: string | number) {
   });
 }
 
-/** Approve/reject a candidate's registration (spQC1ApproveRejectCandidate). */
+export type CandidateDecision =
+  | 'Approved'
+  | 'Rejected'
+  | 'OnHold'
+  | 'NeedMoreInfo'
+  | 'Duplicate'
+  | 'Withdrawn';
+
+/** Approve/reject/hold a candidate's registration (spQC1ApproveRejectCandidate). */
 export function useDecideCandidate(id: string | number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (decision: 'Approved' | 'Rejected') =>
-      api.post(`/recruitment/candidates/${id}/decision`, { decision }).then((r) => r.data),
+    mutationFn: (vars: { decision: CandidateDecision; reason?: string }) =>
+      api.post(`/recruitment/candidates/${id}/decision`, vars).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.candidate.profile(id) }),
   });
 }
@@ -151,5 +162,152 @@ export function useReviewDocument() {
     mutationFn: (payload: { documentId: number; status: 'Verified' | 'Rejected' }) =>
       api.post('/recruitment/documents/review', payload).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'doc-reviews'] }),
+  });
+}
+
+export interface ScoreBreakdown {
+  totalScore: number;
+  skillScore: number;
+  experienceScore: number;
+  jobRoleScore: number;
+  educationScore: number;
+  locationScore: number;
+  salaryScore: number;
+  noticePeriodScore: number;
+}
+
+/** Compute/refresh match score for an application. */
+export function useScoreApplication() {
+  return useMutation({
+    mutationFn: (applicationId: number) =>
+      api.post<ScoreBreakdown>(`/recruitment/applications/${applicationId}/score`).then((r) => r.data),
+  });
+}
+
+// ── CV Referral pipeline (Q2 → Q3 → Company) ─────────────────────────
+
+/** List CV referrals. */
+export function useReferrals(status?: string) {
+  return useQuery({
+    queryKey: ['recruitment', 'referrals', status],
+    queryFn: () =>
+      api.get<ReferralRow[]>('/recruitment/referrals', { params: status ? { status } : {} }).then((r) => r.data),
+  });
+}
+
+/** Q2 refers candidate-job mappings to Q3. */
+export function useReferToQ3() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobSubscriberMapIds: number[]) =>
+      api.post('/recruitment/referrals', { jobSubscriberMapIds }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'referrals'] }),
+  });
+}
+
+/** Q3 forwards CVs to the company. */
+export function useForwardToCompany() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (referralIds: number[]) =>
+      api.post('/recruitment/referrals/forward', { referralIds }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'referrals'] }),
+  });
+}
+
+// ── Multi-round interview management ──────────────────────────────────
+
+/** List interview rounds for a job-subscriber mapping. */
+export function useInterviewRounds(mapId: number | undefined) {
+  return useQuery({
+    queryKey: ['recruitment', 'interview-rounds', mapId],
+    queryFn: () =>
+      api.get<InterviewRoundRow[]>(`/recruitment/interview-rounds/${mapId}`).then((r) => r.data),
+    enabled: mapId != null,
+  });
+}
+
+/** Create an interview round. */
+export function useCreateInterviewRound() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      jobSubscriberMapId: number;
+      roundNumber: number;
+      roundName: string;
+      interviewerName?: string;
+      interviewerEmail?: string;
+      hrName?: string;
+      hrEmail?: string;
+      interviewMode: string;
+      meetingLink?: string;
+      slots?: string[];
+    }) => api.post('/recruitment/interview-rounds', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] }),
+  });
+}
+
+/** Candidate selects a time slot. */
+export function useSelectSlot(roundId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slotId: number) =>
+      api.post(`/recruitment/interview-rounds/${roundId}/select-slot`, { slotId }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] }),
+  });
+}
+
+/** Submit interview round result. */
+export function useSubmitRoundResult(roundId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { result: 'Passed' | 'Failed' | 'Hold'; feedback?: string }) =>
+      api.post(`/recruitment/interview-rounds/${roundId}/result`, payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] }),
+  });
+}
+
+// ── Offer letter management ───────────────────────────────────────────
+
+/** Get offer letter for a job-subscriber mapping. */
+export function useOffer(mapId: number | undefined) {
+  return useQuery({
+    queryKey: ['recruitment', 'offers', mapId],
+    queryFn: () =>
+      api.get<OfferLetterRow | null>(`/recruitment/offers/${mapId}`).then((r) => r.data),
+    enabled: mapId != null,
+  });
+}
+
+/** Create a draft offer letter. */
+export function useCreateOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      jobSubscriberMapId: number;
+      offerDetails: Record<string, unknown>;
+      joiningDate?: string;
+    }) => api.post('/recruitment/offers', payload).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'offers'] }),
+  });
+}
+
+/** Send an offer letter to the candidate. */
+export function useSendOffer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (offerId: number) =>
+      api.post(`/recruitment/offers/${offerId}/send`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'offers'] }),
+  });
+}
+
+/** Candidate responds to an offer (accept/reject). */
+export function useRespondToOffer(offerId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (accept: boolean) =>
+      api.post(`/recruitment/offers/${offerId}/respond`, { accept }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'offers'] }),
   });
 }

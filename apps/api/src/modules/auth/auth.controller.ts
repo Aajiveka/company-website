@@ -9,6 +9,7 @@ import {
   LoginDto,
   RefreshDto,
   RegisterDto,
+  RegisterEmployerDto,
   ResendOtpDto,
   ResetPasswordDto,
   VerifyOtpDto,
@@ -130,6 +131,16 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Token invalid or expired' })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @Public()
+  @Post('register-employer')
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Submit an employer registration request (pending admin approval)' })
+  @ApiResponse({ status: 201, description: 'Registration submitted — awaiting admin approval' })
+  @ApiResponse({ status: 409, description: 'A registration with this email already exists' })
+  registerEmployer(@Body() dto: RegisterEmployerDto) {
+    return this.auth.registerEmployer(dto);
   }
 
   @Get('me')

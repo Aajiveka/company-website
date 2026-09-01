@@ -8,5 +8,6 @@ import { CandidatesService } from '@/modules/candidates/candidates.service';
 @Module({
   controllers: [PaymentsController],
   providers: [PaymentsService, BillDeskService, RazorpayService, CandidatesService],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

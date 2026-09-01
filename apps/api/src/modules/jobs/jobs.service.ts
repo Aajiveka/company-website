@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CandidatesService } from '@/modules/candidates/candidates.service';
+import { PaymentsService } from '@/modules/payments/payments.service';
 import { JOB_STATUS_ACTIVE } from '@/shared/status';
 import { JobApplicationsService, type JobApplicationDetails } from './job-application.service';
 import type { JobSearchQueryDto, FullTextSearchQueryDto, SuggestionsQueryDto } from './dto/jobs.dto';
@@ -53,6 +54,7 @@ export class JobsService {
     private readonly prisma: PrismaService,
     private readonly candidates: CandidatesService,
     private readonly applications: JobApplicationsService,
+    private readonly payments: PaymentsService,
   ) {}
 
   private filtersCache: { data: unknown; expiry: number } | null = null;
@@ -559,6 +561,10 @@ export class JobsService {
   /** Candidate self-apply (applyforjob.aspx's structured-application counterpart). */
   async apply(userId: number, jobId: number, details?: JobApplicationDetails) {
     const subscriberId = await this.candidates.subscriberIdFor(userId);
+    const hasSubscription = await this.payments.hasActiveSubscription(subscriberId);
+    if (!hasSubscription) {
+      throw new ForbiddenException('An active subscription is required to apply for jobs');
+    }
     return this.applications.apply(subscriberId, jobId, userId, details);
   }
 

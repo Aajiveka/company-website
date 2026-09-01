@@ -66,6 +66,7 @@
     "pipeline": "पाइपलाइन बोर्ड",
     "employerAnalytics": "एनालिटिक्स",
     "blogCms": "ब्लॉग CMS",
+    "employerApprovals": "नियोक्ता अनुमोदन",
     "savedSearches": "सहेजी गई खोजें",
     "skillGap": "कौशल अंतर विश्लेषण",
     "interviewCalendar": "साक्षात्कार कैलेंडर",
@@ -80,7 +81,8 @@
     "compareCompanies": "कंपनियों की तुलना",
     "applicationTracker": "आवेदन ट्रैकर",
     "compareCandidates": "उम्मीदवारों की तुलना",
-    "adminSettings": "एडमिन सेटिंग्स"
+    "adminSettings": "एडमिन सेटिंग्स",
+    "q3Dashboard": "Q3 डैशबोर्ड"
   },
   "actions": {
     "search": "खोजें",
@@ -144,6 +146,16 @@
     "assignDocuments": "दस्तावेज़ सौंपें",
     "candidateApproved": "उम्मीदवार स्वीकृत।",
     "candidateRejected": "उम्मीदवार अस्वीकृत।",
+    "decision": {
+      "Approved": "स्वीकृत",
+      "Rejected": "अस्वीकृत",
+      "OnHold": "होल्ड पर",
+      "NeedMoreInfo": "अधिक जानकारी चाहिए",
+      "Duplicate": "डुप्लिकेट",
+      "Withdrawn": "वापस लिया"
+    },
+    "decisionReason": "कारण",
+    "decisionReasonPlaceholder": "इस निर्णय का कारण दर्ज करें…",
     "candidateAssigned": "उम्मीदवार को नौकरी सौंपी गई।",
     "couldNotAssign": "यह नौकरी सौंपी नहीं जा सकी",
     "documentsAssigned": "उम्मीदवार को दस्तावेज़ सौंपे गए।",
@@ -164,7 +176,36 @@
     "registrations": "पंजीकरण",
     "cvNotUploaded": "सीवी अपलोड नहीं हुआ",
     "educationMissing": "शिक्षा अनुपलब्ध",
-    "employmentMissing": "रोज़गार अनुपलब्ध"
+    "employmentMissing": "रोज़गार अनुपलब्ध",
+    "scoreApplication": "आवेदन स्कोर करें",
+    "scoreBreakdown": "स्कोर विवरण",
+    "totalScore": "कुल मिलान स्कोर",
+    "score": {
+      "skill": "कौशल",
+      "experience": "अनुभव",
+      "jobRole": "नौकरी भूमिका",
+      "education": "शिक्षा",
+      "location": "स्थान",
+      "salary": "वेतन",
+      "noticePeriod": "नोटिस अवधि"
+    },
+    "offerLetter": "ऑफ़र लेटर",
+    "createOffer": "ऑफ़र बनाएं",
+    "sendOffer": "ऑफ़र भेजें",
+    "offerSent": "ऑफ़र भेजा गया",
+    "offerAccepted": "ऑफ़र स्वीकार",
+    "offerRejected": "ऑफ़र अस्वीकार",
+    "joinMeeting": "मीटिंग में शामिल हों",
+    "q3": {
+      "title": "Q3 डैशबोर्ड",
+      "pendingReview": "समीक्षा के लिए लंबित",
+      "sentToCompany": "कंपनी को भेजा गया",
+      "forwarded": "{{count}} सीवी कंपनी को भेजे गए।",
+      "forwardSelected": "{{count}} कंपनी को भेजें",
+      "noReferrals": "कोई रेफरल नहीं मिला।",
+      "referredAt": "रेफर किया गया",
+      "expiresAt": "समाप्ति तिथि"
+    }
   },
   "labels": {
     "designation": "पदनाम",
@@ -184,7 +225,8 @@
     "selectLocation": "स्थान चुनें",
     "searchCountry": "देश या कोड खोजें",
     "noMatches": "कोई मिलान नहीं",
-    "selectStateFirst": "पहले राज्य चुनें"
+    "selectStateFirst": "पहले राज्य चुनें",
+    "total": "कुल"
   },
   "logout": "लॉगआउट",
   "toggleMenu": "मेनू टॉगल करें",

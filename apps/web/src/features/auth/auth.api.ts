@@ -59,4 +59,17 @@ export const authApi = {
         registrationToken,
       })
       .then((r) => r.data),
+
+  registerEmployer: (values: {
+    companyName: string;
+    emailCompany: string;
+    emailHR?: string;
+    contactNumberCompany?: string;
+    contactNumberHR?: string;
+    location?: string;
+    aboutCompany?: string;
+    industryType?: string;
+    website?: string;
+    companyLogo?: string;
+  }) => api.post<{ id: number; status: string }>('/auth/register-employer', values).then((r) => r.data),
 };

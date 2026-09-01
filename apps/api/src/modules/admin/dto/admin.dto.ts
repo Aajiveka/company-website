@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsIn, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AdminUsersQueryDto {
@@ -72,4 +72,12 @@ export class UpdateBlogPostDto {
   @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsString() category?: string;
   @IsOptional() @IsString() status?: string;
+}
+
+export class ReviewEmployerDto {
+  @IsIn(['Approved', 'Rejected'])
+  decision!: 'Approved' | 'Rejected';
+
+  @IsOptional() @IsString() @MaxLength(2000)
+  notes?: string;
 }

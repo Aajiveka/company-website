@@ -12,7 +12,7 @@ export const LOGIN_PORTALS = {
   employer: { roles: [Role.Client], labelKey: 'nav.employerLogin' },
   // QC staff share the admin door — they have no navbar entry of their own and the
   // reference app treated them as back-office users.
-  admin: { roles: [Role.Admin, Role.QC1, Role.QC2], labelKey: 'nav.adminLogin' },
+  admin: { roles: [Role.Admin, Role.QC1, Role.QC2, Role.Q3], labelKey: 'nav.adminLogin' },
 } as const satisfies Record<string, { roles: readonly RoleId[]; labelKey: string }>;
 
 export type LoginPortal = keyof typeof LOGIN_PORTALS;

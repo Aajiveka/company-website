@@ -60,7 +60,8 @@ export function SubscribeButton({ planId, highlighted }: SubscribeButtonProps) {
             localStorage.removeItem(LAST_ORDER_REF_KEY);
             queryClient.invalidateQueries({ queryKey: queryKeys.payments.subscription });
             notify('Payment successful! Your membership is now active.', 'success');
-            navigate('/payment/return?ref=' + (orderData?.orderRef ?? ''));
+            const returnTo = new URLSearchParams(location.search).get('returnTo');
+            navigate(returnTo ?? '/payment/return?ref=' + (orderData?.orderRef ?? ''));
           },
           onError: (err) => {
             notify(getErrorMessage(err), 'error');

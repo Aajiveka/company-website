@@ -245,6 +245,10 @@ model JobSubscriberMapping {
   SubscriberJobStatusLatest    SubscriberJobStatusLatest[]        @relation("SubscriberJobStatusLatestToJobSubscriberMapping")
   ApplicantNote                ApplicantNote[]                    @relation("ApplicantNoteToJobSubscriberMapping")
   JobApplicationDetail         JobApplicationDetail?              @relation("JobApplicationDetailToJobSubscriberMapping")
+  InterviewRound               InterviewRound[]                   @relation("InterviewRoundToJobSubscriberMapping")
+  CvReferral                   CvReferral[]                       @relation("CvReferralToJobSubscriberMapping")
+  CandidateJobScore            CandidateJobScore?                 @relation("CandidateJobScoreToJobSubscriberMapping")
+  OfferLetter                  OfferLetter?                       @relation("OfferLetterToJobSubscriberMapping")
   @@index([jobID])
   @@index([subscriberID])
   @@index([jobMapStatusID])
@@ -461,6 +465,7 @@ model MstrInterviewMode {
   descr                        String? @db.VarChar(100)           @map("Descr")
 
   JobInterviewStatus           JobInterviewStatus[]               @relation("JobInterviewStatusToMstrInterviewMode")
+  InterviewRound               InterviewRound[]                   @relation("InterviewRoundToMstrInterviewMode")
   @@map("tblMstrInterviewMode")
 }
 
@@ -1518,4 +1523,146 @@ model JobApplicationDetail {
   mapping                      JobSubscriberMapping               @relation("JobApplicationDetailToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID], onDelete: Cascade)
 
   @@map("tblJobApplicationDetail")
+}
+
+// ---------------------------------------------------------------------------
+// Figma Flow gap models — employer registration, multi-round interviews,
+// CV referral pipeline, candidate scoring and offer letters.
+// ---------------------------------------------------------------------------
+
+/// Pending employer registrations awaiting admin approval.
+/// The Figma flow: New Company Register → fill details → Save → Verification Pending from
+/// Admin → Admin shares credentials after verification → Employer logs in.
+model EmployerRegistration {
+  id                           BigInt                             @id @default(autoincrement()) @map("EmployerRegistrationID")
+  companyName                  String @db.VarChar(200)            @map("CompanyName")
+  companyLogo                  String? @db.VarChar(500)           @map("CompanyLogo")
+  location                     String? @db.VarChar(500)           @map("Location")
+  contactNumberCompany         String? @db.VarChar(20)            @map("ContactNumberCompany")
+  contactNumberHR              String? @db.VarChar(20)            @map("ContactNumberHR")
+  emailCompany                 String @db.VarChar(100)            @map("EmailCompany")
+  emailHR                      String? @db.VarChar(100)           @map("EmailHR")
+  aboutCompany                 String? @db.VarChar(5000)          @map("AboutCompany")
+  industryType                 String? @db.VarChar(100)           @map("IndustryType")
+  website                      String? @db.VarChar(200)           @map("Website")
+  /// Pending → Approved → Rejected
+  status                       String @db.VarChar(20)             @default("Pending") @map("Status")
+  adminNotes                   String? @db.VarChar(2000)          @map("AdminNotes")
+  reviewedAt                   DateTime? @db.Timestamp(6)         @map("ReviewedAt")
+  reviewedBy                   BigInt?                            @map("ReviewedBy")
+  createdAt                    DateTime @db.Timestamp(6)          @default(now()) @map("CreatedAt")
+
+  @@index([status])
+  @@map("tblEmployerRegistration")
+}
+
+/// Per-application multi-round interview tracking. Each row is one interview round
+/// (R1, R2, R3, Final) for a specific candidate–job pair. Replaces the flat
+/// tblJobInterviewStatus for the new Q2→Q3→Company workflow.
+model InterviewRound {
+  id                           BigInt                             @id @default(autoincrement()) @map("InterviewRoundID")
+  jobSubscriberMapID           BigInt                             @map("JobSubscriberMapID")
+  roundNumber                  Int @db.SmallInt                   @map("RoundNumber")
+  roundName                    String? @db.VarChar(100)           @map("RoundName")
+  interviewerName              String? @db.VarChar(200)           @map("InterviewerName")
+  interviewerEmail             String? @db.VarChar(200)           @map("InterviewerEmail")
+  hrName                       String? @db.VarChar(200)           @map("HRName")
+  hrEmail                      String? @db.VarChar(200)           @map("HREmail")
+  interviewModeID              Int?                               @map("InterviewModeID")
+  meetingLink                  String? @db.VarChar(500)           @map("MeetingLink")
+  scheduledAt                  DateTime? @db.Timestamp(6)         @map("ScheduledAt")
+  /// Pending | Scheduled | Completed | Cancelled
+  status                       String @db.VarChar(20)             @default("Pending") @map("Status")
+  /// Passed | Failed | Hold | Pending
+  result                       String @db.VarChar(20)             @default("Pending") @map("Result")
+  companyFeedback              String? @db.VarChar(5000)          @map("CompanyFeedback")
+  createdAt                    DateTime @db.Timestamp(6)          @default(now()) @map("CreatedAt")
+  updatedAt                    DateTime? @db.Timestamp(6)         @map("UpdatedAt")
+
+  mapping                      JobSubscriberMapping               @relation("InterviewRoundToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+  interviewMode                MstrInterviewMode?                 @relation("InterviewRoundToMstrInterviewMode", fields: [interviewModeID], references: [interviewModeID])
+  slots                        InterviewSlot[]                    @relation("InterviewSlotToInterviewRound")
+
+  @@index([jobSubscriberMapID])
+  @@map("tblInterviewRound")
+}
+
+/// 3-4 time slots offered by the company for a given interview round.
+/// The candidate selects one; Q3 confirms the scheduling.
+model InterviewSlot {
+  id                           BigInt                             @id @default(autoincrement()) @map("InterviewSlotID")
+  interviewRoundID             BigInt                             @map("InterviewRoundID")
+  slotDateTime                 DateTime @db.Timestamp(6)          @map("SlotDateTime")
+  isSelected                   Boolean                            @default(false) @map("IsSelected")
+
+  round                        InterviewRound                     @relation("InterviewSlotToInterviewRound", fields: [interviewRoundID], references: [id], onDelete: Cascade)
+
+  @@index([interviewRoundID])
+  @@map("tblInterviewSlot")
+}
+
+/// CV referral pipeline: Q2 refers CVs → Q3 validates → sends to Company.
+/// Carries a 14-day expiry after which the CV returns to Q2.
+model CvReferral {
+  id                           BigInt                             @id @default(autoincrement()) @map("CvReferralID")
+  jobSubscriberMapID           BigInt                             @map("JobSubscriberMapID")
+  referredByQ2At               DateTime @db.Timestamp(6)          @default(now()) @map("ReferredByQ2At")
+  referredByUserID             BigInt?                            @map("ReferredByUserID")
+  validatedByQ3At              DateTime? @db.Timestamp(6)         @map("ValidatedByQ3At")
+  validatedByUserID            BigInt?                            @map("ValidatedByUserID")
+  sentToCompanyAt              DateTime? @db.Timestamp(6)         @map("SentToCompanyAt")
+  expiresAt                    DateTime? @db.Timestamp(6)         @map("ExpiresAt")
+  /// Referred | Validated | SentToCompany | Expired | Returned
+  status                       String @db.VarChar(20)             @default("Referred") @map("Status")
+  /// Pending | Selected | Rejected (company's review of the referred CV)
+  companyReviewStatus          String @db.VarChar(20)             @default("Pending") @map("CompanyReviewStatus")
+
+  mapping                      JobSubscriberMapping               @relation("CvReferralToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+
+  @@index([jobSubscriberMapID])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("tblCvReferral")
+}
+
+/// Per-application candidate-job match score computed by Q1.
+/// Weights from Figma: Skill 30%, Experience 25%, Job Role 20%,
+/// Education 10%, Location 5%, Salary 5%, Notice Period 5%.
+model CandidateJobScore {
+  id                           BigInt                             @id @default(autoincrement()) @map("CandidateJobScoreID")
+  jobSubscriberMapID           BigInt                             @unique @map("JobSubscriberMapID")
+  skillScore                   Int @db.SmallInt                   @default(0) @map("SkillScore")
+  experienceScore              Int @db.SmallInt                   @default(0) @map("ExperienceScore")
+  jobRoleScore                 Int @db.SmallInt                   @default(0) @map("JobRoleScore")
+  educationScore               Int @db.SmallInt                   @default(0) @map("EducationScore")
+  locationScore                Int @db.SmallInt                   @default(0) @map("LocationScore")
+  salaryScore                  Int @db.SmallInt                   @default(0) @map("SalaryScore")
+  noticePeriodScore            Int @db.SmallInt                   @default(0) @map("NoticePeriodScore")
+  /// Weighted total: round(skill*0.30 + exp*0.25 + role*0.20 + edu*0.10 + loc*0.05 + sal*0.05 + np*0.05)
+  totalScore                   Int @db.SmallInt                   @default(0) @map("TotalScore")
+  scoredAt                     DateTime @db.Timestamp(6)          @default(now()) @map("ScoredAt")
+  scoredBy                     BigInt?                            @map("ScoredBy")
+
+  mapping                      JobSubscriberMapping               @relation("CandidateJobScoreToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+
+  @@map("tblCandidateJobScore")
+}
+
+/// Offer letter tracking — created after final interview selection,
+/// the candidate accepts or rejects.
+model OfferLetter {
+  id                           BigInt                             @id @default(autoincrement()) @map("OfferLetterID")
+  jobSubscriberMapID           BigInt                             @unique @map("JobSubscriberMapID")
+  /// Structured offer details (designation, CTC, joining date, etc.)
+  offerDetails                 String? @db.Text                   @map("OfferDetails")
+  generatedAt                  DateTime @db.Timestamp(6)          @default(now()) @map("GeneratedAt")
+  sentAt                       DateTime? @db.Timestamp(6)         @map("SentAt")
+  /// Draft | Sent | Accepted | Rejected | Expired
+  status                       String @db.VarChar(20)             @default("Draft") @map("Status")
+  candidateResponseAt          DateTime? @db.Timestamp(6)         @map("CandidateResponseAt")
+  joiningDate                  DateTime? @db.Date                 @map("JoiningDate")
+
+  mapping                      JobSubscriberMapping               @relation("OfferLetterToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+
+  @@map("tblOfferLetter")
 }

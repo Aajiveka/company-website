@@ -11,6 +11,7 @@ import {
   BulkModerateJobsDto,
   BulkUpdateUsersDto,
   CreateBlogPostDto,
+  ReviewEmployerDto,
   UpdateBlogPostDto,
   UpdateSettingsDto,
   UpdateUserDto,
@@ -88,6 +89,25 @@ export class AdminController {
   @ApiOperation({ summary: 'Bulk approve or reject job listings' })
   bulkModerate(@CurrentUser() user: RequestUser, @Body() dto: BulkModerateJobsDto) {
     return this.admin.bulkModerateJobs(dto.jobIds, dto.action, user.userId);
+  }
+
+  /* ─── Employer Registrations ─── */
+
+  @Get('employer-registrations')
+  @ApiOperation({ summary: 'List pending/all employer registrations' })
+  employerRegistrations() {
+    return this.admin.employerRegistrations();
+  }
+
+  @Post('employer-registrations/:id/review')
+  @ApiOperation({ summary: 'Approve or reject an employer registration' })
+  @ApiResponse({ status: 404, description: 'Registration not found' })
+  reviewEmployer(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: ReviewEmployerDto,
+  ) {
+    return this.admin.reviewEmployer(id, dto.decision, user.userId, dto.notes);
   }
 
   /* ─── Settings ─── */

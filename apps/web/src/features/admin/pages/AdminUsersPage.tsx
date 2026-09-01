@@ -39,6 +39,7 @@ const ROLE_BADGE_TONE: Record<RoleId, BadgeTone> = {
   [Role.Client]: 'green',
   [Role.Admin]: 'purple',
   [Role.Subscription]: 'red',
+  [Role.Q3]: 'amber',
 };
 
 const PAGE_SIZE = 15;

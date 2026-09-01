@@ -268,6 +268,25 @@ export class EmployersController {
     return this.clients.saveApplicantNote(user.userId, id, dto);
   }
 
+  @Get('me/applicants/:id/documents')
+  @ApiOperation({ summary: 'List documents forwarded for an applicant' })
+  getApplicantDocuments(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.clients.getApplicantDocuments(user.userId, id);
+  }
+
+  @Post('me/applicants/:id/documents/review')
+  @ApiOperation({ summary: 'Review (approve/request corrections) a document' })
+  reviewApplicantDocument(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: RequestUser,
+    @Body() body: { docUploadId: number; status: 'Approved' | 'NeedsCorrection'; comments?: string },
+  ) {
+    return this.clients.reviewApplicantDocument(user.userId, id, body);
+  }
+
   @Public()
   @Get(':id/logo')
   @ApiOperation({ summary: 'Public company logo image (no auth — for <img src>)' })
@@ -281,6 +300,19 @@ export class EmployersController {
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(body);
+  }
+
+  @Post('me/interviews/generate-link')
+  @ApiOperation({ summary: 'Generate a video meeting link for an interview' })
+  generateMeetingLink(@Body() _body: { platform?: string }) {
+    // Generate a unique meeting room URL. In production this could integrate
+    // with Google Meet / Zoom APIs. For now, a simple unique link suffices.
+    const roomId = [
+      Date.now().toString(36),
+      Math.random().toString(36).slice(2, 8),
+    ].join('-');
+    const link = `https://meet.aajiveka.com/${roomId}`;
+    return { link };
   }
 
   @Public()

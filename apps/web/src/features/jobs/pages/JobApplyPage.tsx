@@ -118,12 +118,17 @@ export default function JobApplyPage() {
           setStage('done');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         },
-        onError: (err) =>
+        onError: (err) => {
+          if (isAxiosError(err) && err.response?.status === 403) {
+            navigate(`/candidate/subscription?returnTo=${encodeURIComponent(`/jobs/${id}/apply`)}`);
+            return;
+          }
           setSubmitError(
             isAxiosError(err) && err.response?.status === 400
               ? 'You have already applied to this job.'
               : 'We could not submit your application. Please try again.',
-          ),
+          );
+        },
       },
     );
   };

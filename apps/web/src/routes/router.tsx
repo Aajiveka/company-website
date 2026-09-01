@@ -14,6 +14,7 @@ const HomePage = lazy(() => import('@/features/home/HomePage'));
 const BrochureHomePage = lazy(() => import('@/features/home/brochure/BrochureHomePage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
+const EmployerRegisterPage = lazy(() => import('@/features/auth/pages/EmployerRegisterPage'));
 
 // Prefetch critical route chunks on idle so they're ready when the user navigates.
 //
@@ -64,6 +65,8 @@ const CandidateDetailsPage = lazy(() => import('@/features/recruitment/pages/Can
 const QC1DashboardPage = lazy(() => import('@/features/recruitment/pages/QC1DashboardPage'));
 const InterviewsPage = lazy(() => import('@/features/recruitment/pages/InterviewsPage'));
 const DocumentReviewPage = lazy(() => import('@/features/recruitment/pages/DocumentReviewPage'));
+const Q3DashboardPage = lazy(() => import('@/features/recruitment/pages/Q3DashboardPage'));
+const ReferralsPage = lazy(() => import('@/features/recruitment/pages/ReferralsPage'));
 
 // Public marketing pages
 const AboutPage = lazy(() => import('@/features/public/pages/AboutPage'));
@@ -99,6 +102,7 @@ const AdminJobsPage = lazy(() => import('@/features/admin/pages/AdminJobsPage'))
 // const AssessmentsListPage = lazy(() => import('@/features/candidates/pages/AssessmentsListPage'));
 // const SkillAssessmentPage = lazy(() => import('@/features/candidates/pages/SkillAssessmentPage'));
 const BlogCmsPage = lazy(() => import('@/features/admin/pages/BlogCmsPage'));
+const AdminEmployerApprovalsPage = lazy(() => import('@/features/admin/pages/AdminEmployerApprovalsPage'));
 // const MessagingPage = lazy(() => import('@/features/messaging/MessagingPage'));
 // const SavedSearchesPage = lazy(() => import('@/features/candidates/pages/SavedSearchesPage'));
 // const SkillGapPage = lazy(() => import('@/features/candidates/pages/SkillGapPage'));
@@ -141,6 +145,7 @@ export const router = createBrowserRouter([
           { path: '/', element: withSuspense(<HomePage />) },
           { path: '/login', element: withSuspense(<LoginPage />) },
           { path: '/register', element: withSuspense(<RegisterPage />) },
+          { path: '/register/employer', element: withSuspense(<EmployerRegisterPage />) },
           { path: '/forgot-password', element: withSuspense(<ForgotPasswordPage />) },
           { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
           { path: '/search', element: withSuspense(<SearchResultsPage />) },
@@ -259,6 +264,7 @@ export const router = createBrowserRouter([
                   { path: '/admin/blog', element: withSuspense(<BlogCmsPage />) },
                   { path: '/admin/settings', element: withSuspense(<AdminSettingsPage />) },
                   { path: '/admin/reports', element: withSuspense(<ReportsPage />) },
+                  { path: '/admin/employer-approvals', element: withSuspense(<AdminEmployerApprovalsPage />) },
                 ],
               },
               // QC / Recruitment
@@ -270,6 +276,17 @@ export const router = createBrowserRouter([
                   { path: '/recruitment/qc1', element: withSuspense(<QC1DashboardPage />) },
                   { path: '/recruitment/documents', element: withSuspense(<DocumentReviewPage />) },
                   { path: '/recruitment/interviews', element: withSuspense(<InterviewsPage />) },
+                  { path: '/recruitment/referrals', element: withSuspense(<ReferralsPage />) },
+                ],
+              },
+              // Q3 — interview coordination
+              {
+                element: <ProtectedRoute allow={[Role.Q3, Role.Admin]} />,
+                children: [
+                  { path: '/recruitment/q3', element: withSuspense(<Q3DashboardPage />) },
+                  { path: '/recruitment/q3/candidates', element: withSuspense(<CandidatesListPage />) },
+                  { path: '/recruitment/q3/interviews', element: withSuspense(<InterviewsPage />) },
+                  { path: '/recruitment/q3/documents', element: withSuspense(<DocumentReviewPage />) },
                 ],
               },
             ],

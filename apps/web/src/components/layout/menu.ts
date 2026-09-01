@@ -9,6 +9,7 @@ import {
   FileCheck2,
   // FileDown,
   FileText,
+  Forward,
   Gift,
   Heart,
   // KeyRound,
@@ -82,6 +83,7 @@ const MENUS: Record<RoleId, MenuItem[]> = {
   ],
   [Role.QC2]: [
     { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
+    { i18nKey: 'referrals', to: '/recruitment/referrals', icon: Forward },
     { i18nKey: 'documents', to: '/recruitment/documents', icon: FileCheck2 },
   ],
   // Employer panel uses apps/web/src/employer/constants/menu.ts (EmployerLayout).
@@ -91,11 +93,18 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'userManagement', to: '/admin/users', icon: Users },
     { i18nKey: 'jobModeration', to: '/admin/jobs', icon: ShieldCheck },
     { i18nKey: 'blogCms', to: '/admin/blog', icon: PenTool },
+    { i18nKey: 'employerApprovals', to: '/admin/employer-approvals', icon: Building2 },
     { i18nKey: 'companyProfile', to: '/company/profile', icon: Building2 },
     { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
     { i18nKey: 'manageJobs', to: '/company/jobs', icon: Briefcase },
     { i18nKey: 'applicants', to: '/company/applicants', icon: Users },
     { i18nKey: 'adminSettings', to: '/admin/settings', icon: Settings },
+  ],
+  [Role.Q3]: [
+    { i18nKey: 'q3Dashboard', to: '/recruitment/q3', icon: LayoutDashboard },
+    { i18nKey: 'candidates', to: '/recruitment/q3/candidates', icon: Users },
+    { i18nKey: 'interviews', to: '/recruitment/q3/interviews', icon: CalendarClock },
+    { i18nKey: 'documents', to: '/recruitment/q3/documents', icon: FileCheck2 },
   ],
   [Role.Subscription]: [{ i18nKey: 'pricing', to: '/pricing', icon: FileText }],
 };

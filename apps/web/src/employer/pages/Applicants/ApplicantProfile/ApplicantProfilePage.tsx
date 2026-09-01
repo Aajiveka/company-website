@@ -8,6 +8,8 @@ import {
   FileText,
   FolderKanban,
   GraduationCap,
+  Link2,
+  Mail,
   MapPin,
   StickyNote,
   ThumbsDown,
@@ -31,6 +33,7 @@ import {
   useDecideApplicant,
   useSaveApplicantNote,
 } from '@/employer/services/employer.api';
+import { useInterviewRounds, useOffer, useCreateOffer, useSendOffer } from '@/features/recruitment/recruitment.api';
 import type { ApplicantDecision } from '@/employer/services/employer.types';
 import { decisionConfirm } from '@/employer/utils/decisionConfirm';
 import { pipelineActionButtonClass, pipelineIconClass, applicantStatusTone } from '@/employer/utils/pipelineActions';
@@ -83,10 +86,18 @@ export function ApplicantProfilePage() {
   const resumeQuery = useApplicantResumeBlob(mapId, Boolean(applicant?.hasResume));
   const decide = useDecideApplicant();
   const saveNote = useSaveApplicantNote(mapId ?? 0);
+  const { data: interviewRounds = [] } = useInterviewRounds(mapId ?? undefined);
+  const { data: offer, refetch: refetchOffer } = useOffer(mapId ?? undefined);
+  const createOffer = useCreateOffer();
+  const sendOffer = useSendOffer();
   const [note, setNote] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<ApplicantDecision | null>(null);
+  const [offerOpen, setOfferOpen] = useState(false);
+  const [offerSalary, setOfferSalary] = useState('');
+  const [offerJoiningDate, setOfferJoiningDate] = useState('');
+  const [offerPosition, setOfferPosition] = useState('');
 
   useEffect(() => {
     const url = resumeQuery.data?.url;
@@ -128,6 +139,36 @@ export function ApplicantProfilePage() {
       setActionError(getErrorMessage(err, 'Failed to download resume'));
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const onCreateOffer = async () => {
+    if (!mapId || !offerSalary) return;
+    setActionError(null);
+    try {
+      await createOffer.mutateAsync({
+        jobSubscriberMapId: mapId,
+        offerDetails: { salary: offerSalary, position: offerPosition || applicant?.designation },
+        joiningDate: offerJoiningDate || undefined,
+      });
+      setOfferOpen(false);
+      setOfferSalary('');
+      setOfferJoiningDate('');
+      setOfferPosition('');
+      void refetchOffer();
+    } catch (err) {
+      setActionError(getErrorMessage(err, 'Failed to create offer'));
+    }
+  };
+
+  const onSendOffer = async () => {
+    if (!offer?.offerId) return;
+    setActionError(null);
+    try {
+      await sendOffer.mutateAsync(offer.offerId);
+      void refetchOffer();
+    } catch (err) {
+      setActionError(getErrorMessage(err, 'Failed to send offer'));
     }
   };
 
@@ -470,6 +511,109 @@ export function ApplicantProfilePage() {
               <p className="text-xs text-slate-400">No status history yet.</p>
             )}
           </Section>
+
+          {interviewRounds.length > 0 && (
+            <Section title="Interview Rounds" icon={<CalendarClock className="h-3.5 w-3.5" />}>
+              <ul className="space-y-2">
+                {interviewRounds.map((r) => (
+                  <li key={r.roundId} className="border-b border-slate-100 pb-2 last:border-0">
+                    <p className="text-xs font-medium text-slate-800">
+                      R{r.roundNumber}: {r.roundName || `Round ${r.roundNumber}`}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      {[
+                        r.status,
+                        r.result !== 'Pending' && `Result: ${r.result}`,
+                        r.scheduledAt && `Scheduled: ${new Date(r.scheduledAt).toLocaleString()}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                    {r.companyFeedback ? (
+                      <p className="mt-0.5 text-[11px] text-slate-600">Feedback: {r.companyFeedback}</p>
+                    ) : null}
+                    {r.interviewerName ? (
+                      <p className="mt-0.5 text-[11px] text-slate-500">Interviewer: {r.interviewerName}</p>
+                    ) : null}
+                    {r.meetingLink ? (
+                      <a href={r.meetingLink} target="_blank" rel="noreferrer" className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-[#1A56DB] hover:underline">
+                        <Link2 className="h-3 w-3" /> Join Meeting
+                      </a>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          <Section title="Offer Letter" icon={<Mail className="h-3.5 w-3.5" />}>
+            {!offer ? (
+              <div>
+                <p className="text-xs text-slate-400">No offer created yet.</p>
+                <SecondaryButton className="mt-2" onClick={() => setOfferOpen(true)}>
+                  Create Offer
+                </SecondaryButton>
+              </div>
+            ) : offer.status === 'Draft' ? (
+              <div>
+                <dl className="grid gap-1 text-xs">
+                  <Field label="Salary" value={(offer.offerDetails as Record<string, string>)?.salary} />
+                  <Field label="Position" value={(offer.offerDetails as Record<string, string>)?.position} />
+                  {offer.joiningDate && <Field label="Joining Date" value={new Date(offer.joiningDate).toLocaleDateString()} />}
+                </dl>
+                <PrimaryButton className="mt-2" disabled={sendOffer.isPending} onClick={() => void onSendOffer()}>
+                  {sendOffer.isPending ? 'Sending…' : 'Send Offer'}
+                </PrimaryButton>
+              </div>
+            ) : (
+              <div>
+                <dl className="grid gap-1 text-xs">
+                  <Field label="Salary" value={(offer.offerDetails as Record<string, string>)?.salary} />
+                  <Field label="Position" value={(offer.offerDetails as Record<string, string>)?.position} />
+                  {offer.joiningDate && <Field label="Joining Date" value={new Date(offer.joiningDate).toLocaleDateString()} />}
+                  <Field label="Status" value={offer.status} />
+                  {offer.sentAt && <Field label="Sent" value={new Date(offer.sentAt).toLocaleDateString()} />}
+                  {offer.candidateResponseAt && <Field label="Response" value={new Date(offer.candidateResponseAt).toLocaleDateString()} />}
+                </dl>
+                <div className="mt-2">
+                  <EmployerBadge tone={offer.status === 'Accepted' ? 'success' : offer.status === 'Rejected' ? 'danger' : 'primary'}>
+                    {offer.status === 'Sent' ? 'Awaiting Response' : offer.status}
+                  </EmployerBadge>
+                </div>
+              </div>
+            )}
+          </Section>
+
+          {offerOpen && (
+            <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
+              <h3 className="mb-2 text-xs font-semibold text-slate-800">Create Offer</h3>
+              <div className="space-y-2">
+                <label className="block text-xs text-slate-600">
+                  Salary *
+                  <input type="text" value={offerSalary} onChange={(e) => setOfferSalary(e.target.value)}
+                    className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
+                    placeholder="e.g. ₹6,00,000 per annum" />
+                </label>
+                <label className="block text-xs text-slate-600">
+                  Position
+                  <input type="text" value={offerPosition} onChange={(e) => setOfferPosition(e.target.value)}
+                    className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
+                    placeholder={applicant.designation || 'Position title'} />
+                </label>
+                <label className="block text-xs text-slate-600">
+                  Joining Date
+                  <input type="date" value={offerJoiningDate} onChange={(e) => setOfferJoiningDate(e.target.value)}
+                    className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20" />
+                </label>
+                <div className="flex gap-2">
+                  <SecondaryButton onClick={() => setOfferOpen(false)}>Cancel</SecondaryButton>
+                  <PrimaryButton disabled={!offerSalary || createOffer.isPending} onClick={() => void onCreateOffer()}>
+                    {createOffer.isPending ? 'Creating…' : 'Create'}
+                  </PrimaryButton>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Section title="Notes" icon={<StickyNote className="h-3.5 w-3.5" />}>
             <textarea

@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import argon2 from 'argon2';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
+import { EmailService } from '@/common/email/email.service';
+import { Role } from '@/shared/roles';
 import { JOB_STATUS_ACTIVE } from '@/shared/status';
 import type {
   AdminJobsQueryDto,
@@ -42,6 +46,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly email: EmailService,
   ) {}
 
   private get db() {
@@ -456,6 +461,132 @@ export class AdminService {
       action: 'admin.blog_post_deleted',
       entity: 'BlogPost',
       entityId: id,
+    });
+    return { ok: true };
+  }
+
+  /* ─── Employer Registrations ─── */
+
+  async employerRegistrations() {
+    const rows = await this.db.employerRegistration.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((r) => ({
+      id: Number(r.id),
+      companyName: r.companyName,
+      emailCompany: r.emailCompany,
+      emailHR: r.emailHR,
+      location: r.location,
+      industryType: r.industryType,
+      status: r.status,
+      createdAt: r.createdAt.toISOString(),
+      reviewedAt: r.reviewedAt?.toISOString() ?? null,
+    }));
+  }
+
+  async reviewEmployer(
+    registrationId: number,
+    decision: 'Approved' | 'Rejected',
+    adminUserId: number,
+    notes?: string,
+  ) {
+    const reg = await this.db.employerRegistration.findUnique({
+      where: { id: registrationId },
+    });
+    if (!reg) throw new NotFoundException('Employer registration not found');
+
+    const now = new Date();
+    await this.db.employerRegistration.update({
+      where: { id: registrationId },
+      data: {
+        status: decision,
+        adminNotes: notes ?? null,
+        reviewedAt: now,
+        reviewedBy: BigInt(adminUserId),
+      },
+    });
+
+    if (decision === 'Approved') {
+      // Create ClientMstr + SecUser + role mapping so the employer can log in.
+      const tempPassword = randomBytes(12).toString('base64url');
+      const passwordHash = await argon2.hash(tempPassword);
+
+      const person = await this.db.mstrPerson.create({
+        data: {
+          descr: reg.companyName,
+          emailID: reg.emailCompany,
+          flgActive: 1,
+          loginIDIns: adminUserId,
+          clientID: null,
+        },
+      });
+
+      const client = await this.db.clientMstr.create({
+        data: {
+          clientName: reg.companyName,
+          clientAddress: reg.location ?? null,
+          contactNo: reg.contactNumberCompany ?? null,
+          emailID: reg.emailCompany,
+          companyLogo: reg.companyLogo ?? null,
+          companyWebsite: reg.website ?? null,
+          companyDescr: reg.aboutCompany ?? null,
+          cityID: 0,
+          timestampIns: now,
+          loginIDIns: BigInt(adminUserId),
+          userID: null,
+        },
+      });
+
+      const user = await this.db.secUser.create({
+        data: {
+          userName: reg.emailCompany,
+          password: passwordHash,
+          active: '1',
+          pwdStatus: 0, // 0 = must change on first login
+          nodeID: person.personNodeID,
+          nodeType: 200,
+          subscriberID: null,
+        },
+        select: { userID: true },
+      });
+
+      await this.db.secMapUserRoles.create({
+        data: {
+          userID: user.userID,
+          roleId: Role.Client,
+          userNodeId: person.personNodeID,
+          userNodeType: 200,
+        },
+      });
+
+      // Link the client to the user and the person to the client
+      await this.db.clientMstr.update({
+        where: { clientID: client.clientID },
+        data: { userID: user.userID },
+      });
+      await this.db.mstrPerson.update({
+        where: { personNodeID: person.personNodeID },
+        data: { clientID: client.clientID },
+      });
+
+      // Send credentials email (fire-and-forget)
+      this.email.sendMail(
+        reg.emailCompany,
+        'Your Aajiveka Employer Account is Approved',
+        `<p>Dear ${reg.companyName},</p>
+         <p>Your employer registration has been approved. You can now log in with:</p>
+         <p><strong>Username:</strong> ${reg.emailCompany}<br/>
+         <strong>Temporary Password:</strong> ${tempPassword}</p>
+         <p>Please change your password after your first login.</p>`,
+      ).catch(() => {});
+    }
+
+    await this.audit.record({
+      userId: adminUserId,
+      action: 'admin.employer_reviewed',
+      entity: 'EmployerRegistration',
+      entityId: registrationId,
+      detail: { decision, notes },
     });
     return { ok: true };
   }

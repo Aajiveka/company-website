@@ -2019,6 +2019,70 @@ export class EmployersService {
     return { ok: true };
   }
 
+  /** List uploaded documents for an applicant (forwarded by Q3). */
+  async getApplicantDocuments(userId: number, jobSubscriberMapId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: { job: { select: { clientID: true } } },
+    });
+    if (!mapping || Number(mapping.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const docs = await this.db.candidateDocumentUploaded.findMany({
+      where: { subscriberID: mapping.subscriberID },
+      include: {
+        documentType: { select: { documentType: true } },
+      },
+      orderBy: { timestampIns: 'desc' },
+    });
+
+    return docs.map((d) => ({
+      docUploadId: Number(d.docUploadID),
+      documentType: d.documentType?.documentType ?? '',
+      documentPath: d.documentPath,
+      status: d.flgStatus === 1 ? 'Verified' : d.flgStatus === 2 ? 'Rejected' : 'Pending',
+      uploadedAt: d.timestampIns?.toISOString() ?? null,
+    }));
+  }
+
+  /** Company reviews an applicant's document (approve or request corrections). */
+  async reviewApplicantDocument(
+    userId: number,
+    jobSubscriberMapId: number,
+    input: { docUploadId: number; status: 'Approved' | 'NeedsCorrection'; comments?: string },
+  ) {
+    const clientId = await this.clientIdFor(userId);
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: { job: { select: { clientID: true } } },
+    });
+    if (!mapping || Number(mapping.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const statusId = input.status === 'Approved' ? 1 : 3; // 1=Verified, 3=NeedsCorrection
+    await this.db.candidateDocumentStatus.create({
+      data: {
+        docUploadID: BigInt(input.docUploadId),
+        statusID: statusId,
+        comments: input.comments ?? null,
+        userID: BigInt(userId),
+        timestampIns: new Date(),
+        loginIDIns: userId,
+      },
+    });
+
+    // Update the uploaded doc's flag status
+    await this.db.candidateDocumentUploaded.update({
+      where: { docUploadID: BigInt(input.docUploadId) },
+      data: { flgStatus: statusId, timestampUpd: new Date(), loginIDUpd: userId },
+    });
+
+    return { ok: true };
+  }
+
   /** Public company page — no auth required. */
   async publicCompanyInfo(clientId: number) {
     const c = await this.db.clientMstr.findUnique({

@@ -2,9 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CandidatesService } from '@/modules/candidates/candidates.service';
 import { AuditService } from '@/modules/audit/audit.service';
+import { EmailService } from '@/common/email/email.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
 import { JobMapStatus, SubscriberStatus } from '@/shared/status';
 import type {
+  CandidateDecision,
   CandidatesQueryDto,
   ReviewDocumentDto,
   ScheduleInterviewDto,
@@ -25,6 +27,7 @@ export class RecruitmentService {
     private readonly candidates: CandidatesService,
     private readonly audit: AuditService,
     private readonly applications: JobApplicationsService,
+    private readonly email: EmailService,
   ) {}
 
   private get db() {
@@ -221,6 +224,33 @@ export class RecruitmentService {
       entity: 'JobInterviewStatus',
       entityId: Number(interview.interviewStatusID),
     });
+
+    // Send interview notification email to the candidate (fire-and-forget).
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: dto.jobSubscriberMapId },
+      include: {
+        subscriber: { include: { SubscriberCVDetails: { select: { fullName: true, emailID: true } } } },
+        job: {
+          include: {
+            designation: { select: { descr: true } },
+            client: { select: { clientName: true } },
+          },
+        },
+      },
+    });
+    const candidateEmail = mapping?.subscriber?.SubscriberCVDetails?.emailID;
+    if (candidateEmail) {
+      const interviewTime = new Date(dto.interviewTime);
+      this.email.sendInterviewScheduled(candidateEmail, {
+        fullName: mapping.subscriber?.SubscriberCVDetails?.fullName ?? undefined,
+        jobTitle: mapping.job?.designation?.descr ?? '',
+        companyName: mapping.job?.client?.clientName ?? '',
+        date: interviewTime.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+        time: interviewTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }),
+        location: dto.location ?? 'To be announced',
+      }).catch(() => { /* email failure must not block scheduling */ });
+    }
+
     return { interviewStatusId: Number(interview.interviewStatusID) };
   }
 
@@ -306,27 +336,42 @@ export class RecruitmentService {
 
   /**
    * Registration approval gate (candidate-details.aspx's Approve/Reject — spQC1ApproveRejectCandidate).
-   * The legacy proc also writes a JobMapStatusID onto the candidate's latest job mapping, which
-   * is wrong here: a fresh registration may have no job mapping yet. This only flips flgstatus
-   * (already the field qc1Stats() treats as the pending funnel) and logs the journey event.
+   *
+   * Extended for Figma flow: besides Approved/Rejected, Q1 can now set OnHold, NeedMoreInfo,
+   * Duplicate, and Withdrawn statuses. The legacy flgstatus is: 0=Pending, 1=Approved, 2=Rejected.
+   * New hold-like statuses keep flgstatus at 0 (pending) since they are not final decisions.
    */
-  async decideCandidate(userId: number, subscriberId: number, decision: 'Approved' | 'Rejected') {
+  async decideCandidate(userId: number, subscriberId: number, decision: CandidateDecision, reason?: string) {
     const registration = await this.db.subscriberRegistration.findUnique({
       where: { subscriberID: subscriberId },
       select: { subscriberID: true },
     });
     if (!registration) throw new NotFoundException('Candidate not found');
 
+    // Map decision to flgstatus: Approved=1, Rejected/Withdrawn=2, hold-like=0 (still pending)
+    const flgstatus =
+      decision === 'Approved' ? 1 : decision === 'Rejected' || decision === 'Withdrawn' ? 2 : 0;
+
+    // Map decision to subscriber status for history
+    const STATUS_MAP: Record<CandidateDecision, number> = {
+      Approved: SubscriberStatus.CV_APPROVED,
+      Rejected: SubscriberStatus.CANDIDATE_NOT_INTERESTED,
+      OnHold: SubscriberStatus.CV_CREATED, // stays in CV stage
+      NeedMoreInfo: SubscriberStatus.CV_CREATED,
+      Duplicate: SubscriberStatus.CANDIDATE_NOT_INTERESTED,
+      Withdrawn: SubscriberStatus.CANDIDATE_NOT_INTERESTED,
+    };
+
     await this.db.subscriberRegistration.update({
       where: { subscriberID: subscriberId },
-      data: { flgstatus: decision === 'Approved' ? 1 : 2 },
+      data: { flgstatus },
     });
     await this.db.subscriberStatusHistory.create({
       data: {
         subscriberID: subscriberId,
-        statusID:
-          decision === 'Approved' ? SubscriberStatus.CV_APPROVED : SubscriberStatus.CANDIDATE_NOT_INTERESTED,
+        statusID: STATUS_MAP[decision],
         userID: userId,
+        comments: reason ?? null,
         timestampIns: new Date(),
         loginIDIns: userId,
       },
@@ -336,7 +381,7 @@ export class RecruitmentService {
       action: 'candidate.decision',
       entity: 'SubscriberRegistration',
       entityId: subscriberId,
-      detail: { decision },
+      detail: { decision, reason },
     });
     return { ok: true };
   }

@@ -80,3 +80,48 @@ export interface JobOption {
   designation: string;
   company: string;
 }
+
+/** CV referral row (Q2 → Q3 → Company pipeline). */
+export interface ReferralRow {
+  referralId: number;
+  jobSubscriberMapId: number;
+  candidate: string;
+  designation: string;
+  company: string;
+  status: string;
+  referredAt: string;
+  sentToCompanyAt: string | null;
+  expiresAt: string | null;
+}
+
+/** An interview round with its offered slots. */
+export interface InterviewRoundRow {
+  roundId: number;
+  roundNumber: number;
+  roundName: string | null;
+  interviewerName: string | null;
+  interviewModeId: number | null;
+  meetingLink: string | null;
+  scheduledAt: string | null;
+  status: string;
+  result: string;
+  companyFeedback: string | null;
+  slots: InterviewSlotRow[];
+}
+
+export interface InterviewSlotRow {
+  slotId: number;
+  slotDateTime: string;
+  isSelected: boolean;
+}
+
+/** Offer letter for a job application. */
+export interface OfferLetterRow {
+  offerId: number;
+  jobSubscriberMapId: number;
+  offerDetails: Record<string, unknown> | null;
+  joiningDate: string | null;
+  status: string;
+  sentAt: string | null;
+  candidateResponseAt: string | null;
+}

@@ -712,6 +712,43 @@ export class AuthService {
     };
   }
 
+  /** Employer self-registration — creates a pending EmployerRegistration row for admin review. */
+  async registerEmployer(input: {
+    companyName: string;
+    emailCompany: string;
+    emailHR?: string;
+    contactNumberCompany?: string;
+    contactNumberHR?: string;
+    location?: string;
+    aboutCompany?: string;
+    industryType?: string;
+    website?: string;
+    companyLogo?: string;
+  }) {
+    const existing = await this.db.employerRegistration.findFirst({
+      where: { emailCompany: input.emailCompany, status: { not: 'Rejected' } },
+    });
+    if (existing) {
+      throw new ConflictException('A registration with this email already exists');
+    }
+    const row = await this.db.employerRegistration.create({
+      data: {
+        companyName: input.companyName,
+        emailCompany: input.emailCompany,
+        emailHR: input.emailHR ?? null,
+        contactNumberCompany: input.contactNumberCompany ?? null,
+        contactNumberHR: input.contactNumberHR ?? null,
+        location: input.location ?? null,
+        aboutCompany: input.aboutCompany ?? null,
+        industryType: input.industryType ?? null,
+        website: input.website ?? null,
+        companyLogo: input.companyLogo ?? null,
+        status: 'Pending',
+      },
+    });
+    return { id: Number(row.id), status: 'Pending' };
+  }
+
   private async issueTokens(user: AuthUser) {
     const jti = randomUUID();
     const base = { sub: user.userId, roleId: user.roleId };

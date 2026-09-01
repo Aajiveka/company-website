@@ -8,6 +8,9 @@ export const Role = {
   Client: 4, // company
   Admin: 5,
   Subscription: 6,
+  /** Interview coordination — contacts candidates, sends round results,
+   *  forwards documents to company. */
+  Q3: 7,
 } as const;
 
 export type RoleId = (typeof Role)[keyof typeof Role];
@@ -19,6 +22,7 @@ export const ROLE_LABEL: Record<RoleId, string> = {
   [Role.Client]: 'Employer',
   [Role.Admin]: 'Admin',
   [Role.Subscription]: 'Subscription',
+  [Role.Q3]: 'Q3',
 };
 
 /** Landing route per role, mirroring the reference `fnLogin_pass` redirects. */
@@ -29,4 +33,5 @@ export const ROLE_HOME: Record<RoleId, string> = {
   [Role.Client]: '/company',
   [Role.Admin]: '/admin',
   [Role.Subscription]: '/pricing',
+  [Role.Q3]: '/recruitment/q3',
 };

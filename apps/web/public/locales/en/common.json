@@ -66,6 +66,7 @@
     "pipeline": "Pipeline Board",
     "employerAnalytics": "Analytics",
     "blogCms": "Blog CMS",
+    "employerApprovals": "Employer Approvals",
     "savedSearches": "Saved Searches",
     "skillGap": "Skill Gap Analysis",
     "interviewCalendar": "Interview Calendar",
@@ -80,7 +81,8 @@
     "compareCompanies": "Compare Companies",
     "applicationTracker": "Application Tracker",
     "compareCandidates": "Compare Candidates",
-    "adminSettings": "Admin Settings"
+    "adminSettings": "Admin Settings",
+    "q3Dashboard": "Q3 Dashboard"
   },
   "actions": {
     "search": "Search",
@@ -144,6 +146,16 @@
     "assignDocuments": "Assign Documents",
     "candidateApproved": "Candidate approved.",
     "candidateRejected": "Candidate rejected.",
+    "decision": {
+      "Approved": "Approved",
+      "Rejected": "Rejected",
+      "OnHold": "On Hold",
+      "NeedMoreInfo": "Need More Info",
+      "Duplicate": "Duplicate",
+      "Withdrawn": "Withdrawn"
+    },
+    "decisionReason": "Reason",
+    "decisionReasonPlaceholder": "Enter reason for this decision…",
     "candidateAssigned": "Candidate assigned to job.",
     "couldNotAssign": "Could not assign this job",
     "documentsAssigned": "Documents assigned to candidate.",
@@ -164,7 +176,36 @@
     "registrations": "Registrations",
     "cvNotUploaded": "CV not uploaded",
     "educationMissing": "Education missing",
-    "employmentMissing": "Employment missing"
+    "employmentMissing": "Employment missing",
+    "scoreApplication": "Score Application",
+    "scoreBreakdown": "Score Breakdown",
+    "totalScore": "Total Match Score",
+    "score": {
+      "skill": "Skills",
+      "experience": "Experience",
+      "jobRole": "Job Role",
+      "education": "Education",
+      "location": "Location",
+      "salary": "Salary",
+      "noticePeriod": "Notice Period"
+    },
+    "offerLetter": "Offer Letter",
+    "createOffer": "Create Offer",
+    "sendOffer": "Send Offer",
+    "offerSent": "Offer Sent",
+    "offerAccepted": "Offer Accepted",
+    "offerRejected": "Offer Rejected",
+    "joinMeeting": "Join Meeting",
+    "q3": {
+      "title": "Q3 Dashboard",
+      "pendingReview": "Pending Review",
+      "sentToCompany": "Sent to Company",
+      "forwarded": "{{count}} CV(s) forwarded to company.",
+      "forwardSelected": "Forward {{count}} to Company",
+      "noReferrals": "No referrals found.",
+      "referredAt": "Referred At",
+      "expiresAt": "Expires At"
+    }
   },
   "labels": {
     "designation": "Designation",
@@ -184,7 +225,8 @@
     "selectLocation": "Select Location",
     "searchCountry": "Search country or code",
     "noMatches": "No matches",
-    "selectStateFirst": "Select state first"
+    "selectStateFirst": "Select state first",
+    "total": "Total"
   },
   "logout": "Logout",
   "toggleMenu": "Toggle menu",

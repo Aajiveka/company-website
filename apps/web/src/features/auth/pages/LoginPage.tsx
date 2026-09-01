@@ -73,12 +73,19 @@ export default function LoginPage() {
         // Admin accounts are provisioned, never self-registered, so that door gets no
         // "register now" link.
         portal === 'admin' ? null : (
-          <>
-            {t('login.noAccount')}{' '}
-            <Link to="/register" className="font-medium text-primary hover:underline">
-              {t('login.registerLink')}
-            </Link>
-          </>
+          <div className="space-y-1 text-center">
+            <div>
+              {t('login.noAccount')}{' '}
+              <Link to="/register" className="font-medium text-primary hover:underline">
+                {t('login.registerLink')}
+              </Link>
+            </div>
+            <div>
+              <Link to="/register/employer" className="text-sm font-medium text-primary hover:underline">
+                Register as Employer
+              </Link>
+            </div>
+          </div>
         )
       }
     >

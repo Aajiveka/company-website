@@ -14,6 +14,22 @@ export const JobMapStatus = {
   RESCHEDULE_REQUESTED: 7,
   RESCHEDULED: 8,
   INTERVIEW_NOT_ATTENDED: 9,
+  /** Extended statuses for Q1 screening (Figma flow gaps) */
+  ON_HOLD: 10,
+  NEED_MORE_INFO: 11,
+  DUPLICATE: 12,
+  WITHDRAWN: 13,
+  /** Multi-round interview pipeline */
+  REFERRED_TO_Q3: 14,
+  SENT_TO_COMPANY: 15,
+  INTERVIEW_R1: 16,
+  INTERVIEW_R2: 17,
+  INTERVIEW_R3: 18,
+  FINAL_ROUND: 19,
+  OFFER_SENT: 20,
+  OFFER_ACCEPTED: 21,
+  JOINED: 22,
+  CV_EXPIRED: 23,
 } as const;
 
 /**

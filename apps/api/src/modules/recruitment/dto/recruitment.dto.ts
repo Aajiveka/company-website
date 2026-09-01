@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayNotEmpty, IsArray, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class CandidatesQueryDto {
   @ApiPropertyOptional({ description: 'Match on the candidate’s full name' })
@@ -39,10 +39,32 @@ export class ReviewDocumentDto {
   status!: 'Verified' | 'Rejected';
 }
 
+export type CandidateDecision =
+  | 'Approved'
+  | 'Rejected'
+  | 'OnHold'
+  | 'NeedMoreInfo'
+  | 'Duplicate'
+  | 'Withdrawn';
+
+const CANDIDATE_DECISIONS: CandidateDecision[] = [
+  'Approved',
+  'Rejected',
+  'OnHold',
+  'NeedMoreInfo',
+  'Duplicate',
+  'Withdrawn',
+];
+
 export class ApproveRejectCandidateDto {
-  @ApiProperty({ enum: ['Approved', 'Rejected'] })
-  @IsIn(['Approved', 'Rejected'])
-  decision!: 'Approved' | 'Rejected';
+  @ApiProperty({ enum: CANDIDATE_DECISIONS })
+  @IsIn(CANDIDATE_DECISIONS)
+  decision!: CandidateDecision;
+
+  @ApiPropertyOptional({ description: 'Reason for hold/reject/etc.' })
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }
 
 export class AssignJobDto {
@@ -93,4 +115,107 @@ export class UpdatePipelineDto {
   @ApiProperty({ description: 'tblMstrJobMappingStatus.JobMapStatusID' })
   @IsNumber()
   stageId!: number;
+}
+
+export class ReferToQ3Dto {
+  @ApiProperty({ type: [Number] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsInt({ each: true })
+  jobSubscriberMapIds!: number[];
+}
+
+export class ForwardToCompanyDto {
+  @ApiProperty({ type: [Number] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsInt({ each: true })
+  referralIds!: number[];
+}
+
+export class CreateInterviewRoundDto {
+  @ApiProperty()
+  @IsInt()
+  jobSubscriberMapId!: number;
+
+  @ApiProperty()
+  @IsInt()
+  roundNumber!: number;
+
+  @ApiProperty()
+  @IsString()
+  roundName!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  interviewerName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  interviewerEmail?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  hrName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  hrEmail?: string;
+
+  @ApiProperty()
+  @IsString()
+  interviewMode!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  meetingLink?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsDateString({}, { each: true })
+  slots?: string[];
+}
+
+export class SelectSlotDto {
+  @ApiProperty()
+  @IsInt()
+  slotId!: number;
+}
+
+export class SubmitRoundResultDto {
+  @ApiProperty({ enum: ['Passed', 'Failed', 'Hold'] })
+  @IsIn(['Passed', 'Failed', 'Hold'])
+  result!: 'Passed' | 'Failed' | 'Hold';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  feedback?: string;
+}
+
+export class CreateOfferDto {
+  @ApiProperty({ description: 'tblJobSubscriberMapping.JobSubscriberMapID' })
+  @IsInt()
+  jobSubscriberMapId!: number;
+
+  @ApiProperty({ description: 'Structured offer details (designation, CTC, etc.)' })
+  @IsObject()
+  offerDetails!: Record<string, unknown>;
+
+  @ApiPropertyOptional({ description: 'ISO date for joining' })
+  @IsOptional()
+  @IsDateString()
+  joiningDate?: string;
+}
+
+export class RespondToOfferDto {
+  @ApiProperty({ description: 'true = Accept, false = Reject' })
+  @IsBoolean()
+  accept!: boolean;
 }
