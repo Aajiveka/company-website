@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { json, type RequestLog, recordRequest } from './support/mocks';
+import { json } from './support/mocks';
 
 test.use({ serviceWorkers: 'block' });
 

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { json, mockCandidateSession, mockJobsApi } from './support/mocks';
+import { mockCandidateSession } from './support/mocks';
 
 test.use({ serviceWorkers: 'block' });
 

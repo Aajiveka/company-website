@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { json, type RequestLog, recordRequest } from './support/mocks';
 import { mockQC2Session, mockEmployerSession } from './support/auth-helpers';
-import { DOCUMENT_ROW, CANDIDATE_ROW } from './support/recruitment-fixtures';
+import { DOCUMENT_ROW } from './support/recruitment-fixtures';
 import { APPLICANT_DETAIL } from './support/employer-fixtures';
 
 test.use({ serviceWorkers: 'block' });

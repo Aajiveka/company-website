@@ -70,7 +70,7 @@ export function SubscribeButton({ planId, highlighted }: SubscribeButtonProps) {
         },
       );
     },
-    [verifyPayment, notify, navigate, orderData?.orderRef],
+    [verifyPayment, notify, navigate, orderData?.orderRef, location.search],
   );
 
   const handleFailure = useCallback(
