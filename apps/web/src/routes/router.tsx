@@ -79,6 +79,16 @@ const Q1VerifiedPage = lazy(() => import('@/features/q1/pages/Q1VerifiedPage'));
 const Q1NotInterestedPage = lazy(() => import('@/features/q1/pages/Q1NotInterestedPage'));
 const Q1AnalyticsPage = lazy(() => import('@/features/q1/pages/Q1AnalyticsPage'));
 
+// Q2 matching workspace ("Q2" Figma page). Its own shell, so it is not nested in
+// DashboardLayout — same reasoning as Q1's block below.
+const Q2DashboardPage = lazy(() => import('@/features/q2/pages/Q2DashboardPage'));
+const Q2EmployerJobsPage = lazy(() => import('@/features/q2/pages/Q2EmployerJobsPage'));
+const Q2JobApplicantsPage = lazy(() => import('@/features/q2/pages/Q2JobApplicantsPage'));
+const Q2AllApplicantsPage = lazy(() => import('@/features/q2/pages/Q2AllApplicantsPage'));
+const Q2ApplicantDetailPage = lazy(() => import('@/features/q2/pages/Q2ApplicantDetailPage'));
+const Q2ForwardedPage = lazy(() => import('@/features/q2/pages/Q2ForwardedPage'));
+const Q2SentBackPage = lazy(() => import('@/features/q2/pages/Q2SentBackPage'));
+const Q2AnalyticsPage = lazy(() => import('@/features/q2/pages/Q2AnalyticsPage'));
 
 // Public marketing pages
 const AboutPage = lazy(() => import('@/features/public/pages/AboutPage'));
@@ -245,6 +255,28 @@ export const router = createBrowserRouter([
               { path: '/q1/verified', element: withSuspense(<Q1VerifiedPage />) },
               { path: '/q1/not-interested', element: withSuspense(<Q1NotInterestedPage />) },
               { path: '/q1/analytics', element: withSuspense(<Q1AnalyticsPage />) },
+            ],
+          },
+          // Q2 matching workspace. `/api/q2/*` is @Roles(QC2, Admin), so the client guard is
+          // the same pair — a wider client guard than the server's is exactly the bug fixed
+          // in 2eb4db7. Outside DashboardLayout for the same reason as Q1: these pages draw
+          // their own sidebar, topbar and Matching SLA card.
+          //
+          // /recruitment/* is untouched and still serves QC2, Q3 and Admin, including the
+          // referral screens Q2 used before this workspace existed.
+          {
+            element: <ProtectedRoute allow={[Role.QC2, Role.Admin]} />,
+            errorElement: <DashboardErrorFallback />,
+            children: [
+              { path: '/q2', element: <Navigate to="/q2/dashboard" replace /> },
+              { path: '/q2/dashboard', element: withSuspense(<Q2DashboardPage />) },
+              { path: '/q2/jobs', element: withSuspense(<Q2EmployerJobsPage />) },
+              { path: '/q2/jobs/:jobId', element: withSuspense(<Q2JobApplicantsPage />) },
+              { path: '/q2/applicants', element: withSuspense(<Q2AllApplicantsPage />) },
+              { path: '/q2/applications/:mapId', element: withSuspense(<Q2ApplicantDetailPage />) },
+              { path: '/q2/forwarded', element: withSuspense(<Q2ForwardedPage />) },
+              { path: '/q2/sent-back', element: withSuspense(<Q2SentBackPage />) },
+              { path: '/q2/analytics', element: withSuspense(<Q2AnalyticsPage />) },
             ],
           },
           {

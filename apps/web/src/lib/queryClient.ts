@@ -41,6 +41,18 @@ export const queryKeys = {
     contactLog: (id: string | number) => ['q1', 'contact-log', id] as const,
     analytics: ['q1', 'analytics'] as const,
   },
+  q2: {
+    root: ['q2'] as const,
+    stats: ['q2', 'stats'] as const,
+    navCounts: ['q2', 'nav-counts'] as const,
+    sla: ['q2', 'sla'] as const,
+    jobs: (search?: string) => ['q2', 'jobs', search ?? ''] as const,
+    jobApplicants: (jobId: string | number, relevantOnly: boolean) =>
+      ['q2', 'job-applicants', jobId, relevantOnly] as const,
+    applicants: (params?: unknown) => ['q2', 'applicants', params] as const,
+    application: (mapId: string | number) => ['q2', 'application', mapId] as const,
+    analytics: ['q2', 'analytics'] as const,
+  },
   jobs: {
     filters: ['jobs', 'filters'] as const,
     search: (params?: unknown) => ['jobs', 'search', params] as const,

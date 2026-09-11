@@ -29,7 +29,7 @@ export const ROLE_LABEL: Record<RoleId, string> = {
 export const ROLE_HOME: Record<RoleId, string> = {
   [Role.Subscriber]: '/candidate/profile',
   [Role.QC1]: '/q1/dashboard',
-  [Role.QC2]: '/recruitment/candidates',
+  [Role.QC2]: '/q2/dashboard',
   [Role.Client]: '/company',
   [Role.Admin]: '/admin',
   [Role.Subscription]: '/pricing',

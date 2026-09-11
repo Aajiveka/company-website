@@ -13,6 +13,7 @@ import { EmployersModule } from '@/modules/employers/employers.module';
 import { JobsModule } from '@/modules/jobs/jobs.module';
 import { RecruitmentModule } from '@/modules/recruitment/recruitment.module';
 import { Q1Module } from '@/modules/q1/q1.module';
+import { Q2Module } from '@/modules/q2/q2.module';
 import { StorageModule } from '@/modules/storage/storage.module';
 import { FilesModule } from '@/modules/files/files.module';
 import { ExportsModule } from '@/modules/exports/exports.module';
@@ -42,6 +43,7 @@ import { SiteDocumentsModule } from '@/modules/site-documents/site-documents.mod
     EmployersModule,
     RecruitmentModule,
     Q1Module,
+    Q2Module,
     StorageModule,
     FilesModule,
     ExportsModule,

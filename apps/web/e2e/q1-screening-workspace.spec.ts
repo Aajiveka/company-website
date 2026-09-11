@@ -245,8 +245,9 @@ test.describe('Q1 access control', () => {
     await page.goto('/q1/dashboard');
 
     // The client guard matches the server's @Roles exactly, so QC2 never reaches a screen
-    // the API would 403. It lands on its own home instead.
-    await expect(page).toHaveURL(/\/recruitment\/candidates/);
+    // the API would 403. It lands on its own home instead — now the Q2 matching workspace
+    // rather than /recruitment/candidates, since ROLE_HOME[QC2] moved with the Q2 build.
+    await expect(page).toHaveURL(/\/q2\/dashboard/);
   });
 
   test('QC1 lands on the Q1 dashboard after login', async ({ page }) => {

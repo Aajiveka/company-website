@@ -5,6 +5,7 @@ import { StorageService } from '@/modules/storage/storage.service';
 import { avatarUrl } from '@/modules/files/avatar-url';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobMapStatus, SubscriberStatus, JOB_STATUS_ACTIVE } from '@/shared/status';
+import { pdfPageCount } from '@/shared/pdf';
 import { EDUCATION_MAX_YEAR_AHEAD, EDUCATION_MIN_YEAR } from './dto/candidates.dto';
 import type {
   CreateJobAlertDto,
@@ -1848,6 +1849,14 @@ export class CandidatesService {
     const stored = await this.storage.upload(docTypeId, userId, file);
     const now = new Date();
 
+    /**
+     * Size and page count for the resume card's "2 pages · 240 KB". Both come from the
+     * multipart buffer that is already in memory, so recording them costs nothing here —
+     * whereas learning them later means pulling the object back out of storage.
+     */
+    const sizeBytes = file.size ?? file.buffer?.length ?? null;
+    const pageCount = file.buffer ? pdfPageCount(file.buffer) : null;
+
     await this.db.subscriberCVDetails.update({
       where: { subscriberID: subscriberId },
       data: { cVPath: stored.key },
@@ -1864,12 +1873,16 @@ export class CandidatesService {
         subscriberID: subscriberId,
         latestCVPath: stored.key,
         cVName: file.originalname,
+        sizeBytes,
+        pageCount,
         timestampIns: now,
         loginIDIns: userId,
       },
       update: {
         latestCVPath: stored.key,
         cVName: file.originalname,
+        sizeBytes,
+        pageCount,
         tImestampUpd: now,
         loginIDUpd: userId,
       },

@@ -113,6 +113,59 @@
 
   --shadow-q1-card: 0 1px 2px rgb(23 32 51 / 0.04);
   --shadow-q1-pop: 0 10px 30px rgb(23 32 51 / 0.12);
+
+  /* ---------------------------------------------------------------- */
+  /* Q2 matching workspace ("Q2" page of the Aajiveka UI Figma)        */
+  /*                                                                   */
+  /* Q2's chrome happens to use the same hexes as Q1's — same blue,    */
+  /* canvas, lines and inks — but it gets its own namespace rather     */
+  /* than borrowing `q1-*`, so that retuning one workspace can never   */
+  /* silently restyle the other. That is the same reason `aj-*` and    */
+  /* `q1-*` are separate despite both being blue.                      */
+  /*                                                                   */
+  /* What is genuinely new is the emerald family: Q2 marks a match as  */
+  /* good in green (the Forward to Q3 button, the score rings, the     */
+  /* Candidate panel) where Q1 had only a green *status* pill.         */
+  /* Hexes are read straight off the Figma nodes.                      */
+  /* ---------------------------------------------------------------- */
+  --color-q2-blue: #1d60e5;
+  --color-q2-blue-hover: #1a55cc;
+  --color-q2-blue-soft: #eef3ff;
+  --color-q2-blue-tint: #eff6ff;
+  --color-q2-blue-ink: #1447e6;
+
+  /* The emerald ramp: #009966 is the Forward-to-Q3 fill, #00bc7d the
+     bright ring stroke, #008236 the ink on green tints. */
+  --color-q2-emerald: #009966;
+  --color-q2-emerald-hover: #00875a;
+  --color-q2-emerald-bright: #00bc7d;
+  --color-q2-emerald-ink: #008236;
+  --color-q2-emerald-soft: #e7f6ec;
+  --color-q2-emerald-tint: #f0fdf4;
+  --color-q2-emerald-wash: #ecfdf5;
+
+  --color-q2-green: #12a150;
+  --color-q2-amber: #d98207;
+  --color-q2-amber-soft: #fdf3e3;
+  --color-q2-red: #dc3b48;
+  --color-q2-red-soft: #fdecee;
+
+  --color-q2-canvas: #f5f7fb;
+  --color-q2-surface: #ffffff;
+  --color-q2-line: #e6eaf2;
+  --color-q2-chip: #eef1f6;
+  --color-q2-chip-cool: #f1f5f9;
+
+  --color-q2-ink: #172033;
+  --color-q2-ink-strong: #1d293d;
+  --color-q2-ink-soft: #475069;
+  --color-q2-ink-slate: #314158;
+  --color-q2-muted: #737d96;
+  --color-q2-muted-soft: #62748e;
+  --color-q2-muted-light: #90a1b9;
+
+  --shadow-q2-card: 0 1px 2px rgb(23 32 51 / 0.04);
+  --shadow-q2-pop: 0 10px 30px rgb(23 32 51 / 0.12);
 }
 
 @keyframes slide-up {

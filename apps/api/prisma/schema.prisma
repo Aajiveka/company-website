@@ -248,6 +248,7 @@ model JobSubscriberMapping {
   InterviewRound               InterviewRound[]                   @relation("InterviewRoundToJobSubscriberMapping")
   CvReferral                   CvReferral[]                       @relation("CvReferralToJobSubscriberMapping")
   CandidateJobScore            CandidateJobScore?                 @relation("CandidateJobScoreToJobSubscriberMapping")
+  ApplicationMatchReview       ApplicationMatchReview?            @relation("ApplicationMatchReviewToJobSubscriberMapping")
   OfferLetter                  OfferLetter?                       @relation("OfferLetterToJobSubscriberMapping")
   @@index([jobID])
   @@index([subscriberID])
@@ -777,6 +778,11 @@ model SubscriberCVUploaded {
   subscriberID                 BigInt                             @id @map("SubscriberID")  // FK -> SubscriberRegistration (unverified-empty)
   latestCVPath                 String @db.VarChar(200)            @map("LatestCVPath")
   cVName                       String @db.VarChar(1000)           @map("CVName")
+  /// Byte size and page count of the stored CV, for the resume card's "2 pages · 240 KB".
+  /// Known at upload time; NULL on every row uploaded before these columns existed, which
+  /// Q2's applicant detail backfills on first read.
+  sizeBytes                    Int?                               @map("SizeBytes")
+  pageCount                    Int? @db.SmallInt                  @map("PageCount")
   timestampIns                 DateTime @db.Timestamp(6)          @map("TimestampIns")
   tImestampUpd                 DateTime? @db.Timestamp(6)         @map("TImestampUpd")
   loginIDIns                   BigInt                             @map("LoginIDIns")
@@ -1648,6 +1654,42 @@ model CandidateJobScore {
   mapping                      JobSubscriberMapping               @relation("CandidateJobScoreToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
 
   @@map("tblCandidateJobScore")
+}
+
+/// Q2's review state for one application (Figma "Q2" page).
+///
+/// Deliberately a string status space, not tblMstrJobMappingStatus ids — see
+/// `shared/matching.ts` and the note on SubscriberScreening for why. Forwarding to Q3 still
+/// writes JobMapStatus.REFERRED_TO_Q3 and a CvReferral row, so the Q3 pipeline is untouched.
+model ApplicationMatchReview {
+  jobSubscriberMapID           BigInt                             @id @map("JobSubscriberMapID")
+
+  /// New | Forwarded | SentBackToQ1 | Rejected
+  status                       String @db.VarChar(20)             @default("New") @map("Status")
+
+  /// "Tick the criteria to include in the match" on the Candidate Scoring panel. All false
+  /// means no subset was chosen, and the total is scored on all seven criteria.
+  incSkill                     Boolean                            @default(false) @map("IncSkill")
+  incExperience                Boolean                            @default(false) @map("IncExperience")
+  incJobRole                   Boolean                            @default(false) @map("IncJobRole")
+  incEducation                 Boolean                            @default(false) @map("IncEducation")
+  incLocation                  Boolean                            @default(false) @map("IncLocation")
+  incSalary                    Boolean                            @default(false) @map("IncSalary")
+  incNoticePeriod              Boolean                            @default(false) @map("IncNoticePeriod")
+
+  decisionNote                 String? @db.VarChar(500)           @map("DecisionNote")
+  firstViewedAt                DateTime? @db.Timestamp(6)         @map("FirstViewedAt")
+  decidedAt                    DateTime? @db.Timestamp(6)         @map("DecidedAt")
+  decidedBy                    BigInt?                            @map("DecidedBy")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+  timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
+  loginIDUpd                   BigInt?                            @map("LoginIDUpd")
+
+  mapping                      JobSubscriberMapping               @relation("ApplicationMatchReviewToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+
+  @@index([status])
+  @@index([decidedAt])
+  @@map("tblApplicationMatchReview")
 }
 
 /// Offer letter tracking — created after final interview selection,
