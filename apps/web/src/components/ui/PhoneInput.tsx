@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { COUNTRIES, DEFAULT_COUNTRY_ISO2, flagEmoji, type Country } from '@/lib/countryCodes';
+import { norm } from './searchable/useOptionSearch';
 
 export interface PhoneInputProps {
   label?: string;
@@ -57,16 +58,13 @@ export function PhoneInput({
     COUNTRIES.find((c) => c.iso2 === DEFAULT_COUNTRY_ISO2)!;
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = norm(query);
     if (!q) return COUNTRIES;
     // A leading '+' is how people type a dial code; matching on the bare digits too means
     // "971" and "+971" both find the UAE.
     const digits = q.replace(/^\+/, '');
     return COUNTRIES.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.iso2.toLowerCase() === q ||
-        c.dial.includes(digits),
+      (c) => norm(c.name).includes(q) || norm(c.iso2) === q || c.dial.includes(digits),
     );
   }, [query]);
 

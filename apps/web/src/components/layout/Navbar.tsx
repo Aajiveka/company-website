@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, GraduationCap, ShieldCheck, Building2, User } from 'lucide-react';
+import {
+  Building2,
+  CalendarClock,
+  ChevronDown,
+  ClipboardCheck,
+  GraduationCap,
+  Send,
+  ShieldCheck,
+  User,
+} from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button, Dropdown, buttonVariants } from '@/components/ui';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -15,6 +24,10 @@ import {
 const PORTAL_ICON = {
   candidate: User,
   employer: Building2,
+  // The three recruitment stages, in pipeline order: screen → refer → interview.
+  qc1: ClipboardCheck,
+  qc2: Send,
+  q3: CalendarClock,
   admin: ShieldCheck,
 } as const;
 
@@ -61,21 +74,16 @@ export function Navbar() {
         aria-label="Main"
         className="container flex items-center justify-between px-3 py-3 sm:px-4"
       >
-        <div className="flex items-center gap-3">
-          <Link to="/" className="shrink-0">
-            <img
-              src="/image/logo.svg"
-              alt="Aajiveka"
-              className="h-12 w-auto sm:h-16"
-              width={120}
-              height={64}
-              decoding="async"
-            />
-          </Link>
-          <span className="hidden font-bold text-white md:inline">
-            {t('nav.tollFree')} <span className="font-normal">{t('nav.tollFreeNumber')}</span>
-          </span>
-        </div>
+        <Link to="/" className="shrink-0">
+          <img
+            src="/image/logo.svg"
+            alt="Aajiveka"
+            className="h-12 w-auto sm:h-16"
+            width={120}
+            height={64}
+            decoding="async"
+          />
+        </Link>
 
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
           <ThemeToggle />
@@ -113,11 +121,11 @@ export function Navbar() {
               })}
             />
           </div>
-          <Link to="/pricing" className="hidden sm:block">
+          {/* <Link to="/pricing" className="hidden sm:block">
             <Button variant="accent" size="sm">
               {t('nav.subscribeNow')}
             </Button>
-          </Link>
+          </Link> */}
           {/* The handbook is a public resource, not a login door — it sits with the other links. */}
           <Link to="/student">
             <Button variant="accent" size="sm">

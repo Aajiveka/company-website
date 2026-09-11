@@ -24,6 +24,7 @@ import {
 import type { JobListing, JobListParams } from '@/employer/services/employer.types';
 import { DebouncedSearch } from '@/components/DebouncedSearch';
 import { Pagination } from '@/components/ui/Pagination';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { getErrorMessage } from '@/lib/axios';
 import { ConfirmDialog } from '@/employer/components/ConfirmDialog';
 import { JobViewModal } from './JobViewModal';
@@ -164,7 +165,13 @@ function JobListBody({ filterStatus }: { filterStatus?: JobStatus | null } = {})
 
   const jobs = data?.items ?? [];
   const counts = data?.counts ?? { all: 0, active: 0, closed: 0, draft: 0, archived: 0 };
-  const cities = data?.cities ?? [];
+  const cityOptions = useMemo(
+    () => [
+      { id: 'all', label: 'All locations' },
+      ...(data?.cities ?? []).map((c) => ({ id: c, label: c })),
+    ],
+    [data?.cities],
+  );
   const total = data?.total ?? 0;
   const pageCount = data?.pageCount ?? 0;
   const busy =
@@ -408,21 +415,20 @@ function JobListBody({ filterStatus }: { filterStatus?: JobStatus | null } = {})
             }}
           />
 
-          <select
-            value={city}
-            onChange={(e) => {
-              setCity(e.target.value);
-              setPage(1);
-            }}
-            className="h-8 rounded-lg border border-slate-500 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-[#1A56DB]"
-          >
-            <option value="all">All locations</option>
-            {cities.map((loc) => (
-              <option key={loc} value={loc}>
-                {loc}
-              </option>
-            ))}
-          </select>
+          {/* Searchable: this list is every district a job has been posted in. */}
+          <div className="w-44">
+            <SearchableSelect
+              options={cityOptions}
+              value={city}
+              onChange={(next) => {
+                setCity(next || 'all');
+                setPage(1);
+              }}
+              aria-label="Location"
+              placeholder="All locations"
+              searchPlaceholder="Search locations…"
+            />
+          </div>
 
           <ColumnVisibilityMenu
             columns={columnOptions}

@@ -75,9 +75,13 @@ const MENUS: Record<RoleId, MenuItem[]> = {
     { i18nKey: 'notificationSettings', to: '/candidate/notifications', icon: Bell },
     // { i18nKey: 'changePassword', to: '/candidate/change-password', icon: KeyRound },
   ],
+  // Q1's own workspace draws its sidebar in Q1Shell, not from here. This list is what QC1
+  // sees on the screens that still use DashboardLayout — Documents and Interviews, which the
+  // "Q1 Flow" designs leave out but whose endpoints QC1 is still permitted on, so they stay
+  // reachable rather than being deleted along with the old nav.
   [Role.QC1]: [
-    { i18nKey: 'qcDashboard', to: '/recruitment/qc1', icon: LayoutDashboard },
-    { i18nKey: 'candidates', to: '/recruitment/candidates', icon: Users },
+    { i18nKey: 'qcDashboard', to: '/q1/dashboard', icon: LayoutDashboard },
+    { i18nKey: 'candidates', to: '/q1/candidates', icon: Users },
     { i18nKey: 'documents', to: '/recruitment/documents', icon: FileCheck2 },
     { i18nKey: 'interviews', to: '/recruitment/interviews', icon: CalendarClock },
   ],

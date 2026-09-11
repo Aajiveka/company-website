@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Building2, Mail, MapPin, Phone, PhoneCall } from 'lucide-react';
+import { Building2, Mail, MapPin, Phone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, useToast } from '@/components/ui';
 import { Seo } from '@/components/Seo';
@@ -57,15 +57,6 @@ export default function ContactPage() {
                 <a href={`mailto:${t('contact.salesEmail')}`} className="rounded hover:text-primary">
                   {t('contact.salesEmail')}
                 </a>
-              </p>
-              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
-                <PhoneCall className="h-5 w-5 text-primary" />
-                <span>
-                  {t('contact.tollFreeLabel')}{' '}
-                  <a href={`tel:${t('contact.tollFree')}`} className="rounded hover:text-primary">
-                    {t('contact.tollFree')}
-                  </a>
-                </span>
               </p>
               <p className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
                 <Phone className="h-5 w-5 text-primary" />

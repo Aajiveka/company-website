@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { norm } from './searchable/useOptionSearch';
 
 export type SkillTagOption = {
   id?: number;
@@ -20,10 +21,6 @@ export type SkillTagInputProps = {
   suggestCount?: number;
   'aria-label'?: string;
 };
-
-function norm(s: string) {
-  return s.toLowerCase().replace(/\s+/g, ' ').trim();
-}
 
 /**
  * Skills combobox: focus suggests masters, typing filters, Enter/click adds.

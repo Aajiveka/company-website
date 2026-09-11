@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { isAxiosError } from 'axios';
@@ -138,7 +138,7 @@ function ProfessionalSection({
   const update = useUpdateProfessional();
   const { notify } = useToast();
   const onError = useErrorNotify();
-  const { register, handleSubmit, setValue, watch, formState: { errors, isDirty } } = useForm<ProfessionalValues>({
+  const { register, control, handleSubmit, setValue, watch, formState: { errors, isDirty } } = useForm<ProfessionalValues>({
     resolver: zodResolver(professionalSchema),
     defaultValues: {
       subFunctionId: data.subFunctionId ?? undefined,
@@ -178,9 +178,53 @@ function ProfessionalSection({
       <h2 className="mb-4 text-lg font-semibold text-navy">{t('cv.professionalDetails')}</h2>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select label={t('cv.designation')} placeholder={t('common:labels.select')} options={opts(masters?.subFunctions)} {...register('subFunctionId')} />
-          <Select label={t('cv.industry')} placeholder={t('common:labels.select')} options={opts(masters?.industries)} {...register('industryTypeId')} />
-          <Select label={t('cv.primarySkill')} placeholder={t('common:labels.select')} options={opts(masters?.skills)} {...register('skillId')} />
+          {/* Controller, not register(): these three masters are long enough that Select
+              renders its searchable form, which has no <select> element for a ref to bind to. */}
+          <Controller
+            control={control}
+            name="subFunctionId"
+            render={({ field }) => (
+              <Select
+                label={t('cv.designation')}
+                placeholder={t('common:labels.select')}
+                options={opts(masters?.subFunctions)}
+                name={field.name}
+                value={field.value ?? ''}
+                onBlur={field.onBlur}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="industryTypeId"
+            render={({ field }) => (
+              <Select
+                label={t('cv.industry')}
+                placeholder={t('common:labels.select')}
+                options={opts(masters?.industries)}
+                name={field.name}
+                value={field.value ?? ''}
+                onBlur={field.onBlur}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="skillId"
+            render={({ field }) => (
+              <Select
+                label={t('cv.primarySkill')}
+                placeholder={t('common:labels.select')}
+                options={opts(masters?.skills)}
+                name={field.name}
+                value={field.value ?? ''}
+                onBlur={field.onBlur}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
+            )}
+          />
           <Input label={t('cv.totalExperience')} type="number" error={errors.totalExp?.message} {...register('totalExp')} />
           <Input label={t('cv.currentCtc')} type="number" error={errors.currentCtc?.message} {...register('currentCtc')} />
           <LocationSelect

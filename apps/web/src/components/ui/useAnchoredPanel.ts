@@ -13,6 +13,11 @@ interface UseAnchoredPanelOptions {
   onClose: () => void;
   /** Move focus to the panel's first button when it opens. */
   autoFocusFirst?: boolean;
+  /**
+   * Focus this element instead of the first button — the search box, in panels that have one.
+   * Takes precedence over `autoFocusFirst`.
+   */
+  autoFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -20,7 +25,12 @@ interface UseAnchoredPanelOptions {
  * render their panel into `document.body` — a portal + fixed positioning lets the panel
  * escape any `overflow-hidden` ancestor (e.g. the home page hero) that would clip it.
  */
-export function useAnchoredPanel({ isOpen, onClose, autoFocusFirst = true }: UseAnchoredPanelOptions) {
+export function useAnchoredPanel({
+  isOpen,
+  onClose,
+  autoFocusFirst = true,
+  autoFocusRef,
+}: UseAnchoredPanelOptions) {
   const [pos, setPos] = useState<AnchoredPanelPosition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -73,12 +83,34 @@ export function useAnchoredPanel({ isOpen, onClose, autoFocusFirst = true }: Use
     };
   }, [isOpen, updatePosition]);
 
-  // Focus first item when the panel opens
+  /**
+   * Focus the search box if there is one, else the first item, when the panel opens.
+   *
+   * This waits on `pos` rather than `isOpen`: the panel only renders once it has been
+   * measured, so on the render that flips `isOpen` the refs are still empty. It also only
+   * fires once per opening — `pos` is rebuilt on every scroll and resize, which would
+   * otherwise yank focus back out of the search box as soon as the page moved.
+   *
+   * `autoFocusRef` being empty means the list was short enough to skip the search box, so
+   * that case falls through to the first item rather than leaving nothing focused.
+   */
+  const hasAutoFocused = useRef(false);
   useEffect(() => {
-    if (isOpen && autoFocusFirst && panelRef.current) {
+    if (!isOpen) {
+      hasAutoFocused.current = false;
+      return;
+    }
+    if (!pos || hasAutoFocused.current) return;
+    hasAutoFocused.current = true;
+
+    if (autoFocusRef?.current) {
+      autoFocusRef.current.focus();
+      return;
+    }
+    if (autoFocusFirst && panelRef.current) {
       panelRef.current.querySelector<HTMLElement>('button')?.focus();
     }
-  }, [isOpen, autoFocusFirst]);
+  }, [isOpen, pos, autoFocusFirst, autoFocusRef]);
 
   const close = useCallback(() => {
     onClose();
@@ -99,12 +131,11 @@ export function useAnchoredPanel({ isOpen, onClose, autoFocusFirst = true }: Use
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       items[idx > 0 ? idx - 1 : items.length - 1].focus();
-    } else if (e.key === 'Home') {
+    } else if (e.key === 'Home' || e.key === 'End') {
+      // Leave Home/End alone inside the panel's search box — there they move the caret.
+      if (e.target instanceof HTMLInputElement) return;
       e.preventDefault();
-      items[0].focus();
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      items[items.length - 1].focus();
+      items[e.key === 'Home' ? 0 : items.length - 1].focus();
     } else if (e.key === 'Escape') {
       close();
     }

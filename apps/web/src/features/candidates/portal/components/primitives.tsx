@@ -1,6 +1,9 @@
-import { forwardRef, type ReactNode } from 'react';
+import { forwardRef, useMemo, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { SearchableDropdown } from '@/components/ui/searchable/SearchableDropdown';
+import { optionsFromChildren } from '@/components/ui/searchable/optionsFromChildren';
+import { SEARCHABLE_THRESHOLD } from '@/components/ui/searchable/useOptionSearch';
 
 /**
  * Building blocks for the candidate portal, matching the "Aajiveka UI" Figma.
@@ -148,6 +151,9 @@ export function Label({
   return (
     <label
       htmlFor={htmlFor}
+      // Referenced by `aria-labelledby` from controls that <label for> cannot name — the
+      // searchable Select renders a <button>, which takes its name from its contents.
+      id={htmlFor ? `${htmlFor}-label` : undefined}
       className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-gray-300"
     >
       {children}
@@ -228,10 +234,55 @@ export const Textarea = forwardRef<
   );
 });
 
+/**
+ * The wizard's dropdown.
+ *
+ * Short lists stay a native `<select>` — the OS picker is the better control on a phone, and
+ * a search box over four options is noise. Past {@link SEARCHABLE_THRESHOLD} options it
+ * becomes a searchable combobox instead, because masters like Function / Department run to
+ * ~1,566 rows and are unusable as a scroll-only list. Call sites do not change either way:
+ * both shapes take `value` and report back through `onChange` as `e.target.value`.
+ *
+ * Note that the searchable shape has no `<select>` element, so a forwarded `ref` is null and
+ * `register()` will not bind — the wizard's fields are all controlled, which is what this
+ * relies on. Use react-hook-form's `<Controller>` if you need one here.
+ */
 export const Select = forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }
 >(function Select({ className, invalid, children, ...rest }, ref) {
+  const { options, placeholder, clearable } = useMemo(
+    () => optionsFromChildren(children),
+    [children],
+  );
+
+  if (options.length > SEARCHABLE_THRESHOLD && !rest.multiple) {
+    const { value, onChange, id, disabled, required, name, 'aria-label': ariaLabel } = rest;
+    return (
+      <SearchableDropdown
+        options={options}
+        value={value == null ? '' : String(value)}
+        onValueChange={(next) =>
+          // Call sites only read `e.target.value`; hand them the same shape a <select> would.
+          onChange?.({ target: { value: next, name } } as React.ChangeEvent<HTMLSelectElement>)
+        }
+        id={id}
+        placeholder={placeholder}
+        disabled={disabled}
+        invalid={invalid}
+        clearable={clearable && !required}
+        aria-label={ariaLabel}
+        aria-labelledby={id ? `${id}-label` : undefined}
+        triggerClassName={cn(
+          CONTROL,
+          'h-[42px]',
+          invalid ? 'border-red-500' : 'border-aj-line dark:border-gray-700',
+          className,
+        )}
+      />
+    );
+  }
+
   return (
     <div className="relative">
       <select

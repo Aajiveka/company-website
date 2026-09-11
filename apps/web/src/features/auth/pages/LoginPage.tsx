@@ -15,6 +15,7 @@ import SocialLoginButtons from '../components/SocialLoginButtons';
 import {
   LOGIN_PORTAL_PARAM,
   isLoginPortal,
+  isStaffPortal,
   portalAllowsRole,
   type LoginPortal,
 } from '../loginPortals';
@@ -29,10 +30,11 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const from = (location.state as { from?: Location } | null)?.from?.pathname;
 
-  // `/login?as=admin|employer|candidate` — set by the navbar's login dropdown. Without it
-  // the page keeps its original behaviour: any role may sign in here.
+  // `/login?as=candidate|employer|qc1|qc2|q3|admin` — set by the navbar's login dropdown.
+  // Without it the page keeps its original behaviour: any role may sign in here.
   const portalParam = searchParams.get(LOGIN_PORTAL_PARAM);
   const portal: LoginPortal | null = isLoginPortal(portalParam) ? portalParam : null;
+  const staffDoor = isStaffPortal(portal);
 
   const {
     register,
@@ -70,9 +72,9 @@ export default function LoginPage() {
       title={portal ? t(`login.portal.${portal}.title`) : t('login.title')}
       subtitle={portal ? t(`login.portal.${portal}.subtitle`) : t('login.subtitle')}
       footer={
-        // Admin accounts are provisioned, never self-registered, so that door gets no
+        // Staff accounts are provisioned, never self-registered, so those doors get no
         // "register now" link.
-        portal === 'admin' ? null : (
+        staffDoor ? null : (
           <div className="space-y-1 text-center">
             <div>
               {t('login.noAccount')}{' '}
@@ -90,8 +92,8 @@ export default function LoginPage() {
       }
     >
       {/* OAuth returns its own session and so never passes through the portal check
-          below — keep it off the admin door entirely. */}
-      {portal !== 'admin' && <SocialLoginButtons mode="login" />}
+          below — keep it off the staff doors entirely. */}
+      {!staffDoor && <SocialLoginButtons mode="login" />}
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" noValidate>
         <Input
           label={t('login.usernameOrEmail')}

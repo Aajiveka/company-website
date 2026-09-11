@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown, ChevronRight, MapPin, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/cn';
 import { useAnchoredPanel } from './useAnchoredPanel';
+import { SearchField } from './searchable/SearchField';
+import { SEARCHABLE_THRESHOLD, useOptionSearch, type SearchOption } from './searchable/useOptionSearch';
 import type { LocationCityOption, LocationStateOption } from './LocationSelect';
 
 export interface LocationMultiSelectProps {
@@ -39,10 +41,17 @@ export function LocationMultiSelect({
   const { t } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const handleClose = useCallback(() => setIsOpen(false), []);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const listId = useId();
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    setQuery('');
+  }, []);
   const { containerRef, panelRef, triggerRef, panelStyle, onPanelKeyDown, close } = useAnchoredPanel({
     isOpen,
     onClose: handleClose,
+    autoFocusRef: searchRef,
   });
 
   // State → its cities, in the order the masters endpoint returns them. States with no
@@ -60,6 +69,20 @@ export function LocationMultiSelect({
   }, [states, cities]);
 
   const selected = useMemo(() => new Set(value), [value]);
+
+  // Every city flattened once, so a query can be answered without expanding any state.
+  const flatOptions = useMemo<SearchOption[]>(
+    () =>
+      groups.flatMap(({ state, cities: stateCities }) =>
+        stateCities.map((city) => ({ value: String(city.id), label: city.label, hint: state.label })),
+      ),
+    [groups],
+  );
+
+  /** Only worth a search box once the list is long enough to be tedious to browse. */
+  const searchable = flatOptions.length > SEARCHABLE_THRESHOLD;
+  const { items: matches, hiddenCount } = useOptionSearch(flatOptions, query);
+  const searching = searchable && query.trim().length > 0;
 
   // Chips follow the user's selection order, not the masters order, so a just-added
   // district lands at the end where they are looking.
@@ -143,19 +166,76 @@ export function LocationMultiSelect({
           createPortal(
             <div
               ref={panelRef}
-              role="listbox"
-              aria-multiselectable
-              aria-label={ariaLabel}
               style={panelStyle}
-              className="z-50 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800"
+              className="z-50 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800"
               onKeyDown={onPanelKeyDown}
             >
-              {groups.length === 0 && (
+              {searchable && (
+                <SearchField
+                  ref={searchRef}
+                  value={query}
+                  onChange={setQuery}
+                  controls={listId}
+                  aria-label={`${ariaLabel} — ${t('multiSelect.search')}`}
+                />
+              )}
+
+              <div id={listId} role="listbox" aria-multiselectable aria-label={ariaLabel} className="py-1">
+              {/* Searching flattens the tree: "Pune, Maharashtra" beats expanding 36 states. */}
+              {searching && (
+                <>
+                  {matches.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">
+                      {t('multiSelect.noOptions')}
+                    </div>
+                  )}
+                  {matches.map((match) => {
+                    const cityId = Number(match.value);
+                    const isSelected = selected.has(cityId);
+                    return (
+                      <button
+                        key={match.value}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        className={cn(
+                          'flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-sm hover:bg-primary/5 hover:text-primary',
+                          isSelected ? 'font-medium text-primary' : 'text-gray-600 dark:text-gray-400',
+                        )}
+                        onClick={() => toggleCity(cityId)}
+                      >
+                        <span
+                          className={cn(
+                            'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition',
+                            isSelected
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-gray-300 dark:border-gray-500',
+                          )}
+                          aria-hidden
+                        >
+                          {isSelected && <Check className="h-3 w-3" strokeWidth={3} />}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{match.label}</span>
+                        <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                          {match.hint}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {hiddenCount > 0 && (
+                    <div className="border-t border-gray-100 px-3 py-2 text-xs text-gray-400 dark:border-gray-700 dark:text-gray-500">
+                      {t('multiSelect.more', { count: hiddenCount })}
+                    </div>
+                  )}
+                </>
+              )}
+              {!searching && groups.length === 0 && (
                 <div className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">
                   {t('multiSelect.noOptions')}
                 </div>
               )}
-              {groups.map(({ state, cities: stateCities }) => {
+              {!searching &&
+                groups.map(({ state, cities: stateCities }) => {
                 const isExpanded = expanded.has(state.id);
                 const count = stateCities.reduce((n, c) => (selected.has(c.id) ? n + 1 : n), 0);
                 return (
@@ -211,6 +291,8 @@ export function LocationMultiSelect({
                   </div>
                 );
               })}
+              </div>
+
               {value.length > 0 && (
                 <div className="sticky bottom-0 flex items-center justify-between border-t border-gray-100 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
                   <span className="text-xs text-gray-500 dark:text-gray-400">

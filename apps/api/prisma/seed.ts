@@ -183,7 +183,7 @@ async function seedIndiaEducation() {
   );
 }
 
-/** The three logins the e2e suite drives. Password == username, as in the legacy data. */
+/** One login per role, for local dev and the e2e suite. Password == username, as in the legacy data. */
 const DEMO_USERS = [
   // The candidate gets a real subscriber profile, because a login on its own has no
   // candidate identity — tblSecUser.SubscriberID has to be set explicitly.
@@ -192,6 +192,9 @@ const DEMO_USERS = [
   { userName: 'qc2', roleId: 3, descr: 'QC2 Reviewer', email: 'qc2@aajiveka.com' },
   { userName: 'anuj@aajiveka.com', roleId: 4, descr: 'anuj garg', email: 'anuj@aajiveka.com' },
   { userName: 'admin', roleId: 5, descr: 'Aajiveka Admin', email: 'admin@aajiveka.com' },
+  // Q3 has its own navbar login door, four routes and a sidebar, but no account existed to
+  // open any of them — the role itself was missing from tblSecRoles until now.
+  { userName: 'q3', roleId: 7, descr: 'Q3 Coordinator', email: 'q3@aajiveka.com' },
 ];
 
 async function seedDemoUsers() {

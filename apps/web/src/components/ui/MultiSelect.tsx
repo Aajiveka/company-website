@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Search, X } from 'lucide-react';
+import { useComboboxKeys } from './searchable/useComboboxKeys';
+import { useOptionSearch, type SearchOption } from './searchable/useOptionSearch';
 
 export interface MultiSelectOption {
   label: string;
@@ -57,11 +59,11 @@ export function MultiSelect({
     if (isOpen) searchInputRef.current?.focus();
   }, [isOpen]);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return options;
-    const q = search.toLowerCase();
-    return options.filter((o) => o.label.toLowerCase().includes(q));
-  }, [search, options]);
+  const searchOptions = useMemo<SearchOption[]>(
+    () => options.map((o) => ({ value: o.value, label: o.label })),
+    [options],
+  );
+  const { items: filtered, hiddenCount } = useOptionSearch(searchOptions, search);
 
   const toggle = useCallback(
     (optionValue: string) => {
@@ -80,6 +82,20 @@ export function MultiSelect({
     },
     [value, onChange],
   );
+
+  const listId = useId();
+  const { activeIndex, setActiveIndex, onKeyDown, optionId, activeId } = useComboboxKeys({
+    count: filtered.length,
+    listId,
+    onPick: (i) => {
+      const option = filtered[i];
+      if (option) toggle(option.value);
+    },
+    onClose: () => {
+      setIsOpen(false);
+      setSearch('');
+    },
+  });
 
   const selectedLabels = useMemo(() => {
     const labelMap = new Map(options.map((o) => [o.value, o.label]));
@@ -156,30 +172,42 @@ export function MultiSelect({
               <input
                 ref={searchInputRef}
                 type="text"
+                role="combobox"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={onKeyDown}
                 aria-label="Search options"
                 placeholder={t('multiSelect.search')}
+                aria-controls={listId}
+                aria-expanded
+                aria-autocomplete="list"
+                aria-activedescendant={activeId}
+                autoComplete="off"
                 className="h-8 w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400 dark:text-gray-200 dark:placeholder:text-gray-500"
               />
             </div>
           </div>
 
           {/* Options */}
-          <ul role="listbox" className="max-h-48 overflow-y-auto py-1">
+          <ul id={listId} role="listbox" className="max-h-48 overflow-y-auto py-1">
             {filtered.length === 0 ? (
               <li className="px-3 py-2 text-center text-sm text-gray-400 dark:text-gray-500">
                 {t('multiSelect.noOptions')}
               </li>
             ) : (
-              filtered.map((option) => {
+              filtered.map((option, i) => {
                 const checked = value.includes(option.value);
                 return (
                   <li
                     key={option.value}
+                    id={optionId(i)}
                     role="option"
                     aria-selected={checked}
-                    className="flex cursor-pointer items-center gap-2.5 px-3 py-2.5 sm:py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-gray-700"
+                    data-value={option.value}
+                    className={`flex cursor-pointer items-center gap-2.5 px-3 py-2.5 sm:py-2 text-sm transition hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                      i === activeIndex ? 'bg-gray-50 dark:bg-gray-700' : ''
+                    }`}
+                    onMouseEnter={() => setActiveIndex(i)}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       toggle(option.value);
@@ -204,6 +232,11 @@ export function MultiSelect({
                   </li>
                 );
               })
+            )}
+            {hiddenCount > 0 && (
+              <li className="border-t border-gray-100 px-3 py-2 text-xs text-gray-400 dark:border-gray-700 dark:text-gray-500">
+                {t('multiSelect.more', { count: hiddenCount })}
+              </li>
             )}
           </ul>
 

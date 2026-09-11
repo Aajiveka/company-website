@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useComboboxKeys } from './searchable/useComboboxKeys';
+import { useOptionSearch, type SearchOption } from './searchable/useOptionSearch';
 
 export type SearchableSelectOption = {
   id: string | number;
@@ -24,10 +26,6 @@ export type SearchableSelectProps = {
   emptyText?: string;
   'aria-label'?: string;
 };
-
-function norm(s: string) {
-  return s.toLowerCase().replace(/\s+/g, ' ').trim();
-}
 
 /**
  * Combobox-style select: type to filter options, keyboard-friendly.
@@ -55,18 +53,17 @@ export function SearchableSelect({
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
 
   const selected = useMemo(
     () => options.find((o) => String(o.id) === String(value ?? '')),
     [options, value],
   );
 
-  const filtered = useMemo(() => {
-    const q = norm(query);
-    if (!q) return options;
-    return options.filter((o) => norm(o.label).includes(q));
-  }, [options, query]);
+  const searchOptions = useMemo<SearchOption[]>(
+    () => options.map((o) => ({ value: String(o.id), label: o.label })),
+    [options],
+  );
+  const { items: filtered, hiddenCount } = useOptionSearch(searchOptions, query);
 
   useEffect(() => {
     if (!open) return;
@@ -80,16 +77,9 @@ export function SearchableSelect({
   useEffect(() => {
     if (!open) return;
     setQuery('');
-    setActiveIndex(0);
     const t = window.setTimeout(() => searchRef.current?.focus(), 0);
     return () => window.clearTimeout(t);
   }, [open]);
-
-  useEffect(() => {
-    if (!open || !listRef.current) return;
-    const el = listRef.current.children[activeIndex] as HTMLElement | undefined;
-    el?.scrollIntoView({ block: 'nearest' });
-  }, [activeIndex, open]);
 
   const pick = useCallback(
     (id: string | number) => {
@@ -106,22 +96,16 @@ export function SearchableSelect({
     setQuery('');
   };
 
-  const onSearchKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setActiveIndex((i) => (filtered.length ? (i + 1) % filtered.length : 0));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveIndex((i) => (filtered.length ? (i - 1 + filtered.length) % filtered.length : 0));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const opt = filtered[activeIndex];
-      if (opt) pick(opt.id);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setOpen(false);
-    }
-  };
+  const { activeIndex, setActiveIndex, onKeyDown: onSearchKeyDown, optionId, activeId } =
+    useComboboxKeys({
+      count: filtered.length,
+      listId,
+      onPick: (i) => {
+        const option = filtered[i];
+        if (option) pick(option.value);
+      },
+      onClose: () => setOpen(false),
+    });
 
   return (
     <div ref={rootRef} className={cn('relative w-full', className)}>
@@ -181,6 +165,7 @@ export function SearchableSelect({
             <input
               ref={searchRef}
               type="text"
+              role="combobox"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -190,7 +175,10 @@ export function SearchableSelect({
               placeholder={searchPlaceholder}
               className="h-7 w-full bg-transparent text-xs text-slate-800 outline-none placeholder:text-slate-400"
               aria-controls={listId}
+              aria-expanded
               aria-autocomplete="list"
+              aria-activedescendant={activeId}
+              autoComplete="off"
             />
           </div>
 
@@ -204,13 +192,15 @@ export function SearchableSelect({
               <li className="px-2.5 py-2 text-xs text-slate-400">{emptyText}</li>
             )}
             {filtered.map((opt, i) => {
-              const isSelected = String(opt.id) === String(value ?? '');
+              const isSelected = opt.value === String(value ?? '');
               const isActive = i === activeIndex;
               return (
                 <li
-                  key={String(opt.id)}
+                  key={opt.value}
+                  id={optionId(i)}
                   role="option"
                   aria-selected={isSelected}
+                  data-value={opt.value}
                   className={cn(
                     'flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs transition',
                     isActive && 'bg-slate-100',
@@ -220,7 +210,7 @@ export function SearchableSelect({
                   onMouseEnter={() => setActiveIndex(i)}
                   onMouseDown={(e) => {
                     e.preventDefault();
-                    pick(opt.id);
+                    pick(opt.value);
                   }}
                 >
                   <span className="min-w-0 flex-1 truncate">{opt.label}</span>
@@ -228,6 +218,11 @@ export function SearchableSelect({
                 </li>
               );
             })}
+            {hiddenCount > 0 && (
+              <li className="border-t border-slate-100 px-2.5 py-2 text-xs text-slate-400">
+                +{hiddenCount}
+              </li>
+            )}
           </ul>
         </div>
       )}

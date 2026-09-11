@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EducationStep } from '../EducationStep';
+import { optionValues, selectOption, selectedValue } from '@/test-utils/selectOption';
 import type { CvEditProfile, CvEducationEntry, CvMasters } from '../../../candidate.types';
 
 /**
@@ -245,13 +246,9 @@ describe('EducationStep', () => {
     const user = userEvent.setup();
     renderStep(cvWith([]));
 
-    await user.selectOptions(screen.getByLabelText(/start year/i), '2020');
+    await selectOption(user, /start year/i, '2020');
 
-    const endYear = screen.getByLabelText(/end year/i);
-    const offered = within(endYear)
-      .getAllByRole('option')
-      .map((o) => (o as HTMLOptionElement).value)
-      .filter(Boolean);
+    const offered = await optionValues(user, /end year/i);
     expect(offered).toContain('2020');
     expect(offered.every((y) => Number(y) >= 2020)).toBe(true);
   });
@@ -261,11 +258,11 @@ describe('EducationStep', () => {
     const user = userEvent.setup();
     renderStep(cvWith([]));
 
-    await user.selectOptions(screen.getByLabelText(/start year/i), '2016');
-    await user.selectOptions(screen.getByLabelText(/end year/i), '2018');
-    await user.selectOptions(screen.getByLabelText(/start year/i), '2020');
+    await selectOption(user, /start year/i, '2016');
+    await selectOption(user, /end year/i, '2018');
+    await selectOption(user, /start year/i, '2020');
 
-    expect(screen.getByLabelText(/end year/i)).toHaveValue('');
+    expect(selectedValue(/end year/i)).toBe('');
   });
 
   it('allows an end year in the near future, for a course still being studied', async () => {
@@ -274,8 +271,8 @@ describe('EducationStep', () => {
     const nextYear = String(new Date().getFullYear() + 1);
 
     await fillValidDraft(user);
-    await user.selectOptions(screen.getByLabelText(/start year/i), '2024');
-    await user.selectOptions(screen.getByLabelText(/end year/i), nextYear);
+    await selectOption(user, /start year/i, '2024');
+    await selectOption(user, /end year/i, nextYear);
     await user.click(screen.getByRole('button', { name: /save & continue/i }));
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
@@ -319,8 +316,8 @@ describe('EducationStep', () => {
     expect(screen.getByLabelText(/^education/i)).toHaveValue('136');
     expect(screen.getByLabelText(/^course \*/i)).toHaveValue('1020');
     expect(screen.getByLabelText(/institution/i)).toHaveValue('Patna University');
-    expect(screen.getByLabelText(/start year/i)).toHaveValue('2016');
-    expect(screen.getByLabelText(/end year/i)).toHaveValue('2020');
+    expect(selectedValue(/start year/i)).toBe('2016');
+    expect(selectedValue(/end year/i)).toBe('2020');
     expect(screen.getByLabelText(/specialization/i)).toHaveValue('Computer Science');
     expect(screen.getByLabelText(/percentage/i)).toHaveValue('78.5');
   });

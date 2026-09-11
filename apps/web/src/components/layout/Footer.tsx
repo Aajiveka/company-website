@@ -70,12 +70,6 @@ export function Footer() {
           <p className="flex flex-wrap justify-center gap-x-4 gap-y-1">
             <span>{t('footer.cin')}</span>
             <span>{t('footer.gstin')}</span>
-            <span>
-              {t('nav.tollFree')}{' '}
-              <a href={`tel:${t('nav.tollFreeNumber')}`} className="rounded hover:text-white focus-visible:ring-2 focus-visible:ring-white/60">
-                {t('nav.tollFreeNumber')}
-              </a>
-            </span>
           </p>
           <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
         </div>
