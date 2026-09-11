@@ -6,10 +6,11 @@
     "login": "Login",
     "candidateLogin": "Candidate Login",
     "employerLogin": "Employer Login",
+    "qc1Login": "QC1 Login",
+    "qc2Login": "QC2 Login",
+    "q3Login": "Q3 Login",
     "adminLogin": "Admin Login",
     "subscribeNow": "Subscribe Now",
-    "tollFree": "Toll Free No:",
-    "tollFreeNumber": "18003093346",
     "student": "Student"
   },
   "student": {
@@ -451,5 +452,477 @@
       "unavailable": "Payment gateway is not available."
     },
     "cancelled": "Payment was cancelled."
+  },
+  "q1": {
+    "sectionLabel": "Q1 Screening",
+    "screener": "Q1 Screener",
+    "quickSearch": "Quick search…",
+    "openMenu": "Open menu",
+    "greeting": {
+      "morning": "Good morning, Q1",
+      "afternoon": "Good afternoon, Q1",
+      "evening": "Good evening, Q1"
+    },
+    "sla": {
+      "title": "Screening SLA",
+      "body": "You've cleared {{percent}}% of today's queue. {{count}} candidates left."
+    },
+    "dashboard": {
+      "title": "Good morning, Q1",
+      "subtitle": "Candidate screening & verification workspace"
+    },
+    "candidates": {
+      "title": "Candidates",
+      "subtitle": "Review, validate and screen incoming candidates"
+    },
+    "followUps": {
+      "title": "Follow-ups",
+      "subtitle": "Candidates scheduled for a follow-up"
+    },
+    "noResponse": {
+      "title": "No Response",
+      "subtitle": "Candidates who haven't responded"
+    },
+    "verified": {
+      "title": "Verified Candidates",
+      "subtitle": "Cleared for the next recruitment stage"
+    },
+    "notInterested": {
+      "title": "Not Interested",
+      "subtitle": "Closed candidates"
+    },
+    "analytics": {
+      "title": "Analytics & Reports",
+      "subtitle": "Screening performance overview",
+      "thisWeek": "this week",
+      "kpi": {
+        "screened": "Candidates screened",
+        "verificationRate": "Verification rate",
+        "avgTime": "Avg. screening time",
+        "cvAvailability": "CV availability"
+      },
+      "weekly": {
+        "title": "Screenings this week",
+        "help": "Candidates processed per day"
+      },
+      "completion": {
+        "title": "Profile completion",
+        "help": "Distribution across all candidates"
+      },
+      "byStatus": {
+        "title": "Candidates by status"
+      },
+      "funnel": {
+        "title": "Screening funnel",
+        "help": "Signup → verification, last 30 days"
+      }
+    },
+    "cards": {
+      "today": "today",
+      "due": "due",
+      "newCandidates": {
+        "title": "New Candidates",
+        "help": "Waiting for first review"
+      },
+      "pendingScreening": {
+        "title": "Pending Screening",
+        "help": "Currently being reviewed"
+      },
+      "followUpsDue": {
+        "title": "Follow-ups Due",
+        "help": "Requiring follow-up today"
+      },
+      "verified": {
+        "title": "Verified",
+        "help": "Successfully verified"
+      },
+      "notInterested": {
+        "title": "Not Interested / Closed",
+        "help": "No longer active"
+      }
+    },
+    "queue": {
+      "title": "Candidate Queue",
+      "count_one": "{{count}} candidate · sorted by priority",
+      "count_other": "{{count}} candidates · sorted by priority",
+      "searchLabel": "Search candidates",
+      "searchPlaceholder": "Search name, designation, company…",
+      "noCompany": "No prior company",
+      "open": "Open candidate",
+      "openNamed": "Open {{name}}",
+      "emptyTitle": "No candidates here",
+      "emptyFiltered": "No candidate matches this search or filter. Try clearing them.",
+      "emptyClear": "This queue is clear — nothing is waiting for you."
+    },
+    "tabs": {
+      "all": "All",
+      "new": "New",
+      "screening": "Screening",
+      "incomplete": "Incomplete",
+      "follow-up": "Follow-up",
+      "no-response": "No Response",
+      "verified": "Verified",
+      "not-interested": "Not Interested"
+    },
+    "columns": {
+      "candidate": "Candidate",
+      "experience": "Experience",
+      "profile": "Profile",
+      "cv": "CV",
+      "received": "Received",
+      "priority": "Priority",
+      "status": "Status"
+    },
+    "filters": {
+      "title": "Filters",
+      "priority": "Priority",
+      "experience": "Experience",
+      "cvOnly": "CV available only",
+      "clear": "Clear filters"
+    },
+    "profile": {
+      "title": "Candidate Profile",
+      "subtitle": "Review candidate information and CV before verification.",
+      "back": "Back to Candidate Queue",
+      "viewCv": "View CV",
+      "downloadCv": "Download CV",
+      "contactCandidate": "Contact Candidate",
+      "summary": "Profile Summary",
+      "noSummary": "This candidate has not written a profile summary yet.",
+      "expected": "Expected: {{value}}",
+      "experienceSummary": "{{total}} total · {{relevant}} relevant",
+      "personalDetails": "Personal Details",
+      "professionalDetails": "Professional Details",
+      "education": "Education",
+      "noEducation": "No education details on file.",
+      "skills": "Skills",
+      "noSkills": "No skills listed.",
+      "resume": "Resume / CV",
+      "uploadedOn": "Uploaded {{date}}",
+      "open": "Open",
+      "download": "Download",
+      "noCvTitle": "CV not uploaded",
+      "noCvBody": "The candidate hasn't provided a resume yet.",
+      "requestCv": "Request CV",
+      "cvRequested": "CV requested from the candidate."
+    },
+    "fields": {
+      "dob": "Date of Birth",
+      "gender": "Gender",
+      "phone": "Phone Number",
+      "email": "Email Address",
+      "location": "Current Location",
+      "linkedin": "LinkedIn",
+      "professionalTitle": "Professional Title",
+      "currentDesignation": "Current Designation",
+      "totalExperience": "Total Experience",
+      "relevantExperience": "Relevant Experience",
+      "currentCompany": "Current Company",
+      "previousCompanies": "Previous Companies",
+      "noticePeriod": "Notice Period",
+      "expectedSalary": "Expected Salary / CTC"
+    },
+    "rail": {
+      "title": "Q1 Initial Screening",
+      "subtitle": "Review information and CV before verification.",
+      "completeness": "Profile completeness",
+      "selectAll": "Select all",
+      "completeTitle": "Profile Complete",
+      "completeBody": "All required information and CV are available.",
+      "incompleteTitle": "Profile Incomplete",
+      "incompleteBody": "Some required information or CV details are missing.",
+      "markVerified": "Mark as Verified",
+      "verified": "Candidate marked as verified.",
+      "requestUpdate": "Request Profile Update",
+      "updateRequested": "Profile update requested."
+    },
+    "checklist": {
+      "nameVerified": "Candidate name verified",
+      "cvAvailable": "CV available",
+      "designationVerified": "Current designation verified",
+      "experienceChecked": "Total experience checked",
+      "educationChecked": "Education checked",
+      "skillsReviewed": "Skills reviewed",
+      "locationVerified": "Location verified"
+    },
+    "contact": {
+      "title": "Contact Candidate",
+      "reasonLabel": "Reason for contact:",
+      "defaultReason": "Your Aajiveka profile requires additional information before we can verify it.",
+      "whatsMissing": "What's missing",
+      "nothingMissing": "Nothing is missing on this profile.",
+      "channel": "Communication channel",
+      "internalNote": "Internal note",
+      "notePlaceholder": "Spoke with candidate. Candidate will upload updated CV by Friday…",
+      "updateStatus": "Update Status",
+      "logged": "Contact logged."
+    },
+    "status": {
+      "title": "Update Candidate Status",
+      "subtitle": "Choose the screening outcome",
+      "save": "Save & Update Status",
+      "followUpDate": "Follow-up date",
+      "preferredTime": "Preferred time",
+      "contactAttempts": "Contact attempts",
+      "nextAttempt": "Next attempt",
+      "reason": "Reason",
+      "option": {
+        "FollowUp": {
+          "title": "Follow-up Next Week",
+          "help": "Schedule a reminder. Candidate leaves the daily queue and appears under Follow-ups."
+        },
+        "NoResponse": {
+          "title": "No Response",
+          "help": "Record contact attempts. Candidate is hidden from the daily queue."
+        },
+        "NotInterested": {
+          "title": "Not Interested",
+          "help": "Close the candidate with a reason. Removed from the active queue."
+        }
+      },
+      "errors": {
+        "followUpDate": "Pick a follow-up date.",
+        "followUpPast": "The follow-up date cannot be in the past.",
+        "attempts": "Enter a number of attempts between 0 and 99.",
+        "nextAttemptPast": "The next attempt cannot be in the past.",
+        "reason": "Choose a reason for closing this candidate."
+      },
+      "saved": {
+        "FollowUp": "Follow-up scheduled.",
+        "NoResponse": "Marked as no response.",
+        "NotInterested": "Candidate closed."
+      }
+    }
+  },
+  "q2": {
+    "matcher": "Q2 Matcher",
+    "quickSearch": "Quick search…",
+    "openMenu": "Open menu",
+    "title": "Job Matching",
+    "subtitle": "Applied candidates scored against each job",
+    "sla": {
+      "title": "Matching SLA",
+      "body": "{{matched}} of {{total}} applicants matched today. {{awaiting}} awaiting review."
+    },
+    "cards": {
+      "activeJobs": {
+        "title": "Active Jobs",
+        "help": "Posted by employers"
+      },
+      "totalApplicants": {
+        "title": "Total Applicants",
+        "help": "Across all jobs"
+      },
+      "relevantMatches": {
+        "title": "Relevant Matches",
+        "help": "Match ≥ 60%"
+      },
+      "forwardedToQ3": {
+        "title": "Forwarded to Q3",
+        "help": "Complete profiles"
+      },
+      "sentBackToQ1": {
+        "title": "Sent back to Q1",
+        "help": "Incomplete profiles"
+      }
+    },
+    "jobs": {
+      "title": "Employer Jobs",
+      "subtitle": "{{count}} jobs · applicants shown job-wise",
+      "searchLabel": "Search jobs",
+      "searchPlaceholder": "Search job or company…",
+      "clearSearch": "Clear search",
+      "applied": "applied",
+      "relevantCount": "{{count}} relevant",
+      "openJob": "Open {{title}}",
+      "cols": {
+        "job": "Job",
+        "experience": "Experience",
+        "workMode": "Work Mode",
+        "applicants": "Applicants",
+        "relevant": "Relevant",
+        "topMatch": "Top Match"
+      },
+      "empty": {
+        "title": "No active jobs",
+        "body": "Employer jobs appear here once they are posted and active."
+      },
+      "emptySearch": {
+        "title": "No jobs found",
+        "body": "No job or company matches that search."
+      }
+    },
+    "applicants": {
+      "title": "All Applicants",
+      "subtitle": "{{count}} applications across all jobs",
+      "searchLabel": "Search applicants",
+      "searchPlaceholder": "Search candidate or job…",
+      "clearFilters": "Clear filters",
+      "openApplicant": "Open {{name}}",
+      "pageOf": "Page {{page}} of {{pages}} · {{total}} applications",
+      "tabs": {
+        "all": "All",
+        "relevant": "Relevant",
+        "notRelevant": "Not Relevant"
+      },
+      "cols": {
+        "candidate": "Candidate",
+        "appliedFor": "Applied For",
+        "match": "Match",
+        "profile": "Profile",
+        "status": "Status"
+      },
+      "emptyFiltered": {
+        "title": "No applicants found",
+        "body": "No application matches the current search or tab."
+      },
+      "empty": {
+        "queue": {
+          "title": "No applications yet",
+          "body": "Applications appear here as candidates apply to active jobs."
+        },
+        "forwarded": {
+          "title": "Nothing forwarded yet",
+          "body": "Applications you forward to Q3 are listed here."
+        },
+        "sentBack": {
+          "title": "Nothing sent back",
+          "body": "Applications you send back to Q1 are listed here."
+        },
+        "rejected": {
+          "title": "Nothing rejected",
+          "body": "Applications you reject are listed here."
+        }
+      }
+    },
+    "forwarded": {
+      "title": "Forwarded to Q3",
+      "subtitle": "{{count}} applications handed to Q3"
+    },
+    "sentBack": {
+      "title": "Sent back to Q1",
+      "subtitle": "{{count}} applications returned to Q1"
+    },
+    "jobApplicants": {
+      "title": "Job Applicants",
+      "subtitle": "Ranked by JD match",
+      "backToJobs": "Back to jobs",
+      "backToAllJobs": "Back to all jobs",
+      "totalApplicants": "total applicants",
+      "rankingTitle": "Applicants — Match Ranking",
+      "rankingSubtitle": "Resume scored against this job description",
+      "relevantOnly": "Relevant only",
+      "showAll": "Show all applicants",
+      "empty": {
+        "title": "No applicants yet",
+        "body": "Nobody has applied to this job so far."
+      },
+      "emptyRelevant": {
+        "title": "No relevant applicants",
+        "body": "No applicant for this job scores 60% or above."
+      }
+    },
+    "jobInfo": {
+      "title": "Job Information",
+      "company": "Company",
+      "experienceRequired": "Experience Required",
+      "location": "Location",
+      "salaryRange": "Salary Range",
+      "mandatoryQualification": "Mandatory Qualification",
+      "jobType": "Job Type",
+      "workMode": "Work Mode",
+      "postedOn": "Posted On",
+      "requiredSkills": "Required Skills"
+    },
+    "autoFlag": {
+      "title": "Auto-flagged on intake",
+      "body": "Applications are rejected or held when any of these are detected:",
+      "cvMissing": "CV missing",
+      "requiredInfoMissing": "Required information missing",
+      "invalidProfile": "Invalid / incomplete profile"
+    },
+    "detail": {
+      "backToApplicants": "Back to applicants",
+      "appliedFor": "Applied for {{title}}",
+      "overallMatch": "Overall JD match",
+      "alreadyDecided": "Already {{status}}",
+      "candidate": "Candidate",
+      "candidateHelp": "Profile, resume & scoring",
+      "profilePercent": "Profile {{value}}%",
+      "jobDescription": "Job Description",
+      "email": "Email",
+      "phone": "Phone",
+      "location": "Location",
+      "experience": "Experience",
+      "education": "Education",
+      "noticePeriod": "Notice Period",
+      "qualification": "Qualification",
+      "candidateSkills": "Candidate Skills",
+      "noSkills": "No skills listed on this profile.",
+      "noRequiredSkills": "This job lists no required skills.",
+      "resume": "Resume",
+      "resumeHelp": "Click to preview",
+      "preview": "Preview",
+      "noResume": "No CV uploaded"
+    },
+    "scoring": {
+      "title": "Candidate Scoring",
+      "help": "Tick the criteria to include in the match",
+      "total": "Total Match Score",
+      "criteriaCount": "{{selected}}/{{total}} criteria",
+      "toggleError": "Could not update the scoring criteria. Please try again."
+    },
+    "coverage": {
+      "title": "Resume × JD Coverage",
+      "noneMatched": "None — no required skill matched",
+      "fullCoverage": "None — full coverage",
+      "whyTheyMatch": "Why they match",
+      "noReasons": "No criterion scored high enough to call out."
+    },
+    "decision": {
+      "forward": {
+        "label": "Forward to Q3",
+        "busy": "Forwarding…",
+        "success": "Forwarded to Q3.",
+        "error": "Could not forward this applicant. Please try again."
+      },
+      "sendBack": {
+        "label": "Send back to Q1",
+        "busy": "Sending…",
+        "success": "Sent back to Q1.",
+        "error": "Could not send this applicant back. Please try again."
+      },
+      "reject": {
+        "label": "Reject",
+        "busy": "Rejecting…",
+        "success": "Application rejected.",
+        "error": "Could not reject this applicant. Please try again."
+      }
+    },
+    "analytics": {
+      "title": "Match Analytics",
+      "subtitle": "Matching performance overview",
+      "kpis": {
+        "activeJobs": "Active jobs",
+        "totalApplications": "Total applications",
+        "relevantMatches": "Relevant matches",
+        "averageMatch": "Average match"
+      },
+      "distribution": {
+        "title": "Match score distribution",
+        "help": "Relevance cut is {{threshold}}%"
+      },
+      "decisions": {
+        "title": "Decisions",
+        "awaiting": "Awaiting review",
+        "forwardedToQ3": "Forwarded to Q3",
+        "sentBackToQ1": "Sent back to Q1",
+        "rejected": "Rejected"
+      },
+      "criteria": {
+        "title": "Average score by criterion",
+        "help": "Across {{count}} scored applications"
+      }
+    }
   }
 }

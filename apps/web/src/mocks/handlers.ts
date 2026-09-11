@@ -76,6 +76,15 @@ import {
   upsertCvItSkill,
   upsertCvLanguage,
   upsertCvProject,
+  Q1_QUEUE_ROWS,
+  Q1_PROFILE,
+  Q1_ANALYTICS,
+  Q2_ANALYTICS,
+  Q2_APPLICANT_ROWS,
+  Q2_APPLICATION,
+  Q2_JOB_APPLICANTS,
+  Q2_JOB_ROWS,
+  Q2_STATS,
 } from './data';
 
 const BASE = '/api';
@@ -432,6 +441,161 @@ export const handlers = [
   }),
 
   // ---------------------------- Recruitment ---------------------------
+  // ── Q1 screening workspace ──────────────────────────────────────────────────
+  http.get(`${BASE}/q1/stats`, () =>
+    HttpResponse.json({
+      newCandidates: 2,
+      newToday: 2,
+      pendingScreening: 2,
+      followUpsDue: 1,
+      followUpsDueToday: 1,
+      verified: 1,
+      verifiedToday: 1,
+      notInterested: 1,
+    }),
+  ),
+  http.get(`${BASE}/q1/nav-counts`, () => HttpResponse.json({ candidates: 8, followUps: 2 })),
+  http.get(`${BASE}/q1/candidates`, ({ request }) => {
+    const url = new URL(request.url);
+    const tab = url.searchParams.get('tab') ?? 'all';
+    const search = (url.searchParams.get('search') ?? '').toLowerCase();
+    const byTab: Record<string, string> = {
+      new: 'New',
+      screening: 'Screening',
+      incomplete: 'Incomplete',
+      'follow-up': 'FollowUp',
+      'no-response': 'NoResponse',
+      verified: 'Verified',
+      'not-interested': 'NotInterested',
+    };
+    const rows = Q1_QUEUE_ROWS.filter(
+      (r) =>
+        (tab === 'all' || r.status === byTab[tab]) &&
+        (!search ||
+          r.fullName.toLowerCase().includes(search) ||
+          r.designation.toLowerCase().includes(search)),
+    );
+    return HttpResponse.json({ rows, total: rows.length });
+  }),
+  http.get(`${BASE}/q1/candidates/:id`, () => HttpResponse.json(Q1_PROFILE)),
+  http.get(`${BASE}/q1/candidates/:id/contact-log`, () => HttpResponse.json([])),
+  http.patch(`${BASE}/q1/candidates/:id/checklist`, () => HttpResponse.json(Q1_PROFILE.screening)),
+  http.patch(`${BASE}/q1/candidates/:id/checklist/all`, () => HttpResponse.json(Q1_PROFILE.screening)),
+  http.post(`${BASE}/q1/candidates/:id/verify`, () =>
+    HttpResponse.json({ ...Q1_PROFILE.screening, status: 'Verified' }),
+  ),
+  http.post(`${BASE}/q1/candidates/:id/contact`, () =>
+    HttpResponse.json({ contacted: true, missingItems: [] }),
+  ),
+  http.post(`${BASE}/q1/candidates/:id/request-update`, () =>
+    HttpResponse.json({ contacted: true, missingItems: [] }),
+  ),
+  http.post(`${BASE}/q1/candidates/:id/request-cv`, () =>
+    HttpResponse.json({ contacted: true, missingItems: [] }),
+  ),
+  http.post(`${BASE}/q1/candidates/:id/status`, () => HttpResponse.json(Q1_PROFILE.screening)),
+  http.get(`${BASE}/q1/analytics`, () => HttpResponse.json(Q1_ANALYTICS)),
+
+  // ── Q2 matching workspace ───────────────────────────────────────────────────
+  http.get(`${BASE}/q2/stats`, () => HttpResponse.json(Q2_STATS)),
+  http.get(`${BASE}/q2/nav-counts`, () =>
+    HttpResponse.json({ employerJobs: 4, allApplicants: 10 }),
+  ),
+  http.get(`${BASE}/q2/sla`, () => HttpResponse.json({ total: 10, matched: 7, awaiting: 3 })),
+
+  http.get(`${BASE}/q2/jobs`, ({ request }) => {
+    const search = (new URL(request.url).searchParams.get('search') ?? '').toLowerCase();
+    const rows = search
+      ? Q2_JOB_ROWS.filter(
+          (j) =>
+            j.title.toLowerCase().includes(search) || j.company.toLowerCase().includes(search),
+        )
+      : Q2_JOB_ROWS;
+    return HttpResponse.json({ total: rows.length, rows });
+  }),
+
+  http.get(`${BASE}/q2/jobs/:jobId`, ({ request }) => {
+    const relevantOnly = new URL(request.url).searchParams.get('relevantOnly') === 'true';
+    const applicants = relevantOnly
+      ? Q2_JOB_APPLICANTS.applicants.filter((a) => a.relevant)
+      : Q2_JOB_APPLICANTS.applicants;
+    return HttpResponse.json({ ...Q2_JOB_APPLICANTS, applicants });
+  }),
+
+  http.get(`${BASE}/q2/applicants`, ({ request }) => {
+    const url = new URL(request.url);
+    const tab = url.searchParams.get('tab') ?? 'all';
+    const bucket = url.searchParams.get('bucket') ?? 'queue';
+    const search = (url.searchParams.get('search') ?? '').toLowerCase();
+    const page = Number(url.searchParams.get('page') ?? '1');
+    const pageSize = Number(url.searchParams.get('pageSize') ?? '20');
+
+    const status =
+      bucket === 'forwarded' ? 'Forwarded' : bucket === 'sentBack' ? 'SentBackToQ1' : null;
+    let rows = status
+      ? Q2_APPLICANT_ROWS.filter((r) => r.status === status)
+      : [...Q2_APPLICANT_ROWS];
+    if (search) {
+      rows = rows.filter(
+        (r) =>
+          r.name.toLowerCase().includes(search) ||
+          r.jobTitle.toLowerCase().includes(search) ||
+          r.company.toLowerCase().includes(search),
+      );
+    }
+    if (tab === 'relevant') rows = rows.filter((r) => r.relevant);
+    if (tab === 'notRelevant') rows = rows.filter((r) => !r.relevant);
+
+    return HttpResponse.json({
+      total: rows.length,
+      page,
+      pageSize,
+      counts: {
+        all: rows.length,
+        relevant: rows.filter((r) => r.relevant).length,
+        notRelevant: rows.filter((r) => !r.relevant).length,
+      },
+      rows: rows.slice((page - 1) * pageSize, page * pageSize),
+    });
+  }),
+
+  http.get(`${BASE}/q2/applications/:mapId`, () => HttpResponse.json(Q2_APPLICATION)),
+
+  // Re-weights the ticked subset the way the server does, so the mocked Total Match Score
+  // moves with the checkboxes instead of staying frozen at the fixture's 98%.
+  http.patch(`${BASE}/q2/applications/:mapId/criteria`, async ({ request }) => {
+    const body = (await request.json()) as { criterion: string; included: boolean };
+    const criteria = Q2_APPLICATION.scoring.criteria.map((c) =>
+      c.key === body.criterion ? { ...c, included: body.included } : c,
+    );
+    const active = criteria.filter((c) => c.included);
+    const used = active.length ? active : criteria;
+    const weight = used.reduce((sum, c) => sum + c.weight, 0);
+    const totalScore = Math.round(
+      used.reduce((sum, c) => sum + c.score * c.weight, 0) / (weight || 1),
+    );
+    return HttpResponse.json({
+      ...Q2_APPLICATION,
+      scoring: {
+        ...Q2_APPLICATION.scoring,
+        criteria,
+        totalScore,
+        selectedCount: active.length,
+      },
+    });
+  }),
+
+  http.post(`${BASE}/q2/applications/:mapId/forward`, ({ params }) =>
+    HttpResponse.json({ mapId: Number(params.mapId), status: 'Forwarded' }),
+  ),
+  http.post(`${BASE}/q2/applications/:mapId/send-back`, ({ params }) =>
+    HttpResponse.json({ mapId: Number(params.mapId), status: 'SentBackToQ1' }),
+  ),
+  http.post(`${BASE}/q2/applications/:mapId/reject`, ({ params }) =>
+    HttpResponse.json({ mapId: Number(params.mapId), status: 'Rejected' }),
+  ),
+  http.get(`${BASE}/q2/analytics`, () => HttpResponse.json(Q2_ANALYTICS)),
+
   http.get(`${BASE}/recruitment/candidates`, ({ request }) => {
     const url = new URL(request.url);
     const search = (url.searchParams.get('search') ?? '').toLowerCase();

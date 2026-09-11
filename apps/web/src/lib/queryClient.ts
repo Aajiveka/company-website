@@ -30,6 +30,17 @@ export const queryKeys = {
     candidates: (params?: unknown) => ['recruitment', 'candidates', params] as const,
     qc1Dashboard: ['recruitment', 'qc1-dashboard'] as const,
   },
+  /** Q1 screening workspace. Centralised rather than inline literals, so an invalidation
+      cannot quietly miss a key the way the recruitment ones can. */
+  q1: {
+    root: ['q1'] as const,
+    stats: ['q1', 'stats'] as const,
+    navCounts: ['q1', 'nav-counts'] as const,
+    queue: (params?: unknown) => ['q1', 'queue', params] as const,
+    profile: (id: string | number) => ['q1', 'profile', id] as const,
+    contactLog: (id: string | number) => ['q1', 'contact-log', id] as const,
+    analytics: ['q1', 'analytics'] as const,
+  },
   jobs: {
     filters: ['jobs', 'filters'] as const,
     search: (params?: unknown) => ['jobs', 'search', params] as const,

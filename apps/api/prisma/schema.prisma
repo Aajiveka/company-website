@@ -958,6 +958,8 @@ model SubscriberRegistration {
   jobAlerts                    SubscriberJobAlert[]               @relation("SubscriberJobAlertToSubscriberRegistration")
   SavedJob                     SavedJob[]                         @relation("SavedJobToSubscriberRegistration")
   SecUser                      SecUser?                           @relation("SecUserToSubscriberRegistration")
+  SubscriberScreening          SubscriberScreening?               @relation("SubscriberScreeningToSubscriberRegistration")
+  ScreeningContactLog          ScreeningContactLog[]              @relation("ScreeningContactLogToSubscriberRegistration")
   PaymentOrder                 PaymentOrder[]                     @relation("PaymentOrderToSubscriberRegistration")
   Subscription                 Subscription[]                     @relation("SubscriptionToSubscriberRegistration")
   @@map("tblSubscriberRegistration")
@@ -1665,4 +1667,96 @@ model OfferLetter {
   mapping                      JobSubscriberMapping               @relation("OfferLetterToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
 
   @@map("tblOfferLetter")
+}
+
+/// Q1's screening workspace state for one candidate (Figma "Q1 Flow").
+///
+/// Deliberately separate from tblSubscriberRegistration.flgstatus and the
+/// Approved/Rejected/OnHold/NeedMoreInfo/Duplicate/Withdrawn decision space that
+/// POST /recruitment/candidates/:id/decision writes. Those two keep working exactly as they
+/// did; this table carries the screening pipeline the Q1 designs describe, which has three
+/// states the old space cannot express at all (New vs Screening vs No Response).
+///
+/// It also stays clear of tblMstrJobMappingStatus. Ids 10 and 11 there mean "Interview passed
+/// to candidate/Client" in db/seed, while JobMapStatus in the API calls them ON_HOLD and
+/// NEED_MORE_INFO — both inserted ON CONFLICT DO NOTHING, so whichever ran first wins and a
+/// restored production database disagrees with a fresh one. Screening status is a string here
+/// precisely so it cannot inherit that ambiguity.
+model SubscriberScreening {
+  subscriberID                 BigInt                             @id @map("SubscriberID")
+
+  /// New | Screening | Incomplete | FollowUp | NoResponse | Verified | NotInterested
+  status                       String @db.VarChar(20)             @default("New") @map("Status")
+  /// High | Medium | Low. Stored rather than computed on read so the queue's "sorted by
+  /// priority" ordering can be done by the database and stays stable across pages.
+  priority                     String @db.VarChar(10)             @default("Medium") @map("Priority")
+
+  // ── The seven-item screening checklist from the Q1 Initial Screening rail ──
+  chkNameVerified              Boolean @default(false)            @map("ChkNameVerified")
+  chkCvAvailable               Boolean @default(false)            @map("ChkCvAvailable")
+  chkDesignationVerified       Boolean @default(false)            @map("ChkDesignationVerified")
+  chkExperienceChecked         Boolean @default(false)            @map("ChkExperienceChecked")
+  chkEducationChecked          Boolean @default(false)            @map("ChkEducationChecked")
+  chkSkillsReviewed            Boolean @default(false)            @map("ChkSkillsReviewed")
+  chkLocationVerified          Boolean @default(false)            @map("ChkLocationVerified")
+
+  /// "10 yrs total · 8 yrs relevant" on the profile hero. Nothing captures this today — no
+  /// wizard step and no Q1 input in the designs — so it is NULL and the hero prints "—",
+  /// which is exactly what the Figma's incomplete candidate shows.
+  relevantExpMonths            Int? @db.SmallInt                  @map("RelevantExpMonths")
+
+  // ── Follow-up outcome ──
+  followUpDate                 DateTime? @db.Date                 @map("FollowUpDate")
+  /// Morning (10–12) | Afternoon (12–4) | Evening (4–7)
+  followUpTime                 String? @db.VarChar(30)            @map("FollowUpTime")
+
+  // ── No-response outcome ──
+  contactAttempts              Int @db.SmallInt                   @default(0) @map("ContactAttempts")
+  nextAttemptAt                DateTime? @db.Date                 @map("NextAttemptAt")
+
+  // ── Not-interested outcome ──
+  notInterestedReason          String? @db.VarChar(200)           @map("NotInterestedReason")
+
+  /// First time Q1 opened the profile. Drives New -> Screening and the "Avg. screening time"
+  /// KPI, which is the gap between this and VerifiedAt.
+  firstReviewedAt              DateTime? @db.Timestamp(6)         @map("FirstReviewedAt")
+  verifiedAt                   DateTime? @db.Timestamp(6)         @map("VerifiedAt")
+  verifiedBy                   BigInt?                            @map("VerifiedBy")
+
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+  timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
+  loginIDUpd                   BigInt?                            @map("LoginIDUpd")
+
+  subscriber                   SubscriberRegistration             @relation("SubscriberScreeningToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+
+  @@index([status])
+  @@index([priority])
+  @@index([followUpDate])
+  @@map("tblSubscriberScreening")
+}
+
+/// Every Contact Candidate / Request Profile Update / Request CV action Q1 takes.
+/// Append-only: the note and channel are the record of what was said and how.
+model ScreeningContactLog {
+  id                           BigInt                             @id @default(autoincrement()) @map("ScreeningContactLogID")
+  subscriberID                 BigInt                             @map("SubscriberID")
+
+  /// Contact | ProfileUpdateRequest | CvRequest
+  kind                         String @db.VarChar(30)             @default("Contact") @map("Kind")
+  /// Call | WhatsApp | Email | Message
+  channel                      String @db.VarChar(20)             @map("Channel")
+  reason                       String? @db.VarChar(500)           @map("Reason")
+  /// Comma-separated snapshot of what was missing at the time of contact, so the log still
+  /// reads correctly after the candidate fills the gaps in.
+  missingItems                 String? @db.VarChar(1000)          @map("MissingItems")
+  internalNote                 String? @db.VarChar(2000)          @map("InternalNote")
+
+  contactedAt                  DateTime @db.Timestamp(6)          @default(now()) @map("ContactedAt")
+  contactedBy                  BigInt?                            @map("ContactedBy")
+
+  subscriber                   SubscriberRegistration             @relation("ScreeningContactLogToSubscriberRegistration", fields: [subscriberID], references: [subscriberID])
+
+  @@index([subscriberID])
+  @@index([contactedAt])
+  @@map("tblScreeningContactLog")
 }

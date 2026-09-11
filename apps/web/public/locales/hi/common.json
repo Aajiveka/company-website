@@ -6,10 +6,11 @@
     "login": "लॉगिन",
     "candidateLogin": "उम्मीदवार लॉगिन",
     "employerLogin": "नियोक्ता लॉगिन",
+    "qc1Login": "QC1 लॉगिन",
+    "qc2Login": "QC2 लॉगिन",
+    "q3Login": "Q3 लॉगिन",
     "adminLogin": "एडमिन लॉगिन",
     "subscribeNow": "सब्सक्राइब करें",
-    "tollFree": "टोल फ्री नं:",
-    "tollFreeNumber": "18003093346",
     "student": "छात्र"
   },
   "student": {
@@ -451,5 +452,477 @@
       "unavailable": "भुगतान गेटवे उपलब्ध नहीं है।"
     },
     "cancelled": "भुगतान रद्द कर दिया गया।"
+  },
+  "q1": {
+    "sectionLabel": "Q1 स्क्रीनिंग",
+    "screener": "Q1 स्क्रीनर",
+    "quickSearch": "त्वरित खोज…",
+    "openMenu": "मेन्यू खोलें",
+    "greeting": {
+      "morning": "सुप्रभात, Q1",
+      "afternoon": "नमस्कार, Q1",
+      "evening": "शुभ संध्या, Q1"
+    },
+    "sla": {
+      "title": "स्क्रीनिंग SLA",
+      "body": "आपने आज की कतार का {{percent}}% पूरा कर लिया है। {{count}} उम्मीदवार बाकी हैं।"
+    },
+    "dashboard": {
+      "title": "सुप्रभात, Q1",
+      "subtitle": "उम्मीदवार स्क्रीनिंग और सत्यापन कार्यक्षेत्र"
+    },
+    "candidates": {
+      "title": "उम्मीदवार",
+      "subtitle": "आने वाले उम्मीदवारों की समीक्षा, जाँच और स्क्रीनिंग करें"
+    },
+    "followUps": {
+      "title": "फ़ॉलो-अप",
+      "subtitle": "फ़ॉलो-अप के लिए निर्धारित उम्मीदवार"
+    },
+    "noResponse": {
+      "title": "कोई जवाब नहीं",
+      "subtitle": "जिन उम्मीदवारों ने जवाब नहीं दिया"
+    },
+    "verified": {
+      "title": "सत्यापित उम्मीदवार",
+      "subtitle": "अगले भर्ती चरण के लिए स्वीकृत"
+    },
+    "notInterested": {
+      "title": "रुचि नहीं",
+      "subtitle": "बंद किए गए उम्मीदवार"
+    },
+    "analytics": {
+      "title": "विश्लेषण और रिपोर्ट",
+      "subtitle": "स्क्रीनिंग प्रदर्शन का अवलोकन",
+      "thisWeek": "इस सप्ताह",
+      "kpi": {
+        "screened": "स्क्रीन किए गए उम्मीदवार",
+        "verificationRate": "सत्यापन दर",
+        "avgTime": "औसत स्क्रीनिंग समय",
+        "cvAvailability": "CV उपलब्धता"
+      },
+      "weekly": {
+        "title": "इस सप्ताह की स्क्रीनिंग",
+        "help": "प्रतिदिन संसाधित उम्मीदवार"
+      },
+      "completion": {
+        "title": "प्रोफ़ाइल पूर्णता",
+        "help": "सभी उम्मीदवारों में वितरण"
+      },
+      "byStatus": {
+        "title": "स्थिति के अनुसार उम्मीदवार"
+      },
+      "funnel": {
+        "title": "स्क्रीनिंग फ़नल",
+        "help": "साइनअप → सत्यापन, पिछले 30 दिन"
+      }
+    },
+    "cards": {
+      "today": "आज",
+      "due": "देय",
+      "newCandidates": {
+        "title": "नए उम्मीदवार",
+        "help": "पहली समीक्षा की प्रतीक्षा में"
+      },
+      "pendingScreening": {
+        "title": "स्क्रीनिंग लंबित",
+        "help": "वर्तमान में समीक्षाधीन"
+      },
+      "followUpsDue": {
+        "title": "फ़ॉलो-अप देय",
+        "help": "आज फ़ॉलो-अप आवश्यक"
+      },
+      "verified": {
+        "title": "सत्यापित",
+        "help": "सफलतापूर्वक सत्यापित"
+      },
+      "notInterested": {
+        "title": "रुचि नहीं / बंद",
+        "help": "अब सक्रिय नहीं"
+      }
+    },
+    "queue": {
+      "title": "उम्मीदवार कतार",
+      "count_one": "{{count}} उम्मीदवार · प्राथमिकता के अनुसार",
+      "count_other": "{{count}} उम्मीदवार · प्राथमिकता के अनुसार",
+      "searchLabel": "उम्मीदवार खोजें",
+      "searchPlaceholder": "नाम, पद, कंपनी खोजें…",
+      "noCompany": "कोई पिछली कंपनी नहीं",
+      "open": "उम्मीदवार खोलें",
+      "openNamed": "{{name}} को खोलें",
+      "emptyTitle": "यहाँ कोई उम्मीदवार नहीं",
+      "emptyFiltered": "इस खोज या फ़िल्टर से कोई उम्मीदवार मेल नहीं खाता। इन्हें हटाकर देखें।",
+      "emptyClear": "यह कतार खाली है — आपके लिए कुछ भी लंबित नहीं है।"
+    },
+    "tabs": {
+      "all": "सभी",
+      "new": "नए",
+      "screening": "स्क्रीनिंग",
+      "incomplete": "अपूर्ण",
+      "follow-up": "फ़ॉलो-अप",
+      "no-response": "कोई जवाब नहीं",
+      "verified": "सत्यापित",
+      "not-interested": "रुचि नहीं"
+    },
+    "columns": {
+      "candidate": "उम्मीदवार",
+      "experience": "अनुभव",
+      "profile": "प्रोफ़ाइल",
+      "cv": "CV",
+      "received": "प्राप्त",
+      "priority": "प्राथमिकता",
+      "status": "स्थिति"
+    },
+    "filters": {
+      "title": "फ़िल्टर",
+      "priority": "प्राथमिकता",
+      "experience": "अनुभव",
+      "cvOnly": "केवल CV उपलब्ध",
+      "clear": "फ़िल्टर हटाएँ"
+    },
+    "profile": {
+      "title": "उम्मीदवार प्रोफ़ाइल",
+      "subtitle": "सत्यापन से पहले उम्मीदवार की जानकारी और CV की समीक्षा करें।",
+      "back": "उम्मीदवार कतार पर वापस",
+      "viewCv": "CV देखें",
+      "downloadCv": "CV डाउनलोड करें",
+      "contactCandidate": "उम्मीदवार से संपर्क करें",
+      "summary": "प्रोफ़ाइल सारांश",
+      "noSummary": "इस उम्मीदवार ने अभी तक प्रोफ़ाइल सारांश नहीं लिखा है।",
+      "expected": "अपेक्षित: {{value}}",
+      "experienceSummary": "{{total}} कुल · {{relevant}} प्रासंगिक",
+      "personalDetails": "व्यक्तिगत विवरण",
+      "professionalDetails": "व्यावसायिक विवरण",
+      "education": "शिक्षा",
+      "noEducation": "कोई शिक्षा विवरण दर्ज नहीं है।",
+      "skills": "कौशल",
+      "noSkills": "कोई कौशल सूचीबद्ध नहीं।",
+      "resume": "रिज़्यूमे / CV",
+      "uploadedOn": "{{date}} को अपलोड किया गया",
+      "open": "खोलें",
+      "download": "डाउनलोड",
+      "noCvTitle": "CV अपलोड नहीं किया गया",
+      "noCvBody": "उम्मीदवार ने अभी तक रिज़्यूमे नहीं दिया है।",
+      "requestCv": "CV माँगें",
+      "cvRequested": "उम्मीदवार से CV माँगा गया।"
+    },
+    "fields": {
+      "dob": "जन्म तिथि",
+      "gender": "लिंग",
+      "phone": "फ़ोन नंबर",
+      "email": "ईमेल पता",
+      "location": "वर्तमान स्थान",
+      "linkedin": "लिंक्डइन",
+      "professionalTitle": "व्यावसायिक पदनाम",
+      "currentDesignation": "वर्तमान पदनाम",
+      "totalExperience": "कुल अनुभव",
+      "relevantExperience": "प्रासंगिक अनुभव",
+      "currentCompany": "वर्तमान कंपनी",
+      "previousCompanies": "पिछली कंपनियाँ",
+      "noticePeriod": "नोटिस अवधि",
+      "expectedSalary": "अपेक्षित वेतन / CTC"
+    },
+    "rail": {
+      "title": "Q1 प्रारंभिक स्क्रीनिंग",
+      "subtitle": "सत्यापन से पहले जानकारी और CV की समीक्षा करें।",
+      "completeness": "प्रोफ़ाइल पूर्णता",
+      "selectAll": "सभी चुनें",
+      "completeTitle": "प्रोफ़ाइल पूर्ण",
+      "completeBody": "सभी आवश्यक जानकारी और CV उपलब्ध हैं।",
+      "incompleteTitle": "प्रोफ़ाइल अपूर्ण",
+      "incompleteBody": "कुछ आवश्यक जानकारी या CV विवरण अनुपलब्ध हैं।",
+      "markVerified": "सत्यापित के रूप में चिह्नित करें",
+      "verified": "उम्मीदवार सत्यापित के रूप में चिह्नित।",
+      "requestUpdate": "प्रोफ़ाइल अपडेट माँगें",
+      "updateRequested": "प्रोफ़ाइल अपडेट माँगा गया।"
+    },
+    "checklist": {
+      "nameVerified": "उम्मीदवार का नाम सत्यापित",
+      "cvAvailable": "CV उपलब्ध",
+      "designationVerified": "वर्तमान पदनाम सत्यापित",
+      "experienceChecked": "कुल अनुभव जाँचा गया",
+      "educationChecked": "शिक्षा जाँची गई",
+      "skillsReviewed": "कौशल की समीक्षा की गई",
+      "locationVerified": "स्थान सत्यापित"
+    },
+    "contact": {
+      "title": "उम्मीदवार से संपर्क करें",
+      "reasonLabel": "संपर्क का कारण:",
+      "defaultReason": "सत्यापन से पहले आपकी Aajiveka प्रोफ़ाइल में अतिरिक्त जानकारी आवश्यक है।",
+      "whatsMissing": "क्या अनुपलब्ध है",
+      "nothingMissing": "इस प्रोफ़ाइल में कुछ भी अनुपलब्ध नहीं है।",
+      "channel": "संपर्क माध्यम",
+      "internalNote": "आंतरिक टिप्पणी",
+      "notePlaceholder": "उम्मीदवार से बात हुई। वे शुक्रवार तक अद्यतन CV अपलोड करेंगे…",
+      "updateStatus": "स्थिति अपडेट करें",
+      "logged": "संपर्क दर्ज किया गया।"
+    },
+    "status": {
+      "title": "उम्मीदवार की स्थिति अपडेट करें",
+      "subtitle": "स्क्रीनिंग परिणाम चुनें",
+      "save": "सहेजें और स्थिति अपडेट करें",
+      "followUpDate": "फ़ॉलो-अप तिथि",
+      "preferredTime": "पसंदीदा समय",
+      "contactAttempts": "संपर्क प्रयास",
+      "nextAttempt": "अगला प्रयास",
+      "reason": "कारण",
+      "option": {
+        "FollowUp": {
+          "title": "अगले सप्ताह फ़ॉलो-अप",
+          "help": "अनुस्मारक निर्धारित करें। उम्मीदवार दैनिक कतार से हटकर फ़ॉलो-अप में दिखेगा।"
+        },
+        "NoResponse": {
+          "title": "कोई जवाब नहीं",
+          "help": "संपर्क प्रयास दर्ज करें। उम्मीदवार दैनिक कतार से छिप जाएगा।"
+        },
+        "NotInterested": {
+          "title": "रुचि नहीं",
+          "help": "कारण सहित उम्मीदवार को बंद करें। सक्रिय कतार से हटा दिया जाएगा।"
+        }
+      },
+      "errors": {
+        "followUpDate": "फ़ॉलो-अप तिथि चुनें।",
+        "followUpPast": "फ़ॉलो-अप तिथि बीते समय की नहीं हो सकती।",
+        "attempts": "0 से 99 के बीच प्रयासों की संख्या दर्ज करें।",
+        "nextAttemptPast": "अगला प्रयास बीते समय का नहीं हो सकता।",
+        "reason": "इस उम्मीदवार को बंद करने का कारण चुनें।"
+      },
+      "saved": {
+        "FollowUp": "फ़ॉलो-अप निर्धारित।",
+        "NoResponse": "कोई जवाब नहीं के रूप में चिह्नित।",
+        "NotInterested": "उम्मीदवार बंद किया गया।"
+      }
+    }
+  },
+  "q2": {
+    "matcher": "Q2 मैचर",
+    "quickSearch": "त्वरित खोज…",
+    "openMenu": "मेनू खोलें",
+    "title": "जॉब मैचिंग",
+    "subtitle": "प्रत्येक जॉब के विरुद्ध आवेदन किए उम्मीदवारों का स्कोर",
+    "sla": {
+      "title": "मैचिंग SLA",
+      "body": "आज {{total}} में से {{matched}} आवेदक मैच हुए। {{awaiting}} समीक्षा के लिए शेष।"
+    },
+    "cards": {
+      "activeJobs": {
+        "title": "सक्रिय जॉब",
+        "help": "नियोक्ताओं द्वारा पोस्ट"
+      },
+      "totalApplicants": {
+        "title": "कुल आवेदक",
+        "help": "सभी जॉब में"
+      },
+      "relevantMatches": {
+        "title": "प्रासंगिक मैच",
+        "help": "मैच ≥ 60%"
+      },
+      "forwardedToQ3": {
+        "title": "Q3 को भेजे गए",
+        "help": "पूर्ण प्रोफ़ाइल"
+      },
+      "sentBackToQ1": {
+        "title": "Q1 को वापस भेजे गए",
+        "help": "अपूर्ण प्रोफ़ाइल"
+      }
+    },
+    "jobs": {
+      "title": "नियोक्ता जॉब",
+      "subtitle": "{{count}} जॉब · आवेदक जॉब-अनुसार दिखाए गए",
+      "searchLabel": "जॉब खोजें",
+      "searchPlaceholder": "जॉब या कंपनी खोजें…",
+      "clearSearch": "खोज साफ़ करें",
+      "applied": "आवेदन",
+      "relevantCount": "{{count}} प्रासंगिक",
+      "openJob": "{{title}} खोलें",
+      "cols": {
+        "job": "जॉब",
+        "experience": "अनुभव",
+        "workMode": "कार्य मोड",
+        "applicants": "आवेदक",
+        "relevant": "प्रासंगिक",
+        "topMatch": "सर्वोच्च मैच"
+      },
+      "empty": {
+        "title": "कोई सक्रिय जॉब नहीं",
+        "body": "पोस्ट और सक्रिय होने पर नियोक्ता जॉब यहाँ दिखेंगे।"
+      },
+      "emptySearch": {
+        "title": "कोई जॉब नहीं मिली",
+        "body": "उस खोज से कोई जॉब या कंपनी मेल नहीं खाती।"
+      }
+    },
+    "applicants": {
+      "title": "सभी आवेदक",
+      "subtitle": "सभी जॉब में {{count}} आवेदन",
+      "searchLabel": "आवेदक खोजें",
+      "searchPlaceholder": "उम्मीदवार या जॉब खोजें…",
+      "clearFilters": "फ़िल्टर साफ़ करें",
+      "openApplicant": "{{name}} खोलें",
+      "pageOf": "पृष्ठ {{page}} / {{pages}} · {{total}} आवेदन",
+      "tabs": {
+        "all": "सभी",
+        "relevant": "प्रासंगिक",
+        "notRelevant": "अप्रासंगिक"
+      },
+      "cols": {
+        "candidate": "उम्मीदवार",
+        "appliedFor": "आवेदन किया",
+        "match": "मैच",
+        "profile": "प्रोफ़ाइल",
+        "status": "स्थिति"
+      },
+      "emptyFiltered": {
+        "title": "कोई आवेदक नहीं मिला",
+        "body": "वर्तमान खोज या टैब से कोई आवेदन मेल नहीं खाता।"
+      },
+      "empty": {
+        "queue": {
+          "title": "अभी कोई आवेदन नहीं",
+          "body": "उम्मीदवार सक्रिय जॉब पर आवेदन करते ही यहाँ दिखेंगे।"
+        },
+        "forwarded": {
+          "title": "अभी कुछ नहीं भेजा गया",
+          "body": "Q3 को भेजे गए आवेदन यहाँ सूचीबद्ध होते हैं।"
+        },
+        "sentBack": {
+          "title": "कुछ वापस नहीं भेजा गया",
+          "body": "Q1 को वापस भेजे गए आवेदन यहाँ सूचीबद्ध होते हैं।"
+        },
+        "rejected": {
+          "title": "कुछ अस्वीकृत नहीं",
+          "body": "अस्वीकृत आवेदन यहाँ सूचीबद्ध होते हैं।"
+        }
+      }
+    },
+    "forwarded": {
+      "title": "Q3 को भेजे गए",
+      "subtitle": "Q3 को सौंपे गए {{count}} आवेदन"
+    },
+    "sentBack": {
+      "title": "Q1 को वापस भेजे गए",
+      "subtitle": "Q1 को लौटाए गए {{count}} आवेदन"
+    },
+    "jobApplicants": {
+      "title": "जॉब आवेदक",
+      "subtitle": "JD मैच के अनुसार क्रमित",
+      "backToJobs": "जॉब पर वापस",
+      "backToAllJobs": "सभी जॉब पर वापस",
+      "totalApplicants": "कुल आवेदक",
+      "rankingTitle": "आवेदक — मैच रैंकिंग",
+      "rankingSubtitle": "इस जॉब विवरण के विरुद्ध रिज़्यूमे स्कोर",
+      "relevantOnly": "केवल प्रासंगिक",
+      "showAll": "सभी आवेदक दिखाएँ",
+      "empty": {
+        "title": "अभी कोई आवेदक नहीं",
+        "body": "अब तक इस जॉब पर किसी ने आवेदन नहीं किया।"
+      },
+      "emptyRelevant": {
+        "title": "कोई प्रासंगिक आवेदक नहीं",
+        "body": "इस जॉब के किसी आवेदक का स्कोर 60% या अधिक नहीं है।"
+      }
+    },
+    "jobInfo": {
+      "title": "जॉब जानकारी",
+      "company": "कंपनी",
+      "experienceRequired": "आवश्यक अनुभव",
+      "location": "स्थान",
+      "salaryRange": "वेतन सीमा",
+      "mandatoryQualification": "अनिवार्य योग्यता",
+      "jobType": "जॉब प्रकार",
+      "workMode": "कार्य मोड",
+      "postedOn": "पोस्ट किया गया",
+      "requiredSkills": "आवश्यक कौशल"
+    },
+    "autoFlag": {
+      "title": "इनटेक पर स्वतः फ़्लैग",
+      "body": "इनमें से कोई भी पाए जाने पर आवेदन अस्वीकृत या रोके जाते हैं:",
+      "cvMissing": "CV अनुपलब्ध",
+      "requiredInfoMissing": "आवश्यक जानकारी अनुपलब्ध",
+      "invalidProfile": "अमान्य / अपूर्ण प्रोफ़ाइल"
+    },
+    "detail": {
+      "backToApplicants": "आवेदकों पर वापस",
+      "appliedFor": "{{title}} के लिए आवेदन",
+      "overallMatch": "कुल JD मैच",
+      "alreadyDecided": "पहले से {{status}}",
+      "candidate": "उम्मीदवार",
+      "candidateHelp": "प्रोफ़ाइल, रिज़्यूमे और स्कोरिंग",
+      "profilePercent": "प्रोफ़ाइल {{value}}%",
+      "jobDescription": "जॉब विवरण",
+      "email": "ईमेल",
+      "phone": "फ़ोन",
+      "location": "स्थान",
+      "experience": "अनुभव",
+      "education": "शिक्षा",
+      "noticePeriod": "नोटिस अवधि",
+      "qualification": "योग्यता",
+      "candidateSkills": "उम्मीदवार कौशल",
+      "noSkills": "इस प्रोफ़ाइल पर कोई कौशल सूचीबद्ध नहीं है।",
+      "noRequiredSkills": "इस जॉब में कोई आवश्यक कौशल सूचीबद्ध नहीं है।",
+      "resume": "रिज़्यूमे",
+      "resumeHelp": "पूर्वावलोकन के लिए क्लिक करें",
+      "preview": "पूर्वावलोकन",
+      "noResume": "कोई CV अपलोड नहीं"
+    },
+    "scoring": {
+      "title": "उम्मीदवार स्कोरिंग",
+      "help": "मैच में शामिल करने के लिए मानदंड चुनें",
+      "total": "कुल मैच स्कोर",
+      "criteriaCount": "{{selected}}/{{total}} मानदंड",
+      "toggleError": "स्कोरिंग मानदंड अद्यतन नहीं हो सका। कृपया पुन: प्रयास करें।"
+    },
+    "coverage": {
+      "title": "रिज़्यूमे × JD कवरेज",
+      "noneMatched": "कोई नहीं — कोई आवश्यक कौशल मेल नहीं खाया",
+      "fullCoverage": "कोई नहीं — पूर्ण कवरेज",
+      "whyTheyMatch": "वे क्यों मेल खाते हैं",
+      "noReasons": "कोई मानदंड उल्लेख योग्य स्कोर तक नहीं पहुँचा।"
+    },
+    "decision": {
+      "forward": {
+        "label": "Q3 को भेजें",
+        "busy": "भेजा जा रहा है…",
+        "success": "Q3 को भेज दिया गया।",
+        "error": "इस आवेदक को भेजा नहीं जा सका। कृपया पुन: प्रयास करें।"
+      },
+      "sendBack": {
+        "label": "Q1 को वापस भेजें",
+        "busy": "भेजा जा रहा है…",
+        "success": "Q1 को वापस भेज दिया गया।",
+        "error": "इस आवेदक को वापस नहीं भेजा जा सका। कृपया पुन: प्रयास करें।"
+      },
+      "reject": {
+        "label": "अस्वीकार करें",
+        "busy": "अस्वीकार किया जा रहा है…",
+        "success": "आवेदन अस्वीकृत।",
+        "error": "इस आवेदक को अस्वीकार नहीं किया जा सका। कृपया पुन: प्रयास करें।"
+      }
+    },
+    "analytics": {
+      "title": "मैच विश्लेषण",
+      "subtitle": "मैचिंग प्रदर्शन अवलोकन",
+      "kpis": {
+        "activeJobs": "सक्रिय जॉब",
+        "totalApplications": "कुल आवेदन",
+        "relevantMatches": "प्रासंगिक मैच",
+        "averageMatch": "औसत मैच"
+      },
+      "distribution": {
+        "title": "मैच स्कोर वितरण",
+        "help": "प्रासंगिकता सीमा {{threshold}}% है"
+      },
+      "decisions": {
+        "title": "निर्णय",
+        "awaiting": "समीक्षा शेष",
+        "forwardedToQ3": "Q3 को भेजे गए",
+        "sentBackToQ1": "Q1 को वापस भेजे गए",
+        "rejected": "अस्वीकृत"
+      },
+      "criteria": {
+        "title": "मानदंड अनुसार औसत स्कोर",
+        "help": "{{count}} स्कोर किए आवेदनों में"
+      }
+    }
   }
 }

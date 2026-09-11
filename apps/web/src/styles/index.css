@@ -76,6 +76,43 @@
   --shadow-aj-card: 0 1px 3px rgb(0 0 0 / 0.08);
   --shadow-aj-raised: 0 1px 2px -1px rgb(0 0 0 / 0.1), 0 1px 3px rgb(0 0 0 / 0.1);
   --shadow-aj-pop: 0 4px 6px rgb(0 0 0 / 0.1), 0 10px 15px rgb(0 0 0 / 0.1);
+
+  /* ---------------------------------------------------------------- */
+  /* Q1 screening workspace ("Q1 Flow" page of the Aajiveka UI Figma)  */
+  /*                                                                   */
+  /* A third namespace, for the same reason `aj-*` is a second one:    */
+  /* the Q1 designs are #1D60E5, which is neither the public site's    */
+  /* teal (#005985) nor the candidate portal's #1A56DB. Retuning       */
+  /* `aj-*` would have silently restyled the already-shipped portal,   */
+  /* so Q1 gets its own tokens and nothing existing shifts colour.     */
+  /* Hexes are read straight off the Figma nodes.                      */
+  /* ---------------------------------------------------------------- */
+  --color-q1-blue: #1d60e5;
+  --color-q1-blue-hover: #1a55cc;
+  --color-q1-blue-soft: #eef3ff;
+  --color-q1-blue-tint: #e0ebff;
+
+  --color-q1-green: #12a150;
+  --color-q1-green-soft: #e7f6ec;
+  --color-q1-amber: #d98207;
+  --color-q1-amber-soft: #fdf3e3;
+  --color-q1-red: #dc3b48;
+  --color-q1-red-soft: #fdecee;
+  --color-q1-violet: #7c3aed;
+  --color-q1-violet-soft: #f0e7fd;
+
+  --color-q1-canvas: #f5f7fb;
+  --color-q1-surface: #ffffff;
+  --color-q1-line: #e6eaf2;
+  --color-q1-chip: #eef1f6;
+
+  --color-q1-ink: #172033;
+  --color-q1-ink-soft: #475069;
+  --color-q1-muted: #737d96;
+  --color-q1-slate: #64748b;
+
+  --shadow-q1-card: 0 1px 2px rgb(23 32 51 / 0.04);
+  --shadow-q1-pop: 0 10px 30px rgb(23 32 51 / 0.12);
 }
 
 @keyframes slide-up {

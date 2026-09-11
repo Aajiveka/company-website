@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -67,6 +67,18 @@ const InterviewsPage = lazy(() => import('@/features/recruitment/pages/Interview
 const DocumentReviewPage = lazy(() => import('@/features/recruitment/pages/DocumentReviewPage'));
 const Q3DashboardPage = lazy(() => import('@/features/recruitment/pages/Q3DashboardPage'));
 const ReferralsPage = lazy(() => import('@/features/recruitment/pages/ReferralsPage'));
+
+// Q1 screening workspace ("Q1 Flow" Figma). Its own shell, so it is not nested in
+// DashboardLayout the way /recruitment/* is.
+const Q1DashboardPage = lazy(() => import('@/features/q1/pages/Q1DashboardPage'));
+const Q1CandidatesPage = lazy(() => import('@/features/q1/pages/Q1CandidatesPage'));
+const Q1CandidateProfilePage = lazy(() => import('@/features/q1/pages/Q1CandidateProfilePage'));
+const Q1FollowUpsPage = lazy(() => import('@/features/q1/pages/Q1FollowUpsPage'));
+const Q1NoResponsePage = lazy(() => import('@/features/q1/pages/Q1NoResponsePage'));
+const Q1VerifiedPage = lazy(() => import('@/features/q1/pages/Q1VerifiedPage'));
+const Q1NotInterestedPage = lazy(() => import('@/features/q1/pages/Q1NotInterestedPage'));
+const Q1AnalyticsPage = lazy(() => import('@/features/q1/pages/Q1AnalyticsPage'));
+
 
 // Public marketing pages
 const AboutPage = lazy(() => import('@/features/public/pages/AboutPage'));
@@ -211,6 +223,28 @@ export const router = createBrowserRouter([
                   { path: '/candidate/resume-builder', element: withSuspense(<PortalResumeBuilderPage />) },
                 ],
               },
+            ],
+          },
+          // Q1 screening workspace. Every screen in the "Q1 Flow" designs is Q1's alone and
+          // `/api/q1/*` is @Roles(QC1, Admin), so the client guard matches the server exactly
+          // rather than admitting a role the API then 403s — the bug fixed in 2eb4db7.
+          //
+          // Outside DashboardLayout on purpose: these pages draw their own sidebar, topbar and
+          // SLA card, and DashboardLayout would stack its breadcrumb row on top of them.
+          // /recruitment/* is untouched and still serves QC2, Q3 and Admin.
+          {
+            element: <ProtectedRoute allow={[Role.QC1, Role.Admin]} />,
+            errorElement: <DashboardErrorFallback />,
+            children: [
+              { path: '/q1', element: <Navigate to="/q1/dashboard" replace /> },
+              { path: '/q1/dashboard', element: withSuspense(<Q1DashboardPage />) },
+              { path: '/q1/candidates', element: withSuspense(<Q1CandidatesPage />) },
+              { path: '/q1/candidates/:id', element: withSuspense(<Q1CandidateProfilePage />) },
+              { path: '/q1/follow-ups', element: withSuspense(<Q1FollowUpsPage />) },
+              { path: '/q1/no-response', element: withSuspense(<Q1NoResponsePage />) },
+              { path: '/q1/verified', element: withSuspense(<Q1VerifiedPage />) },
+              { path: '/q1/not-interested', element: withSuspense(<Q1NotInterestedPage />) },
+              { path: '/q1/analytics', element: withSuspense(<Q1AnalyticsPage />) },
             ],
           },
           {
