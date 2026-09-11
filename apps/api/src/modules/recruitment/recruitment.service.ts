@@ -330,6 +330,12 @@ export class RecruitmentService {
 
   /** Documents awaiting QC review (spQC2GetMappedDocuments). */
   async documentReviews() {
+    // The `documentType` relation points at tblMstrDocumentType, while the IDs actually
+    // stored here come from tblMstrDocuments — that is what `documentTypes()` serves to the
+    // assign checklist and what storage.service resolves folders from. The two masters are
+    // seeded identically (same ids, same names, db/seed/tblMstrDocument*.psv), so the join
+    // lands on the right label today. It is a coupling, not a coincidence to rely on: adding
+    // a row to one master without the other will silently blank this column.
     const rows = await this.db.candidateDocumentUploaded.findMany({
       orderBy: { docUploadID: 'desc' },
       include: {

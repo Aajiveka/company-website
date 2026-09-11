@@ -99,7 +99,7 @@ export default function InterviewsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: tCommon('recruitment'), to: '/recruitment/candidates' }, { label: tCommon('recruitment.interviews') }]} />
+      <Breadcrumbs items={[{ label: tCommon('recruitment.title'), to: '/recruitment/candidates' }, { label: tCommon('recruitment.interviews') }]} />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-heading text-2xl font-bold text-navy">{tCommon('recruitment.interviews')}</h1>
         <Button size="sm" onClick={() => setOpen(true)}>

@@ -84,6 +84,35 @@ test.describe('QC Document Review', () => {
     expect(posted?.body).toMatchObject({ documentId: 1, status: 'Rejected' });
   });
 
+  test('a failed review says so instead of silently doing nothing', async ({ page }) => {
+    await page.route('**/api/recruitment/documents/review', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
+    );
+    await page.route('**/api/recruitment/documents', (route) =>
+      route.fulfill(json([{ ...DOCUMENT_ROW, documentId: 1, status: 'Pending' }])),
+    );
+
+    await page.goto('/recruitment/documents');
+    await expect(page.getByText('Aadhaar Card')).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole('button', { name: 'Verify' }).click();
+
+    // It used to have no onError at all: the row stayed Pending and nothing was said.
+    await expect(page.getByText('Something went wrong')).toBeVisible();
+  });
+
+  test('a failed list offers a retry rather than reading as an empty queue', async ({ page }) => {
+    await page.route('**/api/recruitment/documents', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
+    );
+
+    await page.goto('/recruitment/documents');
+
+    await expect(page.getByText('Could not load this list')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+    await expect(page.getByText('No documents to review.')).toHaveCount(0);
+  });
+
   test('action buttons hidden for already-reviewed documents', async ({ page }) => {
     await page.route('**/api/recruitment/documents*', (route) =>
       route.fulfill(json([{ ...DOCUMENT_ROW, documentId: 2, status: 'Verified' }])),

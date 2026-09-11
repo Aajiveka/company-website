@@ -10,6 +10,7 @@ import {
   Table,
   type Column,
 } from '@/components/ui';
+import EmptyState from '@/components/EmptyState';
 import { useCandidates } from '../recruitment.api';
 import type { CandidateRow } from '../recruitment.types';
 
@@ -32,7 +33,7 @@ export default function CandidatesListPage() {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useCandidates({ search, status, page, pageSize: PAGE_SIZE });
+  const { data, isLoading, isError, refetch } = useCandidates({ search, status, page, pageSize: PAGE_SIZE });
 
   const STATUS_OPTIONS = [
     { label: t('recruitment.applied'), value: 'Applied' },
@@ -80,7 +81,7 @@ export default function CandidatesListPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: t('recruitment'), to: '/recruitment/candidates' }, { label: t('recruitment.candidates') }]} />
+      <Breadcrumbs items={[{ label: t('recruitment.title'), to: '/recruitment/candidates' }, { label: t('recruitment.candidates') }]} />
       <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{t('recruitment.candidates')}</h1>
 
       {/* Filters */}
@@ -110,13 +111,22 @@ export default function CandidatesListPage() {
         </div>
       </div>
 
-      <Table
-        columns={columns}
-        data={data?.rows ?? []}
-        rowKey={(r) => r.subscriberId}
-        isLoading={isLoading}
-        emptyMessage={t('recruitment.noCandidatesMatch')}
-      />
+      {isError ? (
+        <EmptyState
+          variant="error"
+          title={t('errors.couldNotLoad')}
+          description={t('errors.tryAgain')}
+          action={{ label: t('actions.retry'), onClick: () => void refetch() }}
+        />
+      ) : (
+        <Table
+          columns={columns}
+          data={data?.rows ?? []}
+          rowKey={(r) => r.subscriberId}
+          isLoading={isLoading}
+          emptyMessage={t('recruitment.noCandidatesMatch')}
+        />
+      )}
 
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-gray-500">{t('recruitment.candidatesCount', { count: data?.total ?? 0 })}</p>

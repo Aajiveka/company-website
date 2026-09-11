@@ -85,6 +85,7 @@
     "q3Dashboard": "Q3 डैशबोर्ड"
   },
   "actions": {
+    "retry": "फिर से प्रयास करें",
     "search": "खोजें",
     "submit": "जमा करें",
     "cancel": "रद्द करें",
@@ -118,6 +119,7 @@
   },
   "dashboard": "डैशबोर्ड",
   "recruitment": {
+    "title": "भर्ती",
     "candidates": "उम्मीदवार",
     "interviews": "साक्षात्कार",
     "scheduleInterview": "साक्षात्कार शेड्यूल करें",
@@ -309,6 +311,8 @@
     "pendingSync": "{{count}} बदलाव सिंक होने बाकी हैं।"
   },
   "errors": {
+    "couldNotLoad": "यह सूची लोड नहीं हो सकी",
+    "generic": "कुछ गलत हो गया। कृपया फिर से प्रयास करें।",
     "somethingWrong": "कुछ गलत हो गया",
     "tryAgain": "पुनः प्रयास करें",
     "goBack": "वापस जाएं"

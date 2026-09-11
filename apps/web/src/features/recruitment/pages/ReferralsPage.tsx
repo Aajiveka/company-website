@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Badge, type BadgeTone, Breadcrumbs, Table, type Column } from '@/components/ui';
+import EmptyState from '@/components/EmptyState';
 import { useReferrals } from '../recruitment.api';
 import type { ReferralRow } from '../recruitment.types';
 
@@ -16,7 +17,7 @@ const referralTone = (s: string): BadgeTone => {
 /** Q2 referral tracking — shows CVs referred to Q3 and their status. */
 export default function ReferralsPage() {
   const { t } = useTranslation('common');
-  const { data: referrals = [], isLoading } = useReferrals();
+  const { data: referrals = [], isLoading, isError, refetch } = useReferrals();
 
   const columns = useMemo<Column<ReferralRow>[]>(
     () => [
@@ -49,16 +50,25 @@ export default function ReferralsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: t('recruitment'), to: '/recruitment/candidates' }, { label: t('sidebar.referrals') }]} />
+      <Breadcrumbs items={[{ label: t('recruitment.title'), to: '/recruitment/candidates' }, { label: t('sidebar.referrals') }]} />
       <h1 className="mb-4 font-heading text-2xl font-bold text-navy">{t('sidebar.referrals')}</h1>
 
-      <Table
-        columns={columns}
-        data={referrals}
-        rowKey={(r) => r.referralId}
-        isLoading={isLoading}
-        emptyMessage={t('recruitment.q3.noReferrals')}
-      />
+      {isError ? (
+        <EmptyState
+          variant="error"
+          title={t('errors.couldNotLoad')}
+          description={t('errors.tryAgain')}
+          action={{ label: t('actions.retry'), onClick: () => void refetch() }}
+        />
+      ) : (
+        <Table
+          columns={columns}
+          data={referrals}
+          rowKey={(r) => r.referralId}
+          isLoading={isLoading}
+          emptyMessage={t('recruitment.q3.noReferrals')}
+        />
+      )}
     </div>
   );
 }

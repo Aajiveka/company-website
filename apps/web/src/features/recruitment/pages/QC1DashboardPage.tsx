@@ -25,7 +25,7 @@ export default function QC1DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: t('recruitment') }, { label: t('sidebar.qcDashboard') }]} />
+      <Breadcrumbs items={[{ label: t('recruitment.title') }, { label: t('sidebar.qcDashboard') }]} />
       <h1 className="mb-6 font-heading text-2xl font-bold text-navy">{t('recruitment.qcDashboard')}</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

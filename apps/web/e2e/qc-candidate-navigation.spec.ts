@@ -47,6 +47,22 @@ test.describe('Reaching a candidate from the list', () => {
   });
 });
 
+test.describe('Breadcrumbs', () => {
+  test('the Recruitment crumb is a label, not i18next\'s error text', async ({ page }) => {
+    await mockQC1Session(page);
+    await setupMocks(page);
+
+    await page.goto('/recruitment/candidates');
+
+    // `t('recruitment')` resolved to an OBJECT, so this crumb rendered i18next's own
+    // "returned an object instead of string" message to users on every QC screen.
+    await expect(page.getByText(/returned an object instead of string/)).toHaveCount(0);
+    await expect(
+      page.getByRole('link', { name: 'Recruitment', exact: true }).first(),
+    ).toBeVisible({ timeout: 10_000 });
+  });
+});
+
 test.describe('Refer to Q3', () => {
   test('QC2 can refer, and the application id is what is sent', async ({ page }) => {
     const log: RequestLog[] = [];
@@ -104,6 +120,81 @@ test.describe('Refer to Q3', () => {
     await page.getByRole('button', { name: 'Refer to Q3' }).click();
 
     await expect(page.getByText('This application was already referred.')).toBeVisible();
+  });
+});
+
+/**
+ * The mirror of the QC1 tests above.
+ *
+ * The first pass at this bug class gated the QC2-only actions away from QC1 and stopped
+ * there — the QC1-only actions were still rendered for QC2, who got a 403 surfaced as the
+ * guard's internal "Insufficient role", and for five of the six decisions only after
+ * typing a reason. Both directions are pinned here so neither half can regress alone.
+ */
+test.describe('Decisions and scoring are QC1-only', () => {
+  const DECISIONS = ['Approve CV', 'Reject', 'On Hold', 'Need More Info', 'Duplicate', 'Withdrawn'];
+
+  test('QC1 is offered every decision', async ({ page }) => {
+    await mockQC1Session(page);
+    await setupMocks(page);
+
+    await page.goto('/recruitment/candidates/100');
+    await expect(page.getByRole('heading', { name: 'Ravi Kumar' })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    for (const label of DECISIONS) {
+      await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
+    }
+  });
+
+  test('QC2 is offered none of them', async ({ page }) => {
+    await mockQC2Session(page);
+    await setupMocks(page);
+
+    await page.goto('/recruitment/candidates/100');
+    await expect(page.getByRole('heading', { name: 'Ravi Kumar' })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    for (const label of DECISIONS) {
+      await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0);
+    }
+    // …but the two actions that ARE theirs still are.
+    await expect(page.getByRole('button', { name: 'Refer to Q3' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Assign Documents' })).toBeVisible();
+  });
+
+  test('QC2 gets no Score button, but still sees a score it is allowed to read', async ({
+    page,
+  }) => {
+    await mockQC2Session(page);
+    await setupMocks(page);
+    await page.route('**/api/recruitment/candidates/100', (route) =>
+      route.fulfill(
+        json({
+          ...CANDIDATE_DETAIL,
+          score: {
+            totalScore: 78,
+            skillScore: 80,
+            experienceScore: 70,
+            jobRoleScore: 90,
+            educationScore: 60,
+            locationScore: 100,
+            salaryScore: 50,
+            noticePeriodScore: 100,
+          },
+        }),
+      ),
+    );
+
+    await page.goto('/recruitment/candidates/100');
+    await expect(page.getByRole('heading', { name: 'Ravi Kumar' })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    await expect(page.getByRole('button', { name: /Score/ })).toHaveCount(0);
+    await expect(page.getByText('Score: 78%')).toBeVisible();
   });
 });
 

@@ -18,6 +18,7 @@ import {
   useReferToQ3,
   useScoreApplication,
 } from '../recruitment.api';
+import EmptyState from '@/components/EmptyState';
 import { useAuth } from '@/features/auth/auth.store';
 import { Role } from '@/types/roles';
 
@@ -25,7 +26,7 @@ import { Role } from '@/types/roles';
 export default function CandidateDetailsPage() {
   const { t } = useTranslation('common');
   const { id = '' } = useParams();
-  const { data, isLoading } = useCandidateDetail(id);
+  const { data, isLoading, isError, refetch } = useCandidateDetail(id);
   const decide = useDecideCandidate(id);
   const assignJob = useAssignJob(id);
   const { data: jobOptions } = useActiveJobs();
@@ -42,6 +43,11 @@ export default function CandidateDetailsPage() {
   // `POST /recruitment/referrals` is @Roles(QC2, Admin), and the column behind it is
   // `referredByQ2At` — referral is Q2's step, between Q1's approval and Q3's forwarding.
   const canRefer = user?.roleId === Role.QC2 || user?.roleId === Role.Admin;
+  // The mirror of the two above, and the half that was missed: the registration decision
+  // (`POST /candidates/:id/decision`) and scoring (`POST /applications/:id/score`) are both
+  // @Roles(QC1, Admin). A QC2 pressing one got a 403 rendered as the guard's internal
+  // "Insufficient role" — and for five of the six decisions, only after typing a reason.
+  const canDecide = user?.roleId === Role.QC1 || user?.roleId === Role.Admin;
 
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState('');
@@ -145,7 +151,16 @@ export default function CandidateDetailsPage() {
     <div className="mx-auto max-w-5xl">
       <Breadcrumbs items={[{ label: t('recruitment.candidates'), to: '/recruitment/candidates' }, { label: t('recruitment.candidateDetails') }]} />
 
-      {isLoading || !data ? (
+      {/* A failed or 404 fetch used to fall into the same branch as loading, so the page
+          skeletoned forever with nothing to say what had happened. */}
+      {isError ? (
+        <EmptyState
+          variant="error"
+          title={t('errors.couldNotLoad')}
+          description={t('errors.tryAgain')}
+          action={{ label: t('actions.retry'), onClick: () => void refetch() }}
+        />
+      ) : isLoading || !data ? (
         <ProfileSkeleton />
       ) : (
         <div className="space-y-6">
@@ -171,7 +186,7 @@ export default function CandidateDetailsPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {data.registrationStatus === 'Pending' && (
+              {canDecide && data.registrationStatus === 'Pending' && (
                 <>
                   <Button variant="outline" size="sm" disabled={decide.isPending} onClick={() => startDecision('Approved')}>
                     {t('recruitment.approveCV')}
@@ -249,7 +264,7 @@ export default function CandidateDetailsPage() {
                   {referToQ3.isPending ? t('actions.loading') : t('recruitment.referToQ3')}
                 </Button>
               )}
-              {scoreMapId && (
+              {scoreMapId && canDecide && (
                 <Button variant="outline" size="sm" disabled={scoreApplication.isPending} onClick={onScore}>
                   {scoreApplication.isPending
                     ? t('actions.loading')
@@ -257,6 +272,14 @@ export default function CandidateDetailsPage() {
                       ? t('recruitment.scoreWithValue', { score: Math.round(data.score.totalScore) })
                       : t('recruitment.scoreApplication')}
                 </Button>
+              )}
+              {/* Everyone else who can open this page is allowed to READ the score — it
+                  arrives on the detail payload — they just cannot recompute it. Showing the
+                  number without the button beats hiding a fact they are entitled to. */}
+              {!canDecide && data.score && (
+                <Badge tone="blue">
+                  {t('recruitment.scoreWithValue', { score: Math.round(data.score.totalScore) })}
+                </Badge>
               )}
             </div>
           </Card>

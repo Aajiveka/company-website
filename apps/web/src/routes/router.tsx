@@ -273,9 +273,17 @@ export const router = createBrowserRouter([
                 children: [
                   { path: '/recruitment/candidates', element: withSuspense(<CandidatesListPage />) },
                   { path: '/recruitment/candidates/:id', element: withSuspense(<CandidateDetailsPage />) },
-                  { path: '/recruitment/qc1', element: withSuspense(<QC1DashboardPage />) },
                   { path: '/recruitment/documents', element: withSuspense(<DocumentReviewPage />) },
                   { path: '/recruitment/interviews', element: withSuspense(<InterviewsPage />) },
+                ],
+              },
+              // The QC1 dashboard's own endpoint is @Roles(QC1, Admin), so letting QC2 through
+              // the client guard bought them a 403 and — since the page has no error branch —
+              // four skeleton cards pulsing forever. Same shape as the Referrals fix below.
+              {
+                element: <ProtectedRoute allow={[Role.QC1, Role.Admin]} />,
+                children: [
+                  { path: '/recruitment/qc1', element: withSuspense(<QC1DashboardPage />) },
                 ],
               },
               // Referrals are a Q2 step: `POST /recruitment/referrals` is @Roles(QC2, Admin)

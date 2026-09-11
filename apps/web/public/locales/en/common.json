@@ -85,6 +85,7 @@
     "q3Dashboard": "Q3 Dashboard"
   },
   "actions": {
+    "retry": "Retry",
     "search": "Search",
     "submit": "Submit",
     "cancel": "Cancel",
@@ -118,6 +119,7 @@
   },
   "dashboard": "Dashboard",
   "recruitment": {
+    "title": "Recruitment",
     "candidates": "Candidates",
     "interviews": "Interviews",
     "scheduleInterview": "Schedule Interview",
@@ -309,6 +311,8 @@
     "pendingSync": "{{count}} change(s) pending sync."
   },
   "errors": {
+    "couldNotLoad": "Could not load this list",
+    "generic": "Something went wrong. Please try again.",
     "somethingWrong": "Something went wrong",
     "tryAgain": "Try Again",
     "goBack": "Go Back"
