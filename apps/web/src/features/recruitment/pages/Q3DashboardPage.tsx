@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Badge, type BadgeTone, Breadcrumbs, Button, Card, CardHeader, CardTitle, Table, type Column, useToast } from '@/components/ui';
+import { Badge, type BadgeTone, Breadcrumbs, Button, Card, CardHeader, CardTitle, Modal, Table, type Column, useToast } from '@/components/ui';
 import { useReferrals, useForwardToCompany } from '../recruitment.api';
+import { InterviewRoundsPanel } from '../components/InterviewRoundsPanel';
 import type { ReferralRow } from '../recruitment.types';
 
 const referralTone = (s: string): BadgeTone => {
@@ -20,6 +21,8 @@ export default function Q3DashboardPage() {
   const { data: referrals = [], isLoading } = useReferrals();
   const forward = useForwardToCompany();
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  /** The referral whose interview rounds are open, or null. */
+  const [roundsFor, setRoundsFor] = useState<ReferralRow | null>(null);
 
   const pending = referrals.filter((r) => r.status === 'Referred');
   const sent = referrals.filter((r) => r.status === 'SentToCompany');
@@ -76,6 +79,17 @@ export default function Q3DashboardPage() {
         header: t('recruitment.q3.expiresAt'),
         render: (r) => (r.expiresAt ? new Date(r.expiresAt).toLocaleDateString('en-IN') : '—'),
       },
+      {
+        // Q3 owns the interview rounds for a referred candidate — create/result are
+        // @Roles(Q3, Client, Admin) — and until now nothing anywhere opened them.
+        key: 'rounds' as keyof ReferralRow,
+        header: t('labels.actions'),
+        render: (r) => (
+          <Button variant="outline" size="sm" onClick={() => setRoundsFor(r)}>
+            {t('recruitment.rounds.title')}
+          </Button>
+        ),
+      },
     ],
     [t, selected],
   );
@@ -117,6 +131,15 @@ export default function Q3DashboardPage() {
         isLoading={isLoading}
         emptyMessage={t('recruitment.q3.noReferrals')}
       />
+
+      <Modal
+        open={!!roundsFor}
+        onClose={() => setRoundsFor(null)}
+        title={roundsFor ? `${t('recruitment.rounds.title')} — ${roundsFor.candidate}` : ''}
+        className="max-w-2xl"
+      >
+        {roundsFor && <InterviewRoundsPanel mapId={roundsFor.jobSubscriberMapId} />}
+      </Modal>
     </div>
   );
 }

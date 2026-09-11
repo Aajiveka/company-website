@@ -18,7 +18,13 @@ import type {
   RegistrationStatus,
 } from './recruitment.types';
 
-export type CandidateDetail = CandidateProfile & { registrationStatus: RegistrationStatus };
+export type CandidateDetail = CandidateProfile & {
+  registrationStatus: RegistrationStatus;
+  /** Newest application for this candidate — what the Score action acts on. Null if unmapped. */
+  latestJobSubscriberMapId: number | null;
+  /** A previously computed score, so it survives a reload instead of living in React state. */
+  score: ScoreBreakdown | null;
+};
 
 /** Paginated candidate listing with search/status filters. */
 export function useCandidates(params: CandidatesQuery) {
@@ -43,6 +49,29 @@ export function useCandidateDetail(id: string | number) {
   return useQuery({
     queryKey: queryKeys.candidate.profile(id),
     queryFn: () => api.get<CandidateDetail>(`/recruitment/candidates/${id}`).then((r) => r.data),
+  });
+}
+
+/**
+ * Download a candidate's resume from the QC screen.
+ *
+ * Two reasons this cannot reuse the candidate-side `useDownloadResume`: that hits
+ * `/files/resume`, which resolves the subscriber from the bearer token and would hand a QC
+ * user their own CV; and a plain `<a download>` sends no token, so the link would 401.
+ */
+export function useDownloadCandidateResume(id: string | number) {
+  return useMutation({
+    mutationFn: async (fileName: string) => {
+      const res = await api.get(`/recruitment/candidates/${id}/resume`, { responseType: 'blob' });
+      const href = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = fileName || 'resume';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+    },
   });
 }
 
@@ -152,6 +181,30 @@ export function useDocumentReviews() {
   return useQuery({
     queryKey: ['recruitment', 'doc-reviews'],
     queryFn: () => api.get<CandidateDocReview[]>('/recruitment/documents').then((r) => r.data),
+  });
+}
+
+/**
+ * Download the file behind a review row.
+ *
+ * Bearer-authenticated like the resume download, so it goes through the API client and a
+ * blob URL rather than a plain `<a download>`, which would send no token and 401.
+ */
+export function useDownloadDocument() {
+  return useMutation({
+    mutationFn: async ({ documentId, fileName }: { documentId: number; fileName: string }) => {
+      const res = await api.get(`/recruitment/documents/${documentId}/file`, {
+        responseType: 'blob',
+      });
+      const href = URL.createObjectURL(res.data as Blob);
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = fileName || 'document';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+    },
   });
 }
 

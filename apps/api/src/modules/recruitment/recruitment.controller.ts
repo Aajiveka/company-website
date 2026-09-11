@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { CurrentUser, type RequestUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/shared/roles';
@@ -70,7 +71,10 @@ export class RecruitmentController {
     return this.recruitment.eligibleForInterview();
   }
 
+  // A lookup list, and Q3/Client need it to fill in the interview-round form. The
+  // class-level guard stops at QC2, which left the rounds UI unable to name a mode.
   @Get('interview-modes')
+  @Roles(Role.QC1, Role.QC2, Role.Q3, Role.Client, Role.Admin)
   @ApiOperation({ summary: 'Interview mode master list (tblMstrInterviewMode)' })
   interviewModes() {
     return this.recruitment.interviewModes();
@@ -98,6 +102,21 @@ export class RecruitmentController {
     return this.recruitment.documentReviews();
   }
 
+  /** The file behind a review row — see the service note on why the screen needed it. */
+  @Get('documents/:documentId/file')
+  @ApiOperation({ summary: 'Download an uploaded document for review' })
+  async documentFile(
+    @Param('documentId', ParseIntPipe) documentId: number,
+    @Res() res: Response,
+  ) {
+    const { body, fileName } = await this.recruitment.documentFile(documentId);
+    // Never inline: a stored SVG or HTML would otherwise execute on our origin.
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(body);
+  }
+
   @Post('documents/review')
   @ApiOperation({ summary: 'Approve or reject a document (spClientUpdateMapDocumentStatus)' })
   review(@CurrentUser() user: RequestUser, @Body() dto: ReviewDocumentDto) {
@@ -113,6 +132,25 @@ export class RecruitmentController {
     @Body() dto: ApproveRejectCandidateDto,
   ) {
     return this.recruitment.decideCandidate(user.userId, id, dto.decision, dto.reason);
+  }
+
+  /**
+   * The candidate's CV, for the reviewer looking at them.
+   *
+   * `/files/resume` cannot stand in for this: it resolves the subscriber from the bearer
+   * token, so a QC user following that link downloads their own CV, not the one on screen.
+   * The whole point of the QC1 queue is judging a CV, and until now the screen could not
+   * open one.
+   */
+  @Get('candidates/:id/resume')
+  @ApiOperation({ summary: "Download a candidate's resume for QC review" })
+  async candidateResume(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
+    const { body, fileName } = await this.recruitment.candidateResume(id);
+    // Never inline: the same reasoning as every other stored-file route here.
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(body);
   }
 
   @Post('candidates/:id/assign-job')

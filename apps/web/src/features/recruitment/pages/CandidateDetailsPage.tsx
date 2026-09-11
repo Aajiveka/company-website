@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Briefcase, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
+import { Briefcase, Download, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { useTranslation } from 'react-i18next';
 import { Badge, Breadcrumbs, Button, Card, ProfileSkeleton, Modal, Select, statusTone } from '@/components/ui';
@@ -14,8 +14,12 @@ import {
   useCandidateDetail,
   useDecideCandidate,
   useDocumentTypes,
+  useDownloadCandidateResume,
+  useReferToQ3,
   useScoreApplication,
 } from '../recruitment.api';
+import { useAuth } from '@/features/auth/auth.store';
+import { Role } from '@/types/roles';
 
 /** QC/Client — full candidate detail view (candidate-details.aspx). */
 export default function CandidateDetailsPage() {
@@ -27,7 +31,17 @@ export default function CandidateDetailsPage() {
   const { data: jobOptions } = useActiveJobs();
   const assignDocs = useAssignDocuments(id);
   const { data: documentTypes } = useDocumentTypes();
+  const downloadResume = useDownloadCandidateResume(id);
+  const referToQ3 = useReferToQ3();
+  const { user } = useAuth();
   const { notify } = useToast();
+
+  // `POST /candidates/:id/documents` is @Roles(QC2, Admin). QC1 saw the button, pressed it,
+  // and got a 403 with nothing on screen to explain why — so it is theirs to see or not.
+  const canAssignDocuments = user?.roleId === Role.QC2 || user?.roleId === Role.Admin;
+  // `POST /recruitment/referrals` is @Roles(QC2, Admin), and the column behind it is
+  // `referredByQ2At` — referral is Q2's step, between Q1's approval and Q3's forwarding.
+  const canRefer = user?.roleId === Role.QC2 || user?.roleId === Role.Admin;
 
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState('');
@@ -40,6 +54,15 @@ export default function CandidateDetailsPage() {
   const [scoreResult, setScoreResult] = useState<ScoreBreakdown | null>(null);
   const [scoreOpen, setScoreOpen] = useState(false);
   const scoreApplication = useScoreApplication();
+
+  /**
+   * The application to score. `lastAssignedMapId` only exists after assigning a job in this
+   * same page session; the server now reports the candidate's newest mapping too, so a
+   * candidate mapped last week can still be scored instead of the button simply vanishing.
+   */
+  const scoreMapId = lastAssignedMapId ?? data?.latestJobSubscriberMapId ?? null;
+  /** A freshly computed score wins; otherwise show the one already stored. */
+  const shownScore = scoreResult ?? data?.score ?? null;
 
   const DECISION_TONE: Record<CandidateDecision, 'success' | 'info' | 'error'> = {
     Approved: 'success',
@@ -89,8 +112,8 @@ export default function CandidateDetailsPage() {
   };
 
   const onScore = () => {
-    if (!lastAssignedMapId) return;
-    scoreApplication.mutate(lastAssignedMapId, {
+    if (!scoreMapId) return;
+    scoreApplication.mutate(scoreMapId, {
       onSuccess: (result) => {
         setScoreResult(result);
         setScoreOpen(true);
@@ -173,12 +196,66 @@ export default function CandidateDetailsPage() {
               <Button variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
                 {t('recruitment.assignJob')}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setDocsOpen(true)}>
-                {t('recruitment.assignDocuments')}
-              </Button>
-              {lastAssignedMapId && (
+              {canAssignDocuments && (
+                <Button variant="outline" size="sm" onClick={() => setDocsOpen(true)}>
+                  {t('recruitment.assignDocuments')}
+                </Button>
+              )}
+              {/* The CV is the thing being judged here, and the screen could not open one:
+                  `resumeUrl` on this payload points at /files/resume, which resolves the
+                  subscriber from the bearer token and would hand the reviewer their own. */}
+              {data.resumeFileName && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={downloadResume.isPending}
+                  onClick={() =>
+                    downloadResume.mutate(data.resumeFileName ?? 'resume', {
+                      onError: () => notify(t('errors.somethingWrong'), 'error'),
+                    })
+                  }
+                >
+                  <Download className="mr-1.5 h-3.5 w-3.5" />
+                  {downloadResume.isPending ? t('actions.loading') : t('recruitment.downloadCv')}
+                </Button>
+              )}
+              {/* The Q2→Q3→Company pipeline had no entry point: Q3 could forward a referral
+                  to a company, but nothing anywhere created one, so the queue could only
+                  ever be empty. This is the step that puts a CV into it. */}
+              {canRefer && scoreMapId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={referToQ3.isPending}
+                  onClick={() =>
+                    referToQ3.mutate([scoreMapId], {
+                      onSuccess: (r: { referred: number }) =>
+                        notify(
+                          r?.referred
+                            ? t('recruitment.referredToQ3')
+                            : t('recruitment.alreadyReferred'),
+                          r?.referred ? 'success' : 'info',
+                        ),
+                      onError: (e) =>
+                        notify(
+                          isAxiosError(e)
+                            ? e.response?.data?.message ?? t('errors.somethingWrong')
+                            : t('errors.somethingWrong'),
+                          'error',
+                        ),
+                    })
+                  }
+                >
+                  {referToQ3.isPending ? t('actions.loading') : t('recruitment.referToQ3')}
+                </Button>
+              )}
+              {scoreMapId && (
                 <Button variant="outline" size="sm" disabled={scoreApplication.isPending} onClick={onScore}>
-                  {scoreApplication.isPending ? t('actions.loading') : t('recruitment.scoreApplication')}
+                  {scoreApplication.isPending
+                    ? t('actions.loading')
+                    : data.score
+                      ? t('recruitment.scoreWithValue', { score: Math.round(data.score.totalScore) })
+                      : t('recruitment.scoreApplication')}
                 </Button>
               )}
             </div>
@@ -299,21 +376,21 @@ export default function CandidateDetailsPage() {
       )}
 
       <Modal open={scoreOpen} onClose={() => setScoreOpen(false)} title={t('recruitment.scoreBreakdown')}>
-        {scoreResult && (
+        {shownScore && (
           <div className="space-y-3">
             <div className="text-center">
-              <span className="text-3xl font-bold text-primary">{Math.round(scoreResult.totalScore)}%</span>
+              <span className="text-3xl font-bold text-primary">{Math.round(shownScore.totalScore)}%</span>
               <p className="text-sm text-gray-500">{t('recruitment.totalScore')}</p>
             </div>
             <div className="space-y-2">
               {([
-                ['recruitment.score.skill', scoreResult.skillScore, 30],
-                ['recruitment.score.experience', scoreResult.experienceScore, 25],
-                ['recruitment.score.jobRole', scoreResult.jobRoleScore, 20],
-                ['recruitment.score.education', scoreResult.educationScore, 10],
-                ['recruitment.score.location', scoreResult.locationScore, 5],
-                ['recruitment.score.salary', scoreResult.salaryScore, 5],
-                ['recruitment.score.noticePeriod', scoreResult.noticePeriodScore, 5],
+                ['recruitment.score.skill', shownScore.skillScore, 30],
+                ['recruitment.score.experience', shownScore.experienceScore, 25],
+                ['recruitment.score.jobRole', shownScore.jobRoleScore, 20],
+                ['recruitment.score.education', shownScore.educationScore, 10],
+                ['recruitment.score.location', shownScore.locationScore, 5],
+                ['recruitment.score.salary', shownScore.salaryScore, 5],
+                ['recruitment.score.noticePeriod', shownScore.noticePeriodScore, 5],
               ] as const).map(([key, score, weight]) => (
                 <div key={key}>
                   <div className="flex justify-between text-xs text-navy">

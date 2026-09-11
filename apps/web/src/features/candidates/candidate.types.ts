@@ -44,6 +44,8 @@ export interface CandidateProfile {
  */
 export interface AppliedJob {
   jobId: number;
+  /** The application id — addresses this candidate's interview rounds and offer letter. */
+  jobSubscriberMapId: number;
   designation: string;
   company: string;
   industry: string;

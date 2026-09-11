@@ -670,10 +670,10 @@ export const QC1_STATS: QC1Stats = {
 };
 
 export const APPLIED_JOBS = [
-  { jobId: 101, designation: 'Senior Software Engineer', company: 'Acme Technologies', city: 'Bengaluru', appliedOn: '2026-06-20', status: 'Interview' },
-  { jobId: 102, designation: 'Full Stack Developer', company: 'Globex', city: 'Pune', appliedOn: '2026-06-12', status: 'Shortlisted' },
-  { jobId: 103, designation: 'React Developer', company: 'Initech', city: 'Remote', appliedOn: '2026-05-30', status: 'Applied' },
-  { jobId: 104, designation: 'Frontend Lead', company: 'Umbrella Corp', city: 'Hyderabad', appliedOn: '2026-05-18', status: 'Rejected' },
+  { jobId: 101, jobSubscriberMapId: 9101, designation: 'Senior Software Engineer', company: 'Acme Technologies', city: 'Bengaluru', appliedOn: '2026-06-20', status: 'Interview' },
+  { jobId: 102, jobSubscriberMapId: 9102, designation: 'Full Stack Developer', company: 'Globex', city: 'Pune', appliedOn: '2026-06-12', status: 'Shortlisted' },
+  { jobId: 103, jobSubscriberMapId: 9103, designation: 'React Developer', company: 'Initech', city: 'Remote', appliedOn: '2026-05-30', status: 'Applied' },
+  { jobId: 104, jobSubscriberMapId: 9104, designation: 'Frontend Lead', company: 'Umbrella Corp', city: 'Hyderabad', appliedOn: '2026-05-18', status: 'Rejected' },
 ] as const;
 
 export const DOCUMENT_TYPES = [

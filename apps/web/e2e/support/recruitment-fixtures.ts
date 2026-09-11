@@ -33,6 +33,12 @@ export const CANDIDATE_DETAIL = {
     { designation: 'Software Engineer', company: 'InfoTech', from: '2023-07', to: 'Present' },
   ],
   registrationStatus: 'Pending',
+  // The server reports the candidate's newest application and any stored score; the QC
+  // screen's Refer and Score actions both hang off the mapping id.
+  latestJobSubscriberMapId: 200,
+  score: null,
+  resumeUrl: null,
+  resumeFileName: null,
 };
 
 export const REFERRAL_ROW = {

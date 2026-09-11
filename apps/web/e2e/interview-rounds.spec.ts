@@ -1,161 +1,141 @@
-import { test, expect } from '@playwright/test';
-import { json, type RequestLog, recordRequest } from './support/mocks';
-import { mockQC1Session } from './support/auth-helpers';
-import { INTERVIEW_ROW, ELIGIBLE_APPLICATION, INTERVIEW_MODE } from './support/recruitment-fixtures';
+import { test, expect, type Page } from '@playwright/test';
+import { json, recordRequest, type RequestLog } from './support/mocks';
+import { mockQ3Session } from './support/auth-helpers';
+import { INTERVIEW_ROUND, INTERVIEW_MODE, referralRow } from './support/recruitment-fixtures';
 
 test.use({ serviceWorkers: 'block' });
 
 /**
- * Interview Rounds — Gap 4, part 2 (schedule + round result).
- * Route: /recruitment/interviews
- * APIs: GET/POST /recruitment/interviews, POST /recruitment/interviews/:id/status
+ * Multi-round interviews — Gap 4, part 2, the half that had no UI.
+ * Route: /recruitment/q3 → a referral's "Interview rounds"
+ * APIs: GET/POST /recruitment/interview-rounds, POST /interview-rounds/:roundId/result
+ *
+ * The file that used to carry this name drove `/recruitment/interviews` — the legacy flat
+ * schedule — and never touched a round; it now lives in `interview-schedule.spec.ts`.
+ *
+ * Q3 rather than Q1: create and record-result are `@Roles(Q3, Client, Admin)`, and QC1 is on
+ * none of the round endpoints, so a rounds UI on Q1's screen would 403 for every QC1 user.
  */
 
-const interviews = [
-  { ...INTERVIEW_ROW, interviewId: 1, interviewStatusId: 10, status: 'Scheduled' as const },
-  { ...INTERVIEW_ROW, interviewId: 2, interviewStatusId: 11, candidate: 'Priya Patel', status: 'Completed' as const },
-  { ...INTERVIEW_ROW, interviewId: 3, interviewStatusId: 12, candidate: 'Amit Shah', status: 'Cancelled' as const },
-];
+const referrals = [referralRow({ referralId: 1, jobSubscriberMapId: 200, status: 'Referred' })];
 
-test.describe('Interview Management', () => {
+async function setupMocks(page: Page, opts: { rounds?: unknown[]; log?: RequestLog[] } = {}) {
+  const log = opts.log;
+  await page.route('**/api/recruitment/referrals*', (route) => route.fulfill(json(referrals)));
+  await page.route('**/api/recruitment/interview-modes*', (route) =>
+    route.fulfill(json([INTERVIEW_MODE])),
+  );
+  await page.route('**/api/recruitment/interview-rounds/**', (route) => {
+    if (log) recordRequest(log, route);
+    return route.fulfill(json(opts.rounds ?? []));
+  });
+  // The create endpoint has no trailing path segment, so it needs its own handler.
+  await page.route('**/api/recruitment/interview-rounds', (route) => {
+    if (log) recordRequest(log, route);
+    return route.fulfill(json({ roundId: 99 }));
+  });
+}
+
+test.describe('Interview rounds (Q3)', () => {
   test.beforeEach(async ({ page }) => {
-    await mockQC1Session(page);
+    await mockQ3Session(page);
   });
 
-  test('renders interview table with status badges', async ({ page }) => {
-    await page.route('**/api/recruitment/interviews**', (route) => {
-      if (route.request().url().includes('/eligible')) return route.fulfill(json([]));
-      if (route.request().url().includes('/modes') || route.request().url().includes('interview-modes'))
-        return route.fulfill(json([INTERVIEW_MODE]));
-      return route.fulfill(json(interviews));
+  test('opening a referral shows its rounds', async ({ page }) => {
+    await setupMocks(page, { rounds: [INTERVIEW_ROUND] });
+
+    await page.goto('/recruitment/q3');
+    await page.getByRole('button', { name: 'Interview rounds' }).first().click();
+
+    await expect(page.getByText('R1: Screening')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Mr. Sharma')).toBeVisible();
+    await expect(page.getByText('Offered times')).toBeVisible();
+  });
+
+  test('an application with no rounds says so', async ({ page }) => {
+    await setupMocks(page, { rounds: [] });
+
+    await page.goto('/recruitment/q3');
+    await page.getByRole('button', { name: 'Interview rounds' }).first().click();
+
+    await expect(page.getByText('No rounds yet for this application.')).toBeVisible({
+      timeout: 10_000,
     });
-
-    await page.goto('/recruitment/interviews');
-
-    await expect(page.getByRole('heading', { name: 'Interviews' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('Ravi Kumar').first()).toBeVisible();
-    await expect(page.getByText('Priya Patel')).toBeVisible();
-    await expect(page.getByText('Amit Shah')).toBeVisible();
-
-    // Status badges
-    await expect(page.getByText('Scheduled')).toBeVisible();
-    await expect(page.getByText('Completed')).toBeVisible();
-    await expect(page.getByText('Cancelled')).toBeVisible();
   });
 
-  test('empty state shows message', async ({ page }) => {
-    await page.route('**/api/recruitment/interviews**', (route) => {
-      if (route.request().url().includes('/eligible')) return route.fulfill(json([]));
-      if (route.request().url().includes('interview-modes'))
-        return route.fulfill(json([INTERVIEW_MODE]));
-      return route.fulfill(json([]));
-    });
-
-    await page.goto('/recruitment/interviews');
-
-    await expect(page.getByText('No interviews scheduled.')).toBeVisible({ timeout: 10_000 });
-  });
-
-  test('schedule interview button opens modal', async ({ page }) => {
-    await page.route('**/api/recruitment/interviews**', (route) => {
-      if (route.request().url().includes('/eligible'))
-        return route.fulfill(json([ELIGIBLE_APPLICATION]));
-      if (route.request().url().includes('interview-modes'))
-        return route.fulfill(json([INTERVIEW_MODE]));
-      return route.fulfill(json(interviews));
-    });
-
-    await page.goto('/recruitment/interviews');
-    await expect(page.getByRole('heading', { name: 'Interviews' })).toBeVisible({ timeout: 10_000 });
-
-    await page.getByRole('button', { name: 'Schedule Interview' }).click();
-
-    // Modal opens with form fields — use the modal's label text to avoid ambiguity
-    const modal = page.getByLabel('Schedule Interview');
-    await expect(modal.getByText('Candidate')).toBeVisible();
-    await expect(modal.getByText('Mode')).toBeVisible();
-    await expect(modal.getByText('Date & Time')).toBeVisible();
-  });
-
-  test('schedule form validates required fields', async ({ page }) => {
-    await page.route('**/api/recruitment/interviews**', (route) => {
-      if (route.request().url().includes('/eligible'))
-        return route.fulfill(json([ELIGIBLE_APPLICATION]));
-      if (route.request().url().includes('interview-modes'))
-        return route.fulfill(json([INTERVIEW_MODE]));
-      return route.fulfill(json(interviews));
-    });
-
-    await page.goto('/recruitment/interviews');
-    await expect(page.getByRole('heading', { name: 'Interviews' })).toBeVisible({ timeout: 10_000 });
-
-    await page.getByRole('button', { name: 'Schedule Interview' }).click();
-    // Submit without filling
-    await page.getByRole('button', { name: 'Schedule' }).click();
-
-    // Validation errors should appear
-    await expect(page.getByText(/select a candidate|select a mode|pick a date/i).first()).toBeVisible();
-  });
-
-  test('mark interview completed sends correct status', async ({ page }) => {
+  test('creating a round posts the application, number, name and mode', async ({ page }) => {
     const log: RequestLog[] = [];
-    await page.route('**/api/recruitment/interviews**', (route) => {
-      if (route.request().method() === 'POST' && route.request().url().includes('/status')) {
-        recordRequest(log, route);
-        return route.fulfill(json({ success: true }));
-      }
-      if (route.request().url().includes('/eligible')) return route.fulfill(json([]));
-      if (route.request().url().includes('interview-modes'))
-        return route.fulfill(json([INTERVIEW_MODE]));
-      return route.fulfill(json(interviews));
-    });
+    await setupMocks(page, { rounds: [], log });
 
-    await page.goto('/recruitment/interviews');
-    await expect(page.getByText('Ravi Kumar').first()).toBeVisible({ timeout: 10_000 });
+    await page.goto('/recruitment/q3');
+    await page.getByRole('button', { name: 'Interview rounds' }).first().click();
+    await expect(page.getByText('Add round 1')).toBeVisible({ timeout: 10_000 });
 
-    // Click the Complete button on the Scheduled row
-    await page.getByRole('button', { name: 'Complete' }).click();
+    await page.getByPlaceholder('Round name (e.g. Technical)').fill('Technical');
+    await page.getByPlaceholder('Interviewer name').fill('Ms. Rao');
+    await page.selectOption('select', String(INTERVIEW_MODE.id));
+    await page.getByRole('button', { name: 'Create round' }).click();
 
     const posted = log.find((r) => r.method === 'POST');
-    expect(posted).toBeTruthy();
-    expect(posted?.body).toMatchObject({ status: 'Completed' });
+    expect(posted?.body).toMatchObject({
+      jobSubscriberMapId: 200,
+      roundNumber: 1,
+      roundName: 'Technical',
+      interviewerName: 'Ms. Rao',
+      interviewMode: String(INTERVIEW_MODE.id),
+    });
   });
 
-  test('mark interview cancelled sends correct status', async ({ page }) => {
+  test('the next round number follows the highest existing round', async ({ page }) => {
+    await setupMocks(page, {
+      rounds: [INTERVIEW_ROUND, { ...INTERVIEW_ROUND, roundId: 2, roundNumber: 2 }],
+    });
+
+    await page.goto('/recruitment/q3');
+    await page.getByRole('button', { name: 'Interview rounds' }).first().click();
+
+    await expect(page.getByText('Add round 3')).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('recording a result sends the verdict and the feedback', async ({ page }) => {
     const log: RequestLog[] = [];
-    await page.route('**/api/recruitment/interviews**', (route) => {
-      if (route.request().method() === 'POST' && route.request().url().includes('/status')) {
-        recordRequest(log, route);
-        return route.fulfill(json({ success: true }));
-      }
-      if (route.request().url().includes('/eligible')) return route.fulfill(json([]));
-      if (route.request().url().includes('interview-modes'))
-        return route.fulfill(json([INTERVIEW_MODE]));
-      return route.fulfill(json(interviews));
-    });
+    await setupMocks(page, { rounds: [INTERVIEW_ROUND], log });
 
-    await page.goto('/recruitment/interviews');
-    await expect(page.getByText('Ravi Kumar').first()).toBeVisible({ timeout: 10_000 });
+    await page.goto('/recruitment/q3');
+    await page.getByRole('button', { name: 'Interview rounds' }).first().click();
+    await expect(page.getByText('R1: Screening')).toBeVisible({ timeout: 10_000 });
 
-    await page.getByRole('button', { name: 'Cancel' }).first().click();
+    await page.getByRole('button', { name: 'Record result' }).click();
+    await page.getByPlaceholder('Feedback (optional)').fill('Strong fundamentals');
+    await page.getByRole('button', { name: 'Passed', exact: true }).click();
 
-    const posted = log.find((r) => r.method === 'POST');
-    expect(posted).toBeTruthy();
-    expect(posted?.body).toMatchObject({ status: 'Cancelled' });
+    const posted = log.find((r) => r.method === 'POST' && r.url.includes('/result'));
+    expect(posted?.body).toMatchObject({ result: 'Passed', feedback: 'Strong fundamentals' });
   });
 
-  test('action buttons only on Scheduled rows', async ({ page }) => {
-    await page.route('**/api/recruitment/interviews**', (route) => {
-      if (route.request().url().includes('/eligible')) return route.fulfill(json([]));
-      if (route.request().url().includes('interview-modes'))
-        return route.fulfill(json([INTERVIEW_MODE]));
-      return route.fulfill(json(interviews));
+  test('a decided round offers no result buttons', async ({ page }) => {
+    await setupMocks(page, {
+      rounds: [{ ...INTERVIEW_ROUND, result: 'Passed', companyFeedback: 'Clears the bar' }],
     });
 
-    await page.goto('/recruitment/interviews');
-    await expect(page.getByText('Ravi Kumar').first()).toBeVisible({ timeout: 10_000 });
+    await page.goto('/recruitment/q3');
+    await page.getByRole('button', { name: 'Interview rounds' }).first().click();
 
-    // Only 1 Complete button (for the Scheduled row)
-    await expect(page.getByRole('button', { name: 'Complete' })).toHaveCount(1);
+    await expect(page.getByText('R1: Screening')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Record result' })).toHaveCount(0);
+    await expect(page.getByText('Clears the bar')).toBeVisible();
+  });
+
+  test('a meeting link is offered when the round has one', async ({ page }) => {
+    await setupMocks(page, {
+      rounds: [{ ...INTERVIEW_ROUND, meetingLink: 'https://meet.example.com/xyz' }],
+    });
+
+    await page.goto('/recruitment/q3');
+    await page.getByRole('button', { name: 'Interview rounds' }).first().click();
+
+    const link = page.getByRole('link', { name: 'Join link' });
+    await expect(link).toBeVisible({ timeout: 10_000 });
+    await expect(link).toHaveAttribute('href', 'https://meet.example.com/xyz');
   });
 });

@@ -1185,6 +1185,11 @@ export class CandidatesService {
 
       return {
         jobId: Number(r.jobID),
+        // The application id. The candidate's own interview rounds and offer letter are
+        // addressed by it (`GET /recruitment/interview-rounds/:mapId`, `/offers/:mapId`,
+        // both of which allow Subscriber), and it was not on this payload — so the
+        // candidate had no way to reach either, however complete the API was.
+        jobSubscriberMapId: Number(r.jobSubscriberMapID),
         designation: r.job?.designation?.descr ?? '',
         company: r.job?.client?.clientName ?? '',
         industry: r.job?.industryType?.industryType ?? '',

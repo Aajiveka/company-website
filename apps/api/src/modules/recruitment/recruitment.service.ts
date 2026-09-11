@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CandidatesService } from '@/modules/candidates/candidates.service';
+import { StorageService } from '@/modules/storage/storage.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { EmailService } from '@/common/email/email.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
@@ -28,6 +29,7 @@ export class RecruitmentService {
     private readonly audit: AuditService,
     private readonly applications: JobApplicationsService,
     private readonly email: EmailService,
+    private readonly storage: StorageService,
   ) {}
 
   private get db() {
@@ -92,19 +94,54 @@ export class RecruitmentService {
     };
   }
 
-  /** A single candidate's CV, reusing the candidate-side reader, plus its registration status. */
+  /**
+   * A single candidate's CV, reusing the candidate-side reader, plus its registration status.
+   *
+   * The mapping id and any stored score ride along because the QC screen needs both to
+   * survive a reload. Scoring used to be reachable only in the same page session that
+   * assigned the job — the id lived in React state and nothing hydrated it — so a candidate
+   * mapped yesterday could never be scored. And `tblCandidateJobScore` was written by the
+   * scorer and read by nothing, so a score that had been computed was invisible the moment
+   * the modal closed.
+   */
   async candidateDetail(subscriberId: number) {
-    const [profile, registration] = await Promise.all([
+    const [profile, registration, mapping] = await Promise.all([
       this.candidates.profile(subscriberId),
       this.db.subscriberRegistration.findUnique({
         where: { subscriberID: subscriberId },
         select: { flgstatus: true },
       }),
+      // The newest mapping: that is the application a QC user is judging on this screen.
+      this.db.jobSubscriberMapping.findFirst({
+        where: { subscriberID: BigInt(subscriberId) },
+        orderBy: { jobSubscriberMapID: 'desc' },
+        select: { jobSubscriberMapID: true, CandidateJobScore: true },
+      }),
     ]);
+
+    const s = mapping?.CandidateJobScore;
     return {
       ...profile,
       registrationStatus: registrationStatusLabel(registration?.flgstatus ?? 0),
+      latestJobSubscriberMapId: mapping ? Number(mapping.jobSubscriberMapID) : null,
+      score: s
+        ? {
+            totalScore: s.totalScore,
+            skillScore: s.skillScore,
+            experienceScore: s.experienceScore,
+            jobRoleScore: s.jobRoleScore,
+            educationScore: s.educationScore,
+            locationScore: s.locationScore,
+            salaryScore: s.salaryScore,
+            noticePeriodScore: s.noticePeriodScore,
+          }
+        : null,
     };
+  }
+
+  /** The candidate's own resume, for the QC reviewer — see the controller note on why. */
+  candidateResume(subscriberId: number) {
+    return this.candidates.resumeFile(subscriberId);
   }
 
   /**
@@ -314,6 +351,26 @@ export class RecruitmentService {
       document: d.documentType?.documentType ?? '',
       status: d.flgStatus === 1 ? 'Verified' : d.flgStatus === 2 ? 'Rejected' : 'Pending',
     }));
+  }
+
+  /**
+   * The uploaded file behind a document review row.
+   *
+   * The review screen offered Verify and Reject against a candidate name and a document-type
+   * label, with no way to look at the document itself — the reviewer was asked to judge
+   * something they could not see. `DocumentPath` was on the row the whole time.
+   */
+  async documentFile(documentId: number) {
+    const doc = await this.db.candidateDocumentUploaded.findUnique({
+      where: { docUploadID: documentId },
+      include: { documentType: { select: { documentType: true } } },
+    });
+    const key = doc?.documentPath?.trim();
+    if (!doc || !key) throw new NotFoundException('Document not found');
+    return {
+      body: await this.storage.read(key),
+      fileName: `${doc.documentType?.documentType ?? 'document'}${key.slice(key.lastIndexOf('.'))}`,
+    };
   }
 
   /** Port of spClientUpdateMapDocumentStatus. */

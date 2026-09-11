@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useAppliedJobs } from '../../candidate.api';
+import { InterviewSlotPicker } from '../components/InterviewSlotPicker';
+import { OfferResponseCard } from '../components/OfferResponseCard';
 import { Card, CardBody, EmptyState, ErrorState, SkeletonRows } from '../components/primitives';
 import { ApplicationRow } from '../components/ApplicationRow';
 import { statusView, summarise, type Bucket } from '../applicationStatus';
@@ -112,7 +114,14 @@ export default function ApplicationsPage() {
           {visible.length ? (
             <div className="mt-4 space-y-3">
               {visible.map((job) => (
-                <ApplicationRow key={job.jobId} job={job} />
+                /* The slot picker and offer card sit OUTSIDE ApplicationRow on purpose: that
+                   row is one big <Link> to the job, so a button nested inside it would
+                   navigate away instead of answering. */
+                <div key={job.jobId}>
+                  <ApplicationRow job={job} />
+                  <InterviewSlotPicker mapId={job.jobSubscriberMapId} />
+                  <OfferResponseCard mapId={job.jobSubscriberMapId} />
+                </div>
               ))}
             </div>
           ) : (

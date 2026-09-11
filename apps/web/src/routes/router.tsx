@@ -276,6 +276,15 @@ export const router = createBrowserRouter([
                   { path: '/recruitment/qc1', element: withSuspense(<QC1DashboardPage />) },
                   { path: '/recruitment/documents', element: withSuspense(<DocumentReviewPage />) },
                   { path: '/recruitment/interviews', element: withSuspense(<InterviewsPage />) },
+                ],
+              },
+              // Referrals are a Q2 step: `POST /recruitment/referrals` is @Roles(QC2, Admin)
+              // and the list is @Roles(QC2, Q3, Admin). Letting QC1 through the client guard
+              // only bought them a screen the server then 403s, so the table sat permanently
+              // empty with nothing to say why.
+              {
+                element: <ProtectedRoute allow={[Role.QC2, Role.Admin]} />,
+                children: [
                   { path: '/recruitment/referrals', element: withSuspense(<ReferralsPage />) },
                 ],
               },
