@@ -186,6 +186,13 @@ jobs:
             set -euo pipefail
             cd ~/aajiveka
             git pull origin main
+            # Every `up --build` leaves the previous images dangling and grows the build cache,
+            # and nothing ever cleared them: the disk filled and `npm ci` died with ENOSPC.
+            # Both are regenerable. Running containers, tagged images and volumes are untouched.
+            df -h /
+            docker image prune -f
+            docker builder prune -af
+            df -h /
             if [ "${{ github.repository }}" = "itanuranjan/Aajiveka" ]; then
               # Serialize builds on small instances to avoid OOM / thrashing.
               COMPOSE_PARALLEL_LIMIT=1 docker compose up -d --build
