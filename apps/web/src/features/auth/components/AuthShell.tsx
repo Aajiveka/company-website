@@ -32,7 +32,9 @@ export function AuthShell({
   ];
 
   return (
-    <section className="flex min-h-screen items-center justify-center bg-[#F4F7FE] px-4 py-12 dark:bg-gray-900">
+    // Minus the header height the layout reserves above us, or the card centres against a
+    // viewport that is taller than the space it actually has and forces a scrollbar.
+    <section className="flex min-h-[calc(100vh-var(--nav-h))] items-center justify-center bg-[#F4F7FE] px-4 py-12 dark:bg-gray-900">
       <div className="grid w-full max-w-[900px] overflow-hidden rounded-2xl shadow-[0_25px_50px_rgb(0_0_0/0.25)] lg:grid-cols-[378px_1fr]">
         {/* Brand panel */}
         <div className="relative hidden overflow-hidden bg-linear-to-b from-[#1D60E5] to-[#1248C2] p-10 lg:flex lg:flex-col">

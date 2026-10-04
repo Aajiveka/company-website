@@ -33,7 +33,7 @@ export default function ContactPage() {
   };
 
   return (
-    <section className="pt-28 pb-16">
+    <section className="py-10">
       <Seo
         title="Contact Us"
         description="Get in touch with Aajiveka. Reach out for support, partnership enquiries, or feedback. We're here to help you with your career and recruitment needs."

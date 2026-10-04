@@ -39,7 +39,7 @@ const CROSS = { w: 20.7, h: 21.5 };
 export function WhatWeOffer() {
   return (
     <Sheet label="What we offer">
-      <Masthead titleY={20.9} cinY={22.1} tollFreeY={41} illustrationY={14.2} badgeY={13.6} />
+      <Masthead titleY={20.9} cinY={22.1} illustrationY={14.2} badgeY={13.6} />
 
       <Txt x={409.4} y={112.2} size={46.26} weight={W.extrabold} color={C.navy}>
         What We Offer?

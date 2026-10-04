@@ -15,6 +15,7 @@ import { cn } from '@/lib/cn';
 import { Button, Dropdown, buttonVariants } from '@/components/ui';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { hasHeroBehindHeader } from './publicChrome';
 import {
   LOGIN_PORTALS,
   LOGIN_PORTAL_ORDER,
@@ -31,30 +32,22 @@ const PORTAL_ICON = {
   admin: ShieldCheck,
 } as const;
 
-/** Pages with a light background rather than a dark hero behind the header. */
-const SOLID_HEADER_ROUTES = [
-  '/login',
-  '/register',
-  '/forgot-password',
-  '/reset-password',
-  // The handbook viewer starts at the top of the page, so there is no hero to sit on either.
-  '/student',
-];
-
 /**
  * Public site header — mirrors FrontMaster.Master:
  * fixed, transparent at top, turns solid primary (#005985) after 100px scroll.
  *
- * The transparent state assumes a dark hero underneath. The auth pages are a pale card on a
- * near-white background, where white-on-white left the logo and toll-free number unreadable,
- * so those routes start solid instead of waiting for a scroll that never comes.
+ * The transparent state assumes a dark hero underneath, so it is reserved for the routes that
+ * have one (see `hasHeroBehindHeader`). Everywhere else the header starts solid rather than
+ * waiting for a scroll that never comes — on a pale page, white-on-white left the logo and
+ * toll-free number unreadable. Solid is the default so a new route is right without being
+ * listed anywhere.
  */
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const solid = scrolled || SOLID_HEADER_ROUTES.some((r) => pathname.startsWith(r));
+  const solid = scrolled || !hasHeroBehindHeader(pathname);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY >= 100);

@@ -27,7 +27,8 @@ describe('StudentGuidePage', () => {
   it('gives the viewer the screen', () => {
     const { container } = renderPage();
     expect(container.querySelector('object')?.className).toContain('flex-1');
-    expect(container.querySelector('.h-screen')).not.toBeNull();
+    // The viewport minus the header height PublicLayout reserves above the page.
+    expect(container.querySelector('[class*="calc(100vh-var(--nav-h))"]')).not.toBeNull();
   });
 
   it('offers the download under the viewer, and again as the no-preview fallback', () => {

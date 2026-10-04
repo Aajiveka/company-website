@@ -89,10 +89,6 @@ vi.mock('@/components/Seo', () => ({
   Seo: () => null,
 }));
 
-vi.mock('@/features/public/components/PageBanner', () => ({
-  PageBanner: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
 vi.mock('../components/JobSearchBar', () => ({
   JobSearchBar: () => <div data-testid="job-search-bar" />,
 }));

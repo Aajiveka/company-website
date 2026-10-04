@@ -5,15 +5,15 @@ import { ASSET, C, W } from '../tokens';
 const BULLETS = [
   { y: 344.8, text: '• Free Career Counseling' },
   { y: 398.1, text: '• We will profile Internship for all students' },
-  { y: 451.5, text: '• Free resume creation' },
-  { y: 504.9, text: '• Placement of students' },
+  { y: 451.5, text: '• Free six career counseling' },
+  { y: 504.9, text: '• Placement Assistance of students' },
 ] as const;
 
 /** Brochure page 10 — additional services for educational institutions. */
 export function Institutions() {
   return (
     <Sheet label="Additional services for educational institutions">
-      <Masthead titleY={21.4} cinY={22.6} tollFreeY={41.5} illustrationY={14.7} badgeY={14.2} />
+      <Masthead titleY={21.4} cinY={22.6} illustrationY={14.7} badgeY={14.2} />
 
       <Txt x={31.6} y={200.9} size={41.37} weight={W.extrabold} color={C.navy}>
         Additional Services for
@@ -27,9 +27,6 @@ export function Institutions() {
           {b.text}
         </Txt>
       ))}
-      <Txt x={31.3} y={536.4} size={16.12}>
-        {'   (will arrange max 6 interviews in a year)'}
-      </Txt>
 
       <Box x={669.6} y={223.4} w={477.5} h={444.6} radius={38.6} fill={C.navy} />
       <Txt x={716.3} y={269.6} size={39.42} weight={W.extrabold} color={C.white}>

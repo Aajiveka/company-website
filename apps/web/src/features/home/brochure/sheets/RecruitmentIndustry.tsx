@@ -121,7 +121,7 @@ const OUTRO = [
 export function RecruitmentIndustry() {
   return (
     <Sheet label="What makes us best in the recruitment industry">
-      <Masthead titleY={20.3} cinY={21.5} tollFreeY={40.5} illustrationY={13.7} badgeY={13.1} />
+      <Masthead titleY={20.3} cinY={21.5} illustrationY={13.7} badgeY={13.1} />
 
       <Box x={0} y={348.6} w={1190.551} h={288.8} fill={C.band} />
 

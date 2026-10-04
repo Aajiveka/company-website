@@ -19,7 +19,10 @@ export default function JobsLayout() {
   const { isAuthenticated, user } = useAuth();
   const isCandidate = isAuthenticated && user?.roleId === Role.Subscriber;
 
-  if (!isCandidate) return <PublicLayout />;
+  // Same container as `CandidateChrome` below, so the job screens are laid out identically
+  // whether or not you are signed in — only the header above them changes.
+  if (!isCandidate)
+    return <PublicLayout contentClassName="mx-auto w-full max-w-[1194px] px-4 py-6 sm:px-8" />;
   return <CandidateChrome />;
 }
 

@@ -22,9 +22,6 @@ export function Cover() {
         eager
       />
 
-      <Txt x={421.8} y={491.7} size={24.63} weight={W.semibold} color={C.coverInk}>
-        Toll free No: 18003093346
-      </Txt>
       <Txt x={377.9} y={540.5} size={21.01} weight={W.semibold} color={C.coverCompany}>
         {'Make My Career Technologies Pvt. Ltd.'}
       </Txt>

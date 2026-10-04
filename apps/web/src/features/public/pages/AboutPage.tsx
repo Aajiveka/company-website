@@ -129,9 +129,6 @@ export default function AboutPage() {
                   <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
                   <span className="text-gray-700 dark:text-gray-200">
                     {t(`about.${key}`)}
-                    {key === 'institution4' && (
-                      <span className="block text-sm text-gray-500 dark:text-gray-400">{t('about.institution4Note')}</span>
-                    )}
                   </span>
                 </li>
               ))}

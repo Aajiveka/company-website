@@ -4,7 +4,6 @@
  * do not edit by hand.
  */
 export const TRACKING: Record<string, number> = {
-  "600|Toll free No: 18003093346": -0.0081,
   "600|Make My Career Technologies Pvt. Ltd.": -0.01837,
   "600|CIN: U78100HR2023PTC109516": -0.00269,
   "600|GSTIN : 06AAQCM5954Q1ZG": -0.01192,
@@ -25,7 +24,6 @@ export const TRACKING: Record<string, number> = {
   "400|aspirations, thus achieving a fulfilling and rewarding career. Ultimately, Aajiveka's motive is to foster a win-win situation for ": -0.0023,
   "400|both employers and job seekers and contribute to the overall economic growth of the country.": -0.00423,
   "600|MAKE YOUR CAREER WITH": -0.01435,
-  "600|Toll free no: 18003093346": -0.00789,
   "600|Make My Career Technologies pvt. ltd.": -0.01557,
   "400|At Aajiveka, we believe in creating an inclusive and diverse platform that faster growth and development for all. We are ": -0.00453,
   "800|PHILOSOPHY": -0.02352,
@@ -226,9 +224,8 @@ export const TRACKING: Record<string, number> = {
   "800|Educational Institution:": -0.0124,
   "600|• Free Career Counseling": -0.01755,
   "600|• We will profile Internship for all students": -0.0099,
-  "600|• Placement of students": -0.01652,
-  "400|   (will arrange max 6 interviews in a year)": -0.00161,
   "800|Further Assistance": -0.01658,
   "300|For more information kindly write us at": -0.00416,
-  "600|• Free resume creation": -0.01567,
+  "600|• Free six career counseling": -0.01598,
+  "600|• Placement Assistance of students": -0.0133,
 };

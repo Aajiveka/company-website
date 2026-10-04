@@ -7,7 +7,7 @@ import { Construction } from 'lucide-react';
  */
 export default function PlaceholderPage({ title }: { title: string }) {
   return (
-    <section className="flex min-h-[60vh] items-center justify-center px-4 pt-24">
+    <section className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="max-w-md text-center">
         <Construction className="mx-auto mb-4 h-12 w-12 text-accent" />
         <h1 className="font-heading text-2xl font-bold text-navy sm:text-3xl">{title}</h1>

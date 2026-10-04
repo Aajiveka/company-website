@@ -47,8 +47,8 @@ export default function StudentGuidePage() {
     <>
       <Seo title={t('student.title')} description={t('student.subtitle')} />
 
-      {/* The header is fixed and transparent, so the page has to reserve its height itself. */}
-      <div className="flex h-screen flex-col pt-[72px] sm:pt-[88px]">
+      {/* The layout reserves the fixed header's height, so the viewer takes what is left. */}
+      <div className="flex h-[calc(100vh-var(--nav-h))] flex-col">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 sm:px-6 dark:border-gray-700 dark:bg-gray-800">
           <div className="min-w-0">
             <h1 className="truncate font-heading text-base font-bold text-navy dark:text-gray-100">

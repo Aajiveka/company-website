@@ -205,11 +205,34 @@
 /* Base — mirrors the reference NewTheme typography/colors             */
 /* ------------------------------------------------------------------ */
 @layer base {
+  /*
+   * Height of the fixed public header, so the layout can reserve it and the pages that draw a
+   * hero behind it can pad by the exact amount. Derived from Navbar's `py-3` plus the logo,
+   * which is its tallest child (`h-12 w-auto sm:h-16`).
+   */
+  :root {
+    --nav-h: 72px;
+  }
+  @media (width >= 40rem) {
+    :root {
+      --nav-h: 88px;
+    }
+  }
   html {
     scroll-behavior: smooth;
+    /* Without this every in-page anchor jump lands underneath the fixed header. */
+    scroll-padding-top: var(--nav-h);
   }
   body {
     @apply font-sans text-[#121212] antialiased dark:bg-gray-900 dark:text-gray-100;
+  }
+  /*
+   * RouteAnnouncer moves focus to the main landmark on every navigation so screen-reader and
+   * keyboard users restart at the top. Nobody tabbed there, so the browser's default ring would
+   * flash around the whole page on each route change.
+   */
+  #main-content:focus {
+    outline: none;
   }
   /* Global focus-visible ring for interactive elements that lack component-level focus styles */
   a:focus-visible,

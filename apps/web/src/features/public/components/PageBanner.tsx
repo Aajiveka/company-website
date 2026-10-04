@@ -21,7 +21,9 @@ export interface PageBannerProps {
 /** Full-width page hero banner used across the public marketing pages. */
 export function PageBanner({ variant, title, subtitle, children }: PageBannerProps) {
   return (
-    <section className={cn('relative flex items-center pt-20', variants[variant])}>
+    // The banner is full-bleed behind the transparent header, so it reserves the header's
+    // height itself rather than starting below it.
+    <section className={cn('relative flex items-center pt-(--nav-h)', variants[variant])}>
       <div
         className="absolute inset-0 bg-black/20"
         aria-hidden={variant !== 'testimonial'}

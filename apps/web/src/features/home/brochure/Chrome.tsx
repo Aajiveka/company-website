@@ -11,15 +11,11 @@ import { ASSET, C, W } from './tokens';
 export function Masthead({
   titleY = 20.6,
   cinY = 21.9,
-  tollFreeY = 40.7,
-  showTollFree = true,
   illustrationY = 14,
   badgeY = 13.4,
 }: {
   titleY?: number;
   cinY?: number;
-  tollFreeY?: number;
-  showTollFree?: boolean;
   illustrationY?: number;
   badgeY?: number;
 }) {
@@ -33,11 +29,6 @@ export function Masthead({
       <Txt x={913.6} y={cinY} size={13.1} weight={W.semibold} color={C.white}>
         CIN: U78100HR2023PTC109516
       </Txt>
-      {showTollFree && (
-        <Txt x={947.5} y={tollFreeY} size={13.1} weight={W.semibold} color={C.white}>
-          Toll free no: 18003093346
-        </Txt>
-      )}
       <Img src={`${ASSET}/logo-badge.png`} alt="Aajiveka" x={1124.3} y={badgeY} w={50.2} h={50.2} eager />
     </>
   );

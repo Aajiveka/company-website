@@ -12,7 +12,7 @@ export default function BlogDetailPage() {
 
   if (!post) {
     return (
-      <section className="flex min-h-[60vh] items-center justify-center pt-24 text-center">
+      <section className="flex min-h-[60vh] items-center justify-center text-center">
         <div>
           <h1 className="font-heading text-2xl font-bold text-navy">{t('blogs.articleNotFound')}</h1>
           <Link to="/blogs" className="mt-4 inline-block text-primary hover:underline">
@@ -26,7 +26,7 @@ export default function BlogDetailPage() {
   const related = BLOG_POSTS.filter((p) => p.slug !== post.slug).slice(0, 3);
 
   return (
-    <article className="pt-28 pb-16">
+    <article className="py-10">
       <Seo
         title={post.title}
         description={post.excerpt}

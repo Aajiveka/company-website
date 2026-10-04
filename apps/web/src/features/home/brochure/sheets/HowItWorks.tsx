@@ -26,7 +26,7 @@ const INTRO = [
 export function HowItWorks() {
   return (
     <Sheet label="How it works">
-      <Masthead showTollFree={false} />
+      <Masthead />
 
       <Txt x={31.3} y={200.9} size={34.12} weight={W.medium}>
         How it

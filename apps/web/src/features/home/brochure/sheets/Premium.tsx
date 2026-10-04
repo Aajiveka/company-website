@@ -6,7 +6,7 @@ import { C, W } from '../tokens';
 export function Premium() {
   return (
     <Sheet label="Premium subscription">
-      <Masthead titleY={20.3} cinY={21.5} tollFreeY={40.4} illustrationY={13.6} badgeY={13.1} />
+      <Masthead titleY={20.3} cinY={21.5} illustrationY={13.6} badgeY={13.1} />
 
       <Box x={31.3} y={165.8} w={1118.2} h={59.5} fill={C.yellow} />
       <Txt x={55.2} y={182.5} size={26.3} weight={W.extrabold} color={C.navy}>

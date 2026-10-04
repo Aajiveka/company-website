@@ -206,7 +206,7 @@ export default function LegalPage({ variant }: { variant: 'privacy' | 'terms' })
   const sections = isPrivacy ? PRIVACY : TERMS;
 
   return (
-    <section className="pt-28 pb-16">
+    <section className="py-10">
       <Seo
         title={isPrivacy ? t('legal.privacyPolicy') : t('legal.termsAndConditions')}
         description={
