@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   Award,
   Briefcase,
@@ -8,7 +8,6 @@ import {
   FileText,
   FolderKanban,
   GraduationCap,
-  Link2,
   Mail,
   MapPin,
   StickyNote,
@@ -24,20 +23,39 @@ import {
   SecondaryButton,
 } from '@/employer/components/Cards/ui';
 import { ConfirmDialog } from '@/employer/components/ConfirmDialog';
+import { Modal } from '@/components/ui/Modal';
 import { employerPaths } from '@/employer/constants/paths';
 import {
   downloadApplicantResume,
   useApplicant,
+  useApplicantInterviewRounds,
   useApplicantNotes,
   useApplicantResumeBlob,
   useDecideApplicant,
   useSaveApplicantNote,
+  useScheduleInterview,
+  useUndoApplicantDecision,
 } from '@/employer/services/employer.api';
-import { useInterviewRounds, useOffer, useCreateOffer, useSendOffer } from '@/features/recruitment/recruitment.api';
-import type { ApplicantDecision } from '@/employer/services/employer.types';
-import { decisionConfirm } from '@/employer/utils/decisionConfirm';
-import { pipelineActionButtonClass, pipelineIconClass, applicantStatusTone } from '@/employer/utils/pipelineActions';
+import {
+  useOffer,
+  useCreateOffer,
+  useSendOffer,
+  useMarkJoined,
+} from '@/features/recruitment/recruitment.api';
+import type { ApplicantDecision, InterviewScheduleInput } from '@/employer/services/employer.types';
+import { decisionConfirm, isUndoDecision } from '@/employer/utils/decisionConfirm';
+import { dateLabel, dateTimeLabel } from '@/employer/utils/format';
+import {
+  pipelineActionButtonClass,
+  pipelineIconClass,
+  applicantStatusTone,
+} from '@/employer/utils/pipelineActions';
 import { getErrorMessage } from '@/lib/axios';
+import { ScheduleInterviewForm, type FirstRound } from './ScheduleInterviewForm';
+import { InterviewProcessPanel } from './InterviewProcessPanel';
+import { ApplicantDocumentsPanel } from './ApplicantDocumentsPanel';
+import { RequestDocumentsForm } from './RequestDocumentsForm';
+import { useQueryClient } from '@tanstack/react-query';
 
 function formatInr(amount: number | null | undefined) {
   if (amount == null || Number.isNaN(amount)) return '—';
@@ -80,24 +98,78 @@ function Field({ label, value }: { label: string; value?: string | number | null
 
 export function ApplicantProfilePage() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const mapId = id && /^\d+$/.test(id) ? Number(id) : null;
-  const { data: applicant, isLoading, isError, error } = useApplicant(mapId);
+  const {
+    data: applicant,
+    isLoading,
+    isError,
+    error,
+    refetch: refetchApplicant,
+  } = useApplicant(mapId);
   const { data: notesData } = useApplicantNotes(mapId);
   const resumeQuery = useApplicantResumeBlob(mapId, Boolean(applicant?.hasResume));
   const decide = useDecideApplicant();
+  const undoDecision = useUndoApplicantDecision();
+  const scheduleInterview = useScheduleInterview();
   const saveNote = useSaveApplicantNote(mapId ?? 0);
-  const { data: interviewRounds = [] } = useInterviewRounds(mapId ?? undefined);
+  const { data: interviewRounds = [], isFetched: roundsLoaded } =
+    useApplicantInterviewRounds(mapId);
   const { data: offer, refetch: refetchOffer } = useOffer(mapId ?? undefined);
   const createOffer = useCreateOffer();
   const sendOffer = useSendOffer();
+  const markJoined = useMarkJoined();
+  const qc = useQueryClient();
   const [note, setNote] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [pendingDecision, setPendingDecision] = useState<ApplicantDecision | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [offerOpen, setOfferOpen] = useState(false);
+  const [docsOpen, setDocsOpen] = useState(false);
   const [offerSalary, setOfferSalary] = useState('');
   const [offerJoiningDate, setOfferJoiningDate] = useState('');
   const [offerPosition, setOfferPosition] = useState('');
+
+  const awaitingCompanyReview =
+    applicant?.status === 'SentToCompany' &&
+    Boolean(applicant.referralId) &&
+    (applicant.companyReviewStatus === 'Pending' || !applicant.companyReviewStatus);
+  const inInterviewProcess = interviewRounds.length > 0;
+  const closed = ['Hired', 'Offer', 'Joined', 'Expired'].includes(applicant?.status ?? '');
+  const canSchedule =
+    Boolean(applicant) && !inInterviewProcess && !closed && applicant?.status !== 'Rejected';
+
+  useEffect(() => {
+    if (searchParams.get('schedule') !== '1' || !applicant || !roundsLoaded) return;
+    if (canSchedule) {
+      setScheduleError(null);
+      setScheduleOpen(true);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('schedule');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, applicant, roundsLoaded, canSchedule, setSearchParams]);
+
+  const submitSchedule = async (input: InterviewScheduleInput, round: FirstRound) => {
+    if (!mapId) return;
+    setScheduleError(null);
+    try {
+      await scheduleInterview.mutateAsync({ jobSubscriberMapId: mapId, round, ...input });
+      setScheduleOpen(false);
+      refreshPipeline();
+    } catch (err) {
+      setScheduleError(getErrorMessage(err, 'Could not send the interview to Q3'));
+    }
+  };
+
+  const refreshPipeline = () => {
+    void qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+    void qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] });
+    void refetchApplicant();
+    void refetchOffer();
+  };
 
   useEffect(() => {
     const url = resumeQuery.data?.url;
@@ -106,11 +178,16 @@ export function ApplicantProfilePage() {
     };
   }, [resumeQuery.data?.url]);
 
+  const pendingUndo =
+    pendingDecision != null && isUndoDecision(pendingDecision, applicant?.status ?? '');
+  const deciding = decide.isPending || undoDecision.isPending;
+
   const runDecide = async () => {
     if (!mapId || !pendingDecision) return;
     setActionError(null);
     try {
-      await decide.mutateAsync({ jobSubscriberMapId: mapId, decision: pendingDecision });
+      if (pendingUndo) await undoDecision.mutateAsync(mapId);
+      else await decide.mutateAsync({ jobSubscriberMapId: mapId, decision: pendingDecision });
       setPendingDecision(null);
     } catch (err) {
       setActionError(getErrorMessage(err, 'Failed to update status'));
@@ -184,7 +261,10 @@ export function ApplicantProfilePage() {
     return (
       <EmptyState
         title="Applicant not found"
-        description={getErrorMessage(error, 'This application may have been removed or you do not have access.')}
+        description={getErrorMessage(
+          error,
+          'This application may have been removed or you do not have access.',
+        )}
         action={
           <Link to={employerPaths.applicants}>
             <SecondaryButton>Back to applicants</SecondaryButton>
@@ -207,39 +287,71 @@ export function ApplicantProfilePage() {
           .join(' · ')}
         actions={
           <>
-            <EmployerBadge tone={applicantStatusTone(applicant.status)}>{applicant.status}</EmployerBadge>
-            <SecondaryButton
-              disabled={decide.isPending}
-              className={pipelineActionButtonClass('Shortlisted', applicant.status)}
-              onClick={() => setPendingDecision('Shortlisted')}
-            >
-              <ThumbsUp className={pipelineIconClass('Shortlisted', applicant.status)} />
-              Shortlist
-            </SecondaryButton>
-            <SecondaryButton
-              disabled={decide.isPending}
-              className={pipelineActionButtonClass('Interview', applicant.status)}
-              onClick={() => setPendingDecision('Interview')}
-            >
-              <CalendarClock className={pipelineIconClass('Interview', applicant.status)} />
-              Interview
-            </SecondaryButton>
-            <PrimaryButton
-              disabled={decide.isPending}
-              className={pipelineActionButtonClass('Hired', applicant.status)}
-              onClick={() => setPendingDecision('Hired')}
-            >
-              <UserCheck className={pipelineIconClass('Hired', applicant.status)} />
-              Hire
-            </PrimaryButton>
-            <SecondaryButton
-              disabled={decide.isPending}
-              className={pipelineActionButtonClass('Rejected', applicant.status)}
-              onClick={() => setPendingDecision('Rejected')}
-            >
-              <ThumbsDown className={pipelineIconClass('Rejected', applicant.status)} />
-              Reject
-            </SecondaryButton>
+            <EmployerBadge tone={applicantStatusTone(applicant.status)}>
+              {applicant.stage || applicant.status}
+            </EmployerBadge>
+            {!inInterviewProcess && !closed ? (
+              <>
+                <SecondaryButton
+                  disabled={deciding}
+                  className={pipelineActionButtonClass('Shortlisted', applicant.status)}
+                  onClick={() => setPendingDecision('Shortlisted')}
+                >
+                  <ThumbsUp className={pipelineIconClass('Shortlisted', applicant.status)} />
+                  {applicant.status === 'Shortlisted' ? 'Undo shortlist' : 'Shortlist'}
+                </SecondaryButton>
+                <SecondaryButton
+                  disabled={!canSchedule}
+                  onClick={() => {
+                    setScheduleError(null);
+                    setScheduleOpen(true);
+                  }}
+                >
+                  <CalendarClock className="h-4 w-4" />
+                  Schedule interview
+                </SecondaryButton>
+                <PrimaryButton
+                  disabled={deciding}
+                  className={pipelineActionButtonClass('Hired', applicant.status)}
+                  onClick={() => setPendingDecision('Hired')}
+                >
+                  <UserCheck className={pipelineIconClass('Hired', applicant.status)} />
+                  Hire
+                </PrimaryButton>
+                <SecondaryButton
+                  disabled={deciding}
+                  className={pipelineActionButtonClass('Rejected', applicant.status)}
+                  onClick={() => setPendingDecision('Rejected')}
+                >
+                  <ThumbsDown className={pipelineIconClass('Rejected', applicant.status)} />
+                  {applicant.status === 'Rejected' ? 'Undo reject' : 'Reject'}
+                </SecondaryButton>
+              </>
+            ) : null}
+            {applicant.status === 'Hired' ? (
+              <>
+                <SecondaryButton onClick={() => setDocsOpen(true)}>
+                  <FileText className="h-4 w-4" />
+                  Request documents
+                </SecondaryButton>
+                {!offer ? (
+                  <PrimaryButton onClick={() => setOfferOpen(true)}>
+                    <Mail className="h-4 w-4" />
+                    Create offer
+                  </PrimaryButton>
+                ) : null}
+              </>
+            ) : null}
+            {inInterviewProcess && applicant.status === 'Rejected' ? (
+              <SecondaryButton
+                disabled={deciding}
+                className={pipelineActionButtonClass('Rejected', applicant.status)}
+                onClick={() => setPendingDecision('Rejected')}
+              >
+                <ThumbsDown className={pipelineIconClass('Rejected', applicant.status)} />
+                Undo reject
+              </SecondaryButton>
+            ) : null}
             {applicant.hasResume ? (
               <SecondaryButton disabled={downloading} onClick={() => void onDownloadResume()}>
                 <Download className="h-4 w-4" />
@@ -250,15 +362,41 @@ export function ApplicantProfilePage() {
         }
       />
 
+      {awaitingCompanyReview && (
+        <div className="mb-3 rounded-xl border border-[#1A56DB]/30 bg-[#EBF2FF] px-4 py-3">
+          <p className="text-sm font-semibold text-[#1A56DB]">Review this CV within 14 days</p>
+          <p className="mt-0.5 text-xs text-slate-600">
+            Shortlist or reject it at screening, or schedule an interview straight away with HR,
+            interviewer, mode and 3 slots — Q3 books the slot with the candidate.
+          </p>
+        </div>
+      )}
+
       {actionError && (
-        <p className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{actionError}</p>
+        <p className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          {actionError}
+        </p>
       )}
 
       <div className="grid gap-3 lg:grid-cols-3">
         <section className="space-y-3 lg:col-span-2">
+          {inInterviewProcess && (
+            <Section title="Interview process" icon={<CalendarClock className="h-3.5 w-3.5" />}>
+              <InterviewProcessPanel
+                mapId={mapId}
+                rounds={interviewRounds}
+                candidateName={applicant.fullName || 'the candidate'}
+                canDecide={!closed && applicant.status !== 'Rejected'}
+                onChanged={refreshPipeline}
+              />
+            </Section>
+          )}
+
           {applicant.profileSummary ? (
             <Section title="Profile summary">
-              <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-wrap">{applicant.profileSummary}</p>
+              <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-wrap">
+                {applicant.profileSummary}
+              </p>
             </Section>
           ) : null}
 
@@ -273,7 +411,7 @@ export function ApplicantProfilePage() {
               <Field label="Current city" value={applicant.currentCity || applicant.city} />
               <Field label="Preferred locations" value={applicant.preferredLocations.join(', ')} />
               <Field label="Ready to relocate" value={applicant.readyToRelocate ? 'Yes' : 'No'} />
-              <Field label="Applied on" value={applicant.appliedOn} />
+              <Field label="Applied on" value={dateLabel(applicant.appliedOn)} />
             </dl>
           </Section>
 
@@ -301,7 +439,10 @@ export function ApplicantProfilePage() {
                 <dd className="mt-1 flex flex-wrap gap-1.5">
                   {applicant.skills.length ? (
                     applicant.skills.map((s) => (
-                      <span key={s} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">
+                      <span
+                        key={s}
+                        className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700"
+                      >
                         {s}
                       </span>
                     ))
@@ -326,7 +467,9 @@ export function ApplicantProfilePage() {
                       {e.salary != null ? ` · ${formatInr(e.salary)}` : ''}
                     </p>
                     {e.description ? (
-                      <p className="mt-1 text-[11px] text-slate-600 whitespace-pre-wrap">{e.description}</p>
+                      <p className="mt-1 text-[11px] text-slate-600 whitespace-pre-wrap">
+                        {e.description}
+                      </p>
                     ) : null}
                   </li>
                 ))}
@@ -359,7 +502,10 @@ export function ApplicantProfilePage() {
             <Section title="IT skills">
               <ul className="space-y-2">
                 {applicant.itSkills.map((s, i) => (
-                  <li key={i} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-100 pb-2 last:border-0">
+                  <li
+                    key={i}
+                    className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-100 pb-2 last:border-0"
+                  >
                     <p className="text-xs font-medium text-slate-800">
                       {s.name}
                       {s.version ? ` (${s.version})` : ''}
@@ -387,12 +533,23 @@ export function ApplicantProfilePage() {
                   <li key={i} className="border-b border-slate-100 pb-2 last:border-0">
                     <p className="text-xs font-medium text-slate-800">{p.title}</p>
                     <p className="text-[11px] text-slate-400">
-                      {[p.clientName, p.status, p.from && `${p.from} – ${p.to || 'Present'}`, p.role]
+                      {[
+                        p.clientName,
+                        p.status,
+                        p.from && `${p.from} – ${p.to || 'Present'}`,
+                        p.role,
+                      ]
                         .filter(Boolean)
                         .join(' · ')}
                     </p>
-                    {p.skillsUsed ? <p className="mt-0.5 text-[11px] text-slate-600">Skills: {p.skillsUsed}</p> : null}
-                    {p.details ? <p className="mt-1 text-[11px] text-slate-600 whitespace-pre-wrap">{p.details}</p> : null}
+                    {p.skillsUsed ? (
+                      <p className="mt-0.5 text-[11px] text-slate-600">Skills: {p.skillsUsed}</p>
+                    ) : null}
+                    {p.details ? (
+                      <p className="mt-1 text-[11px] text-slate-600 whitespace-pre-wrap">
+                        {p.details}
+                      </p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -406,7 +563,12 @@ export function ApplicantProfilePage() {
                   <li key={i} className="border-b border-slate-100 pb-2 last:border-0">
                     <p className="text-xs font-medium text-slate-800">
                       {c.url ? (
-                        <a href={c.url} target="_blank" rel="noreferrer" className="text-[#1A56DB] hover:underline">
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#1A56DB] hover:underline"
+                        >
                           {c.name}
                         </a>
                       ) : (
@@ -414,7 +576,11 @@ export function ApplicantProfilePage() {
                       )}
                     </p>
                     <p className="text-[11px] text-slate-400">
-                      {[c.certificationId, c.validFrom && `From ${c.validFrom}`, c.validTill && `Till ${c.validTill}`]
+                      {[
+                        c.certificationId,
+                        c.validFrom && `From ${c.validFrom}`,
+                        c.validTill && `Till ${c.validTill}`,
+                      ]
                         .filter(Boolean)
                         .join(' · ')}
                     </p>
@@ -431,7 +597,12 @@ export function ApplicantProfilePage() {
                   <li key={i} className="border-b border-slate-100 pb-2 last:border-0">
                     <p className="text-xs font-medium text-slate-800">
                       {a.url ? (
-                        <a href={a.url} target="_blank" rel="noreferrer" className="text-[#1A56DB] hover:underline">
+                        <a
+                          href={a.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#1A56DB] hover:underline"
+                        >
                           {a.title}
                         </a>
                       ) : (
@@ -441,7 +612,9 @@ export function ApplicantProfilePage() {
                     <p className="text-[11px] text-slate-400">
                       {[a.kind, a.when].filter(Boolean).join(' · ')}
                     </p>
-                    {a.description ? <p className="mt-1 text-[11px] text-slate-600">{a.description}</p> : null}
+                    {a.description ? (
+                      <p className="mt-1 text-[11px] text-slate-600">{a.description}</p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -455,10 +628,12 @@ export function ApplicantProfilePage() {
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs font-medium text-slate-800">{applicant.resumeFileName || 'Resume.pdf'}</p>
+                    <p className="text-xs font-medium text-slate-800">
+                      {applicant.resumeFileName || 'Resume.pdf'}
+                    </p>
                     {applicant.resumeUploadedAt ? (
                       <p className="text-[11px] text-slate-400">
-                        Uploaded {new Date(applicant.resumeUploadedAt).toLocaleString()}
+                        Uploaded {dateTimeLabel(applicant.resumeUploadedAt)}
                       </p>
                     ) : null}
                   </div>
@@ -470,7 +645,9 @@ export function ApplicantProfilePage() {
                 {resumeQuery.isLoading ? (
                   <p className="text-xs text-slate-400">Loading resume preview…</p>
                 ) : resumeQuery.isError ? (
-                  <p className="text-xs text-rose-600">Could not load resume preview. Try downloading instead.</p>
+                  <p className="text-xs text-rose-600">
+                    Could not load resume preview. Try downloading instead.
+                  </p>
                 ) : resumeQuery.data?.isPdf && resumeQuery.data.url ? (
                   <iframe
                     title="Resume preview"
@@ -502,8 +679,10 @@ export function ApplicantProfilePage() {
                 {applicant.timeline.map((t, i) => (
                   <li key={i} className="border-b border-slate-100 pb-2 last:border-0">
                     <p className="text-xs font-medium text-slate-800">{t.status || 'Update'}</p>
-                    <p className="text-[11px] text-slate-400">{t.at ? new Date(t.at).toLocaleString() : ''}</p>
-                    {t.comments ? <p className="mt-0.5 text-[11px] text-slate-600">{t.comments}</p> : null}
+                    <p className="text-[11px] text-slate-400">{t.at ? dateTimeLabel(t.at) : ''}</p>
+                    {t.comments ? (
+                      <p className="mt-0.5 text-[11px] text-slate-600">{t.comments}</p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -512,108 +691,150 @@ export function ApplicantProfilePage() {
             )}
           </Section>
 
-          {interviewRounds.length > 0 && (
-            <Section title="Interview Rounds" icon={<CalendarClock className="h-3.5 w-3.5" />}>
-              <ul className="space-y-2">
-                {interviewRounds.map((r) => (
-                  <li key={r.roundId} className="border-b border-slate-100 pb-2 last:border-0">
-                    <p className="text-xs font-medium text-slate-800">
-                      R{r.roundNumber}: {r.roundName || `Round ${r.roundNumber}`}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      {[
-                        r.status,
-                        r.result !== 'Pending' && `Result: ${r.result}`,
-                        r.scheduledAt && `Scheduled: ${new Date(r.scheduledAt).toLocaleString()}`,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                    {r.companyFeedback ? (
-                      <p className="mt-0.5 text-[11px] text-slate-600">Feedback: {r.companyFeedback}</p>
-                    ) : null}
-                    {r.interviewerName ? (
-                      <p className="mt-0.5 text-[11px] text-slate-500">Interviewer: {r.interviewerName}</p>
-                    ) : null}
-                    {r.meetingLink ? (
-                      <a href={r.meetingLink} target="_blank" rel="noreferrer" className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-[#1A56DB] hover:underline">
-                        <Link2 className="h-3 w-3" /> Join Meeting
-                      </a>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+          {(applicant.status === 'Hired' ||
+            applicant.status === 'Offer' ||
+            applicant.status === 'Joined') && (
+            <Section title="Documents" icon={<FileText className="h-3.5 w-3.5" />}>
+              <ApplicantDocumentsPanel mapId={mapId} />
             </Section>
           )}
 
           <Section title="Offer Letter" icon={<Mail className="h-3.5 w-3.5" />}>
             {!offer ? (
-              <div>
-                <p className="text-xs text-slate-400">No offer created yet.</p>
-                <SecondaryButton className="mt-2" onClick={() => setOfferOpen(true)}>
-                  Create Offer
-                </SecondaryButton>
-              </div>
+              <p className="text-xs text-slate-400">No offer created yet.</p>
             ) : offer.status === 'Draft' ? (
               <div>
                 <dl className="grid gap-1 text-xs">
-                  <Field label="Salary" value={(offer.offerDetails as Record<string, string>)?.salary} />
-                  <Field label="Position" value={(offer.offerDetails as Record<string, string>)?.position} />
-                  {offer.joiningDate && <Field label="Joining Date" value={new Date(offer.joiningDate).toLocaleDateString()} />}
+                  <Field
+                    label="Salary"
+                    value={(offer.offerDetails as Record<string, string>)?.salary}
+                  />
+                  <Field
+                    label="Position"
+                    value={(offer.offerDetails as Record<string, string>)?.position}
+                  />
+                  {offer.joiningDate && (
+                    <Field label="Joining Date" value={dateLabel(offer.joiningDate)} />
+                  )}
                 </dl>
-                <PrimaryButton className="mt-2" disabled={sendOffer.isPending} onClick={() => void onSendOffer()}>
+                <PrimaryButton
+                  className="mt-2"
+                  disabled={sendOffer.isPending}
+                  onClick={() => void onSendOffer()}
+                >
                   {sendOffer.isPending ? 'Sending…' : 'Send Offer'}
                 </PrimaryButton>
               </div>
             ) : (
               <div>
                 <dl className="grid gap-1 text-xs">
-                  <Field label="Salary" value={(offer.offerDetails as Record<string, string>)?.salary} />
-                  <Field label="Position" value={(offer.offerDetails as Record<string, string>)?.position} />
-                  {offer.joiningDate && <Field label="Joining Date" value={new Date(offer.joiningDate).toLocaleDateString()} />}
+                  <Field
+                    label="Salary"
+                    value={(offer.offerDetails as Record<string, string>)?.salary}
+                  />
+                  <Field
+                    label="Position"
+                    value={(offer.offerDetails as Record<string, string>)?.position}
+                  />
+                  {offer.joiningDate && (
+                    <Field label="Joining Date" value={dateLabel(offer.joiningDate)} />
+                  )}
                   <Field label="Status" value={offer.status} />
-                  {offer.sentAt && <Field label="Sent" value={new Date(offer.sentAt).toLocaleDateString()} />}
-                  {offer.candidateResponseAt && <Field label="Response" value={new Date(offer.candidateResponseAt).toLocaleDateString()} />}
+                  {offer.sentAt && <Field label="Sent" value={dateLabel(offer.sentAt)} />}
+                  {offer.candidateResponseAt && (
+                    <Field label="Response" value={dateLabel(offer.candidateResponseAt)} />
+                  )}
                 </dl>
-                <div className="mt-2">
-                  <EmployerBadge tone={offer.status === 'Accepted' ? 'success' : offer.status === 'Rejected' ? 'danger' : 'primary'}>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <EmployerBadge
+                    tone={
+                      offer.status === 'Accepted' || offer.status === 'Joined'
+                        ? 'success'
+                        : offer.status === 'Rejected'
+                          ? 'danger'
+                          : 'primary'
+                    }
+                  >
                     {offer.status === 'Sent' ? 'Awaiting Response' : offer.status}
                   </EmployerBadge>
+                  {offer.status === 'Accepted' && (
+                    <PrimaryButton
+                      disabled={markJoined.isPending}
+                      onClick={() =>
+                        void markJoined
+                          .mutateAsync(offer.offerId)
+                          .then(refreshPipeline)
+                          .catch((err) =>
+                            setActionError(getErrorMessage(err, 'Failed to mark joined')),
+                          )
+                      }
+                    >
+                      Mark joined
+                    </PrimaryButton>
+                  )}
                 </div>
               </div>
             )}
           </Section>
 
-          {offerOpen && (
-            <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
-              <h3 className="mb-2 text-xs font-semibold text-slate-800">Create Offer</h3>
-              <div className="space-y-2">
-                <label className="block text-xs text-slate-600">
-                  Salary *
-                  <input type="text" value={offerSalary} onChange={(e) => setOfferSalary(e.target.value)}
-                    className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
-                    placeholder="e.g. ₹6,00,000 per annum" />
-                </label>
-                <label className="block text-xs text-slate-600">
-                  Position
-                  <input type="text" value={offerPosition} onChange={(e) => setOfferPosition(e.target.value)}
-                    className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
-                    placeholder={applicant.designation || 'Position title'} />
-                </label>
-                <label className="block text-xs text-slate-600">
-                  Joining Date
-                  <input type="date" value={offerJoiningDate} onChange={(e) => setOfferJoiningDate(e.target.value)}
-                    className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20" />
-                </label>
-                <div className="flex gap-2">
-                  <SecondaryButton onClick={() => setOfferOpen(false)}>Cancel</SecondaryButton>
-                  <PrimaryButton disabled={!offerSalary || createOffer.isPending} onClick={() => void onCreateOffer()}>
-                    {createOffer.isPending ? 'Creating…' : 'Create'}
-                  </PrimaryButton>
-                </div>
+          <Modal
+            open={offerOpen}
+            onClose={() => setOfferOpen(false)}
+            title={`Create offer — ${applicant.fullName || 'candidate'}`}
+          >
+            <div className="space-y-2">
+              <label className="block text-xs text-slate-600">
+                Salary *
+                <input
+                  type="text"
+                  value={offerSalary}
+                  onChange={(e) => setOfferSalary(e.target.value)}
+                  className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
+                  placeholder="e.g. ₹6,00,000 per annum"
+                />
+              </label>
+              <label className="block text-xs text-slate-600">
+                Position
+                <input
+                  type="text"
+                  value={offerPosition}
+                  onChange={(e) => setOfferPosition(e.target.value)}
+                  className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
+                  placeholder={applicant.designation || 'Position title'}
+                />
+              </label>
+              <label className="block text-xs text-slate-600">
+                Joining Date
+                <input
+                  type="date"
+                  value={offerJoiningDate}
+                  onChange={(e) => setOfferJoiningDate(e.target.value)}
+                  className="mt-0.5 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
+                />
+              </label>
+              <div className="flex gap-2">
+                <SecondaryButton onClick={() => setOfferOpen(false)}>Cancel</SecondaryButton>
+                <PrimaryButton
+                  disabled={!offerSalary || createOffer.isPending}
+                  onClick={() => void onCreateOffer()}
+                >
+                  {createOffer.isPending ? 'Creating…' : 'Create'}
+                </PrimaryButton>
               </div>
             </div>
-          )}
+          </Modal>
+
+          <Modal
+            open={docsOpen}
+            onClose={() => setDocsOpen(false)}
+            title={`Request documents — ${applicant.fullName || 'candidate'}`}
+          >
+            <RequestDocumentsForm
+              mapId={mapId}
+              onDone={() => setDocsOpen(false)}
+              onCancel={() => setDocsOpen(false)}
+            />
+          </Modal>
 
           <Section title="Notes" icon={<StickyNote className="h-3.5 w-3.5" />}>
             <textarea
@@ -623,14 +844,17 @@ export function ApplicantProfilePage() {
               placeholder="Add an internal note…"
               className="mb-2 w-full rounded-lg border border-slate-500 px-2.5 py-1.5 text-xs outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
             />
-            <PrimaryButton disabled={saveNote.isPending || !note.trim()} onClick={() => void submitNote()}>
+            <PrimaryButton
+              disabled={saveNote.isPending || !note.trim()}
+              onClick={() => void submitNote()}
+            >
               Save note
             </PrimaryButton>
             <ul className="mt-3 space-y-2">
               {(notesData?.notes ?? []).map((n) => (
                 <li key={n.noteId} className="rounded-lg bg-slate-50 px-2.5 py-1.5">
                   <p className="text-xs text-slate-700 whitespace-pre-wrap">{n.note}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-400">{new Date(n.createdAt).toLocaleString()}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">{dateTimeLabel(n.createdAt)}</p>
                 </li>
               ))}
               {!notesData?.notes?.length && <p className="text-xs text-slate-400">No notes yet.</p>}
@@ -641,18 +865,46 @@ export function ApplicantProfilePage() {
 
       <ConfirmDialog
         open={pendingDecision != null}
-        title={pendingDecision ? decisionConfirm(pendingDecision, applicant.fullName).title : ''}
+        title={
+          pendingDecision
+            ? decisionConfirm(pendingDecision, applicant.fullName, pendingUndo).title
+            : ''
+        }
         description={
-          pendingDecision ? decisionConfirm(pendingDecision, applicant.fullName).description : undefined
+          pendingDecision
+            ? decisionConfirm(pendingDecision, applicant.fullName, pendingUndo).description
+            : undefined
         }
         confirmLabel={
-          pendingDecision ? decisionConfirm(pendingDecision, applicant.fullName).confirmLabel : 'Confirm'
+          pendingDecision
+            ? decisionConfirm(pendingDecision, applicant.fullName, pendingUndo).confirmLabel
+            : 'Confirm'
         }
-        tone={pendingDecision ? decisionConfirm(pendingDecision, applicant.fullName).tone : 'primary'}
-        loading={decide.isPending}
+        tone={
+          pendingDecision
+            ? decisionConfirm(pendingDecision, applicant.fullName, pendingUndo).tone
+            : 'primary'
+        }
+        loading={deciding}
         onCancel={() => setPendingDecision(null)}
         onConfirm={() => void runDecide()}
       />
+
+      <Modal
+        open={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        title={`Schedule interview — ${applicant.fullName || 'candidate'}`}
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+      >
+        <ScheduleInterviewForm
+          chooseFirstRound
+          submitLabel="Send to Q3 for scheduling"
+          busy={scheduleInterview.isPending}
+          error={scheduleError}
+          onSubmit={(input, round) => void submitSchedule(input, round)}
+          onCancel={() => setScheduleOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }

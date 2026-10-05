@@ -268,6 +268,32 @@ export function useForwardToCompany() {
   });
 }
 
+/** Company shortlists (with slots) or rejects a forwarded CV. */
+export function useCompanyReviewReferral() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      referralId: number;
+      action: 'shortlist' | 'reject';
+      interviewerName?: string;
+      interviewerEmail?: string;
+      hrName?: string;
+      hrEmail?: string;
+      interviewMode?: string;
+      meetingLink?: string;
+      slots?: string[];
+    }) => {
+      const { referralId, ...body } = payload;
+      return api.post(`/recruitment/referrals/${referralId}/company-review`, body).then((r) => r.data);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recruitment', 'referrals'] });
+      qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] });
+      qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+    },
+  });
+}
+
 // ── Multi-round interview management ──────────────────────────────────
 
 /** List interview rounds for a job-subscriber mapping. */
@@ -296,6 +322,19 @@ export function useCreateInterviewRound() {
       meetingLink?: string;
       slots?: string[];
     }) => api.post('/recruitment/interview-rounds', payload).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] });
+      qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+    },
+  });
+}
+
+/** Add/replace offered slots for a round. */
+export function useAddRoundSlots() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { roundId: number; slots: string[] }) =>
+      api.post(`/recruitment/interview-rounds/${payload.roundId}/slots`, { slots: payload.slots }).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] }),
   });
 }
@@ -314,9 +353,15 @@ export function useSelectSlot(roundId: number) {
 export function useSubmitRoundResult(roundId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { result: 'Passed' | 'Failed' | 'Hold'; feedback?: string }) =>
-      api.post(`/recruitment/interview-rounds/${roundId}/result`, payload).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] }),
+    mutationFn: (payload: {
+      result: 'Passed' | 'Failed' | 'Hold';
+      feedback?: string;
+      next?: 'Round2' | 'Round3' | 'Final' | 'Select';
+    }) => api.post(`/recruitment/interview-rounds/${roundId}/result`, payload).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] });
+      qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+    },
   });
 }
 
@@ -362,5 +407,18 @@ export function useRespondToOffer(offerId: number) {
     mutationFn: (accept: boolean) =>
       api.post(`/recruitment/offers/${offerId}/respond`, { accept }).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['recruitment', 'offers'] }),
+  });
+}
+
+/** Mark candidate as joined after offer acceptance. */
+export function useMarkJoined() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (offerId: number) =>
+      api.post(`/recruitment/offers/${offerId}/mark-joined`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recruitment', 'offers'] });
+      qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+    },
   });
 }

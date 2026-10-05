@@ -7,9 +7,9 @@ import { INTERVIEW_ROUND } from './support/recruitment-fixtures';
 test.use({ serviceWorkers: 'block' });
 
 /**
- * Employer Applicant Profile — Gap 10 (interview feedback view).
+ * Employer Applicant Profile — interview process view.
  * Route: /company/applicants/:id
- * APIs: GET /clients/me/applicants/:id, GET /recruitment/interview-rounds/:mapId
+ * APIs: GET /clients/me/applicants/:id, GET /clients/me/applicants/:id/interview-rounds
  */
 
 test.describe('Employer Applicant Profile', () => {
@@ -17,6 +17,9 @@ test.describe('Employer Applicant Profile', () => {
     await mockEmployerSession(page);
     await page.route('**/api/clients/me/applicants/1/notes', (route) =>
       route.fulfill(json({ notes: [] })),
+    );
+    await page.route('**/api/clients/me/applicants/1/interview-rounds', (route) =>
+      route.fulfill(json([])),
     );
   });
 
@@ -37,15 +40,26 @@ test.describe('Employer Applicant Profile', () => {
   });
 
   test('shows interview rounds with results and feedback', async ({ page }) => {
+    const contacts = {
+      hrName: 'Priya HR',
+      hrEmail: 'hr@example.com',
+      interviewerEmail: 'sharma@example.com',
+      guestName: null,
+      guestEmail: null,
+      interviewMode: 'Video',
+      location: null,
+      createdAt: '2026-08-25T10:00:00.000Z',
+      updatedAt: null,
+    };
     const rounds = [
-      { ...INTERVIEW_ROUND, roundId: 1, roundNumber: 1, roundName: 'Screening', status: 'Completed', result: 'Passed', companyFeedback: 'Strong communication skills' },
-      { ...INTERVIEW_ROUND, roundId: 2, roundNumber: 2, roundName: 'Technical', status: 'Scheduled', result: 'Pending', companyFeedback: null },
+      { ...INTERVIEW_ROUND, ...contacts, roundId: 1, roundNumber: 1, roundName: 'Round 1', status: 'Completed', result: 'Passed', companyFeedback: 'Strong communication skills' },
+      { ...INTERVIEW_ROUND, ...contacts, roundId: 2, roundNumber: 2, roundName: 'Round 2', status: 'Pending', result: 'Pending', scheduledAt: null, companyFeedback: null },
     ];
 
     await page.route('**/api/clients/me/applicants/1', (route) =>
       route.fulfill(json(APPLICANT_DETAIL)),
     );
-    await page.route('**/api/recruitment/interview-rounds/**', (route) =>
+    await page.route('**/api/clients/me/applicants/1/interview-rounds', (route) =>
       route.fulfill(json(rounds)),
     );
 
@@ -53,11 +67,11 @@ test.describe('Employer Applicant Profile', () => {
 
     await expect(page.getByText('Ravi Kumar')).toBeVisible({ timeout: 10_000 });
 
-    // Interview Rounds section
-    await expect(page.getByText('Interview Rounds')).toBeVisible();
-    await expect(page.getByText('R1: Screening')).toBeVisible();
-    await expect(page.getByText('R2: Technical')).toBeVisible();
-    await expect(page.getByText('Result: Passed')).toBeVisible();
+    await expect(page.getByText('Interview process')).toBeVisible();
+    await expect(page.getByText('Round 1', { exact: true })).toBeVisible();
+    await expect(page.getByText('Round 2', { exact: true })).toBeVisible();
+    await expect(page.getByText('Selected', { exact: true })).toBeVisible();
+    await expect(page.getByText('Awaiting Q3 scheduling', { exact: true })).toBeVisible();
     await expect(page.getByText('Feedback: Strong communication skills')).toBeVisible();
   });
 
@@ -72,8 +86,8 @@ test.describe('Employer Applicant Profile', () => {
     await page.goto('/company/applicants/1');
 
     await expect(page.getByText('Ravi Kumar')).toBeVisible({ timeout: 10_000 });
-    // Interview Rounds section should not appear when there are no rounds
-    await expect(page.getByText('Interview Rounds')).toHaveCount(0);
+    // The interview process section only appears once a round exists
+    await expect(page.getByText('Interview process')).toHaveCount(0);
   });
 
   test('decision buttons are present', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { EmailService } from '@/common/email/email.service';
@@ -19,13 +19,38 @@ export class OfferLetterService {
     return this.prisma.client;
   }
 
-  /** Create a draft offer letter for a selected candidate. */
+  /** Create a draft offer letter for a selected candidate (docs must be approved). */
   async createOffer(input: {
     jobSubscriberMapId: number;
     offerDetails: Record<string, unknown>;
     joiningDate?: string;
     userId: number;
   }) {
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: BigInt(input.jobSubscriberMapId) },
+      select: { subscriberID: true, jobMapStatusID: true },
+    });
+    if (!mapping) throw new NotFoundException('Application not found');
+    if (Number(mapping.jobMapStatusID) !== JobMapStatus.SELECTED) {
+      throw new BadRequestException('Offer can only be created after the candidate is selected');
+    }
+
+    const docs = await this.db.candidateDocumentUploaded.findMany({
+      where: { subscriberID: mapping.subscriberID },
+      select: { flgStatus: true },
+    });
+    if (docs.length === 0) {
+      throw new BadRequestException('Request and approve candidate documents before creating an offer');
+    }
+    if (docs.some((d) => d.flgStatus !== 1)) {
+      throw new BadRequestException('All candidate documents must be approved before creating an offer');
+    }
+
+    const existing = await this.db.offerLetter.findUnique({
+      where: { jobSubscriberMapID: BigInt(input.jobSubscriberMapId) },
+    });
+    if (existing) throw new BadRequestException('An offer already exists for this application');
+
     const offer = await this.db.offerLetter.create({
       data: {
         jobSubscriberMapID: BigInt(input.jobSubscriberMapId),
@@ -152,5 +177,32 @@ export class OfferLetterService {
       sentAt: offer.sentAt?.toISOString() ?? null,
       candidateResponseAt: offer.candidateResponseAt?.toISOString() ?? null,
     };
+  }
+
+  /** Mark candidate as joined after offer acceptance. */
+  async markJoined(offerId: number, userId: number) {
+    const offer = await this.db.offerLetter.findUnique({
+      where: { id: BigInt(offerId) },
+      select: { id: true, status: true, jobSubscriberMapID: true },
+    });
+    if (!offer) throw new NotFoundException('Offer letter not found');
+    if (offer.status !== 'Accepted') {
+      throw new BadRequestException('Offer must be accepted before marking joined');
+    }
+
+    await this.applications.transitionStatus(
+      Number(offer.jobSubscriberMapID),
+      JobMapStatus.JOINED,
+      userId,
+    );
+
+    await this.audit.record({
+      userId,
+      action: 'offer.joined',
+      entity: 'OfferLetter',
+      entityId: Number(offer.id),
+    });
+
+    return { ok: true };
   }
 }

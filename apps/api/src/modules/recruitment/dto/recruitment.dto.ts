@@ -197,6 +197,14 @@ export class SubmitRoundResultDto {
   @IsOptional()
   @IsString()
   feedback?: string;
+
+  @ApiPropertyOptional({
+    enum: ['Round2', 'Round3', 'Final', 'Select'],
+    description: 'When Passed — advance to next round or Select',
+  })
+  @IsOptional()
+  @IsIn(['Round2', 'Round3', 'Final', 'Select'])
+  next?: 'Round2' | 'Round3' | 'Final' | 'Select';
 }
 
 export class CreateOfferDto {
@@ -218,4 +226,54 @@ export class RespondToOfferDto {
   @ApiProperty({ description: 'true = Accept, false = Reject' })
   @IsBoolean()
   accept!: boolean;
+}
+
+export class CompanyReviewReferralDto {
+  @ApiProperty({ enum: ['shortlist', 'reject'] })
+  @IsIn(['shortlist', 'reject'])
+  action!: 'shortlist' | 'reject';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  interviewerName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  interviewerEmail?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  hrName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  hrEmail?: string;
+
+  @ApiPropertyOptional({ description: 'Interview mode name or id' })
+  @IsOptional()
+  @IsString()
+  interviewMode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  meetingLink?: string;
+
+  @ApiPropertyOptional({ type: [String], description: '3–4 ISO slot datetimes when shortlisting' })
+  @IsOptional()
+  @IsArray()
+  @IsDateString({}, { each: true })
+  slots?: string[];
+}
+
+export class AddSlotsDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsDateString({}, { each: true })
+  slots!: string[];
 }

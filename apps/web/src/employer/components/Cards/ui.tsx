@@ -159,15 +159,17 @@ export function SimpleBarChart({
   return (
     <div className="rounded-lg border border-slate-200/80 bg-white p-3 shadow-sm">
       <h3 className="mb-2 text-xs font-semibold text-slate-800">{title}</h3>
-      <div className="flex h-28 items-end gap-1">
+      <div className="flex h-28 gap-1">
         {values.map((v, i) => (
-          <div key={i} className="flex flex-1 flex-col items-center gap-0.5">
-            <div
-              className={cn('w-full rounded-t transition-all', brand.bg)}
-              style={{ height: `${(v / max) * 100}%`, minHeight: 3, opacity: 0.75 + (i % 3) * 0.08 }}
-              title={String(v)}
-            />
-            <span className="text-[9px] text-slate-400">{months[i] ?? i + 1}</span>
+          <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center gap-0.5" title={`${months[i] ?? i + 1}: ${v}`}>
+            <div className="flex w-full flex-1 flex-col items-center justify-end">
+              {v > 0 && <span className="text-[9px] font-semibold text-slate-500">{v}</span>}
+              <div
+                className={cn('w-full rounded-t transition-all', brand.bg)}
+                style={{ height: `${(v / max) * 85}%`, minHeight: 3, opacity: 0.75 + (i % 3) * 0.08 }}
+              />
+            </div>
+            <span className="w-full truncate text-center text-[9px] text-slate-400">{months[i] ?? i + 1}</span>
           </div>
         ))}
       </div>

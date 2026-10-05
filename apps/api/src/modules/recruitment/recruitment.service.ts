@@ -534,4 +534,20 @@ export class RecruitmentService {
       company: j.client?.clientName ?? '',
     }));
   }
+
+  /** Resolve employer client id from login (same link as EmployersService). */
+  async clientIdForUser(userId: number) {
+    const user = await this.db.secUser.findUnique({
+      where: { userID: userId },
+      select: { nodeID: true },
+    });
+    const person = user?.nodeID
+      ? await this.db.mstrPerson.findUnique({
+          where: { personNodeID: user.nodeID },
+          select: { clientID: true },
+        })
+      : null;
+    if (!person?.clientID) throw new NotFoundException('No company is linked to this login');
+    return person.clientID;
+  }
 }

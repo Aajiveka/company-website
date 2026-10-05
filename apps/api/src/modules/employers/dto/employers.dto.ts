@@ -1,16 +1,25 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
+  IsDateString,
+  IsEmail,
   IsIn,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
+
+/** 1000 lakhs. CTC is stored in rupees. */
+const MAX_CTC_RUPEES = 100_000_000;
 
 export class ListJobsQueryDto {
   @ApiPropertyOptional({ description: 'Search designation, department, location, description' })
@@ -86,14 +95,16 @@ export class CreateJobDto {
   @IsInt()
   industryTypeId?: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Annual CTC in rupees (max 1000 lakhs)' })
   @IsInt()
   @Min(0)
+  @Max(MAX_CTC_RUPEES)
   minCtc!: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Annual CTC in rupees (max 1000 lakhs)' })
   @IsInt()
   @Min(0)
+  @Max(MAX_CTC_RUPEES)
   maxCtc!: number;
 
   @ApiPropertyOptional()
@@ -217,12 +228,14 @@ export class UpdateJobDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(MAX_CTC_RUPEES)
   minCtc?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(MAX_CTC_RUPEES)
   maxCtc?: number;
 
   @ApiPropertyOptional()
@@ -321,17 +334,167 @@ export class SetJobStatusDto {
   status!: 'Active' | 'Closed' | 'Archived';
 }
 
+export class RequestDocumentsDto {
+  @ApiPropertyOptional({ type: [Number], description: 'tblMstrDocumentType ids' })
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  documentTypeIds?: number[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Free-text document names; new ones join the master list' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(200, { each: true })
+  documentNames?: string[];
+}
+
+/** Interviews go through ScheduleInterviewDto, not a bare status change. */
 export class ApplicantDecisionDto {
-  @ApiProperty({ enum: ['Shortlisted', 'Interview', 'Hired', 'Rejected'] })
-  @IsIn(['Shortlisted', 'Interview', 'Hired', 'Rejected'])
-  decision!: 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+  @ApiProperty({ enum: ['Shortlisted', 'Hired', 'Rejected'] })
+  @IsIn(['Shortlisted', 'Hired', 'Rejected'])
+  decision!: 'Shortlisted' | 'Hired' | 'Rejected';
+}
+
+export const INTERVIEW_MODES = ['Telephonic', 'Face to face', 'Video call'] as const;
+
+/** What Q3 needs to schedule a round with the candidate. */
+export class InterviewScheduleDetailsDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  hrName!: string;
+
+  @ApiProperty()
+  @IsEmail()
+  @MaxLength(200)
+  hrEmail!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  interviewerName!: string;
+
+  @ApiProperty()
+  @IsEmail()
+  @MaxLength(200)
+  interviewerEmail!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  guestName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((o: InterviewScheduleDetailsDto) => Boolean(o.guestEmail?.trim()))
+  @IsEmail()
+  @MaxLength(200)
+  guestEmail?: string;
+
+  @ApiProperty({ enum: INTERVIEW_MODES })
+  @IsIn(INTERVIEW_MODES)
+  mode!: (typeof INTERVIEW_MODES)[number];
+
+  @ApiPropertyOptional({ description: 'Video call link, if the employer already has one' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  meetingLink?: string;
+
+  @ApiPropertyOptional({ description: 'Venue — required for face-to-face rounds' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  location?: string;
+
+  @ApiProperty({ type: [String], description: 'Exactly 3 ISO datetimes the employer can do' })
+  @IsArray()
+  @ArrayMinSize(3)
+  @ArrayMaxSize(3)
+  @IsDateString({}, { each: true })
+  slots!: string[];
+}
+
+export class ScheduleInterviewDto extends InterviewScheduleDetailsDto {
+  @ApiPropertyOptional({ enum: ['Round1', 'Final'], description: 'First round of the process' })
+  @IsOptional()
+  @IsIn(['Round1', 'Final'])
+  round?: 'Round1' | 'Final';
+}
+
+export class InterviewResultDto {
+  @ApiProperty({ enum: ['Select', 'Reject', 'Hold'] })
+  @IsIn(['Select', 'Reject', 'Hold'])
+  decision!: 'Select' | 'Reject' | 'Hold';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  feedback?: string;
+
+  @ApiPropertyOptional({
+    enum: ['Round2', 'Round3', 'Final', 'Hire'],
+    description: 'Required with Select: schedule another round, or hire',
+  })
+  @ValidateIf((o: InterviewResultDto) => o.decision === 'Select')
+  @IsIn(['Round2', 'Round3', 'Final', 'Hire'])
+  next?: 'Round2' | 'Round3' | 'Final' | 'Hire';
+
+  @ApiPropertyOptional({ type: InterviewScheduleDetailsDto })
+  @ValidateIf((o: InterviewResultDto) => o.decision === 'Select' && o.next !== 'Hire')
+  @ValidateNested()
+  @Type(() => InterviewScheduleDetailsDto)
+  nextRound?: InterviewScheduleDetailsDto;
 }
 
 export class ListApplicantsQueryDto {
-  @ApiPropertyOptional({ enum: ['New', 'Shortlisted', 'Interview', 'Hired', 'Rejected'] })
+  @ApiPropertyOptional({
+    enum: [
+      'New',
+      'Shortlisted',
+      'Interview',
+      'Hired',
+      'Rejected',
+      'SentToCompany',
+      'Referred',
+      'Expired',
+      'Offer',
+      'Joined',
+      'OnHold',
+    ],
+  })
   @IsOptional()
-  @IsIn(['New', 'Shortlisted', 'Interview', 'Hired', 'Rejected'])
-  status?: 'New' | 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+  @IsIn([
+    'New',
+    'Shortlisted',
+    'Interview',
+    'Hired',
+    'Rejected',
+    'SentToCompany',
+    'Referred',
+    'Expired',
+    'Offer',
+    'Joined',
+    'OnHold',
+  ])
+  status?:
+    | 'New'
+    | 'Shortlisted'
+    | 'Interview'
+    | 'Hired'
+    | 'Rejected'
+    | 'SentToCompany'
+    | 'Referred'
+    | 'Expired'
+    | 'Offer'
+    | 'Joined'
+    | 'OnHold';
 
   @ApiPropertyOptional({ description: 'Search name, designation, city, company, skills' })
   @IsOptional()

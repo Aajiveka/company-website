@@ -150,7 +150,9 @@ export default defineConfig(({ mode: _mode }) => ({
     // Proxy API calls to the NestJS backend (default PORT=4000) to avoid CORS.
     // Override with VITE_API_PROXY if the API runs elsewhere.
     proxy: {
-      '/api': { target: process.env.VITE_API_PROXY ?? 'http://localhost:4000', changeOrigin: true },
+      // Prefer 127.0.0.1 over localhost — on Windows, localhost often resolves to ::1 first
+      // and Vite then gets ECONNREFUSED while Nest is listening on IPv4.
+      '/api': { target: process.env.VITE_API_PROXY ?? 'http://127.0.0.1:4000', changeOrigin: true },
     },
   },
   // `vite preview` serves the production build. CI drives the e2e suite against it, so it
@@ -159,7 +161,7 @@ export default defineConfig(({ mode: _mode }) => ({
     host: true,
     port: 5173,
     proxy: {
-      '/api': { target: process.env.VITE_API_PROXY ?? 'http://localhost:4000', changeOrigin: true },
+      '/api': { target: process.env.VITE_API_PROXY ?? 'http://127.0.0.1:4000', changeOrigin: true },
     },
   },
   test: {
