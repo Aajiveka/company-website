@@ -73,7 +73,7 @@ export function JobPreviewModal({
               />
               <Row
                 label="CTC"
-                value={`${Number(data.minCtc || 0).toLocaleString()}–${Number(data.maxCtc || 0).toLocaleString()}`}
+                value={`${Number(data.minCtc || 0)} - ${Number(data.maxCtc || 0)} Lacs`}
               />
               <Row label="Industry" value={data.industryType} />
               <Row label="Department" value={data.department} />
@@ -107,13 +107,7 @@ export function JobPreviewModal({
                 label="Interview"
                 value={
                   data.interviewRounds.length
-                    ? data.interviewRounds
-                        .map((r) => {
-                          const parts = [`R${r.round}`, r.process].filter(Boolean);
-                          if (r.mode) parts.push(r.mode);
-                          return parts.join(' — ');
-                        })
-                        .join(' · ')
+                    ? `${data.interviewRounds.length} round${data.interviewRounds.length > 1 ? 's' : ''}`
                     : '—'
                 }
               />

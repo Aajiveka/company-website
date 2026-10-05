@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { CalendarClock, Eye, ThumbsDown, ThumbsUp, UserCheck, X } from 'lucide-react';
 import {
   EmployerBadge,
@@ -11,9 +11,14 @@ import {
 import { ConfirmDialog } from '@/employer/components/ConfirmDialog';
 import { DataTable, type Column } from '@/employer/components/Tables/DataTable';
 import { employerPaths } from '@/employer/constants/paths';
-import { useApplicants, useCompanyJobs, useDecideApplicant } from '@/employer/services/employer.api';
+import {
+  useApplicants,
+  useCompanyJobs,
+  useDecideApplicant,
+  useUndoApplicantDecision,
+} from '@/employer/services/employer.api';
 import type { ApplicantDecision, ApplicantPipelineStatus, EmployerApplicant } from '@/employer/services/employer.types';
-import { decisionConfirm } from '@/employer/utils/decisionConfirm';
+import { decisionConfirm, isUndoDecision } from '@/employer/utils/decisionConfirm';
 import {
   pipelineIconButtonClass,
   pipelineIconClass,
@@ -31,6 +36,8 @@ function statusFromPath(pathname: string): ApplicantPipelineStatus | undefined {
   if (pathname.endsWith('/rejected')) return 'Rejected';
   return undefined;
 }
+
+const CLOSED_STATUSES: ApplicantPipelineStatus[] = ['Hired', 'Offer', 'Joined', 'Expired'];
 
 const triggerClass =
   'h-8 w-full rounded-lg border border-slate-500 bg-white px-2.5 text-xs text-slate-800 outline-none transition focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20';
@@ -55,6 +62,7 @@ const NOTICE_OPTIONS = [
 
 export function ApplicantListPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const filter = statusFromPath(location.pathname);
   const [query, setQuery] = useState('');
   const [jobId, setJobId] = useState<number | ''>('');
@@ -67,6 +75,7 @@ export function ApplicantListPage() {
     jobSubscriberMapId: number;
     name: string;
     decision: ApplicantDecision;
+    undo: boolean;
   } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -91,6 +100,8 @@ export function ApplicantListPage() {
   const to = Math.min(page * pageSize, total);
 
   const decide = useDecideApplicant();
+  const undoDecision = useUndoApplicantDecision();
+  const busy = decide.isPending || undoDecision.isPending;
 
   const cityOptions = useMemo(() => {
     const set = new Set<string>();
@@ -124,19 +135,20 @@ export function ApplicantListPage() {
   };
 
   const askDecide = useCallback(
-    (jobSubscriberMapId: number, name: string, decision: ApplicantDecision) => {
+    (jobSubscriberMapId: number, name: string, decision: ApplicantDecision, status: string) => {
       setActionError(null);
-      setConfirm({ jobSubscriberMapId, name, decision });
+      setConfirm({ jobSubscriberMapId, name, decision, undo: isUndoDecision(decision, status) });
     },
     [],
   );
 
   const confirmDecide = async () => {
     if (!confirm) return;
-    const { jobSubscriberMapId, decision } = confirm;
+    const { jobSubscriberMapId, decision, undo } = confirm;
     setActionError(null);
     try {
-      await decide.mutateAsync({ jobSubscriberMapId, decision });
+      if (undo) await undoDecision.mutateAsync(jobSubscriberMapId);
+      else await decide.mutateAsync({ jobSubscriberMapId, decision });
       setConfirm(null);
     } catch (err) {
       setActionError(getErrorMessage(err, 'Failed to update status'));
@@ -184,61 +196,84 @@ export function ApplicantListPage() {
       {
         key: 'status',
         header: 'Status',
-        render: (row) => <EmployerBadge tone={applicantStatusTone(row.status)}>{row.status}</EmployerBadge>,
+        render: (row) => (
+          <EmployerBadge tone={applicantStatusTone(row.status)}>{row.stage || row.status}</EmployerBadge>
+        ),
       },
       {
         key: 'actions',
         header: 'Actions',
-        render: (row) => (
-          <div className="flex items-center gap-1">
-            <Link
-              to={employerPaths.applicantProfile(row.jobSubscriberMapId)}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#1A56DB]"
-              title="View"
-            >
-              <Eye className="h-4 w-4" />
-            </Link>
-            <button
-              type="button"
-              disabled={decide.isPending}
-              onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Shortlisted')}
-              className={pipelineIconButtonClass('Shortlisted', row.status)}
-              title="Shortlist"
-            >
-              <ThumbsUp className={pipelineIconClass('Shortlisted', row.status)} />
-            </button>
-            <button
-              type="button"
-              disabled={decide.isPending}
-              onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Interview')}
-              className={pipelineIconButtonClass('Interview', row.status)}
-              title="Mark Interview"
-            >
-              <CalendarClock className={pipelineIconClass('Interview', row.status)} />
-            </button>
-            <button
-              type="button"
-              disabled={decide.isPending}
-              onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Hired')}
-              className={pipelineIconButtonClass('Hired', row.status)}
-              title="Hire"
-            >
-              <UserCheck className={pipelineIconClass('Hired', row.status)} />
-            </button>
-            <button
-              type="button"
-              disabled={decide.isPending}
-              onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Rejected')}
-              className={pipelineIconButtonClass('Rejected', row.status)}
-              title="Reject"
-            >
-              <ThumbsDown className={pipelineIconClass('Rejected', row.status)} />
-            </button>
-          </div>
-        ),
+        render: (row) => {
+          const profile = employerPaths.applicantProfile(row.jobSubscriberMapId);
+          const inProcess = (row.roundCount ?? 0) > 0;
+          const closed = CLOSED_STATUSES.includes(row.status);
+          const screening = !inProcess && !closed;
+          return (
+            <div className="flex items-center gap-1">
+              <Link
+                to={profile}
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#1A56DB]"
+                title="View"
+              >
+                <Eye className="h-4 w-4" />
+              </Link>
+              {screening && (
+                <>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Shortlisted', row.status)}
+                    className={pipelineIconButtonClass('Shortlisted', row.status)}
+                    title={row.status === 'Shortlisted' ? 'Undo shortlist' : 'Shortlist'}
+                  >
+                    <ThumbsUp className={pipelineIconClass('Shortlisted', row.status)} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={row.status === 'Rejected'}
+                    onClick={() => navigate(`${profile}?schedule=1`)}
+                    className={pipelineIconButtonClass('Interview', row.status)}
+                    title={row.status === 'Rejected' ? 'Undo the rejection to schedule an interview' : 'Schedule interview'}
+                  >
+                    <CalendarClock className={pipelineIconClass('Interview', row.status)} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Hired', row.status)}
+                    className={pipelineIconButtonClass('Hired', row.status)}
+                    title="Hire without interview"
+                  >
+                    <UserCheck className={pipelineIconClass('Hired', row.status)} />
+                  </button>
+                </>
+              )}
+              {inProcess && !closed && row.status !== 'Rejected' && (
+                <Link
+                  to={profile}
+                  className={pipelineIconButtonClass('Interview', 'Interview')}
+                  title="Manage interview rounds"
+                >
+                  <CalendarClock className="h-4 w-4" />
+                </Link>
+              )}
+              {(screening || row.status === 'Rejected') && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => askDecide(row.jobSubscriberMapId, row.fullName, 'Rejected', row.status)}
+                  className={pipelineIconButtonClass('Rejected', row.status)}
+                  title={row.status === 'Rejected' ? 'Undo rejection' : 'Reject'}
+                >
+                  <ThumbsDown className={pipelineIconClass('Rejected', row.status)} />
+                </button>
+              )}
+            </div>
+          );
+        },
       },
     ],
-    [askDecide, decide.isPending],
+    [askDecide, busy, navigate],
   );
 
   const tabs = [
@@ -420,11 +455,11 @@ export function ApplicantListPage() {
 
       <ConfirmDialog
         open={confirm != null}
-        title={confirm ? decisionConfirm(confirm.decision, confirm.name).title : ''}
-        description={confirm ? decisionConfirm(confirm.decision, confirm.name).description : undefined}
-        confirmLabel={confirm ? decisionConfirm(confirm.decision, confirm.name).confirmLabel : 'Confirm'}
-        tone={confirm ? decisionConfirm(confirm.decision, confirm.name).tone : 'primary'}
-        loading={decide.isPending}
+        title={confirm ? decisionConfirm(confirm.decision, confirm.name, confirm.undo).title : ''}
+        description={confirm ? decisionConfirm(confirm.decision, confirm.name, confirm.undo).description : undefined}
+        confirmLabel={confirm ? decisionConfirm(confirm.decision, confirm.name, confirm.undo).confirmLabel : 'Confirm'}
+        tone={confirm ? decisionConfirm(confirm.decision, confirm.name, confirm.undo).tone : 'primary'}
+        loading={busy}
         onCancel={() => setConfirm(null)}
         onConfirm={() => void confirmDecide()}
       />

@@ -33,8 +33,62 @@ export interface CompanyProfile {
   description: string;
 }
 
-export type ApplicantPipelineStatus = 'New' | 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
-export type ApplicantDecision = 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+export type ApplicantPipelineStatus =
+  | 'New'
+  | 'Shortlisted'
+  | 'Interview'
+  | 'Hired'
+  | 'Rejected'
+  | 'SentToCompany'
+  | 'Referred'
+  | 'Expired'
+  | 'Offer'
+  | 'Joined'
+  | 'OnHold';
+/** Plain status changes; an interview goes through `InterviewScheduleInput` instead. */
+export type ApplicantDecision = 'Shortlisted' | 'Hired' | 'Rejected';
+export type ApplicantAction = ApplicantDecision | 'Interview';
+
+export interface InterviewScheduleInput {
+  hrName: string;
+  hrEmail: string;
+  interviewerName: string;
+  interviewerEmail: string;
+  guestName?: string;
+  guestEmail?: string;
+  mode: InterviewMode;
+  meetingLink?: string;
+  location?: string;
+  /** Exactly 3 ISO datetimes. */
+  slots: string[];
+}
+
+export type NextInterviewStep = 'Round2' | 'Round3' | 'Final' | 'Hire';
+
+export interface EmployerInterviewRound {
+  roundId: number;
+  roundNumber: number;
+  roundName: string;
+  interviewerName: string | null;
+  interviewerEmail: string | null;
+  hrName: string | null;
+  hrEmail: string | null;
+  guestName: string | null;
+  guestEmail: string | null;
+  interviewModeId: number | null;
+  interviewMode: string | null;
+  meetingLink: string | null;
+  location: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  scheduledAt: string | null;
+  /** Pending (Q3 has not booked a slot) | Scheduled | Completed | Cancelled */
+  status: string;
+  /** Pending | Passed | Failed | Hold */
+  result: string;
+  companyFeedback: string | null;
+  slots: Array<{ slotId: number; slotDateTime: string; isSelected: boolean }>;
+}
 
 export interface EmployerApplicant {
   jobSubscriberMapId: number;
@@ -48,6 +102,12 @@ export interface EmployerApplicant {
   totalExp?: number | null;
   jobStatus: string;
   status: ApplicantPipelineStatus;
+  /** e.g. "Rejected at screening", "Round 2 · awaiting Q3 scheduling", "Selected after Final round". */
+  stage?: string;
+  /** Interview rounds so far; once non-zero, decisions happen on the rounds. */
+  roundCount?: number;
+  /** When the latest round is booked by Q3. */
+  interviewAt?: string | null;
   skills: string[];
   company: string;
   notice: string;
@@ -159,31 +219,43 @@ export interface EmployerApplicantDetail extends EmployerApplicant {
     marks: string;
   }>;
   timeline: Array<{ status: string; at: string; comments: string }>;
+  referralId?: number | null;
+  referralStatus?: string | null;
+  companyReviewStatus?: string | null;
 }
 
-export interface CompanyBillingHire {
-  jobSubscriberMapId: number;
-  subscriberId: number;
-  jobId: number;
-  fullName: string;
-  email: string;
-  mobile: string;
-  city: string;
-  designation: string;
-  jobCity: string;
-  hiredOn: string;
-  fee: number;
-  currency: string;
+export interface ApplicantDocumentRow {
+  /** Null while the document is requested but not uploaded yet. */
+  docUploadId: number | null;
+  documentType: string;
+  documentPath: string | null;
+  /** Requested | Pending | Verified | Rejected */
+  status: string;
+  uploadedAt: string | null;
 }
 
-export interface CompanyBilling {
-  hireFee: number;
-  currency: string;
-  hireCount: number;
-  subtotal: number;
+export interface CompanyInvoice {
+  invoiceId: number;
+  invoiceNo: string;
+  invoiceDate: string;
+  dueDate: string | null;
+  description: string;
+  amount: number;
   tax: number;
   total: number;
-  hires: CompanyBillingHire[];
+  /** Unpaid | Paid | Cancelled */
+  status: string;
+  paidAt: string | null;
+}
+
+/** Only invoices the admin has raised — nothing is billed automatically. */
+export interface CompanyBilling {
+  currency: string;
+  invoiceCount: number;
+  totalBilled: number;
+  totalPaid: number;
+  outstanding: number;
+  invoices: CompanyInvoice[];
 }
 
 export interface CompanyAnalytics {
@@ -193,11 +265,24 @@ export interface CompanyAnalytics {
   draftJobs: number;
   archivedJobs: number;
   totalApplications: number;
+  /** Current stage counts — they add up to totalApplications. */
   mapped: number;
+  inReview: number;
   shortlisted: number;
   interviewScheduled: number;
+  onHold: number;
   selected: number;
   rejected: number;
+  rejectedAtScreening: number;
+  rejectedAfterInterview: number;
+  closedOther: number;
+  /** How far applications got (cumulative). */
+  funnel: {
+    applied: number;
+    passedScreening: number;
+    interviewed: number;
+    hired: number;
+  };
   rates: {
     shortlistRate: number;
     interviewRate: number;

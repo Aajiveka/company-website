@@ -21,7 +21,9 @@ import {
 import { employerPaths } from '@/employer/constants/paths';
 import { useApplicants, useCompanyAnalytics } from '@/employer/services/employer.api';
 import { applicantStatusTone } from '@/employer/utils/pipelineActions';
+import { dateLabel, dateTimeLabel } from '@/employer/utils/format';
 import { getErrorMessage } from '@/lib/axios';
+import type { EmployerApplicant } from '@/employer/services/employer.types';
 
 const statIcons: Record<string, ReactNode> = {
   totalJobs: <Briefcase className="h-5 w-5" />,
@@ -32,33 +34,63 @@ const statIcons: Record<string, ReactNode> = {
   hired: <Users className="h-5 w-5" />,
 };
 
+/** Booked interviews soonest first, then rounds still waiting on Q3 or on feedback. */
+function upcomingFirst(rows: EmployerApplicant[]): EmployerApplicant[] {
+  const now = Date.now();
+  const time = (a: EmployerApplicant) => {
+    const t = a.interviewAt ? new Date(a.interviewAt).getTime() : NaN;
+    return Number.isNaN(t) || t < now ? Number.POSITIVE_INFINITY : t;
+  };
+  return [...rows].sort((a, b) => time(a) - time(b));
+}
+
+const shortLabel = (s: string) => (s.length > 6 ? `${s.slice(0, 5)}…` : s || '—');
+
 export function DashboardPage() {
   const { data: analytics, isLoading, isError, error } = useCompanyAnalytics();
-  const { data: applicantsRes } = useApplicants({ page: 1, pageSize: 50 });
-  const applicants = applicantsRes?.items ?? [];
+  const { data: latestRes } = useApplicants({ page: 1, pageSize: 6 });
+  const { data: interviewRes } = useApplicants({ page: 1, pageSize: 20, status: 'Interview' });
+  const { data: onHoldRes } = useApplicants({ page: 1, pageSize: 20, status: 'OnHold' });
 
   const stats = [
     { id: 'totalJobs', label: 'Total Jobs', value: analytics?.totalJobs ?? 0 },
     { id: 'activeJobs', label: 'Active Jobs', value: analytics?.activeJobs ?? 0 },
     { id: 'draftJobs', label: 'Draft Jobs', value: analytics?.draftJobs ?? 0 },
     { id: 'applicants', label: 'Applicants', value: analytics?.totalApplications ?? 0 },
-    { id: 'interviews', label: 'Interviews', value: analytics?.interviewScheduled ?? 0 },
+    { id: 'interviews', label: 'In Interview', value: analytics?.interviewScheduled ?? 0 },
     { id: 'hired', label: 'Hired', value: analytics?.selected ?? 0 },
   ];
 
+  const snapshot = analytics
+    ? [
+        { label: 'New', value: analytics.mapped },
+        { label: 'Awaiting review', value: analytics.inReview },
+        { label: 'Shortlisted', value: analytics.shortlisted },
+        { label: 'In interview', value: analytics.interviewScheduled },
+        { label: 'On hold', value: analytics.onHold },
+        { label: 'Hired', value: analytics.selected },
+        { label: 'Rejected at screening', value: analytics.rejectedAtScreening },
+        { label: 'Rejected after interview', value: analytics.rejectedAfterInterview },
+        { label: 'Expired / withdrawn', value: analytics.closedOther },
+      ]
+    : [];
   const funnelSeries = analytics
     ? [
-        analytics.mapped,
-        analytics.shortlisted,
-        analytics.interviewScheduled,
-        analytics.selected,
+        analytics.funnel.applied,
+        analytics.funnel.passedScreening,
+        analytics.funnel.interviewed,
+        analytics.funnel.hired,
         analytics.rejected,
       ]
     : [];
+  const funnelLabels = ['Applied', 'Screened', 'Interview', 'Hired', 'Rejected'];
 
-  const jobAppsSeries = (analytics?.jobPerformance ?? []).slice(0, 12).map((j) => j.applications);
-  const latest = applicants.slice(0, 6);
-  const interviews = applicants.filter((a) => a.status === 'Interview').slice(0, 6);
+  const topJobs = (analytics?.jobPerformance ?? []).slice(0, 8);
+  const latest = latestRes?.items ?? [];
+  const interviews = upcomingFirst([
+    ...(interviewRes?.items ?? []),
+    ...(onHoldRes?.items ?? []).filter((a) => (a.roundCount ?? 0) > 0),
+  ]).slice(0, 6);
 
   return (
     <div>
@@ -101,10 +133,15 @@ export function DashboardPage() {
       </div>
 
       <div className="mt-3 grid gap-2 lg:grid-cols-2">
-        <SimpleBarChart title="Pipeline (Mapped → Hired / Rejected)" values={funnelSeries} />
+        <SimpleBarChart
+          title="Hiring funnel (Applied → Hired / Rejected)"
+          values={funnelSeries.length ? funnelSeries : [0, 0, 0, 0, 0]}
+          labels={funnelLabels}
+        />
         <SimpleBarChart
           title="Applications by job"
-          values={jobAppsSeries.length ? jobAppsSeries : [0]}
+          values={topJobs.length ? topJobs.map((j) => j.applications) : [0]}
+          labels={topJobs.length ? topJobs.map((j) => shortLabel(j.designation)) : ['—']}
         />
       </div>
 
@@ -115,25 +152,17 @@ export function DashboardPage() {
             <EmployerBadge tone="primary">Live</EmployerBadge>
           </div>
           <ul className="space-y-2 text-xs text-slate-700">
-            <li className="flex justify-between border-b border-slate-100 pb-2">
-              <span>New / Mapped</span>
-              <span className="font-semibold">{analytics?.mapped ?? 0}</span>
-            </li>
-            <li className="flex justify-between border-b border-slate-100 pb-2">
-              <span>Shortlisted</span>
-              <span className="font-semibold">{analytics?.shortlisted ?? 0}</span>
-            </li>
-            <li className="flex justify-between border-b border-slate-100 pb-2">
-              <span>Interview</span>
-              <span className="font-semibold">{analytics?.interviewScheduled ?? 0}</span>
-            </li>
-            <li className="flex justify-between border-b border-slate-100 pb-2">
-              <span>Hired</span>
-              <span className="font-semibold">{analytics?.selected ?? 0}</span>
-            </li>
-            <li className="flex justify-between">
-              <span>Rejected</span>
-              <span className="font-semibold">{analytics?.rejected ?? 0}</span>
+            {snapshot
+              .filter((s) => s.value > 0 || ['New', 'Shortlisted', 'In interview', 'Hired'].includes(s.label))
+              .map((s) => (
+                <li key={s.label} className="flex justify-between border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                  <span>{s.label}</span>
+                  <span className="font-semibold">{s.value}</span>
+                </li>
+              ))}
+            <li className="flex justify-between border-t border-slate-200 pt-2 font-semibold text-slate-800">
+              <span>Total applications</span>
+              <span>{analytics?.totalApplications ?? 0}</span>
             </li>
           </ul>
         </section>
@@ -152,9 +181,11 @@ export function DashboardPage() {
                       {iv.fullName}
                     </Link>
                     <p className="text-[11px] text-slate-500">{iv.designation}</p>
-                    <p className="mt-0.5 text-[11px] text-slate-400">Applied {iv.appliedOn}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {iv.interviewAt ? dateTimeLabel(iv.interviewAt) : `Applied ${dateLabel(iv.appliedOn)}`}
+                    </p>
                   </div>
-                  <EmployerBadge tone="warning">Interview</EmployerBadge>
+                  <EmployerBadge tone={applicantStatusTone(iv.status)}>{iv.stage || iv.status}</EmployerBadge>
                 </li>
               ))}
             </ul>
@@ -185,7 +216,7 @@ export function DashboardPage() {
                       {a.designation} · {a.experience || '—'}
                     </p>
                   </div>
-                  <EmployerBadge tone={applicantStatusTone(a.status)}>{a.status}</EmployerBadge>
+                  <EmployerBadge tone={applicantStatusTone(a.status)}>{a.stage || a.status}</EmployerBadge>
                 </li>
               ))}
             </ul>

@@ -1,4 +1,4 @@
-import type { ApplicantDecision } from '@/employer/services/employer.types';
+import type { ApplicantDecision, ApplicantPipelineStatus } from '@/employer/services/employer.types';
 
 export type DecisionConfirm = {
   title: string;
@@ -7,35 +7,46 @@ export type DecisionConfirm = {
   tone: 'primary' | 'danger';
 };
 
+/** Clicking Shortlist or Reject again on a candidate already in that status undoes it. */
+export function isUndoDecision(decision: ApplicantDecision, status: ApplicantPipelineStatus | string) {
+  return (decision === 'Shortlisted' || decision === 'Rejected') && status === decision;
+}
+
 /** Copy for pipeline action confirmations (list / profile / compare). */
-export function decisionConfirm(decision: ApplicantDecision, candidateName?: string): DecisionConfirm {
+export function decisionConfirm(
+  decision: ApplicantDecision,
+  candidateName?: string,
+  undo = false,
+): DecisionConfirm {
   const name = candidateName?.trim() || 'this candidate';
+  if (undo) {
+    const what = decision === 'Shortlisted' ? 'shortlist' : 'rejection';
+    return {
+      title: decision === 'Shortlisted' ? 'Undo shortlist?' : 'Undo rejection?',
+      description: `Undo the ${what} of ${name}? They will go back to their previous status.`,
+      confirmLabel: decision === 'Shortlisted' ? 'Undo shortlist' : 'Undo rejection',
+      tone: 'primary',
+    };
+  }
   switch (decision) {
     case 'Shortlisted':
       return {
         title: 'Shortlist candidate?',
-        description: `Move ${name} to Shortlisted? You can change their status later.`,
+        description: `Shortlist ${name} at screening? You can schedule their interview next.`,
         confirmLabel: 'Shortlist',
-        tone: 'primary',
-      };
-    case 'Interview':
-      return {
-        title: 'Mark for interview?',
-        description: `Mark ${name} as Interview? This updates their pipeline status.`,
-        confirmLabel: 'Mark interview',
         tone: 'primary',
       };
     case 'Hired':
       return {
-        title: 'Hire candidate?',
-        description: `Mark ${name} as Hired? This is a final pipeline status.`,
+        title: 'Hire without interview?',
+        description: `Select ${name} directly, without an interview round? This is a final pipeline status.`,
         confirmLabel: 'Hire',
         tone: 'primary',
       };
     case 'Rejected':
       return {
         title: 'Reject candidate?',
-        description: `Reject ${name}? They will move to the Rejected list.`,
+        description: `Reject ${name} at screening? They will move to the Rejected list.`,
         confirmLabel: 'Reject',
         tone: 'danger',
       };

@@ -17,6 +17,9 @@ import type {
   JobPostInput,
   ApplicantDecision,
   ApplicantPipelineStatus,
+  EmployerInterviewRound,
+  InterviewScheduleInput,
+  NextInterviewStep,
   UpdateCompanyProfileInput,
 } from './employer.types';
 
@@ -352,7 +355,7 @@ export async function downloadBillingCsv() {
   const blob = res.data as Blob;
   const disposition = String(res.headers['content-disposition'] ?? '');
   const match = /filename="?([^"]+)"?/i.exec(disposition);
-  const fileName = match?.[1] || `aajiveka-hire-billing-${new Date().toISOString().slice(0, 10)}.csv`;
+  const fileName = match?.[1] || `aajiveka-invoices-${new Date().toISOString().slice(0, 10)}.csv`;
   const href = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = href;
@@ -397,15 +400,23 @@ export function downloadAnalyticsSummaryCsv(data: CompanyAnalytics) {
   row(['DraftJobs', data.draftJobs]);
   row(['ArchivedJobs', data.archivedJobs]);
   row(['TotalApplications', data.totalApplications]);
-  row(['Mapped', data.mapped]);
+  row(['New', data.mapped]);
+  row(['AwaitingReview', data.inReview]);
   row(['Shortlisted', data.shortlisted]);
-  row(['InterviewScheduled', data.interviewScheduled]);
+  row(['InInterview', data.interviewScheduled]);
+  row(['OnHold', data.onHold]);
   row(['Hired', data.selected]);
-  row(['Rejected', data.rejected]);
+  row(['RejectedAtScreening', data.rejectedAtScreening]);
+  row(['RejectedAfterInterview', data.rejectedAfterInterview]);
+  row(['ExpiredOrWithdrawn', data.closedOther]);
+  row(['PassedScreening', data.funnel?.passedScreening ?? '']);
+  row(['Interviewed', data.funnel?.interviewed ?? '']);
   row(['ShortlistRatePct', data.rates?.shortlistRate ?? '']);
   row(['InterviewRatePct', data.rates?.interviewRate ?? '']);
   row(['HireRatePct', data.rates?.hireRate ?? '']);
   row(['RejectRatePct', data.rates?.rejectRate ?? '']);
+  row(['InterviewFromShortlistPct', data.rates?.interviewFromShortlist ?? '']);
+  row(['HireFromInterviewPct', data.rates?.hireFromInterview ?? '']);
   lines.push('');
   row([
     'JobId',
@@ -413,8 +424,8 @@ export function downloadAnalyticsSummaryCsv(data: CompanyAnalytics) {
     'City',
     'Status',
     'Applications',
-    'Shortlisted',
-    'Interview',
+    'PassedScreening',
+    'Interviewed',
     'Hired',
     'Rejected',
     'ShortlistRatePct',
@@ -463,6 +474,72 @@ export function useDecideApplicant() {
   });
 }
 
+/** Undo a shortlist or rejection; the API restores the previous status. */
+export function useUndoApplicantDecision() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobSubscriberMapId: number) =>
+      api.post(`/clients/me/applicants/${jobSubscriberMapId}/decision/undo`).then((r) => r.data),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+      void qc.invalidateQueries({ queryKey: ['employer', 'analytics'] });
+      void qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] });
+    },
+  });
+}
+
+function invalidateApplicantPipeline(qc: ReturnType<typeof useQueryClient>) {
+  void qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
+  void qc.invalidateQueries({ queryKey: ['employer', 'analytics'] });
+  void qc.invalidateQueries({ queryKey: ['recruitment', 'interview-rounds'] });
+}
+
+export function useApplicantInterviewRounds(jobSubscriberMapId: number | null) {
+  return useQuery({
+    queryKey: ['employer', 'applicants', 'rounds', jobSubscriberMapId],
+    queryFn: () =>
+      api
+        .get<EmployerInterviewRound[]>(`/clients/me/applicants/${jobSubscriberMapId}/interview-rounds`)
+        .then((r) => r.data),
+    enabled: jobSubscriberMapId != null,
+  });
+}
+
+/** Starts the interview process — the round and its 3 slots go to Q3 to book. */
+export function useScheduleInterview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { jobSubscriberMapId: number; round?: 'Round1' | 'Final' } & InterviewScheduleInput) => {
+      const { jobSubscriberMapId, ...body } = payload;
+      return api.post(`/clients/me/applicants/${jobSubscriberMapId}/interview-rounds`, body).then((r) => r.data);
+    },
+    onSuccess: () => invalidateApplicantPipeline(qc),
+  });
+}
+
+export function useRecordInterviewResult() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      jobSubscriberMapId: number;
+      roundId: number;
+      decision: 'Select' | 'Reject' | 'Hold';
+      feedback?: string;
+      next?: NextInterviewStep;
+      nextRound?: InterviewScheduleInput;
+    }) => {
+      const { jobSubscriberMapId, roundId, ...body } = payload;
+      return api
+        .post(`/clients/me/applicants/${jobSubscriberMapId}/interview-rounds/${roundId}/result`, body)
+        .then((r) => r.data);
+    },
+    onSuccess: () => {
+      invalidateApplicantPipeline(qc);
+      void qc.invalidateQueries({ queryKey: ['employer', 'billing'] });
+    },
+  });
+}
+
 /** Bulk pipeline decisions. */
 export function useBulkDecideApplicants() {
   const qc = useQueryClient();
@@ -476,6 +553,60 @@ export function useBulkDecideApplicants() {
       void qc.invalidateQueries({ queryKey: ['employer', 'applicants'] });
       void qc.invalidateQueries({ queryKey: ['employer', 'analytics'] });
       void qc.invalidateQueries({ queryKey: ['employer', 'billing'] });
+    },
+  });
+}
+
+/** List documents for an applicant. */
+export function useApplicantDocuments(jobSubscriberMapId: number | undefined) {
+  return useQuery({
+    queryKey: ['employer', 'applicants', 'documents', jobSubscriberMapId],
+    queryFn: () =>
+      api
+        .get<import('./employer.types').ApplicantDocumentRow[]>(
+          `/clients/me/applicants/${jobSubscriberMapId}/documents`,
+        )
+        .then((r) => r.data),
+    enabled: jobSubscriberMapId != null,
+  });
+}
+
+/** Approve or request corrections on an applicant document. */
+export function useReviewApplicantDocument(jobSubscriberMapId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { docUploadId: number; status: 'Approved' | 'NeedsCorrection'; comments?: string }) =>
+      api.post(`/clients/me/applicants/${jobSubscriberMapId}/documents/review`, body).then((r) => r.data),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['employer', 'applicants', 'documents', jobSubscriberMapId] });
+    },
+  });
+}
+
+/** Ask Q3 to collect document types from a selected candidate. */
+export function useRequestableDocumentTypes() {
+  return useQuery({
+    queryKey: ['employer', 'document-types'],
+    queryFn: () =>
+      api.get<Array<{ documentTypeId: number; name: string }>>('/clients/me/document-types').then((r) => r.data),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useRequestApplicantDocuments(jobSubscriberMapId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (documentNames: string[]) =>
+      api
+        .post<{ ok: boolean; requested: number; alreadyRequested: number }>(
+          `/clients/me/applicants/${jobSubscriberMapId}/document-request`,
+          { documentNames },
+        )
+        .then((r) => r.data),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['employer', 'applicants', 'documents', jobSubscriberMapId] });
+      void qc.invalidateQueries({ queryKey: ['employer', 'applicants', 'detail', jobSubscriberMapId] });
+      void qc.invalidateQueries({ queryKey: ['employer', 'document-types'] });
     },
   });
 }
