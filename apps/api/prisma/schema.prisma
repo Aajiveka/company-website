@@ -1576,8 +1576,11 @@ model InterviewRound {
   interviewerEmail             String? @db.VarChar(200)           @map("InterviewerEmail")
   hrName                       String? @db.VarChar(200)           @map("HRName")
   hrEmail                      String? @db.VarChar(200)           @map("HREmail")
+  guestName                    String? @db.VarChar(200)           @map("GuestName")
+  guestEmail                   String? @db.VarChar(200)           @map("GuestEmail")
   interviewModeID              Int?                               @map("InterviewModeID")
   meetingLink                  String? @db.VarChar(500)           @map("MeetingLink")
+  location                     String? @db.VarChar(500)           @map("Location")
   scheduledAt                  DateTime? @db.Timestamp(6)         @map("ScheduledAt")
   /// Pending | Scheduled | Completed | Cancelled
   status                       String @db.VarChar(20)             @default("Pending") @map("Status")
@@ -1607,6 +1610,27 @@ model InterviewSlot {
 
   @@index([interviewRoundID])
   @@map("tblInterviewSlot")
+}
+
+/// Invoice the Aajiveka admin raises to a company; the employer Billing page lists only these.
+model ClientInvoice {
+  id                           BigInt                             @id @default(autoincrement()) @map("ClientInvoiceID")
+  clientID                     BigInt                             @map("ClientID")  // FK -> ClientMstr (confirmed)
+  invoiceNo                    String @db.VarChar(50)             @unique @map("InvoiceNo")
+  invoiceDate                  DateTime @db.Date                  @map("InvoiceDate")
+  dueDate                      DateTime? @db.Date                 @map("DueDate")
+  description                  String? @db.VarChar(2000)          @map("Description")
+  amount                       Decimal @db.Decimal(14, 2)         @map("Amount")
+  tax                          Decimal @db.Decimal(14, 2)         @default(0) @map("Tax")
+  total                        Decimal @db.Decimal(14, 2)         @map("Total")
+  /// Unpaid | Paid | Cancelled
+  status                       String @db.VarChar(20)             @default("Unpaid") @map("Status")
+  paidAt                       DateTime? @db.Timestamp(6)         @map("PaidAt")
+  createdByUserID              BigInt?                            @map("CreatedByUserID")
+  createdAt                    DateTime @db.Timestamp(6)          @default(now()) @map("CreatedAt")
+
+  @@index([clientID])
+  @@map("tblClientInvoice")
 }
 
 /// CV referral pipeline: Q2 refers CVs → Q3 validates → sends to Company.

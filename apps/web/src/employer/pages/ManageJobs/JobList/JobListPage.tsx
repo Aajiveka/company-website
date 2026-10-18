@@ -27,6 +27,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { getErrorMessage } from '@/lib/axios';
 import { ConfirmDialog } from '@/employer/components/ConfirmDialog';
+import { ctcLacsLabel, dateLabel } from '@/employer/utils/format';
 import { JobViewModal } from './JobViewModal';
 import { cn } from '@/lib/cn';
 
@@ -56,7 +57,7 @@ function experienceLabel(j: JobListing) {
 }
 
 function salaryLabel(j: JobListing) {
-  return `${j.minCtc.toLocaleString()}–${j.maxCtc.toLocaleString()}`;
+  return ctcLacsLabel(j.minCtc, j.maxCtc);
 }
 
 function StatusToggle({
@@ -237,7 +238,7 @@ function JobListBody({ filterStatus }: { filterStatus?: JobStatus | null } = {})
           />
         ),
       },
-      { key: 'postedOn', header: 'Posted Date', render: (row) => row.postedOn },
+      { key: 'postedOn', header: 'Posted Date', render: (row) => dateLabel(row.postedOn) },
       {
         key: 'actions',
         header: 'Actions',

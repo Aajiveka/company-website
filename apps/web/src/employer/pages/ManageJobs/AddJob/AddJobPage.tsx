@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Eye, FileEdit, Plus, Send, Trash2 } from 'lucide-react';
+import { Eye, FileEdit, Send } from 'lucide-react';
 import {
   PageHeader,
   PrimaryButton,
@@ -15,12 +15,26 @@ import {
   usePostJob,
   useUpdateJob,
 } from '@/employer/services/employer.api';
-import type { JobPostInput, InterviewMode } from '@/employer/services/employer.types';
-import { INTERVIEW_MODE_OPTIONS } from '@/employer/services/employer.types';
+import type { JobPostInput } from '@/employer/services/employer.types';
 import { getErrorMessage } from '@/lib/axios';
 import { JobPreviewModal, type JobPreviewData } from './JobPreviewModal';
 
 const DESC_MAX = 1000;
+const ROUNDS_MIN = 1;
+const ROUNDS_MAX = 10;
+const CTC_MAX_LAKHS = 1000;
+const RUPEES_PER_LAKH = 100_000;
+
+/** CTC is stored in rupees; the form works in lakhs. */
+const rupeesToLakhs = (rupees: number | null | undefined) =>
+  String(Number(((rupees ?? 0) / RUPEES_PER_LAKH).toFixed(2)));
+const lakhsToRupees = (lakhs: number) => Math.round(lakhs * RUPEES_PER_LAKH);
+
+/** The job stores one entry per round; the public job page counts and lists them. */
+const interviewRoundList = (count: number) =>
+  Number.isInteger(count) && count >= ROUNDS_MIN && count <= ROUNDS_MAX
+    ? Array.from({ length: count }, (_, i) => ({ round: i + 1, process: `Round ${i + 1}` }))
+    : [];
 
 const fieldClass =
   'mt-0.5 h-8 w-full rounded-lg border border-slate-500 bg-white px-2.5 text-xs text-slate-800 outline-none transition focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20 disabled:bg-slate-50';
@@ -34,11 +48,14 @@ type FieldKey =
   | 'workModeId'
   | 'minExp'
   | 'cityId'
+  | 'minCtc'
+  | 'maxCtc'
   | 'educationDetail'
   | 'industryTypeId'
   | 'department'
   | 'skills'
-  | 'description';
+  | 'description'
+  | 'interviewRounds';
 
 const FIELD_ORDER: FieldKey[] = [
   'designationId',
@@ -46,11 +63,14 @@ const FIELD_ORDER: FieldKey[] = [
   'workModeId',
   'minExp',
   'cityId',
+  'minCtc',
+  'maxCtc',
   'educationDetail',
   'industryTypeId',
   'department',
   'skills',
   'description',
+  'interviewRounds',
 ];
 
 function Field({
@@ -89,8 +109,6 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-type Round = { id: number; process: string; mode: InterviewMode | '' };
-
 type FormState = {
   designationId: string;
   employmentTypeId: string;
@@ -109,6 +127,7 @@ type FormState = {
   description: string;
   keyResponsibilities: string;
   preferredQualifications: string;
+  interviewRounds: string;
 };
 
 const emptyForm: FormState = {
@@ -129,6 +148,7 @@ const emptyForm: FormState = {
   description: '',
   keyResponsibilities: '',
   preferredQualifications: '',
+  interviewRounds: '1',
 };
 
 export function AddJobPage() {
@@ -155,7 +175,6 @@ function AddJobBody() {
 
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, boolean>>>({});
-  const [rounds, setRounds] = useState<Round[]>([{ id: 1, process: '', mode: '' }]);
   const [selectedSkills, setSelectedSkills] = useState<SkillTagOption[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [hydrated, setHydrated] = useState(!isEdit);
@@ -176,8 +195,8 @@ function AddJobBody() {
       industryTypeId: String(existing.industryTypeId || ''),
       minExp: String(existing.minExp ?? 0),
       maxExp: existing.maxExp != null ? String(existing.maxExp) : '',
-      minCtc: String(existing.minCtc ?? 0),
-      maxCtc: String(existing.maxCtc ?? 0),
+      minCtc: rupeesToLakhs(existing.minCtc),
+      maxCtc: rupeesToLakhs(existing.maxCtc),
       educationDetail: existing.educationDetail ?? '',
       reportTo: existing.reportTo ?? '',
       teamSize: existing.teamSize != null ? String(existing.teamSize) : '',
@@ -186,6 +205,9 @@ function AddJobBody() {
       description: (existing.description ?? '').slice(0, DESC_MAX),
       keyResponsibilities: existing.keyResponsibilities ?? '',
       preferredQualifications: existing.preferredQualifications ?? '',
+      interviewRounds: String(
+        Math.min(ROUNDS_MAX, Math.max(ROUNDS_MIN, existing.interviewProcess?.length || ROUNDS_MIN)),
+      ),
     });
     setSelectedSkills(
       labels.length
@@ -194,15 +216,6 @@ function AddJobBody() {
             const fromMaster = masters?.skills?.find((s) => s.id === id);
             return { id, label: fromMaster?.label ?? `Skill #${id}` };
           }),
-    );
-    setRounds(
-      existing.interviewProcess?.length
-        ? existing.interviewProcess.map((r) => ({
-            id: r.round,
-            process: r.process,
-            mode: (INTERVIEW_MODE_OPTIONS.some((o) => o.id === r.mode) ? r.mode : '') as InterviewMode | '',
-          }))
-        : [{ id: 1, process: '', mode: '' }],
     );
     setHydrated(true);
   }, [isEdit, existing, hydrated, masters?.skills]);
@@ -226,22 +239,6 @@ function AddJobBody() {
   const employmentOptions = useMemo(() => masters?.employmentTypes ?? [], [masters]);
   const workModeOptions = useMemo(() => masters?.workModes ?? [], [masters]);
 
-  const addRound = () => {
-    setRounds((prev) => [...prev, { id: prev.length + 1, process: '', mode: '' }]);
-  };
-
-  const removeRound = (roundId: number) => {
-    setRounds((prev) =>
-      prev.length <= 1
-        ? prev
-        : prev.filter((r) => r.id !== roundId).map((r, i) => ({ ...r, id: i + 1 })),
-    );
-  };
-
-  const updateRound = (roundId: number, patch: Partial<Pick<Round, 'process' | 'mode'>>) => {
-    setRounds((prev) => prev.map((r) => (r.id === roundId ? { ...r, ...patch } : r)));
-  };
-
   const onSkillsChange = (next: SkillTagOption[]) => {
     setSelectedSkills(next);
     if (next.length) clearFieldError('skills');
@@ -259,8 +256,27 @@ function AddJobBody() {
     });
   };
 
-  const collectPublishErrors = (): Partial<Record<FieldKey, boolean>> => {
+  const roundCount = Number(form.interviewRounds);
+  const minCtcLakhs = Number(form.minCtc || 0);
+  const maxCtcLakhs = Number(form.maxCtc || 0);
+
+  /** Range checks that apply to drafts and publishing alike. */
+  const collectRangeErrors = (): Partial<Record<FieldKey, boolean>> => {
     const errors: Partial<Record<FieldKey, boolean>> = {};
+    const ctcOk = (v: number) => !Number.isNaN(v) && v >= 0 && v <= CTC_MAX_LAKHS;
+    if (!ctcOk(minCtcLakhs)) errors.minCtc = true;
+    if (!ctcOk(maxCtcLakhs)) errors.maxCtc = true;
+    if (!errors.minCtc && !errors.maxCtc && maxCtcLakhs > 0 && minCtcLakhs > maxCtcLakhs) {
+      errors.maxCtc = true;
+    }
+    if (!Number.isInteger(roundCount) || roundCount < ROUNDS_MIN || roundCount > ROUNDS_MAX) {
+      errors.interviewRounds = true;
+    }
+    return errors;
+  };
+
+  const collectPublishErrors = (): Partial<Record<FieldKey, boolean>> => {
+    const errors: Partial<Record<FieldKey, boolean>> = collectRangeErrors();
     if (!Number(form.designationId)) errors.designationId = true;
     if (!Number(form.employmentTypeId)) errors.employmentTypeId = true;
     if (!Number(form.workModeId)) errors.workModeId = true;
@@ -275,7 +291,7 @@ function AddJobBody() {
   };
 
   const collectDraftErrors = (): Partial<Record<FieldKey, boolean>> => {
-    const errors: Partial<Record<FieldKey, boolean>> = {};
+    const errors: Partial<Record<FieldKey, boolean>> = collectRangeErrors();
     if (!Number(form.designationId)) errors.designationId = true;
     if (!Number(form.employmentTypeId)) errors.employmentTypeId = true;
     if (!Number(form.workModeId)) errors.workModeId = true;
@@ -288,9 +304,13 @@ function AddJobBody() {
     if (Object.keys(errors).length) {
       setFieldErrors(errors);
       setError(
-        asDraft
-          ? 'To save a draft, select Position, Employment type, Work mode, and Location.'
-          : 'Please fill the highlighted required fields.',
+        errors.minCtc || errors.maxCtc
+          ? `CTC must be between 0 and ${CTC_MAX_LAKHS} lakhs, and min cannot exceed max.`
+          : errors.interviewRounds
+            ? `Interview round must be a whole number from ${ROUNDS_MIN} to ${ROUNDS_MAX}.`
+            : asDraft
+              ? 'To save a draft, select Position, Employment type, Work mode, and Location.'
+              : 'Please fill the highlighted required fields.',
       );
       scrollToFirstError(errors);
       return null;
@@ -304,8 +324,6 @@ function AddJobBody() {
     const industryTypeId = Number(form.industryTypeId);
     const minExp = Number(form.minExp);
     const maxExp = form.maxExp.trim() === '' ? undefined : Number(form.maxExp);
-    const minCtc = Number(form.minCtc);
-    const maxCtc = Number(form.maxCtc);
     const teamSize = form.teamSize.trim() === '' ? undefined : Number(form.teamSize);
 
     return {
@@ -316,8 +334,8 @@ function AddJobBody() {
       industryTypeId: industryTypeId || undefined,
       minExp: Number.isNaN(minExp) ? undefined : minExp,
       maxExp: maxExp != null && !Number.isNaN(maxExp) ? maxExp : undefined,
-      minCtc: Number.isNaN(minCtc) ? 0 : minCtc,
-      maxCtc: Number.isNaN(maxCtc) ? 0 : maxCtc,
+      minCtc: lakhsToRupees(minCtcLakhs),
+      maxCtc: lakhsToRupees(maxCtcLakhs),
       description: form.description.trim().slice(0, DESC_MAX),
       keyResponsibilities: form.keyResponsibilities.trim() || undefined,
       preferredQualifications: form.preferredQualifications.trim() || undefined,
@@ -327,13 +345,7 @@ function AddJobBody() {
       department: form.department.trim() || undefined,
       subDepartment: form.subDepartment.trim() || undefined,
       skills: selectedSkills.map((s) => s.label.trim()).filter(Boolean),
-      interviewProcess: rounds
-        .filter((r) => r.process.trim() || r.mode)
-        .map((r) => ({
-          round: r.id,
-          process: r.process.trim(),
-          ...(r.mode ? { mode: r.mode } : {}),
-        })),
+      interviewProcess: interviewRoundList(roundCount),
     };
   };
 
@@ -401,11 +413,9 @@ function AddJobBody() {
       keyResponsibilities: form.keyResponsibilities,
       preferredQualifications: form.preferredQualifications,
       skills: selectedSkills.map((s) => s.label),
-      interviewRounds: rounds
-        .filter((r) => r.process.trim() || r.mode)
-        .map((r) => ({ round: r.id, process: r.process.trim(), ...(r.mode ? { mode: r.mode } : {}) })),
+      interviewRounds: interviewRoundList(roundCount),
     }),
-    [masters, form, selectedSkills, rounds],
+    [masters, form, selectedSkills, roundCount],
   );
 
   const saving = postJob.isPending || updateJob.isPending;
@@ -512,24 +522,28 @@ function AddJobBody() {
             />
           </Field>
 
-          <Field label="CTC (min)">
+          <Field label="CTC (min) in Lacs" fieldKey="minCtc" invalid={!!fieldErrors.minCtc}>
             <input
-              className={fieldClass}
+              className={cn(fieldClass, fieldErrors.minCtc && fieldErrorClass)}
               type="number"
               min={0}
-              placeholder="e.g. 600000"
+              max={CTC_MAX_LAKHS}
+              step="0.01"
+              placeholder="e.g. 6"
               disabled={loadingForm}
               value={form.minCtc}
               onChange={(e) => setField('minCtc', e.target.value)}
             />
           </Field>
 
-          <Field label="CTC (max)">
+          <Field label="CTC (max) in Lacs" fieldKey="maxCtc" invalid={!!fieldErrors.maxCtc}>
             <input
-              className={fieldClass}
+              className={cn(fieldClass, fieldErrors.maxCtc && fieldErrorClass)}
               type="number"
               min={0}
-              placeholder="e.g. 1200000"
+              max={CTC_MAX_LAKHS}
+              step="0.01"
+              placeholder="e.g. 12"
               disabled={loadingForm}
               value={form.maxCtc}
               onChange={(e) => setField('maxCtc', e.target.value)}
@@ -673,62 +687,26 @@ function AddJobBody() {
         </Section>
 
         <section className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-xs font-semibold text-slate-800">Interview process</h2>
-            <SecondaryButton type="button" onClick={addRound} disabled={loadingForm}>
-              <Plus className="h-3.5 w-3.5" />
-              Add round
-            </SecondaryButton>
-          </div>
-
-          <div className="space-y-2">
-            {rounds.map((round) => (
-              <div
-                key={round.id}
-                className="grid gap-2 sm:grid-cols-[6.5rem_minmax(0,1fr)_minmax(9rem,11rem)_auto] sm:items-end"
-              >
-                <Field label="Interview round">
-                  <input className={fieldClass} value={round.id} readOnly />
-                </Field>
-                <Field label="Interview process">
-                  <input
-                    className={fieldClass}
-                    placeholder={`e.g. HR screen / Technical / Hiring manager`}
-                    value={round.process}
-                    disabled={loadingForm}
-                    onChange={(e) => updateRound(round.id, { process: e.target.value })}
-                  />
-                </Field>
-                <Field label="Interview mode">
-                  <select
-                    className={fieldClass}
-                    disabled={loadingForm}
-                    value={round.mode}
-                    onChange={(e) =>
-                      updateRound(round.id, { mode: e.target.value as InterviewMode | '' })
-                    }
-                    aria-label={`Interview mode for round ${round.id}`}
-                  >
-                    <option value="">Select mode…</option>
-                    {INTERVIEW_MODE_OPTIONS.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <button
-                  type="button"
-                  onClick={() => removeRound(round.id)}
-                  disabled={rounds.length <= 1 || loadingForm}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label={`Remove round ${round.id}`}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
+          <Field
+            label="Interview round"
+            className="max-w-[10rem]"
+            fieldKey="interviewRounds"
+            invalid={!!fieldErrors.interviewRounds}
+          >
+            <input
+              className={cn(fieldClass, fieldErrors.interviewRounds && fieldErrorClass)}
+              type="number"
+              min={ROUNDS_MIN}
+              max={ROUNDS_MAX}
+              step={1}
+              disabled={loadingForm}
+              value={form.interviewRounds}
+              onChange={(e) => setField('interviewRounds', e.target.value)}
+            />
+            <p className={cn('mt-1 text-[11px]', fieldErrors.interviewRounds ? 'text-rose-600' : 'text-slate-400')}>
+              {ROUNDS_MIN}–{ROUNDS_MAX}
+            </p>
+          </Field>
         </section>
 
         {error && (

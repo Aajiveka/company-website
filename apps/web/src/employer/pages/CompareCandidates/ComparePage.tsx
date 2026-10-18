@@ -16,6 +16,7 @@ import type {
   EmployerApplicantDetail,
 } from '@/employer/services/employer.types';
 import { decisionConfirm } from '@/employer/utils/decisionConfirm';
+import { dateLabel, dateTimeLabel } from '@/employer/utils/format';
 import { getErrorMessage } from '@/lib/axios';
 import { cn } from '@/lib/cn';
 
@@ -75,7 +76,7 @@ const compareRows: CompareRow[] = [
     label: 'Pipeline status',
     render: (c) => <EmployerBadge tone="neutral">{c.status}</EmployerBadge>,
   },
-  { type: 'metric', label: 'Applied on', render: (c) => dash(c.appliedOn) },
+  { type: 'metric', label: 'Applied on', render: (c) => dateLabel(c.appliedOn) },
 
   { type: 'section', label: 'Contact & personal' },
   { type: 'metric', label: 'Email', render: (c) => dash(c.email) },
@@ -239,7 +240,7 @@ const compareRows: CompareRow[] = [
   {
     type: 'metric',
     label: 'Resume uploaded at',
-    render: (c) => (c.resumeUploadedAt ? new Date(c.resumeUploadedAt).toLocaleString() : '—'),
+    render: (c) => dateTimeLabel(c.resumeUploadedAt),
   },
 ];
 

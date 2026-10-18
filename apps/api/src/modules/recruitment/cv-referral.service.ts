@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
+import { InterviewRoundService } from './interview-round.service';
 import { JobMapStatus } from '@/shared/status';
 
 /**
@@ -16,6 +17,7 @@ export class CvReferralService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly applications: JobApplicationsService,
+    private readonly rounds: InterviewRoundService,
   ) {}
 
   private get db() {
@@ -136,5 +138,106 @@ export class CvReferralService {
       sentToCompanyAt: r.sentToCompanyAt?.toISOString() ?? null,
       expiresAt: r.expiresAt?.toISOString() ?? null,
     }));
+  }
+
+  /**
+   * Company reviews a forwarded CV within the 14-day window.
+   * shortlist → create Interview R1 + slots; reject → return status to Q2.
+   */
+  async companyReview(
+    referralId: number,
+    userId: number,
+    clientId: number,
+    input: {
+      action: 'shortlist' | 'reject';
+      interviewerName?: string;
+      interviewerEmail?: string;
+      hrName?: string;
+      hrEmail?: string;
+      interviewMode?: string;
+      meetingLink?: string;
+      slots?: string[];
+    },
+  ) {
+    const referral = await this.db.cvReferral.findUnique({
+      where: { id: BigInt(referralId) },
+      include: {
+        mapping: { include: { job: { select: { clientID: true } } } },
+      },
+    });
+    if (!referral) throw new NotFoundException('Referral not found');
+    if (referral.status !== 'SentToCompany') {
+      throw new BadRequestException('Referral is not awaiting company review');
+    }
+    if (Number(referral.mapping?.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Referral not found');
+    }
+
+    const mapId = Number(referral.jobSubscriberMapID);
+
+    if (input.action === 'reject') {
+      await this.db.cvReferral.update({
+        where: { id: referral.id },
+        data: {
+          companyReviewStatus: 'Rejected',
+          status: 'Returned',
+          expiresAt: null,
+        },
+      });
+      await this.applications.transitionStatus(mapId, JobMapStatus.REJECTED, userId);
+      await this.audit.record({
+        userId,
+        action: 'cv.company_rejected',
+        entity: 'CvReferral',
+        entityId: referralId,
+      });
+      return { ok: true, action: 'reject' as const };
+    }
+
+    if (!input.interviewMode || !input.slots?.length) {
+      throw new BadRequestException('Shortlist requires interviewMode and at least one slot');
+    }
+    if (input.slots.length < 3 || input.slots.length > 4) {
+      throw new BadRequestException('Provide 3–4 interview slots');
+    }
+    if (!input.interviewerName?.trim() || !input.interviewerEmail?.trim()) {
+      throw new BadRequestException('Interviewer name and email are required');
+    }
+    if (!input.hrName?.trim() || !input.hrEmail?.trim()) {
+      throw new BadRequestException('HR name and email are required');
+    }
+
+    await this.db.cvReferral.update({
+      where: { id: referral.id },
+      data: {
+        companyReviewStatus: 'Selected',
+        status: 'SentToCompany',
+        expiresAt: null,
+      },
+    });
+
+    const round = await this.rounds.createRound({
+      jobSubscriberMapId: mapId,
+      roundNumber: 1,
+      roundName: 'Round 1',
+      interviewerName: input.interviewerName,
+      interviewerEmail: input.interviewerEmail,
+      hrName: input.hrName,
+      hrEmail: input.hrEmail,
+      interviewMode: input.interviewMode,
+      meetingLink: input.meetingLink,
+      slots: input.slots,
+      userId,
+    });
+
+    await this.audit.record({
+      userId,
+      action: 'cv.company_shortlisted',
+      entity: 'CvReferral',
+      entityId: referralId,
+      detail: { interviewRoundId: round.interviewRoundId },
+    });
+
+    return { ok: true, action: 'shortlist' as const, interviewRoundId: round.interviewRoundId };
   }
 }

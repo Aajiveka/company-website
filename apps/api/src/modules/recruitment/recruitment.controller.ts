@@ -13,7 +13,9 @@ import {
   ApproveRejectCandidateDto,
   AssignDocumentsDto,
   AssignJobDto,
+  AddSlotsDto,
   CandidatesQueryDto,
+  CompanyReviewReferralDto,
   CreateInterviewRoundDto,
   CreateOfferDto,
   ForwardToCompanyDto,
@@ -230,6 +232,18 @@ export class RecruitmentController {
     return this.referrals.forwardToCompany(dto.referralIds, user.userId);
   }
 
+  @Post('referrals/:id/company-review')
+  @Roles(Role.Client, Role.Admin)
+  @ApiOperation({ summary: 'Company shortlists (with slots) or rejects a forwarded CV' })
+  async companyReview(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CompanyReviewReferralDto,
+  ) {
+    const clientId = await this.recruitment.clientIdForUser(user.userId);
+    return this.referrals.companyReview(id, user.userId, Number(clientId), dto);
+  }
+
   // ── Multi-round interview management ──────────────────────────────────
 
   @Post('interview-rounds')
@@ -244,6 +258,17 @@ export class RecruitmentController {
   @ApiOperation({ summary: 'List interview rounds for a job-subscriber mapping' })
   listRounds(@Param('mapId', ParseIntPipe) mapId: number) {
     return this.rounds.listRounds(mapId);
+  }
+
+  @Post('interview-rounds/:roundId/slots')
+  @Roles(Role.Q3, Role.Client, Role.Admin)
+  @ApiOperation({ summary: 'Add/replace offered slots for a round' })
+  addSlots(
+    @Param('roundId', ParseIntPipe) roundId: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: AddSlotsDto,
+  ) {
+    return this.rounds.addSlots(roundId, dto.slots, user.userId);
   }
 
   @Post('interview-rounds/:roundId/select-slot')
@@ -265,7 +290,7 @@ export class RecruitmentController {
     @CurrentUser() user: RequestUser,
     @Body() dto: SubmitRoundResultDto,
   ) {
-    return this.rounds.submitResult(roundId, dto.result, user.userId, dto.feedback);
+    return this.rounds.submitResult(roundId, dto.result, user.userId, dto.feedback, dto.next);
   }
 
   // ── Offer letter management ─────────────────────────────────────────
@@ -293,6 +318,13 @@ export class RecruitmentController {
     @Body() dto: RespondToOfferDto,
   ) {
     return this.offers.respondToOffer(id, dto.accept, user.userId);
+  }
+
+  @Post('offers/:id/mark-joined')
+  @Roles(Role.Q3, Role.Client, Role.Admin)
+  @ApiOperation({ summary: 'Mark candidate as joined after offer acceptance' })
+  markJoined(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: RequestUser) {
+    return this.offers.markJoined(id, user.userId);
   }
 
   @Get('offers/:mapId')

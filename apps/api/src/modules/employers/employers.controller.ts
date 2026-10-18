@@ -9,6 +9,9 @@ import { Role } from '@/shared/roles';
 import { EmployersService } from './employers.service';
 import {
   ApplicantDecisionDto,
+  InterviewResultDto,
+  RequestDocumentsDto,
+  ScheduleInterviewDto,
   ApplicantNoteDto,
   CreateJobDto,
   ListApplicantsQueryDto,
@@ -178,6 +181,45 @@ export class EmployersController {
     return this.clients.decideApplicant(user.userId, jobSubscriberMapId, dto);
   }
 
+  @Post('me/applicants/:jobSubscriberMapId/decision/undo')
+  @ApiOperation({ summary: 'Undo a shortlist or rejection — restores the previous status' })
+  undoApplicantDecision(
+    @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.clients.undoApplicantDecision(user.userId, jobSubscriberMapId);
+  }
+
+  @Get('me/applicants/:jobSubscriberMapId/interview-rounds')
+  @ApiOperation({ summary: 'Interview rounds for one of my applicants' })
+  listApplicantInterviewRounds(
+    @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.clients.listApplicantInterviewRounds(user.userId, jobSubscriberMapId);
+  }
+
+  @Post('me/applicants/:jobSubscriberMapId/interview-rounds')
+  @ApiOperation({ summary: 'Request the first interview round — HR, interviewer, mode and 3 slots go to Q3' })
+  scheduleInterview(
+    @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: ScheduleInterviewDto,
+  ) {
+    return this.clients.scheduleInterview(user.userId, jobSubscriberMapId, dto);
+  }
+
+  @Post('me/applicants/:jobSubscriberMapId/interview-rounds/:roundId/result')
+  @ApiOperation({ summary: 'Select (next round or hire), hold, or reject after an interview round' })
+  recordInterviewResult(
+    @Param('jobSubscriberMapId', ParseIntPipe) jobSubscriberMapId: number,
+    @Param('roundId', ParseIntPipe) roundId: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: InterviewResultDto,
+  ) {
+    return this.clients.recordInterviewResult(user.userId, jobSubscriberMapId, roundId, dto);
+  }
+
   // ---------------------------------------------------------------------------
   // New endpoints
   // ---------------------------------------------------------------------------
@@ -216,17 +258,18 @@ export class EmployersController {
     const { fileName, body } = await this.clients.exportAnalyticsCsv(user.userId);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.send(body);
+    // BOM so Excel reads the file as UTF-8 (stage labels contain "·").
+    res.send(`\uFEFF${body}`);
   }
 
   @Get('me/billing')
-  @ApiOperation({ summary: 'Hire billing — ₹5,000 per hired candidate' })
+  @ApiOperation({ summary: 'Invoices the admin has raised to my company' })
   billing(@CurrentUser() user: RequestUser) {
     return this.clients.billing(user.userId);
   }
 
   @Get('me/billing/export')
-  @ApiOperation({ summary: 'Download hire billing CSV' })
+  @ApiOperation({ summary: 'Download my invoices as CSV' })
   async exportBilling(@CurrentUser() user: RequestUser, @Res() res: Response) {
     const { fileName, body } = await this.clients.exportBillingCsv(user.userId);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -285,6 +328,27 @@ export class EmployersController {
     @Body() body: { docUploadId: number; status: 'Approved' | 'NeedsCorrection'; comments?: string },
   ) {
     return this.clients.reviewApplicantDocument(user.userId, id, body);
+  }
+
+  @Get('me/document-types')
+  @ApiOperation({ summary: 'Candidate document types an employer can ask for' })
+  documentTypes() {
+    return this.clients.requestableDocumentTypes();
+  }
+
+  @Post('me/applicants/:id/document-request')
+  @ApiOperation({ summary: 'Request Q3 to collect documents from a selected candidate' })
+  requestApplicantDocuments(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: RequestUser,
+    @Body() body: RequestDocumentsDto,
+  ) {
+    return this.clients.requestApplicantDocuments(
+      user.userId,
+      id,
+      body.documentTypeIds ?? [],
+      body.documentNames ?? [],
+    );
   }
 
   @Public()

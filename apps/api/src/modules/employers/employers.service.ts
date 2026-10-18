@@ -6,6 +6,12 @@ import { JobApplicationsService } from '@/modules/jobs/job-application.service';
 import { StorageService } from '@/modules/storage/storage.service';
 import { avatarUrl } from '@/modules/files/avatar-url';
 import {
+  InterviewRoundService,
+  roundNameFor,
+  roundNumberFor,
+  type RoundDetails,
+} from '@/modules/recruitment/interview-round.service';
+import {
   JOB_STATUS_ACTIVE,
   JOB_STATUS_ARCHIVED,
   JOB_STATUS_CLOSED,
@@ -17,29 +23,134 @@ import type {
   ApplicantDecisionDto,
   ApplicantNoteDto,
   CreateJobDto,
+  InterviewResultDto,
   InterviewRoundDto,
+  InterviewScheduleDetailsDto,
   ListApplicantsQueryDto,
+  ScheduleInterviewDto,
   ListJobsQueryDto,
   UpdateBrandingDto,
   UpdateCompanyProfileDto,
   UpdateJobDto,
 } from './dto/employers.dto';
 
-type PipelineStatus = 'New' | 'Shortlisted' | 'Interview' | 'Hired' | 'Rejected';
+type PipelineStatus =
+  | 'New'
+  | 'Shortlisted'
+  | 'Interview'
+  | 'Hired'
+  | 'Rejected'
+  | 'SentToCompany'
+  | 'Referred'
+  | 'Expired'
+  | 'Offer'
+  | 'Joined'
+  | 'OnHold';
 
 const INTERVIEW_MAP_STATUSES: number[] = [
   JobMapStatus.INTERVIEW_SCHEDULED,
   JobMapStatus.INTERVIEW_ATTENDED,
   JobMapStatus.RESCHEDULE_REQUESTED,
   JobMapStatus.RESCHEDULED,
+  JobMapStatus.INTERVIEW_R1,
+  JobMapStatus.INTERVIEW_R2,
+  JobMapStatus.INTERVIEW_R3,
+  JobMapStatus.FINAL_ROUND,
 ];
 
 function pipelineStatus(statusId: number | null | undefined): PipelineStatus {
   if (statusId === JobMapStatus.SHORTLISTED) return 'Shortlisted';
+  if (statusId === JobMapStatus.REFERRED_TO_Q3) return 'Referred';
+  if (statusId === JobMapStatus.SENT_TO_COMPANY) return 'SentToCompany';
+  if (statusId === JobMapStatus.CV_EXPIRED) return 'Expired';
+  if (statusId === JobMapStatus.ON_HOLD) return 'OnHold';
+  if (statusId === JobMapStatus.OFFER_SENT || statusId === JobMapStatus.OFFER_ACCEPTED) return 'Offer';
+  if (statusId === JobMapStatus.JOINED) return 'Joined';
   if (statusId != null && INTERVIEW_MAP_STATUSES.includes(statusId)) return 'Interview';
   if (statusId === JobMapStatus.SELECTED) return 'Hired';
   if (statusId === JobMapStatus.REJECTED) return 'Rejected';
   return 'New';
+}
+
+type RoundSummary = {
+  roundNumber: number;
+  roundName: string | null;
+  status: string;
+  result: string;
+  scheduledAt: Date | null;
+};
+
+/** Master rows the platform uses for its own files, not things an employer would ask for. */
+const SYSTEM_DOCUMENT_TYPES = new Set(['cv', 'companylogo', 'candidatephoto']);
+
+/** Selected, and everything after it — an offer or joining does not undo a hire. */
+const HIRED_MAP_STATUSES: number[] = [
+  JobMapStatus.SELECTED,
+  JobMapStatus.OFFER_SENT,
+  JobMapStatus.OFFER_ACCEPTED,
+  JobMapStatus.JOINED,
+];
+
+const CLOSED_MAP_STATUSES: number[] = [
+  JobMapStatus.REJECTED,
+  JobMapStatus.SELECTED,
+  JobMapStatus.OFFER_SENT,
+  JobMapStatus.OFFER_ACCEPTED,
+  JobMapStatus.JOINED,
+  JobMapStatus.CV_EXPIRED,
+  JobMapStatus.WITHDRAWN,
+];
+
+/**
+ * Where the candidate stands in this employer's process. The status id alone cannot tell a
+ * screening rejection from a rejection after Round 2, so the interview rounds decide it.
+ */
+function applicationStage(statusId: number | null | undefined, rounds: RoundSummary[]): string {
+  const sorted = [...rounds].sort((a, b) => a.roundNumber - b.roundNumber);
+  const name = (r: RoundSummary) => r.roundName ?? roundNameFor(r.roundNumber);
+  const lastWith = (result: string) => [...sorted].reverse().find((r) => r.result === result);
+  const latest = sorted[sorted.length - 1];
+
+  if (statusId === JobMapStatus.REJECTED) {
+    const failed = lastWith('Failed');
+    return failed ? `Rejected after ${name(failed)}` : 'Rejected at screening';
+  }
+  if (statusId === JobMapStatus.SELECTED) {
+    const passed = lastWith('Passed');
+    return passed ? `Selected after ${name(passed)}` : 'Selected without interview';
+  }
+  if (statusId === JobMapStatus.SHORTLISTED && !latest) return 'Shortlisted at screening';
+  if (statusId === JobMapStatus.ON_HOLD) {
+    const held = lastWith('Hold');
+    return held ? `On hold after ${name(held)}` : 'On hold';
+  }
+  if (statusId === JobMapStatus.SHORTLISTED || (statusId != null && INTERVIEW_MAP_STATUSES.includes(statusId))) {
+    if (!latest) return 'Interview · not scheduled yet';
+    if (latest.status === 'Pending') return `${name(latest)} · awaiting Q3 scheduling`;
+    if (latest.status === 'Scheduled' && latest.scheduledAt && latest.scheduledAt > new Date()) {
+      return `${name(latest)} scheduled`;
+    }
+    if (latest.status === 'Scheduled') return `${name(latest)} · awaiting your feedback`;
+    return name(latest);
+  }
+  if (statusId === JobMapStatus.SENT_TO_COMPANY) return 'Awaiting your review';
+  if (statusId === JobMapStatus.OFFER_SENT) return 'Offer sent';
+  if (statusId === JobMapStatus.OFFER_ACCEPTED) return 'Offer accepted';
+  if (statusId === JobMapStatus.JOINED) return 'Joined';
+  if (statusId === JobMapStatus.CV_EXPIRED) return 'Review window expired';
+  return 'New';
+}
+
+function timelineLabel(statusId: number | null | undefined): string {
+  if (statusId === JobMapStatus.MAPPED) return 'Applied';
+  if (statusId === JobMapStatus.REFERRED_TO_Q3) return 'Referred to Q3';
+  if (statusId === JobMapStatus.SENT_TO_COMPANY) return 'Sent to you for review';
+  if (statusId === JobMapStatus.SELECTED) return 'Selected';
+  if (statusId === JobMapStatus.ON_HOLD) return 'On hold';
+  if (statusId === JobMapStatus.CV_EXPIRED) return 'Review window expired';
+  if (statusId === JobMapStatus.OFFER_SENT) return 'Offer sent';
+  if (statusId === JobMapStatus.OFFER_ACCEPTED) return 'Offer accepted';
+  return pipelineStatus(statusId);
 }
 
 /** Public img-friendly URL — browser <img> cannot send Authorization headers. */
@@ -54,6 +165,12 @@ function jobMapIdsForPipeline(status: PipelineStatus): number[] {
   if (status === 'Interview') return INTERVIEW_MAP_STATUSES;
   if (status === 'Hired') return [JobMapStatus.SELECTED];
   if (status === 'Rejected') return [JobMapStatus.REJECTED];
+  if (status === 'SentToCompany') return [JobMapStatus.SENT_TO_COMPANY];
+  if (status === 'Referred') return [JobMapStatus.REFERRED_TO_Q3];
+  if (status === 'Expired') return [JobMapStatus.CV_EXPIRED];
+  if (status === 'Offer') return [JobMapStatus.OFFER_SENT, JobMapStatus.OFFER_ACCEPTED];
+  if (status === 'Joined') return [JobMapStatus.JOINED];
+  if (status === 'OnHold') return [JobMapStatus.ON_HOLD];
   return [JobMapStatus.MAPPED];
 }
 
@@ -192,6 +309,7 @@ export class EmployersService {
     private readonly audit: AuditService,
     private readonly applications: JobApplicationsService,
     private readonly storage: StorageService,
+    private readonly rounds: InterviewRoundService,
   ) {}
 
   private get db() {
@@ -632,6 +750,9 @@ export class EmployersService {
             jobCity: { select: { descr: true } },
           },
         },
+        InterviewRound: {
+          select: { roundNumber: true, roundName: true, status: true, result: true, scheduledAt: true },
+        },
         subscriber: {
           include: {
             SubscriberCVDetails: {
@@ -663,6 +784,7 @@ export class EmployersService {
         .filter(Boolean) as string[];
       const skills = [...new Set([...(primary ? [primary] : []), ...tagSkills])];
       const noticeDays = cv?.noticePeriod ?? current?.noticePeriodDays ?? null;
+      const latestRound = [...r.InterviewRound].sort((a, b) => b.roundNumber - a.roundNumber)[0];
       return {
         jobSubscriberMapId: Number(r.jobSubscriberMapID),
         subscriberId: Number(r.subscriberID ?? 0),
@@ -675,6 +797,10 @@ export class EmployersService {
         totalExp: cv?.totalExp ?? null,
         jobStatus: r.jobMapStatus?.descr ?? 'Applied',
         status,
+        stage: applicationStage(r.jobMapStatusID, r.InterviewRound),
+        roundCount: r.InterviewRound.length,
+        interviewAt:
+          latestRound?.status === 'Scheduled' && latestRound.scheduledAt ? latestRound.scheduledAt.toISOString() : null,
         skills,
         company: current?.employer ?? '',
         notice: noticeDays != null ? `${noticeDays} days` : '',
@@ -743,6 +869,23 @@ export class EmployersService {
             jobCity: { select: { descr: true } },
           },
         },
+        CvReferral: {
+          orderBy: { referredByQ2At: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            status: true,
+            companyReviewStatus: true,
+          },
+        },
+        InterviewRound: {
+          select: { roundNumber: true, roundName: true, status: true, result: true, scheduledAt: true },
+        },
+        JobSubscriberStatus: {
+          orderBy: { statusID: 'desc' },
+          take: 30,
+          select: { jobMapStatusID: true, comments: true, timestampIns: true },
+        },
         subscriber: {
           include: {
             SubscriberCVDetails: {
@@ -777,12 +920,6 @@ export class EmployersService {
             SubscriberTags: {
               include: { tag: { select: { tagName: true } } },
             },
-            SubscriberStatusHistory: {
-              where: { clientID: clientId },
-              orderBy: { timestampIns: 'desc' },
-              take: 20,
-              include: { status: { select: { descr: true } } },
-            },
           },
         },
       },
@@ -795,6 +932,7 @@ export class EmployersService {
     const uploaded = r.subscriber?.SubscriberCVUploaded;
     const extra = r.subscriber?.SubscriberProfileExtra;
     const status = pipelineStatus(r.jobMapStatusID);
+    const latestReferral = r.CvReferral?.[0];
     const tagSkills = (r.subscriber?.SubscriberTags ?? [])
       .map((t) => t.tag?.tagName?.trim())
       .filter(Boolean) as string[];
@@ -917,12 +1055,16 @@ export class EmployersService {
         mode: ed.courseMode ?? '',
         marks: ed.marks ?? '',
       })),
-      timeline: (r.subscriber?.SubscriberStatusHistory ?? []).map((h) => ({
-        status: h.status?.descr ?? '',
+      stage: applicationStage(r.jobMapStatusID, r.InterviewRound),
+      timeline: r.JobSubscriberStatus.map((h) => ({
+        status: h.comments?.trim() || timelineLabel(h.jobMapStatusID),
         at: h.timestampIns?.toISOString() ?? '',
-        comments: h.comments ?? '',
+        comments: '',
       })),
       company: r.subscriber?.SubscriberEmployer?.[0]?.employer ?? '',
+      referralId: latestReferral ? Number(latestReferral.id) : null,
+      referralStatus: latestReferral?.status ?? null,
+      companyReviewStatus: latestReferral?.companyReviewStatus ?? null,
     };
   }
 
@@ -1154,26 +1296,72 @@ export class EmployersService {
     const clientId = await this.clientIdFor(userId);
     const mapping = await this.db.jobSubscriberMapping.findUnique({
       where: { jobSubscriberMapID: jobSubscriberMapId },
-      include: { job: { select: { clientID: true } } },
+      include: {
+        job: { select: { clientID: true } },
+        CvReferral: {
+          orderBy: { referredByQ2At: 'desc' },
+          take: 1,
+          select: { id: true, status: true, companyReviewStatus: true },
+        },
+      },
     });
     if (!mapping || Number(mapping.job?.clientID ?? -1) !== Number(clientId)) {
       throw new NotFoundException('Application not found');
     }
 
+    const current = Number(mapping.jobMapStatusID);
+    const roundCount = await this.db.interviewRound.count({
+      where: { jobSubscriberMapID: BigInt(jobSubscriberMapId) },
+    });
+    if (roundCount > 0) {
+      throw new BadRequestException(
+        'The interview process has started — record the result on the current interview round instead.',
+      );
+    }
+    if (CLOSED_MAP_STATUSES.includes(current) && current !== JobMapStatus.REJECTED) {
+      throw new BadRequestException(`This application is already ${timelineLabel(current).toLowerCase()}.`);
+    }
+
     const map: Record<
       ApplicantDecisionDto['decision'],
-      { jobMapStatusId: number; historyStatusId: number }
+      { jobMapStatusId: number; historyStatusId: number; comments: string }
     > = {
-      Shortlisted: { jobMapStatusId: JobMapStatus.SHORTLISTED, historyStatusId: SubscriberStatus.SHORTLISTED },
-      Interview: {
-        jobMapStatusId: JobMapStatus.INTERVIEW_SCHEDULED,
-        historyStatusId: SubscriberStatus.INTERVIEW_SCHEDULED,
+      Shortlisted: {
+        jobMapStatusId: JobMapStatus.SHORTLISTED,
+        historyStatusId: SubscriberStatus.SHORTLISTED,
+        comments: 'Shortlisted at screening',
       },
-      Hired: { jobMapStatusId: JobMapStatus.SELECTED, historyStatusId: SubscriberStatus.SELECTED },
-      Rejected: { jobMapStatusId: JobMapStatus.REJECTED, historyStatusId: SubscriberStatus.REJECTED },
+      Hired: {
+        jobMapStatusId: JobMapStatus.SELECTED,
+        historyStatusId: SubscriberStatus.SELECTED,
+        comments: 'Selected without interview',
+      },
+      Rejected: {
+        jobMapStatusId: JobMapStatus.REJECTED,
+        historyStatusId: SubscriberStatus.REJECTED,
+        comments: 'Rejected at screening',
+      },
     };
     const next = map[dto.decision];
-    await this.applications.transitionStatus(jobSubscriberMapId, next.jobMapStatusId, userId, next.historyStatusId);
+    await this.applications.transitionStatus(
+      jobSubscriberMapId,
+      next.jobMapStatusId,
+      userId,
+      next.historyStatusId,
+      next.comments,
+    );
+
+    // Any decision ends a referred CV's 14-day review; undo reopens it.
+    const referral = mapping.CvReferral?.[0];
+    if (referral?.status === 'SentToCompany' && referral.companyReviewStatus === 'Pending') {
+      await this.db.cvReferral.update({
+        where: { id: referral.id },
+        data:
+          dto.decision === 'Rejected'
+            ? { companyReviewStatus: 'Rejected', status: 'Returned', expiresAt: null }
+            : { companyReviewStatus: 'Selected', expiresAt: null },
+      });
+    }
     await this.audit.record({
       userId,
       action: 'applicant.decision',
@@ -1182,6 +1370,249 @@ export class EmployersService {
       detail: { decision: dto.decision },
     });
     return { ok: true, status: dto.decision };
+  }
+
+  /**
+   * Undo a shortlist or rejection made by mistake: the application returns to its last status
+   * that was neither, read from its status history.
+   */
+  async undoApplicantDecision(userId: number, jobSubscriberMapId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: {
+        job: { select: { clientID: true } },
+        CvReferral: {
+          orderBy: { referredByQ2At: 'desc' },
+          take: 1,
+          select: { id: true, companyReviewStatus: true, sentToCompanyAt: true },
+        },
+      },
+    });
+    if (!mapping || Number(mapping.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const current = Number(mapping.jobMapStatusID);
+    if (current !== JobMapStatus.SHORTLISTED && current !== JobMapStatus.REJECTED) {
+      throw new BadRequestException('Only a shortlist or a rejection can be undone');
+    }
+
+    const history = await this.db.jobSubscriberStatus.findMany({
+      where: { jobSubscriberMapID: BigInt(jobSubscriberMapId) },
+      orderBy: { statusID: 'desc' },
+      take: 50,
+      select: { jobMapStatusID: true },
+    });
+    // Newest first. Skipping both marks means undo clears the decision rather than flipping a
+    // reject-then-shortlist back to Rejected.
+    const marks: number[] = [JobMapStatus.SHORTLISTED, JobMapStatus.REJECTED];
+    const previous =
+      history.map((h) => Number(h.jobMapStatusID)).find((s) => s && !marks.includes(s)) ??
+      JobMapStatus.MAPPED;
+
+    const undone = current === JobMapStatus.SHORTLISTED ? 'shortlist' : 'rejection';
+    await this.applications.transitionStatus(
+      jobSubscriberMapId,
+      previous,
+      userId,
+      undefined,
+      `Undo ${undone}`,
+    );
+
+    // The decision also closed the referral's review; reopen its 14-day window.
+    const referral = mapping.CvReferral?.[0];
+    if (
+      previous === JobMapStatus.SENT_TO_COMPANY &&
+      (referral?.companyReviewStatus === 'Rejected' || referral?.companyReviewStatus === 'Selected')
+    ) {
+      const start = referral.sentToCompanyAt ?? new Date();
+      await this.db.cvReferral.update({
+        where: { id: referral.id },
+        data: {
+          status: 'SentToCompany',
+          companyReviewStatus: 'Pending',
+          expiresAt: new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000),
+        },
+      });
+    }
+
+    // A failed interview round put the candidate in Rejected; reopen that round's result.
+    const fromInterview = INTERVIEW_MAP_STATUSES.includes(previous) || previous === JobMapStatus.ON_HOLD;
+    if (current === JobMapStatus.REJECTED && fromInterview) {
+      const failed = await this.db.interviewRound.findFirst({
+        where: { jobSubscriberMapID: BigInt(jobSubscriberMapId), result: 'Failed' },
+        orderBy: { roundNumber: 'desc' },
+        select: { id: true, scheduledAt: true },
+      });
+      if (failed) {
+        await this.db.interviewRound.update({
+          where: { id: failed.id },
+          data: {
+            result: previous === JobMapStatus.ON_HOLD ? 'Hold' : 'Pending',
+            status: failed.scheduledAt ? 'Scheduled' : 'Pending',
+            updatedAt: new Date(),
+          },
+        });
+      }
+    }
+
+    await this.audit.record({
+      userId,
+      action: 'applicant.decision_undone',
+      entity: 'JobSubscriberMapping',
+      entityId: jobSubscriberMapId,
+      detail: { undone, from: current, to: previous },
+    });
+    return { ok: true, jobMapStatusId: previous };
+  }
+
+  private async ownedApplication(userId: number, jobSubscriberMapId: number) {
+    const clientId = await this.clientIdFor(userId);
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: {
+        job: { select: { clientID: true } },
+        CvReferral: {
+          orderBy: { referredByQ2At: 'desc' },
+          take: 1,
+          select: { id: true, status: true, companyReviewStatus: true },
+        },
+        InterviewRound: { orderBy: { roundNumber: 'asc' } },
+      },
+    });
+    if (!mapping || Number(mapping.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+    return mapping;
+  }
+
+  /** Rejects details Q3 could not schedule from; returns them in the shape rounds are stored. */
+  private scheduleDetails(dto: InterviewScheduleDetailsDto): RoundDetails {
+    const guestName = dto.guestName?.trim();
+    const guestEmail = dto.guestEmail?.trim();
+    if (Boolean(guestName) !== Boolean(guestEmail)) {
+      throw new BadRequestException('Give both the guest’s name and email, or leave both empty');
+    }
+    if (dto.mode === 'Face to face' && !dto.location?.trim()) {
+      throw new BadRequestException('Add the interview venue for a face-to-face round');
+    }
+    const times = dto.slots.map((s) => new Date(s).getTime());
+    if (times.some((t) => Number.isNaN(t) || t <= Date.now())) {
+      throw new BadRequestException('All 3 slots must be in the future');
+    }
+    if (new Set(times).size !== times.length) {
+      throw new BadRequestException('The 3 slots must be different times');
+    }
+    return {
+      hrName: dto.hrName.trim(),
+      hrEmail: dto.hrEmail.trim(),
+      interviewerName: dto.interviewerName.trim(),
+      interviewerEmail: dto.interviewerEmail.trim(),
+      guestName,
+      guestEmail,
+      interviewMode: dto.mode,
+      meetingLink: dto.mode === 'Video call' ? dto.meetingLink?.trim() : undefined,
+      location: dto.mode === 'Face to face' ? dto.location?.trim() : undefined,
+      slots: [...times].sort((a, b) => a - b).map((t) => new Date(t).toISOString()),
+    };
+  }
+
+  async listApplicantInterviewRounds(userId: number, jobSubscriberMapId: number) {
+    await this.ownedApplication(userId, jobSubscriberMapId);
+    return this.rounds.listRounds(jobSubscriberMapId);
+  }
+
+  /** Starts the interview process: the first round goes to Q3, who books one of the 3 slots. */
+  async scheduleInterview(userId: number, jobSubscriberMapId: number, dto: ScheduleInterviewDto) {
+    const mapping = await this.ownedApplication(userId, jobSubscriberMapId);
+    const current = Number(mapping.jobMapStatusID);
+    if (CLOSED_MAP_STATUSES.includes(current)) {
+      throw new BadRequestException(
+        `This application is ${timelineLabel(current).toLowerCase()} — undo that before scheduling an interview.`,
+      );
+    }
+    if (mapping.InterviewRound.length) {
+      throw new BadRequestException(
+        'The interview process has already started — schedule the next round from the current round’s result.',
+      );
+    }
+    const details = this.scheduleDetails(dto);
+
+    const referral = mapping.CvReferral?.[0];
+    if (referral?.status === 'SentToCompany' && referral.companyReviewStatus === 'Pending') {
+      await this.db.cvReferral.update({
+        where: { id: referral.id },
+        data: { companyReviewStatus: 'Selected', expiresAt: null },
+      });
+    }
+
+    const roundNumber = roundNumberFor(dto.round ?? 'Round1');
+    const roundName = roundNameFor(roundNumber);
+    const created = await this.rounds.createRound({
+      ...details,
+      jobSubscriberMapId,
+      roundNumber,
+      roundName,
+      userId,
+    });
+    await this.audit.record({
+      userId,
+      action: 'applicant.interview_requested',
+      entity: 'JobSubscriberMapping',
+      entityId: jobSubscriberMapId,
+      detail: { roundNumber, interviewRoundId: created.interviewRoundId },
+    });
+    return { ok: true, ...created, roundName };
+  }
+
+  /**
+   * After the interview: reject, hold, or select — and a selection either hires the candidate
+   * or sends the next round (with its own details and slots) to Q3.
+   */
+  async recordInterviewResult(
+    userId: number,
+    jobSubscriberMapId: number,
+    roundId: number,
+    dto: InterviewResultDto,
+  ) {
+    const mapping = await this.ownedApplication(userId, jobSubscriberMapId);
+    const round = mapping.InterviewRound.find((r) => Number(r.id) === roundId);
+    if (!round) throw new NotFoundException('Interview round not found');
+    const roundName = round.roundName ?? roundNameFor(round.roundNumber);
+
+    if (round.status === 'Pending') {
+      throw new BadRequestException(`Q3 has not scheduled ${roundName} yet`);
+    }
+    if (round.status !== 'Scheduled' || !['Pending', 'Hold'].includes(round.result)) {
+      throw new BadRequestException(`${roundName} already has a result`);
+    }
+    if (mapping.InterviewRound.some((r) => r.roundNumber > round.roundNumber)) {
+      throw new BadRequestException(`A later round already exists after ${roundName}`);
+    }
+    if (dto.decision === 'Hold' && round.result === 'Hold') {
+      throw new BadRequestException(`${roundName} is already on hold`);
+    }
+
+    let nextRound: RoundDetails | undefined;
+    if (dto.decision === 'Select' && dto.next && dto.next !== 'Hire') {
+      if (round.roundNumber >= 4) {
+        throw new BadRequestException('The final round is the last one — hire or reject');
+      }
+      const nextNumber = roundNumberFor(dto.next);
+      if (nextNumber <= round.roundNumber) {
+        throw new BadRequestException(`${roundNameFor(nextNumber)} must come after ${roundName}`);
+      }
+      if (!dto.nextRound) {
+        throw new BadRequestException(`Add the ${roundNameFor(nextNumber)} details and 3 slots for Q3`);
+      }
+      nextRound = this.scheduleDetails(dto.nextRound);
+    }
+
+    const result = dto.decision === 'Select' ? 'Passed' : dto.decision === 'Reject' ? 'Failed' : 'Hold';
+    const next =
+      dto.decision !== 'Select' ? undefined : dto.next === 'Hire' || !dto.next ? 'Select' : dto.next;
+    return this.rounds.submitResult(roundId, result, userId, dto.feedback, next, nextRound);
   }
 
   // ---------------------------------------------------------------------------
@@ -1534,7 +1965,11 @@ export class EmployersService {
         designation: { select: { descr: true } },
         jobCity: { select: { descr: true } },
         JobSubscriberMapping: {
-          select: { jobMapStatusID: true, mapDate: true },
+          select: {
+            jobMapStatusID: true,
+            mapDate: true,
+            InterviewRound: { select: { result: true } },
+          },
         },
       },
     });
@@ -1545,12 +1980,48 @@ export class EmployersService {
     const draftJobs = jobs.filter((j) => j.statusID === JOB_STATUS_DRAFT).length;
     const archivedJobs = jobs.filter((j) => j.statusID === JOB_STATUS_ARCHIVED).length;
 
-    let totalApplications = 0;
-    let shortlisted = 0;
-    let interviewScheduled = 0;
-    let selected = 0;
-    let rejected = 0;
-    let mapped = 0;
+    // Every application sits in exactly one current-stage bucket, so the buckets add up to the
+    // total. The funnel counts how far each one got, which a current status alone cannot say.
+    const totals = {
+      applications: 0,
+      mapped: 0,
+      inReview: 0,
+      shortlisted: 0,
+      inInterview: 0,
+      onHold: 0,
+      hired: 0,
+      rejectedAtScreening: 0,
+      rejectedAfterInterview: 0,
+      closedOther: 0,
+      passedScreening: 0,
+      interviewed: 0,
+      hiredAfterInterview: 0,
+    };
+    type Totals = typeof totals;
+    const classify = (a: { jobMapStatusID: number | null; InterviewRound: { result: string }[] }) => {
+      const s = a.jobMapStatusID;
+      const hadRounds = a.InterviewRound.length > 0;
+      const hired = s != null && HIRED_MAP_STATUSES.includes(s);
+      const rejected = s === JobMapStatus.REJECTED;
+      const interviewed = hadRounds || (s != null && INTERVIEW_MAP_STATUSES.includes(s));
+      let bucket: keyof Totals;
+      if (hired) bucket = 'hired';
+      else if (rejected) {
+        bucket = a.InterviewRound.some((r) => r.result === 'Failed') ? 'rejectedAfterInterview' : 'rejectedAtScreening';
+      } else if (interviewed) bucket = s === JobMapStatus.ON_HOLD ? 'onHold' : 'inInterview';
+      else if (s === JobMapStatus.SHORTLISTED) bucket = 'shortlisted';
+      else if (s === JobMapStatus.ON_HOLD) bucket = 'onHold';
+      else if (s === JobMapStatus.SENT_TO_COMPANY || s === JobMapStatus.REFERRED_TO_Q3) bucket = 'inReview';
+      else if (s == null || s === JobMapStatus.MAPPED) bucket = 'mapped';
+      else bucket = 'closedOther';
+      return {
+        bucket,
+        passedScreening: hired || interviewed || s === JobMapStatus.SHORTLISTED,
+        interviewed,
+        hired,
+        hiredAfterInterview: hired && interviewed,
+      };
+    };
 
     const monthBuckets = new Map<string, number>();
     const now = new Date();
@@ -1560,49 +2031,56 @@ export class EmployersService {
       monthBuckets.set(key, 0);
     }
 
+    const pct = (n: number, d: number) => (d ? Math.round((n / d) * 1000) / 10 : 0);
+
     const jobPerformance = jobs.map((j) => {
       const apps = j.JobSubscriberMapping;
-      const jShortlisted = apps.filter((a) => a.jobMapStatusID === JobMapStatus.SHORTLISTED).length;
-      const jInterviewScheduled = apps.filter(
-        (a) => a.jobMapStatusID != null && INTERVIEW_MAP_STATUSES.includes(a.jobMapStatusID),
-      ).length;
-      const jSelected = apps.filter((a) => a.jobMapStatusID === JobMapStatus.SELECTED).length;
-      const jRejected = apps.filter((a) => a.jobMapStatusID === JobMapStatus.REJECTED).length;
-      const jMapped = apps.filter((a) => a.jobMapStatusID === JobMapStatus.MAPPED || a.jobMapStatusID == null).length;
+      let jPassed = 0;
+      let jInterviewed = 0;
+      let jHired = 0;
+      let jRejected = 0;
+      let jMapped = 0;
 
       for (const a of apps) {
+        const c = classify(a);
+        totals.applications += 1;
+        totals[c.bucket] += 1;
+        if (c.passedScreening) totals.passedScreening += 1;
+        if (c.interviewed) totals.interviewed += 1;
+        if (c.hiredAfterInterview) totals.hiredAfterInterview += 1;
+
+        if (c.passedScreening) jPassed += 1;
+        if (c.interviewed) jInterviewed += 1;
+        if (c.hired) jHired += 1;
+        if (c.bucket === 'rejectedAtScreening' || c.bucket === 'rejectedAfterInterview') jRejected += 1;
+        if (c.bucket === 'mapped') jMapped += 1;
+
         if (!a.mapDate) continue;
         const key = `${a.mapDate.getFullYear()}-${String(a.mapDate.getMonth() + 1).padStart(2, '0')}`;
         if (monthBuckets.has(key)) monthBuckets.set(key, (monthBuckets.get(key) ?? 0) + 1);
       }
 
-      totalApplications += apps.length;
-      shortlisted += jShortlisted;
-      interviewScheduled += jInterviewScheduled;
-      selected += jSelected;
-      rejected += jRejected;
-      mapped += jMapped;
-
-      const appsCount = apps.length;
       return {
         jobId: Number(j.jobID),
         designation: j.designation?.descr ?? '',
         city: j.jobCity?.descr ?? '',
         status: jobStatus(j.statusID),
-        applications: appsCount,
-        shortlisted: jShortlisted,
-        interviewScheduled: jInterviewScheduled,
-        selected: jSelected,
-        rejected: jRejected,
+        applications: apps.length,
         mapped: jMapped,
-        shortlistRate: appsCount ? Math.round((jShortlisted / appsCount) * 1000) / 10 : 0,
-        hireRate: appsCount ? Math.round((jSelected / appsCount) * 1000) / 10 : 0,
+        /** Reached at least this far — shortlisted, interviewed or hired. */
+        shortlisted: jPassed,
+        interviewScheduled: jInterviewed,
+        selected: jHired,
+        rejected: jRejected,
+        shortlistRate: pct(jPassed, apps.length),
+        hireRate: pct(jHired, apps.length),
       };
     });
 
     jobPerformance.sort((a, b) => b.applications - a.applications);
 
-    const pct = (n: number, d: number) => (d ? Math.round((n / d) * 1000) / 10 : 0);
+    const totalApplications = totals.applications;
+    const rejected = totals.rejectedAtScreening + totals.rejectedAfterInterview;
 
     const applicationsByMonth = [...monthBuckets.entries()].map(([month, count]) => ({
       month,
@@ -1617,18 +2095,31 @@ export class EmployersService {
       draftJobs,
       archivedJobs,
       totalApplications,
-      mapped,
-      shortlisted,
-      interviewScheduled,
-      selected,
+      // Current stage — these add up to totalApplications.
+      mapped: totals.mapped,
+      inReview: totals.inReview,
+      shortlisted: totals.shortlisted,
+      interviewScheduled: totals.inInterview,
+      onHold: totals.onHold,
+      selected: totals.hired,
       rejected,
+      rejectedAtScreening: totals.rejectedAtScreening,
+      rejectedAfterInterview: totals.rejectedAfterInterview,
+      closedOther: totals.closedOther,
+      // How far applications got.
+      funnel: {
+        applied: totalApplications,
+        passedScreening: totals.passedScreening,
+        interviewed: totals.interviewed,
+        hired: totals.hired,
+      },
       rates: {
-        shortlistRate: pct(shortlisted, totalApplications),
-        interviewRate: pct(interviewScheduled, totalApplications),
-        hireRate: pct(selected, totalApplications),
+        shortlistRate: pct(totals.passedScreening, totalApplications),
+        interviewRate: pct(totals.interviewed, totalApplications),
+        hireRate: pct(totals.hired, totalApplications),
         rejectRate: pct(rejected, totalApplications),
-        interviewFromShortlist: pct(interviewScheduled, shortlisted || totalApplications),
-        hireFromInterview: pct(selected, interviewScheduled || totalApplications),
+        interviewFromShortlist: pct(totals.interviewed, totals.passedScreening),
+        hireFromInterview: pct(totals.hiredAfterInterview, totals.interviewed),
       },
       applicationsByMonth,
       jobPerformance,
@@ -1648,6 +2139,9 @@ export class EmployersService {
       orderBy: { mapDate: 'desc' },
       include: {
         jobMapStatus: { select: { descr: true } },
+        InterviewRound: {
+          select: { roundNumber: true, roundName: true, status: true, result: true, scheduledAt: true },
+        },
         job: {
           include: {
             designation: { select: { descr: true } },
@@ -1692,15 +2186,29 @@ export class EmployersService {
     sections.push(line(['DraftJobs', analytics.draftJobs]));
     sections.push(line(['ArchivedJobs', analytics.archivedJobs]));
     sections.push(line(['TotalApplications', analytics.totalApplications]));
-    sections.push(line(['Mapped', analytics.mapped]));
+    sections.push(line(['New', analytics.mapped]));
+    sections.push(line(['AwaitingReview', analytics.inReview]));
     sections.push(line(['Shortlisted', analytics.shortlisted]));
-    sections.push(line(['InterviewScheduled', analytics.interviewScheduled]));
+    sections.push(line(['InInterview', analytics.interviewScheduled]));
+    sections.push(line(['OnHold', analytics.onHold]));
     sections.push(line(['Hired', analytics.selected]));
-    sections.push(line(['Rejected', analytics.rejected]));
+    sections.push(line(['RejectedAtScreening', analytics.rejectedAtScreening]));
+    sections.push(line(['RejectedAfterInterview', analytics.rejectedAfterInterview]));
+    sections.push(line(['ExpiredOrWithdrawn', analytics.closedOther]));
     sections.push(line(['ShortlistRatePct', analytics.rates.shortlistRate]));
     sections.push(line(['InterviewRatePct', analytics.rates.interviewRate]));
     sections.push(line(['HireRatePct', analytics.rates.hireRate]));
     sections.push(line(['RejectRatePct', analytics.rates.rejectRate]));
+    sections.push(line(['InterviewFromShortlistPct', analytics.rates.interviewFromShortlist]));
+    sections.push(line(['HireFromInterviewPct', analytics.rates.hireFromInterview]));
+    sections.push('');
+
+    sections.push('FUNNEL');
+    sections.push(line(['Step', 'Reached']));
+    sections.push(line(['Applied', analytics.funnel.applied]));
+    sections.push(line(['PassedScreening', analytics.funnel.passedScreening]));
+    sections.push(line(['Interviewed', analytics.funnel.interviewed]));
+    sections.push(line(['Hired', analytics.funnel.hired]));
     sections.push('');
 
     sections.push('APPLICATIONS_BY_MONTH');
@@ -1718,9 +2226,9 @@ export class EmployersService {
         'City',
         'Status',
         'Applications',
-        'Mapped',
-        'Shortlisted',
-        'Interview',
+        'New',
+        'PassedScreening',
+        'Interviewed',
         'Hired',
         'Rejected',
         'ShortlistRatePct',
@@ -1764,6 +2272,8 @@ export class EmployersService {
         'JobTitle',
         'JobCity',
         'PipelineStatus',
+        'Stage',
+        'InterviewRounds',
         'JobMapStatus',
       ]),
     );
@@ -1787,6 +2297,8 @@ export class EmployersService {
           r.job?.designation?.descr ?? '',
           r.job?.jobCity?.descr ?? '',
           status,
+          applicationStage(r.jobMapStatusID, r.InterviewRound),
+          r.InterviewRound.length,
           r.jobMapStatus?.descr ?? '',
         ]),
       );
@@ -1799,80 +2311,40 @@ export class EmployersService {
     };
   }
 
-  /**
-   * Billing for hired candidates — flat ₹5,000 per hire.
-   * Lists every application currently in Hired (SELECTED) status for this company.
-   */
+  /** Invoices the Aajiveka admin has raised to this company — nothing is billed until one exists. */
   async billing(userId: number) {
     const clientId = await this.clientIdFor(userId);
-    const hireFee = 5000;
-
-    const rows = await this.db.jobSubscriberMapping.findMany({
-      where: {
-        job: { clientID: clientId },
-        jobMapStatusID: JobMapStatus.SELECTED,
-      },
-      orderBy: { mapDate: 'desc' },
-      include: {
-        job: {
-          include: {
-            designation: { select: { descr: true } },
-            jobCity: { select: { descr: true } },
-          },
-        },
-        subscriber: {
-          include: {
-            SubscriberCVDetails: {
-              include: { city: { select: { descr: true } } },
-            },
-            SubscriberStatusHistory: {
-              where: {
-                clientID: clientId,
-                statusID: SubscriberStatus.SELECTED,
-              },
-              orderBy: { timestampIns: 'desc' },
-              take: 1,
-            },
-          },
-        },
-      },
+    const rows = await this.db.clientInvoice.findMany({
+      where: { clientID: clientId },
+      orderBy: [{ invoiceDate: 'desc' }, { id: 'desc' }],
     });
 
-    const hires = rows.map((r) => {
-      const cv = r.subscriber?.SubscriberCVDetails;
-      const hiredAt =
-        r.subscriber?.SubscriberStatusHistory?.[0]?.timestampIns ?? r.mapDate ?? null;
-      return {
-        jobSubscriberMapId: Number(r.jobSubscriberMapID),
-        subscriberId: Number(r.subscriberID ?? 0),
-        jobId: Number(r.jobID ?? 0),
-        fullName: cv?.fullName?.trim() || cv?.mobileNo1 || 'Candidate',
-        email: cv?.emailID ?? '',
-        mobile: cv?.mobileNo1 ?? '',
-        city: cv?.city?.descr ?? '',
-        designation: r.job?.designation?.descr ?? '',
-        jobCity: r.job?.jobCity?.descr ?? '',
-        hiredOn: hiredAt?.toISOString().slice(0, 10) ?? '',
-        fee: hireFee,
-        currency: 'INR',
-      };
-    });
-
-    const hireCount = hires.length;
-    const subtotal = hireCount * hireFee;
+    const invoices = rows.map((r) => ({
+      invoiceId: Number(r.id),
+      invoiceNo: r.invoiceNo,
+      invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
+      dueDate: r.dueDate?.toISOString().slice(0, 10) ?? null,
+      description: r.description ?? '',
+      amount: Number(r.amount),
+      tax: Number(r.tax),
+      total: Number(r.total),
+      status: r.status,
+      paidAt: r.paidAt?.toISOString() ?? null,
+    }));
+    const live = invoices.filter((i) => i.status !== 'Cancelled');
+    const sum = (list: typeof invoices) => list.reduce((acc, i) => acc + i.total, 0);
 
     return {
-      hireFee,
       currency: 'INR',
-      hireCount,
-      subtotal,
-      tax: 0,
-      total: subtotal,
-      hires,
+      invoiceCount: live.length,
+      totalBilled: sum(live),
+      totalPaid: sum(live.filter((i) => i.status === 'Paid')),
+      outstanding: sum(live.filter((i) => i.status !== 'Paid')),
+      invoices,
     };
   }
 
-  /** CSV export of hire billing for accounts / audit. */
+  /** CSV export of the company's invoices for accounts / audit. */
   async exportBillingCsv(userId: number) {
     const data = await this.billing(userId);
     const esc = (v: string | number | null | undefined) => {
@@ -1880,53 +2352,23 @@ export class EmployersService {
       return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const line = (cells: Array<string | number | null | undefined>) => cells.map(esc).join(',');
-    const lines: string[] = [];
     const stamp = new Date().toISOString();
-
-    lines.push('AAJIVEKA HIRE BILLING');
-    lines.push(line(['GeneratedAt', stamp]));
-    lines.push(line(['HireFee', data.hireFee]));
-    lines.push(line(['Currency', data.currency]));
-    lines.push(line(['HireCount', data.hireCount]));
-    lines.push(line(['Subtotal', data.subtotal]));
-    lines.push(line(['Tax', data.tax]));
-    lines.push(line(['Total', data.total]));
-    lines.push('');
-    lines.push(
-      line([
-        'ApplicationId',
-        'HiredOn',
-        'CandidateName',
-        'Email',
-        'Mobile',
-        'City',
-        'JobId',
-        'JobTitle',
-        'JobCity',
-        'Fee',
-        'Currency',
-      ]),
-    );
-    for (const h of data.hires) {
-      lines.push(
-        line([
-          h.jobSubscriberMapId,
-          h.hiredOn,
-          h.fullName,
-          h.email,
-          h.mobile,
-          h.city,
-          h.jobId,
-          h.designation,
-          h.jobCity,
-          h.fee,
-          h.currency,
-        ]),
-      );
-    }
+    const lines: string[] = [
+      'AAJIVEKA INVOICES',
+      line(['GeneratedAt', stamp]),
+      line(['Currency', data.currency]),
+      line(['TotalBilled', data.totalBilled]),
+      line(['TotalPaid', data.totalPaid]),
+      line(['Outstanding', data.outstanding]),
+      '',
+      line(['InvoiceNo', 'InvoiceDate', 'DueDate', 'Description', 'Amount', 'Tax', 'Total', 'Status', 'PaidAt']),
+      ...data.invoices.map((i) =>
+        line([i.invoiceNo, i.invoiceDate, i.dueDate, i.description, i.amount, i.tax, i.total, i.status, i.paidAt]),
+      ),
+    ];
 
     return {
-      fileName: `aajiveka-hire-billing-${stamp.slice(0, 10)}.csv`,
+      fileName: `aajiveka-invoices-${stamp.slice(0, 10)}.csv`,
       body: lines.join('\n'),
     };
   }
@@ -2038,13 +2480,32 @@ export class EmployersService {
       orderBy: { timestampIns: 'desc' },
     });
 
-    return docs.map((d) => ({
-      docUploadId: Number(d.docUploadID),
+    const uploaded = docs.map((d) => ({
+      docUploadId: Number(d.docUploadID) as number | null,
       documentType: d.documentType?.documentType ?? '',
       documentPath: d.documentPath,
       status: d.flgStatus === 1 ? 'Verified' : d.flgStatus === 2 ? 'Rejected' : 'Pending',
       uploadedAt: d.timestampIns?.toISOString() ?? null,
     }));
+
+    // Asked for but not uploaded yet — shown so the employer can see what Q3 is chasing.
+    const uploadedTypes = new Set(docs.map((d) => d.documentTypeID));
+    const requested = await this.db.candidateDocumentMap.findMany({
+      where: { subscriberID: mapping.subscriberID },
+      include: { documentType: { select: { documentType: true } } },
+      orderBy: { timestampIns: 'asc' },
+    });
+    const awaiting = requested
+      .filter((r) => !uploadedTypes.has(r.documentTypeID))
+      .map((r) => ({
+        docUploadId: null,
+        documentType: r.documentType?.documentType ?? '',
+        documentPath: null,
+        status: 'Requested',
+        uploadedAt: null,
+      }));
+
+    return [...awaiting, ...uploaded];
   }
 
   /** Company reviews an applicant's document (approve or request corrections). */
@@ -2081,6 +2542,88 @@ export class EmployersService {
     });
 
     return { ok: true };
+  }
+
+  async requestableDocumentTypes() {
+    const rows = await this.db.mstrDocumentType.findMany({ orderBy: { documentTypeID: 'asc' } });
+    return rows
+      .filter((r) => r.documentType?.trim() && !SYSTEM_DOCUMENT_TYPES.has(r.documentType.trim().toLowerCase()))
+      .map((r) => ({ documentTypeId: r.documentTypeID, name: r.documentType!.trim() }));
+  }
+
+  /** Case-insensitive match against tblMstrDocumentType; unknown names are added to it. */
+  private async documentTypeIdsForNames(names: string[]): Promise<number[]> {
+    const wanted = [...new Map(names.map((n) => n.trim()).filter(Boolean).map((n) => [n.toLowerCase(), n])).values()];
+    if (!wanted.length) return [];
+    const master = await this.db.mstrDocumentType.findMany();
+    const ids: number[] = [];
+    for (const name of wanted) {
+      const hit = master.find((m) => m.documentType?.trim().toLowerCase() === name.toLowerCase());
+      if (hit) {
+        ids.push(hit.documentTypeID);
+        continue;
+      }
+      const created = await this.db.mstrDocumentType.create({ data: { documentType: name } });
+      ids.push(created.documentTypeID);
+    }
+    return ids;
+  }
+
+  /** Company asks Q3 to collect specific document types from the selected candidate. */
+  async requestApplicantDocuments(
+    userId: number,
+    jobSubscriberMapId: number,
+    documentTypeIds: number[],
+    documentNames: string[] = [],
+  ) {
+    const clientId = await this.clientIdFor(userId);
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: jobSubscriberMapId },
+      include: { job: { select: { clientID: true } } },
+    });
+    if (!mapping || Number(mapping.job?.clientID ?? -1) !== Number(clientId)) {
+      throw new NotFoundException('Application not found');
+    }
+    if (Number(mapping.jobMapStatusID) !== JobMapStatus.SELECTED) {
+      throw new BadRequestException('Documents can only be requested after selection');
+    }
+
+    const requestedIds = [
+      ...new Set([...documentTypeIds, ...(await this.documentTypeIdsForNames(documentNames))]),
+    ];
+    if (!requestedIds.length) {
+      throw new BadRequestException('Name at least one document');
+    }
+
+    const existing = await this.db.candidateDocumentMap.findMany({
+      where: { subscriberID: mapping.subscriberID },
+      select: { documentTypeID: true },
+    });
+    const already = new Set(existing.map((e) => e.documentTypeID));
+    const toCreate = requestedIds.filter((id) => !already.has(id));
+    if (toCreate.length) {
+      const now = new Date();
+      await this.db.candidateDocumentMap.createMany({
+        data: toCreate.map((documentTypeID) => ({
+          subscriberID: mapping.subscriberID,
+          jobSubscriberMapID: BigInt(jobSubscriberMapId),
+          documentTypeID,
+          flgStatus: 0,
+          timestampIns: now,
+          loginIDIns: userId,
+        })),
+      });
+    }
+
+    await this.audit.record({
+      userId,
+      action: 'applicant.documents_requested',
+      entity: 'JobSubscriberMapping',
+      entityId: jobSubscriberMapId,
+      detail: { documentTypeIds: requestedIds },
+    });
+
+    return { ok: true, requested: toCreate.length, alreadyRequested: requestedIds.length - toCreate.length };
   }
 
   /** Public company page — no auth required. */

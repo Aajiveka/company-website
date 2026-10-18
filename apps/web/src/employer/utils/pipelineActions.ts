@@ -1,13 +1,13 @@
 import { cn } from '@/lib/cn';
-import type { ApplicantDecision, ApplicantPipelineStatus } from '@/employer/services/employer.types';
+import type { ApplicantAction as ApplicantDecision, ApplicantPipelineStatus } from '@/employer/services/employer.types';
 
 export function applicantStatusTone(
   status: ApplicantPipelineStatus | string,
 ): 'neutral' | 'success' | 'warning' | 'danger' | 'primary' {
-  if (status === 'Hired') return 'success';
-  if (status === 'Shortlisted') return 'primary';
-  if (status === 'Interview') return 'warning';
-  if (status === 'Rejected') return 'danger';
+  if (status === 'Hired' || status === 'Joined' || status === 'Offer') return 'success';
+  if (status === 'Shortlisted' || status === 'SentToCompany') return 'primary';
+  if (status === 'Interview' || status === 'Referred' || status === 'OnHold') return 'warning';
+  if (status === 'Rejected' || status === 'Expired') return 'danger';
   return 'neutral';
 }
 

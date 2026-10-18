@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { EmployerBadge, PrimaryButton, SecondaryButton } from '@/employer/components/Cards/ui';
 import { employerPaths } from '@/employer/constants/paths';
 import { useCompanyJob } from '@/employer/services/employer.api';
+import { ctcLacsLabel, dateLabel } from '@/employer/utils/format';
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -56,7 +57,7 @@ export function JobViewModal({
             {displayIndex != null && (
               <span className="text-[11px] text-slate-400">#{displayIndex}</span>
             )}
-            <span className="text-[11px] text-slate-400">Posted {job.postedOn}</span>
+            <span className="text-[11px] text-slate-400">Posted {dateLabel(job.postedOn)}</span>
           </div>
 
           <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
@@ -70,7 +71,7 @@ export function JobViewModal({
               />
               <Row
                 label="CTC"
-                value={`${job.minCtc.toLocaleString()}–${job.maxCtc.toLocaleString()}`}
+                value={ctcLacsLabel(job.minCtc, job.maxCtc)}
               />
               <Row label="Industry" value={job.industryType} />
               <Row label="Department" value={job.department} />
@@ -85,13 +86,7 @@ export function JobViewModal({
                 label="Interview"
                 value={
                   job.interviewProcess?.length
-                    ? job.interviewProcess
-                        .map((r) => {
-                          const parts = [`R${r.round}`, r.process].filter(Boolean);
-                          if (r.mode) parts.push(r.mode);
-                          return parts.join(' — ');
-                        })
-                        .join(' · ')
+                    ? `${job.interviewProcess.length} round${job.interviewProcess.length > 1 ? 's' : ''}`
                     : '—'
                 }
               />
