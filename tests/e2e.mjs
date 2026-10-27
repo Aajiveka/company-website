@@ -20,12 +20,24 @@ const PUBLIC = ['/', '/jobs', '/jobs/1', '/login', '/register', '/forgot-passwor
   '/contact', '/blogs', '/career', '/testimonial', '/privacy', '/terms', '/subscription', '/resume'];
 
 const ROLES = {
-  candidate: { user: 'anuj', pass: 'anuj', pages: ['/candidate/profile', '/candidate/cv-manager',
-    '/candidate/applied-jobs', '/candidate/job-alerts', '/candidate/documents', '/candidate/change-password'] },
+  // The portal redesign retired cv-manager, applied-jobs, job-alerts and change-password; the
+  // suite kept visiting them and, with no 404 check, reported the NotFound page as "ok".
+  candidate: { user: 'anuj', pass: 'anuj', pages: ['/candidate/profile', '/candidate/applications',
+    '/candidate/saved-jobs', '/candidate/tracker', '/candidate/interviews', '/candidate/documents',
+    '/candidate/referrals', '/candidate/account', '/candidate/notifications', '/candidate/all-notifications',
+    '/candidate/resume-builder', '/candidate/subscription'] },
   employer: { user: 'anuj@aajiveka.com', pass: 'anuj@aajiveka.com', pages: ['/company/profile',
     '/company/jobs', '/company/post-job', '/company/jobs/1/edit', '/company/applicants'] },
-  qc1: { user: 'qc1', pass: 'qc1', pages: ['/recruitment/candidates', '/recruitment/qc1',
-    '/recruitment/documents', '/recruitment/interviews', '/recruitment/candidates/1'] },
+  qc1: { user: 'qc1', pass: 'qc1', pages: ['/q1/dashboard', '/q1/candidates', '/q1/follow-ups',
+    '/q1/no-response', '/q1/verified', '/q1/not-interested', '/q1/analytics', '/recruitment/candidates',
+    '/recruitment/qc1', '/recruitment/documents', '/recruitment/interviews', '/recruitment/candidates/1'] },
+  qc2: { user: 'qc2', pass: 'qc2', pages: ['/q2/dashboard', '/q2/jobs', '/q2/applicants', '/q2/forwarded',
+    '/q2/sent-back', '/q2/analytics'] },
+  q3: { user: 'q3', pass: 'q3', pages: ['/q3/dashboard', '/q3/referred', '/q3/company-review', '/q3/scheduling',
+    '/q3/interviews', '/q3/decisions', '/q3/documents', '/q3/offers', '/q3/returned'] },
+  admin: { user: 'admin', pass: 'admin', pages: ['/admin', '/admin/users', '/admin/users/1', '/admin/jobs',
+    '/admin/jobs/1', '/admin/applications', '/admin/companies', '/admin/audit', '/admin/blog',
+    '/admin/settings', '/admin/reports', '/admin/employer-approvals'] },
 };
 
 const browser = await chromium.launch();
@@ -57,12 +69,14 @@ async function visit(page, path, label) {
   );
   const bouncedToLogin = url.startsWith('/login') && !path.startsWith('/login');
   const blank = text.trim().length < 60;
-  const bad = errs.length || dataFails.length || blank || bouncedToLogin;
+  // The catch-all route renders a full page, so it passes the blank check on its own.
+  const notFound = /404\s*Page not found/i.test(text);
+  const bad = errs.length || dataFails.length || blank || bouncedToLogin || notFound;
 
   results.push({
     label, path, status: bad ? 'FAIL' : 'ok',
     dataFails: [...new Set(dataFails.map((f) => `${f.status} ${f.url}`))],
-    errs: [...new Set(errs)].slice(0, 2), blank, bouncedToLogin,
+    errs: [...new Set(errs)].slice(0, 2), blank, bouncedToLogin, notFound,
     sample: text.replace(/\s+/g, ' ').slice(0, 90),
   });
 }
@@ -93,6 +107,7 @@ for (const r of results) {
   console.log(`[${r.status === 'ok' ? ' ok ' : 'FAIL'}] ${r.label.padEnd(10)} ${r.path.padEnd(28)} ${r.sample}`);
   if (r.blank) console.log(`         -> PAGE BLANK`);
   if (r.bouncedToLogin) console.log(`         -> BOUNCED TO /login`);
+  if (r.notFound) console.log(`         -> 404 PAGE`);
   for (const f of r.dataFails) console.log(`         -> API ${f}`);
   for (const e of r.errs) console.log(`         -> ${e}`);
 }

@@ -1,27 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { BarChart3, Briefcase, DollarSign, FileText, Users } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Badge, Breadcrumbs, Card } from '@/components/ui';
-import { api } from '@/lib/axios';
+import { Badge, Card } from '@/components/ui';
 import ExportButton from '../components/ExportButton';
+import { useAdminStats } from '../admin.api';
+import type { AdminStats } from '../admin.types';
+import { AdminShell } from '../components/AdminShell';
+import { ErrorState } from '../components/primitives';
 import DateRangePicker, { type DateRange } from '../components/DateRangePicker';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
 /* ------------------------------------------------------------------ */
-
-interface PlatformStats {
-  totalCandidates: number;
-  totalEmployers: number;
-  totalJobs: number;
-  activeJobs: number;
-  totalApplications: number;
-  totalRevenue: number;
-  recentSignups: { date: string; count: number }[];
-  topDesignations: { designation: string; count: number }[];
-  topCities: { city: string; count: number }[];
-}
 
 type Tab = 'overview' | 'users' | 'jobs' | 'applications' | 'revenue';
 
@@ -137,22 +127,15 @@ function StatCard({ label, value, icon, color }: { label: string; value: string;
 /*  Tab content panels                                                */
 /* ------------------------------------------------------------------ */
 
-function OverviewTab({ data }: { data: PlatformStats }) {
+function OverviewTab({ data }: { data: AdminStats }) {
   const { t } = useTranslation('dashboard');
-  const signupItems: BarChartItem[] = (data.recentSignups ?? []).map((s) => ({
+  const signupItems: BarChartItem[] = data.signups.map((s) => ({
     label: new Date(s.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
     value: s.count,
   }));
 
-  const designationItems: BarChartItem[] = (data.topDesignations ?? []).slice(0, 8).map((d) => ({
-    label: d.designation,
-    value: d.count,
-  }));
-
-  const cityItems: BarChartItem[] = (data.topCities ?? []).slice(0, 8).map((c) => ({
-    label: c.city,
-    value: c.count,
-  }));
+  const designationItems: BarChartItem[] = data.topDesignations.map((d) => ({ label: d.label, value: d.count }));
+  const cityItems: BarChartItem[] = data.topCities.map((c) => ({ label: c.label, value: c.count }));
 
   return (
     <div className="space-y-6">
@@ -160,25 +143,25 @@ function OverviewTab({ data }: { data: PlatformStats }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={t('reports.totalUsers')}
-          value={data.totalCandidates.toLocaleString()}
+          value={data.candidates.total.toLocaleString()}
           icon={<Users className="h-5 w-5" />}
           color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
         />
         <StatCard
           label={t('reports.totalJobs')}
-          value={data.totalJobs.toLocaleString()}
+          value={data.jobs.total.toLocaleString()}
           icon={<Briefcase className="h-5 w-5" />}
           color="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
         />
         <StatCard
           label={t('reports.totalApplications')}
-          value={data.totalApplications.toLocaleString()}
+          value={data.applications.total.toLocaleString()}
           icon={<FileText className="h-5 w-5" />}
           color="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
         />
         <StatCard
           label={t('reports.totalRevenue')}
-          value={formatCurrency(data.totalRevenue)}
+          value={formatCurrency(data.payments.revenueInr)}
           icon={<DollarSign className="h-5 w-5" />}
           color="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
         />
@@ -320,40 +303,18 @@ export default function ReportsPage() {
     to: todayStr(),
   });
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'platform-stats'],
-    queryFn: () => api.get<PlatformStats>('/admin/stats').then((r) => r.data),
-  });
-
-  const placeholderStats = useMemo<PlatformStats>(
-    () => ({
-      totalCandidates: 0,
-      totalEmployers: 0,
-      totalJobs: 0,
-      activeJobs: 0,
-      totalApplications: 0,
-      totalRevenue: 0,
-      recentSignups: [],
-      topDesignations: [],
-      topCities: [],
-    }),
-    [],
-  );
-
-  const stats = data ?? placeholderStats;
+  const { data, isLoading, error, refetch } = useAdminStats();
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('reports.heading') }]} />
-
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="flex items-center gap-2 font-heading text-2xl font-bold text-navy dark:text-white">
-          <BarChart3 className="h-6 w-6" />
-          {t('reports.heading')}
-        </h1>
-        <Badge tone="blue">{isLoading ? t('reports.loading') : t('reports.liveData')}</Badge>
-      </div>
-
+    <AdminShell
+      title={t('reports.heading')}
+      subtitle="Platform figures and CSV exports"
+      crumbs={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('reports.heading') }]}
+      actions={
+        // Only claim live data once it has actually arrived.
+        data ? <Badge tone="blue">{t('reports.liveData')}</Badge> : isLoading ? <Badge tone="gray">{t('reports.loading')}</Badge> : null
+      }
+    >
       {/* Tabs */}
       <div role="tablist" aria-label="Report sections" className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-800">
         {TAB_KEYS.map((key) => (
@@ -385,12 +346,21 @@ export default function ReportsPage() {
 
       {/* Tab panels */}
       <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
-        {activeTab === 'overview' && <OverviewTab data={stats} />}
+        {activeTab === 'overview' &&
+          (error ? (
+            <Card>
+              <ErrorState error={error} onRetry={() => refetch()} />
+            </Card>
+          ) : data ? (
+            <OverviewTab data={data} />
+          ) : (
+            <div className="h-40 animate-pulse rounded-xl bg-white dark:bg-gray-800" aria-busy="true" />
+          ))}
         {activeTab === 'users' && <UsersTab dateRange={dateRange} />}
         {activeTab === 'jobs' && <JobsTab dateRange={dateRange} />}
         {activeTab === 'applications' && <ApplicationsTab dateRange={dateRange} />}
         {activeTab === 'revenue' && <RevenueTab dateRange={dateRange} />}
       </div>
-    </div>
+    </AdminShell>
   );
 }

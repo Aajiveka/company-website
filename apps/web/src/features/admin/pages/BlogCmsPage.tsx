@@ -1,10 +1,10 @@
+import { AdminShell } from '../components/AdminShell';
 import { useCallback, useState } from 'react';
 import { Eye, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   Badge,
-  Breadcrumbs,
   Button,
   Card,
   CardSkeleton,
@@ -252,16 +252,19 @@ export default function BlogCmsPage() {
   const publishedCount = (posts ?? []).filter((p) => p.status === 'Published').length;
 
   return (
+    <AdminShell
+      title={t('blogCms.heading')}
+      crumbs={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('blogCms.heading') }]}
+    >
     <div className="mx-auto max-w-5xl">
-      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('blogCms.heading') }]} />
 
       {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="flex items-center gap-2 font-heading text-2xl font-bold text-navy dark:text-white">
-            <FileText className="h-6 w-6" />
+          <h2 className="flex items-center gap-2 font-heading text-xl font-bold text-navy dark:text-white">
+            <FileText className="h-5 w-5" />
             {t('blogCms.heading')}
-          </h1>
+          </h2>
           {posts && (
             <div className="mt-1 flex gap-2">
               <Badge tone="gray">{posts.length} {t('blogCms.total')}</Badge>
@@ -418,5 +421,6 @@ export default function BlogCmsPage() {
         isLoading={deleteMutation.isPending}
       />
     </div>
+    </AdminShell>
   );
 }

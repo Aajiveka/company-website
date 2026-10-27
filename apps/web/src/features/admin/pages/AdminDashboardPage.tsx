@@ -1,310 +1,234 @@
-import { useMemo } from 'react';
-import { BarChart3, Briefcase, Building2, Clock, IndianRupee, TrendingUp, Users } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { Badge, Breadcrumbs, Card, CardSkeleton, Skeleton } from '@/components/ui';
-import PageMeta from '@/components/PageMeta';
-import { cn } from '@/lib/cn';
-import { api } from '@/lib/axios';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Briefcase, Building2, GitBranch, IndianRupee, UserCheck, Users } from 'lucide-react';
+import { ROLE_LABEL, type RoleId } from '@/types/roles';
+import { useAdminStats } from '../admin.api';
+import { PIPELINE_STAGES, STAGE_LABEL } from '../admin.types';
+import { AdminShell } from '../components/AdminShell';
+import {
+  ErrorState,
+  Panel,
+  StatCard,
+} from '../components/primitives';
+import { actionLabel, fmtInr, fmtRelative } from '../admin.format';
 
-interface PlatformStats {
-  totalCandidates: number;
-  totalEmployers: number;
-  totalJobs: number;
-  activeJobs: number;
-  totalApplications: number;
-  totalRevenue: number;
-  recentSignups: { date: string; count: number }[];
-  topDesignations: { designation: string; count: number }[];
-  topCities: { city: string; count: number }[];
-  recentActivity: {
-    id: number;
-    type: 'user_signup' | 'job_posted' | 'application' | 'payment';
-    description: string;
-    actor: string;
-    timestamp: string;
-  }[];
-}
-
-function usePlatformStats() {
-  return useQuery({
-    queryKey: ['admin', 'platform-stats'],
-    queryFn: () => api.get<PlatformStats>('/admin/stats').then((r) => r.data),
-  });
-}
-
-interface BarItem {
-  label: string;
-  value: number;
-  color: string;
-}
-
-function HorizontalBar({ items, maxValue }: { items: BarItem[]; maxValue: number }) {
-  return (
-    <div className="space-y-3">
-      {items.map((item) => (
-        <div key={item.label}>
-          <div className="mb-1 flex items-center justify-between text-sm">
-            <span className="truncate text-gray-600 dark:text-gray-300">{item.label}</span>
-            <span className="ml-2 shrink-0 font-semibold text-navy dark:text-white">{item.value}</span>
-          </div>
-          <div className="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-            <div
-              className={cn('h-full rounded-full transition-all duration-500', item.color)}
-              style={{ width: maxValue > 0 ? `${(item.value / maxValue) * 100}%` : '0%' }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  color,
-  trend,
+/** One horizontal bar per row, scaled to the largest — a single hue, so length carries it. */
+function BarList({
+  rows,
+  hrefOf,
+  empty,
 }: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  color: string;
-  trend?: string;
+  rows: { label: string; count: number; key?: string }[];
+  hrefOf?: (row: { label: string; key?: string }) => string;
+  empty: string;
 }) {
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  if (!rows.some((r) => r.count)) return <p className="py-6 text-center text-sm text-gray-500">{empty}</p>;
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-      <div className="mb-3 flex items-center justify-between">
-        <div className={cn('inline-flex rounded-lg p-2', color)}>{icon}</div>
-        {trend && (
-          <span className="flex items-center gap-0.5 text-xs font-medium text-green-600 dark:text-green-400">
-            <TrendingUp className="h-3 w-3" />
-            {trend}
-          </span>
-        )}
+    <ul className="space-y-2.5">
+      {rows.map((r) => {
+        const inner = (
+          <>
+            <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+              <span className="truncate text-gray-700 dark:text-gray-200">{r.label}</span>
+              <span className="font-semibold tabular-nums text-navy dark:text-white">{r.count.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-aj-line-soft dark:bg-gray-700">
+              <div className="h-full rounded-full bg-aj-blue" style={{ width: `${(r.count / max) * 100}%` }} />
+            </div>
+          </>
+        );
+        return (
+          <li key={r.key ?? r.label}>
+            {hrefOf ? (
+              <Link to={hrefOf(r)} className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aj-blue/40">
+                {inner}
+              </Link>
+            ) : (
+              inner
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** 30 daily columns. Days without a signup are drawn as gaps, not skipped. */
+function SignupColumns({ data }: { data: { date: string; count: number }[] }) {
+  const byDay = new Map(data.map((d) => [d.date, d.count]));
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    const key = d.toISOString().slice(0, 10);
+    return { key, count: byDay.get(key) ?? 0 };
+  });
+  const max = Math.max(1, ...days.map((d) => d.count));
+  const total = days.reduce((n, d) => n + d.count, 0);
+  return (
+    <div>
+      <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
+        <strong className="font-display text-xl text-navy dark:text-white">{total}</strong> new candidates in the last 30 days
+      </p>
+      <div className="flex h-28 items-end gap-0.75" role="img" aria-label={`${total} candidate signups over the last 30 days`}>
+        {days.map((d) => (
+          <div
+            key={d.key}
+            title={`${d.key}: ${d.count}`}
+            className="flex-1 rounded-t bg-aj-blue/85"
+            style={{ height: d.count ? `${Math.max(6, (d.count / max) * 100)}%` : '2px', opacity: d.count ? 1 : 0.25 }}
+          />
+        ))}
       </div>
-      <p className="text-2xl font-bold text-navy dark:text-white sm:text-3xl">{value}</p>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+      <div className="mt-1 flex justify-between text-[11px] text-gray-400">
+        <span>30 days ago</span>
+        <span>Today</span>
+      </div>
     </div>
   );
 }
 
-const ACTIVITY_TONE: Record<string, 'blue' | 'green' | 'amber' | 'purple'> = {
-  user_signup: 'blue',
-  job_posted: 'green',
-  application: 'amber',
-  payment: 'purple',
-};
-
-const ACTIVITY_ICON_MAP: Record<string, React.ReactNode> = {
-  user_signup: <Users className="h-4 w-4" />,
-  job_posted: <Briefcase className="h-4 w-4" />,
-  application: <BarChart3 className="h-4 w-4" />,
-  payment: <IndianRupee className="h-4 w-4" />,
-};
-
-function formatCurrency(amount: number): string {
-  if (amount >= 10_00_000) return `₹${(amount / 10_00_000).toFixed(1)}M`;
-  if (amount >= 1_00_000) return `₹${(amount / 1_00_000).toFixed(1)}L`;
-  if (amount >= 1_000) return `₹${(amount / 1_000).toFixed(1)}K`;
-  return `₹${amount}`;
-}
-
-function timeAgo(timestamp: string): string {
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-/** Admin -- platform-wide analytics dashboard. */
 export default function AdminDashboardPage() {
-  const { t } = useTranslation('dashboard');
-  const { data, isLoading } = usePlatformStats();
-
-  const topDesignations = useMemo(() => {
-    if (!data?.topDesignations) return { items: [], maxValue: 1 };
-    const items: BarItem[] = data.topDesignations.slice(0, 8).map((d) => ({
-      label: d.designation,
-      value: d.count,
-      color: 'bg-primary',
-    }));
-    return { items, maxValue: Math.max(...items.map((i) => i.value), 1) };
-  }, [data]);
-
-  const topCities = useMemo(() => {
-    if (!data?.topCities) return { items: [], maxValue: 1 };
-    const items: BarItem[] = data.topCities.slice(0, 8).map((c) => ({
-      label: c.city,
-      value: c.count,
-      color: 'bg-amber-500',
-    }));
-    return { items, maxValue: Math.max(...items.map((i) => i.value), 1) };
-  }, [data]);
-
-  const signupTrend = useMemo(() => {
-    if (!data?.recentSignups) return { items: [], maxValue: 1 };
-    const items: BarItem[] = data.recentSignups.map((s) => ({
-      label: new Date(s.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-      value: s.count,
-      color: 'bg-green-500',
-    }));
-    return { items, maxValue: Math.max(...items.map((i) => i.value), 1) };
-  }, [data]);
+  const { data, isLoading, error, refetch } = useAdminStats();
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <PageMeta title="Admin Dashboard" />
-      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('admin.heading') }]} />
-      <h1 className="mb-6 font-heading text-2xl font-bold text-navy dark:text-white">{t('admin.heading')}</h1>
-
-      {isLoading ? (
-        <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <CardSkeleton /> <CardSkeleton /> <CardSkeleton /> <CardSkeleton />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <CardSkeleton /> <CardSkeleton />
-          </div>
-          <Card>
-            <Skeleton className="mb-4 h-5 w-40" />
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="mb-3 h-12 w-full" />
-            ))}
-          </Card>
+    <AdminShell title="Dashboard" subtitle="Live figures from the Aajiveka database">
+      {error ? (
+        <Panel>
+          <ErrorState error={error} onRetry={() => refetch()} />
+        </Panel>
+      ) : isLoading || !data ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-23 animate-pulse rounded-xl bg-white dark:bg-gray-800" />
+          ))}
         </div>
-      ) : !data ? (
-        <Card><p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.noData')}</p></Card>
       ) : (
-        <div className="space-y-6">
-          {/* Overview stat cards */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <StatCard
-              label={t('admin.totalCandidates')}
-              value={data.totalCandidates.toLocaleString()}
-              icon={<Users className="h-5 w-5" />}
-              color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+              icon={Users}
+              label="Logins"
+              value={data.users.total.toLocaleString('en-IN')}
+              hint={`${data.users.active} active · ${data.users.inactive} inactive`}
+              to="/admin/users"
             />
             <StatCard
-              label={t('admin.totalEmployers')}
-              value={data.totalEmployers.toLocaleString()}
-              icon={<Building2 className="h-5 w-5" />}
-              color="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+              icon={UserCheck}
+              tone={data.employers.pendingRegistrations ? 'amber' : 'green'}
+              label="Employer registrations awaiting review"
+              value={data.employers.pendingRegistrations}
+              hint={data.employers.pendingRegistrations ? 'Review to let them sign in' : 'Nothing waiting'}
+              to="/admin/employer-approvals"
             />
             <StatCard
-              label={t('admin.activeJobs')}
-              value={data.activeJobs.toLocaleString()}
-              icon={<Briefcase className="h-5 w-5" />}
-              color="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
+              icon={Building2}
+              tone="violet"
+              label="Companies"
+              value={data.employers.total.toLocaleString('en-IN')}
+              hint={`${data.candidates.total.toLocaleString('en-IN')} candidates registered`}
+              to="/admin/companies"
             />
             <StatCard
-              label={t('admin.totalApplications')}
-              value={data.totalApplications.toLocaleString()}
-              icon={<TrendingUp className="h-5 w-5" />}
-              color="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
+              icon={Briefcase}
+              tone="green"
+              label="Active jobs"
+              value={data.jobs.byStatus.Active.toLocaleString('en-IN')}
+              hint={`${data.jobs.total} total · ${data.jobs.byStatus.Draft} draft · ${data.jobs.byStatus.Closed} closed`}
+              to="/admin/jobs"
+            />
+            <StatCard
+              icon={GitBranch}
+              label="Applications"
+              value={data.applications.total.toLocaleString('en-IN')}
+              hint={`${data.applications.byStage.Joined} joined · ${data.applications.byStage.Closed} closed`}
+              to="/admin/applications"
+            />
+            <StatCard
+              icon={IndianRupee}
+              tone="green"
+              label="Revenue (successful payments)"
+              value={fmtInr(data.payments.revenueInr)}
+              hint={`${data.payments.successfulOrders} orders`}
+              to="/admin/reports"
             />
           </div>
 
-          {/* Revenue card - full width */}
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.totalRevenue')}</p>
-                <p className="mt-1 text-3xl font-bold text-navy dark:text-white">{formatCurrency(data.totalRevenue)}</p>
-              </div>
-              <div className="rounded-lg bg-green-50 p-3 text-green-600 dark:bg-green-900/20 dark:text-green-400">
-                <IndianRupee className="h-6 w-6" />
-              </div>
-            </div>
-          </Card>
-
-          {/* Charts */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy dark:text-white">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                {t('admin.topDesignations')}
-              </h3>
-              {topDesignations.items.length > 0 ? (
-                <HorizontalBar items={topDesignations.items} maxValue={topDesignations.maxValue} />
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.noData')}</p>
-              )}
-            </Card>
-            <Card>
-              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy dark:text-white">
-                <BarChart3 className="h-5 w-5 text-amber-500" />
-                {t('admin.topCities')}
-              </h3>
-              {topCities.items.length > 0 ? (
-                <HorizontalBar items={topCities.items} maxValue={topCities.maxValue} />
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.noData')}</p>
-              )}
-            </Card>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+            <Panel
+              className="lg:col-span-3"
+              title="Hiring pipeline"
+              description="Every application by the stage it is in now. Select a stage to see its applications."
+            >
+              <BarList
+                rows={PIPELINE_STAGES.map((s) => ({ key: s, label: STAGE_LABEL[s], count: data.applications.byStage[s] }))}
+                hrefOf={(r) => `/admin/applications?stage=${r.key}`}
+                empty="No applications yet."
+              />
+            </Panel>
+            <Panel className="lg:col-span-2" title="Candidate signups">
+              <SignupColumns data={data.signups} />
+            </Panel>
           </div>
 
-          {/* Signup trend */}
-          {signupTrend.items.length > 0 && (
-            <Card>
-              <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy dark:text-white">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-                {t('admin.recentSignups')}
-              </h3>
-              <HorizontalBar items={signupTrend.items} maxValue={signupTrend.maxValue} />
-            </Card>
-          )}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <Panel title="Logins by role">
+              <BarList
+                rows={data.users.byRole.map((r) => ({
+                  key: String(r.roleId),
+                  label: ROLE_LABEL[r.roleId as RoleId] ?? `Role ${r.roleId}`,
+                  count: r.count,
+                }))}
+                hrefOf={(r) => `/admin/users?roleId=${r.key}`}
+                empty="No logins."
+              />
+            </Panel>
+            <Panel title="Most-posted designations">
+              <BarList rows={data.topDesignations} empty="No jobs posted yet." />
+            </Panel>
+            <Panel title="Top job cities">
+              <BarList rows={data.topCities} empty="No jobs posted yet." />
+            </Panel>
+          </div>
 
-          {/* Recent activity feed */}
-          <Card>
-            <h3 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy dark:text-white">
-              <Clock className="h-5 w-5 text-gray-500" />
-              {t('admin.recentActivity')}
-            </h3>
-            {data.recentActivity && data.recentActivity.length > 0 ? (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {data.recentActivity.map((activity) => {
-                  const tone = ACTIVITY_TONE[activity.type] ?? 'blue';
-                  return (
-                    <div key={activity.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                      <div
-                        className={cn(
-                          'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-                          tone === 'blue' && 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400',
-                          tone === 'green' && 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400',
-                          tone === 'amber' && 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
-                          tone === 'purple' && 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400',
+          <Panel
+            title="Recent activity"
+            description="The latest entries in the audit trail"
+            action={
+              <Link to="/admin/audit" className="inline-flex items-center gap-1 text-sm font-semibold text-aj-blue hover:underline">
+                Full audit log <ArrowRight className="h-4 w-4" />
+              </Link>
+            }
+            bodyClassName="p-0"
+          >
+            {data.recentActivity.length ? (
+              <ul className="divide-y divide-aj-line-soft dark:divide-gray-700">
+                {data.recentActivity.map((a) => (
+                  <li key={a.id} className="flex items-start justify-between gap-3 px-4 py-3 text-sm sm:px-5">
+                    <div className="min-w-0">
+                      <p className="text-gray-800 dark:text-gray-100">{actionLabel(a.action)}</p>
+                      <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                        {a.userId ? (
+                          <Link to={`/admin/users/${a.userId}`} className="hover:text-aj-blue hover:underline">
+                            {a.actor}
+                          </Link>
+                        ) : (
+                          a.actor
                         )}
-                      >
-                        {ACTIVITY_ICON_MAP[activity.type] ?? <Clock className="h-4 w-4" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          <span className="font-medium text-navy dark:text-gray-100">{activity.actor}</span>{' '}
-                          {activity.description}
-                        </p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <Badge tone={tone}>{activity.type.replace(/_/g, ' ')}</Badge>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {timeAgo(activity.timestamp)}
-                          </span>
-                        </div>
-                      </div>
+                        {a.entity && ` · ${a.entity}${a.entityId && a.entityId !== '0' ? ` #${a.entityId}` : ''}`}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
+                    <time dateTime={a.at} className="shrink-0 text-xs text-gray-400">
+                      {fmtRelative(a.at)}
+                    </time>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('admin.noData')}</p>
+              <p className="px-5 py-8 text-center text-sm text-gray-500">No activity recorded yet.</p>
             )}
-          </Card>
+          </Panel>
         </div>
       )}
-    </div>
+    </AdminShell>
   );
 }

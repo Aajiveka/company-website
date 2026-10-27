@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Globe, Mail, Server, Settings, Shield, SlidersHorizontal } from 'lucide-react';
+import { Globe, Mail, Server, Shield, SlidersHorizontal } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/lib/axios';
 import { cn } from '@/lib/cn';
-import { Alert, Badge, Breadcrumbs, Button, Card, Input, Skeleton, useToast } from '@/components/ui';
+import { Alert, Badge, Button, Card, Input, Skeleton, useToast } from '@/components/ui';
+import { AdminShell } from '../components/AdminShell';
 
 interface SiteSettings {
   siteName: string;
@@ -129,7 +130,7 @@ export default function AdminSettingsPage() {
   const [form, setForm] = useState<SiteSettings>(DEFAULT_SETTINGS);
 
   const { data, isLoading } = useQuery<SiteSettings>({
-    queryKey: ['admin-settings'],
+    queryKey: ['admin', 'settings'],
     queryFn: async () => {
       const { data } = await api.get<SiteSettings>('/admin/settings');
       return data;
@@ -146,7 +147,7 @@ export default function AdminSettingsPage() {
     },
     onSuccess: () => {
       notify(t('adminSettings.saved'), 'success');
-      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] });
     },
     onError: () => {
       notify(t('adminSettings.saveFailed'), 'error');
@@ -158,25 +159,29 @@ export default function AdminSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6">
-        <Skeleton className="h-8 w-48" />
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-40 w-full rounded-lg" />
-        ))}
-      </div>
+      <AdminShell title={t('adminSettings.heading')}>
+        <div className="mx-auto max-w-3xl space-y-6" aria-busy="true">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full rounded-lg" />
+          ))}
+        </div>
+      </AdminShell>
     );
   }
 
   return (
+    <AdminShell
+      title={t('adminSettings.heading')}
+      crumbs={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('adminSettings.heading') }]}
+    >
     <div className="mx-auto max-w-3xl space-y-6">
-      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('adminSettings.heading') }]} />
-
-      <div className="flex items-center gap-2">
-        <Settings className="h-6 w-6 text-navy dark:text-white" />
-        <h1 className="font-heading text-2xl font-bold text-navy dark:text-gray-100">
-          {t('adminSettings.heading')}
-        </h1>
-      </div>
+      {/* Honest about what saving does: no service reads tblPlatformSetting yet, so these
+          toggles and limits change nothing until each one is wired to the code it governs. */}
+      <Alert variant="info">
+        These values are saved, but the application does not read them yet — maintenance mode, registration,
+        email and limits are still governed by the server configuration. Each setting takes effect only once
+        it is wired into the feature it controls.
+      </Alert>
 
       {/* Maintenance mode warning */}
       {form.maintenanceMode && (
@@ -337,9 +342,12 @@ export default function AdminSettingsPage() {
         <SectionHeader icon={<Server className="h-5 w-5 text-primary" />} title={t('adminSettings.systemInfo')} />
         <SystemInfoRow label={t('adminSettings.environment')} value={import.meta.env.MODE} />
         <SystemInfoRow label={t('adminSettings.apiUrl')} value={import.meta.env.VITE_API_URL ?? '/api'} />
-        <SystemInfoRow label={t('adminSettings.appVersion')} value={import.meta.env.VITE_APP_VERSION ?? '1.0.0'} />
+        {/* No invented values: the version shows only when the build provides one, and the
+            "build time" row is gone — it printed today's date, not the build's. */}
+        {import.meta.env.VITE_APP_VERSION && (
+          <SystemInfoRow label={t('adminSettings.appVersion')} value={import.meta.env.VITE_APP_VERSION} />
+        )}
         <SystemInfoRow label={t('adminSettings.nodeEnv')} value={import.meta.env.DEV ? 'development' : 'production'} />
-        <SystemInfoRow label={t('adminSettings.buildTime')} value={new Date().toLocaleDateString()} />
       </Card>
 
       {/* Save */}
@@ -352,5 +360,6 @@ export default function AdminSettingsPage() {
         </Button>
       </div>
     </div>
+    </AdminShell>
   );
 }

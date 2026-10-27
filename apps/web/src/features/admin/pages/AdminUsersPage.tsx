@@ -1,474 +1,349 @@
-import { useMemo, useState } from 'react';
-import { Search, ShieldCheck, ShieldOff, Trash2, UserCog, Users } from 'lucide-react';
-import ExportButton from '../components/ExportButton';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { useDebounce } from '@/hooks/useDebounce';
-import {
-  Badge,
-  Breadcrumbs,
-  Button,
-  ConfirmDialog,
-  Input,
-  Modal,
-  Pagination,
-  Select,
-  useToast,
-  VirtualList,
-  type BadgeTone,
-  type Column,
-} from '@/components/ui';
-import { api } from '@/lib/axios';
+import { useCallback, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { UserPlus } from 'lucide-react';
+import { getErrorMessage } from '@/lib/axios';
+import { useAuth } from '@/features/auth/auth.store';
 import { Role, ROLE_LABEL, type RoleId } from '@/types/roles';
+import { Button, ConfirmDialog, Input, Modal, useToast } from '@/components/ui';
+import ExportButton from '../components/ExportButton';
+import { useAdminUsers, useBulkUpdateUsers, useCreateStaffUser } from '../admin.api';
+import type { AdminUser, SetPasswordResult } from '../admin.types';
+import { AdminShell } from '../components/AdminShell';
+import { SetPasswordNotice } from '../components/SetPasswordNotice';
+import {
+  ActivePill,
+  DataTable,
+  Empty,
+  ErrorState,
+  FilterSelect,
+  Panel,
+  SearchInput,
+  TableFooter,
+  type ColumnDef,
+} from '../components/primitives';
+import { fmtDate } from '../admin.format';
 
-interface AdminUser {
-  userId: number;
-  userName: string;
-  fullName: string;
-  email: string;
-  mobile: string;
-  roleId: RoleId;
-  isActive: boolean;
-  createdAt: string;
-}
+const PAGE_SIZE = 20;
 
-const ROLE_BADGE_TONE: Record<RoleId, BadgeTone> = {
-  [Role.Subscriber]: 'blue',
-  [Role.QC1]: 'amber',
-  [Role.QC2]: 'amber',
-  [Role.Client]: 'green',
-  [Role.Admin]: 'purple',
-  [Role.Subscription]: 'red',
-  [Role.Q3]: 'amber',
+/** The roles an admin may create — mirrors STAFF_ROLES in the API's admin.dto.ts. */
+const STAFF_ROLES = [Role.QC1, Role.QC2, Role.Q3, Role.Admin] as const;
+const STAFF_ROLE_HINT: Record<number, string> = {
+  [Role.QC1]: 'Q1 — screens and verifies candidates',
+  [Role.QC2]: 'Q2 — matches applicants to jobs and refers them',
+  [Role.Q3]: 'Q3 — runs interviews, documents and offers',
+  [Role.Admin]: 'Admin — full access to this panel',
 };
 
-const PAGE_SIZE = 15;
+const ROLE_FILTER = [
+  { value: '', label: 'All roles' },
+  ...[Role.Subscriber, Role.QC1, Role.QC2, Role.Q3, Role.Client, Role.Admin].map((r) => ({
+    value: String(r),
+    label: ROLE_LABEL[r],
+  })),
+];
+
+const staffSchema = z.object({
+  fullName: z.string().trim().min(2, 'Enter the person’s full name').max(100),
+  userName: z
+    .string()
+    .trim()
+    .min(3, 'At least 3 characters')
+    .max(50)
+    .regex(/^[A-Za-z0-9._@-]+$/, 'Letters, digits and . _ @ - only'),
+  email: z.string().trim().email('Enter a valid email address').max(100),
+  roleId: z.coerce.number().refine((v) => (STAFF_ROLES as readonly number[]).includes(v), 'Choose a role'),
+});
+type StaffValues = z.input<typeof staffSchema>;
+
+function CreateStaffModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const create = useCreateStaffUser();
+  const [result, setResult] = useState<SetPasswordResult | null>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors },
+  } = useForm<StaffValues>({
+    resolver: zodResolver(staffSchema),
+    defaultValues: { fullName: '', userName: '', email: '', roleId: Role.QC1 },
+  });
+
+  const close = () => {
+    reset();
+    setResult(null);
+    create.reset();
+    onClose();
+  };
+
+  const onSubmit = handleSubmit((values) => {
+    const v = staffSchema.parse(values);
+    create.mutate(v, {
+      onSuccess: (r) => setResult(r),
+      onError: (e) => {
+        const msg = getErrorMessage(e, 'Could not create the account');
+        if (/username/i.test(msg)) setError('userName', { message: msg });
+      },
+    });
+  });
+
+  return (
+    <Modal open={open} onClose={close} title={result ? 'Staff account created' : 'Add a staff member'}>
+      {result ? (
+        <div className="space-y-4">
+          <SetPasswordNotice result={result} />
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            The account is active. The person signs in after choosing a password from the link; nobody else ever
+            sees it.
+          </p>
+          <div className="flex justify-end">
+            <Button onClick={close}>Done</Button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} noValidate className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Candidates register themselves and employers are created by approving their registration, so only staff
+            accounts are added here.
+          </p>
+          <Input label="Full name" required autoComplete="off" error={errors.fullName?.message} {...register('fullName')} />
+          <Input
+            label="Username"
+            required
+            autoComplete="off"
+            autoCapitalize="none"
+            error={errors.userName?.message}
+            {...register('userName')}
+          />
+          <Input
+            label="Work email"
+            type="email"
+            required
+            autoComplete="off"
+            error={errors.email?.message}
+            {...register('email')}
+          />
+          <fieldset>
+            <legend className="mb-1.5 text-sm font-medium text-navy dark:text-gray-200">Role</legend>
+            <div className="grid gap-2">
+              {STAFF_ROLES.map((r) => (
+                <label
+                  key={r}
+                  className="flex cursor-pointer items-start gap-3 rounded-lg border border-aj-line p-3 text-sm has-checked:border-aj-blue has-checked:bg-aj-line-soft dark:border-gray-600 dark:has-checked:bg-aj-blue/20"
+                >
+                  <input type="radio" value={r} className="mt-0.5 h-4 w-4" {...register('roleId')} />
+                  <span>
+                    <span className="block font-semibold text-navy dark:text-white">{ROLE_LABEL[r]}</span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400">{STAFF_ROLE_HINT[r]}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {errors.roleId && <p className="mt-1 text-sm text-danger">{errors.roleId.message}</p>}
+          </fieldset>
+          {create.isError && !errors.userName && (
+            <p role="alert" className="text-sm text-danger">
+              {getErrorMessage(create.error, 'Could not create the account')}
+            </p>
+          )}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={close}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={create.isPending}>
+              Create account
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  );
+}
 
 export default function AdminUsersPage() {
-  const { t } = useTranslation('dashboard');
+  const { user: me } = useAuth();
   const { notify } = useToast();
-  const qc = useQueryClient();
+  const [params, setParams] = useSearchParams();
+  const page = Number(params.get('page') ?? 1) || 1;
+  const q = params.get('q') ?? '';
+  const roleId = params.get('roleId') ?? '';
+  const isActive = (params.get('status') ?? '') as '' | 'true' | 'false';
 
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [page, setPage] = useState(1);
+  const setFilter = useCallback(
+    (key: string, value: string) =>
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (value) next.set(key, value);
+          else next.delete(key);
+          if (key !== 'page') next.delete('page');
+          return next;
+        },
+        { replace: true },
+      ),
+    [setParams],
+  );
 
-  const debouncedSearch = useDebounce(search);
-
+  const { data, isLoading, isFetching, error, refetch } = useAdminUsers({
+    page,
+    pageSize: PAGE_SIZE,
+    q,
+    roleId: roleId ? Number(roleId) : '',
+    isActive,
+  });
+  const bulk = useBulkUpdateUsers();
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [roleTarget, setRoleTarget] = useState<AdminUser | null>(null);
-  const [newRole, setNewRole] = useState<string>('');
-  const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | 'delete' | null>(null);
-  const [deactivateTarget, setDeactivateTarget] = useState<AdminUser | null>(null);
+  const [confirm, setConfirm] = useState<null | boolean>(null);
+  const [creating, setCreating] = useState(false);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users', debouncedSearch, roleFilter, statusFilter],
-    queryFn: () =>
-      api
-        .get<AdminUser[]>('/admin/users', {
-          params: {
-            ...(debouncedSearch ? { q: debouncedSearch } : {}),
-            ...(roleFilter ? { roleId: Number(roleFilter) } : {}),
-            ...(statusFilter ? { isActive: statusFilter === 'active' } : {}),
-          },
-        })
-        .then((r) => r.data),
-  });
-
-  const useVirtualized = (data?.length ?? 0) > 50;
-
-  // Client-side pagination (used when data <= 50 rows)
-  const paginatedData = useMemo(() => {
-    const all = data ?? [];
-    if (useVirtualized) return { items: all, total: all.length, pageCount: 1 };
-    const start = (page - 1) * PAGE_SIZE;
-    return {
-      items: all.slice(start, start + PAGE_SIZE),
-      total: all.length,
-      pageCount: Math.max(1, Math.ceil(all.length / PAGE_SIZE)),
-    };
-  }, [data, page, useVirtualized]);
-
-  const toggleActive = useMutation({
-    mutationFn: ({ userId, isActive }: { userId: number; isActive: boolean }) =>
-      api.patch(`/admin/users/${userId}`, { isActive }).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-      notify(t('adminUsers.updated'), 'success');
-    },
-    onError: () => notify(t('adminUsers.updateFailed'), 'error'),
-  });
-
-  const changeRole = useMutation({
-    mutationFn: ({ userId, roleId }: { userId: number; roleId: number }) =>
-      api.patch(`/admin/users/${userId}`, { roleId }).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-      notify(t('adminUsers.roleChanged'), 'success');
-      setRoleTarget(null);
-    },
-    onError: () => notify(t('adminUsers.updateFailed'), 'error'),
-  });
-
-  const bulkMutation = useMutation({
-    mutationFn: async ({ action, userIds }: { action: 'activate' | 'deactivate' | 'delete'; userIds: number[] }) => {
-      if (action === 'delete') {
-        await api.post('/admin/users/bulk-delete', { userIds });
-      } else {
-        await api.post('/admin/users/bulk-update', {
-          userIds,
-          isActive: action === 'activate',
-        });
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-      notify(t('adminUsers.bulkSuccess'), 'success');
-      setSelected(new Set());
-      setBulkAction(null);
-    },
-    onError: () => {
-      notify(t('adminUsers.updateFailed'), 'error');
-      setBulkAction(null);
-    },
-  });
-
-  const roleOptions = Object.entries(ROLE_LABEL).map(([id, label]) => ({
-    label,
-    value: Number(id),
-  }));
-
-  const roleFilterOptions = [
-    { label: t('adminUsers.allRoles'), value: '' },
-    ...roleOptions,
-  ];
-
-  const statusFilterOptions = [
-    { label: t('adminUsers.allStatuses'), value: '' },
-    { label: t('adminUsers.active'), value: 'active' },
-    { label: t('adminUsers.inactive'), value: 'inactive' },
-  ];
-
-  const toggleSelectAll = () => {
-    if (selected.size === paginatedData.items.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(paginatedData.items.map((u) => u.userId)));
-    }
-  };
-
-  const toggleSelect = (userId: number) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(userId)) next.delete(userId);
-      else next.add(userId);
-      return next;
+  const toggle = (id: number) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
     });
+  const toggleAll = (ids: number[]) =>
+    setSelected((s) => (ids.every((id) => s.has(id)) ? new Set([...s].filter((id) => !ids.includes(id))) : new Set([...s, ...ids])));
+
+  const runBulk = () => {
+    if (confirm == null) return;
+    bulk.mutate(
+      { userIds: [...selected], isActive: confirm },
+      {
+        onSuccess: () => {
+          notify(`${selected.size} account${selected.size === 1 ? '' : 's'} ${confirm ? 'activated' : 'deactivated'}`, 'success');
+          setSelected(new Set());
+          setConfirm(null);
+        },
+        onError: (e) => {
+          notify(getErrorMessage(e, 'Could not update the accounts'), 'error');
+          setConfirm(null);
+        },
+      },
+    );
   };
 
-  const columns: Column<AdminUser>[] = [
+  const columns: ColumnDef<AdminUser>[] = [
     {
-      key: 'select',
-      header: '',
-      className: 'w-10',
-      render: (u) => (
-        <input
-          type="checkbox"
-          checked={selected.has(u.userId)}
-          onChange={() => toggleSelect(u.userId)}
-          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30"
-        />
+      key: 'name',
+      header: 'User',
+      cell: (u) => (
+        <Link to={`/admin/users/${u.userId}`} className="group block min-w-0">
+          <span className="block truncate font-semibold text-navy group-hover:text-aj-blue group-hover:underline dark:text-white">
+            {u.fullName || u.userName}
+          </span>
+          <span className="block truncate text-xs font-normal text-gray-500 dark:text-gray-400">@{u.userName}</span>
+        </Link>
       ),
     },
-    { key: 'fullName', header: t('adminUsers.name') },
-    { key: 'email', header: t('adminUsers.email') },
-    { key: 'mobile', header: t('adminUsers.mobile') },
-    {
-      key: 'roleId',
-      header: t('adminUsers.role'),
-      render: (u) => (
-        <Badge tone={ROLE_BADGE_TONE[u.roleId] ?? 'gray'}>{ROLE_LABEL[u.roleId]}</Badge>
-      ),
-    },
-    {
-      key: 'isActive',
-      header: t('common:labels.status'),
-      render: (u) => (
-        <Badge tone={u.isActive ? 'green' : 'gray'}>
-          {u.isActive ? t('adminUsers.active') : t('adminUsers.inactive')}
-        </Badge>
-      ),
-    },
-    {
-      key: 'createdAt',
-      header: t('adminUsers.joined'),
-      render: (u) => new Date(u.createdAt).toLocaleDateString(),
-    },
-    {
-      key: 'actions',
-      header: t('common:labels.actions'),
-      render: (u) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => setDeactivateTarget(u)}
-            disabled={toggleActive.isPending}
-            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium ${
-              u.isActive
-                ? 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400'
-                : 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400'
-            }`}
-          >
-            {u.isActive ? (
-              <><ShieldOff className="h-3.5 w-3.5" /> {t('adminUsers.deactivate')}</>
-            ) : (
-              <><ShieldCheck className="h-3.5 w-3.5" /> {t('adminUsers.activate')}</>
-            )}
-          </button>
-          <button
-            onClick={() => { setRoleTarget(u); setNewRole(String(u.roleId)); }}
-            className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
-          >
-            <UserCog className="h-3.5 w-3.5" /> {t('adminUsers.changeRole')}
-          </button>
-        </div>
-      ),
-    },
+    { key: 'role', header: 'Role', cell: (u) => ROLE_LABEL[u.roleId as RoleId] ?? `Role ${u.roleId}` },
+    { key: 'email', header: 'Email', wideOnCard: true, cell: (u) => <span className="break-all">{u.email || '—'}</span> },
+    { key: 'mobile', header: 'Mobile', cell: (u) => u.mobile || '—', className: 'whitespace-nowrap' },
+    { key: 'status', header: 'Status', cell: (u) => <ActivePill active={u.isActive} /> },
+    { key: 'joined', header: 'Joined', cell: (u) => fmtDate(u.createdAt), className: 'whitespace-nowrap' },
   ];
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <Breadcrumbs items={[{ label: t('common:dashboard'), to: '/admin' }, { label: t('adminUsers.heading') }]} />
-
-      {/* Header */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="flex items-center gap-2 font-heading text-2xl font-bold text-navy dark:text-white">
-          <Users className="h-6 w-6" />
-          {t('adminUsers.heading')}
-          {data && (
-            <Badge tone="gray">{data.length}</Badge>
-          )}
-        </h1>
-        <ExportButton
-          endpoint="/exports/users"
-          filename={`users-export-${new Date().toISOString().slice(0, 10)}`}
-          label="Export Users"
-          filters={{
-            ...(roleFilter ? { roleId: Number(roleFilter) } : {}),
-            ...(statusFilter ? { isActive: statusFilter === 'active' } : {}),
-          }}
-        />
-      </div>
-
-      {/* Search & Filter bar */}
-      <div className="mb-4 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-end">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            className="pl-9"
-            placeholder={t('adminUsers.searchPlaceholder')}
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+    <AdminShell
+      title="Users & staff"
+      subtitle="Every login on the platform — candidates, employers and staff"
+      crumbs={[{ label: 'Dashboard', to: '/admin' }, { label: 'Users & staff' }]}
+      actions={
+        <>
+          <ExportButton endpoint="/exports/users" filename="users" label="Export CSV" size="sm" variant="outline" />
+          <Button size="sm" onClick={() => setCreating(true)}>
+            <UserPlus className="mr-1.5 h-4 w-4" />
+            Add staff member
+          </Button>
+        </>
+      }
+    >
+      <Panel bodyClassName="p-0">
+        <div className="flex flex-col gap-2 border-b border-aj-line-soft p-4 sm:flex-row sm:flex-wrap sm:items-center dark:border-gray-700">
+          <SearchInput
+            label="Search users"
+            placeholder="Name, username, email or mobile"
+            value={q}
+            onChange={(v) => setFilter('q', v)}
           />
-        </div>
-        <div className="w-full sm:w-44">
-          <Select
-            options={roleFilterOptions}
-            value={roleFilter}
-            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-            placeholder={t('adminUsers.filterByRole')}
+          <FilterSelect label="Role" value={roleId} onChange={(v) => setFilter('roleId', v)} options={ROLE_FILTER} />
+          <FilterSelect
+            label="Status"
+            value={isActive}
+            onChange={(v) => setFilter('status', v)}
+            options={[
+              { value: '', label: 'Any status' },
+              { value: 'true', label: 'Active' },
+              { value: 'false', label: 'Inactive' },
+            ]}
           />
+          {isFetching && !isLoading && <span className="text-xs text-gray-400">Updating…</span>}
         </div>
-        <div className="w-full sm:w-44">
-          <Select
-            options={statusFilterOptions}
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            placeholder={t('adminUsers.filterByStatus')}
-          />
-        </div>
-      </div>
 
-      {/* Bulk actions */}
-      {selected.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-            {t('adminUsers.selectedCount', { count: selected.size })}
-          </span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setBulkAction('activate')}>
-              <ShieldCheck className="h-3.5 w-3.5" /> {t('adminUsers.activate')}
+        {selected.size > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-aj-line-soft bg-aj-line-soft/60 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-aj-blue/10">
+            <span className="font-semibold text-navy dark:text-white">{selected.size} selected</span>
+            <Button size="sm" variant="outline" onClick={() => setConfirm(true)}>
+              Activate
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setBulkAction('deactivate')}>
-              <ShieldOff className="h-3.5 w-3.5" /> {t('adminUsers.deactivate')}
+            <Button size="sm" variant="danger" onClick={() => setConfirm(false)}>
+              Deactivate
             </Button>
-            <Button size="sm" variant="danger" onClick={() => setBulkAction('delete')}>
-              <Trash2 className="h-3.5 w-3.5" /> {t('common:actions.delete')}
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+              Clear
             </Button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Table with select-all in header */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-gray-200 bg-brand-soft text-navy dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-200">
-            <tr>
-              <th className="w-10 px-3 py-2.5 sm:px-4 sm:py-3">
-                <input
-                  type="checkbox"
-                  checked={paginatedData.items.length > 0 && selected.size === paginatedData.items.length}
-                  onChange={toggleSelectAll}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/30"
-                />
-              </th>
-              {columns.slice(1).map((c) => (
-                <th key={c.key} scope="col" className="px-3 py-2.5 font-semibold sm:px-4 sm:py-3">
-                  {c.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          {!useVirtualized && (
-            <tbody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
-                    {columns.map((c, ci) => {
-                      const widths = ['w-3/4', 'w-1/2', 'w-2/3', 'w-5/6', 'w-1/3'];
-                      return (
-                        <td key={c.key} className="px-3 py-2.5 sm:px-4 sm:py-3">
-                          <div className={`h-4 animate-pulse rounded bg-gray-200 dark:bg-gray-600 ${widths[(i + ci) % widths.length]}`} />
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))
-              ) : paginatedData.items.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
-                    {t('adminUsers.noUsers')}
-                  </td>
-                </tr>
-              ) : (
-                paginatedData.items.map((row) => (
-                  <tr
-                    key={row.userId}
-                    className={`border-b border-gray-100 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
-                      selected.has(row.userId) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-                    }`}
-                  >
-                    {columns.map((c) => (
-                      <td key={c.key} className={`px-3 py-2.5 sm:px-4 sm:py-3 ${c.className ?? ''}`}>
-                        {c.render ? c.render(row) : String((row as unknown as Record<string, unknown>)[c.key] ?? '')}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          )}
-        </table>
-        {useVirtualized && !isLoading && (
-          <VirtualList
-            items={paginatedData.items}
-            itemHeight={48}
-            overscan={8}
-            className="max-h-[600px]"
-            renderItem={(row) => (
-              <div
-                key={row.userId}
-                className={`flex border-b border-gray-100 text-sm transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
-                  selected.has(row.userId) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-                }`}
-              >
-                {columns.map((c) => (
-                  <div key={c.key} className={`flex-1 px-3 py-2.5 sm:px-4 sm:py-3 ${c.className ?? ''}`}>
-                    {c.render ? c.render(row) : String((row as unknown as Record<string, unknown>)[c.key] ?? '')}
-                  </div>
-                ))}
-              </div>
-            )}
+        {error ? (
+          <ErrorState error={error} onRetry={() => refetch()} />
+        ) : (
+          <DataTable
+            columns={columns}
+            rows={data?.items ?? []}
+            rowKey={(u) => u.userId}
+            isLoading={isLoading}
+            empty={<Empty title="No users match these filters" hint="Try a different search or clear the filters." />}
+            selection={{
+              selected,
+              toggle,
+              toggleAll,
+              idOf: (u) => u.userId,
+              // Your own row is excluded: the API refuses self-deactivation anyway.
+              selectable: (u) => u.userId !== me?.userId,
+            }}
           />
         )}
-      </div>
-
-      {/* Pagination (hidden when virtualized) */}
-      {!useVirtualized && paginatedData.pageCount > 1 && (
-        <div className="mt-4 flex justify-center">
-          <Pagination page={page} pageCount={paginatedData.pageCount} onChange={setPage} />
-        </div>
-      )}
-
-      {/* Change role modal */}
-      <Modal open={!!roleTarget} onClose={() => setRoleTarget(null)} title={t('adminUsers.changeRoleTitle', { name: roleTarget?.fullName })}>
-        <div className="space-y-4">
-          <Select
-            label={t('adminUsers.newRole')}
-            options={roleOptions}
-            value={newRole}
-            onChange={(e) => setNewRole(e.target.value)}
+        {data && (
+          <TableFooter
+            page={data.page}
+            pageCount={data.pageCount}
+            total={data.total}
+            pageSize={data.pageSize}
+            onPage={(p) => setFilter('page', String(p))}
           />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setRoleTarget(null)}>
-              {t('common:actions.cancel')}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => roleTarget && changeRole.mutate({ userId: roleTarget.userId, roleId: Number(newRole) })}
-              isLoading={changeRole.isPending}
-            >
-              {t('common:actions.save')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        )}
+      </Panel>
 
-      {/* Deactivate / activate single user confirm */}
+      <CreateStaffModal open={creating} onClose={() => setCreating(false)} />
       <ConfirmDialog
-        isOpen={!!deactivateTarget}
-        title={deactivateTarget?.isActive ? t('adminUsers.deactivate') : t('adminUsers.activate')}
+        isOpen={confirm != null}
+        title={confirm ? 'Activate accounts?' : 'Deactivate accounts?'}
         message={
-          deactivateTarget?.isActive
-            ? t('adminUsers.deactivateWarning', { name: deactivateTarget?.fullName, defaultValue: `Are you sure you want to deactivate ${deactivateTarget?.fullName}?` })
-            : t('adminUsers.activateWarning', { name: deactivateTarget?.fullName, defaultValue: `Are you sure you want to activate ${deactivateTarget?.fullName}?` })
+          confirm
+            ? `${selected.size} account(s) will be able to sign in again.`
+            : `${selected.size} account(s) will be signed out everywhere and unable to sign in until reactivated. Their records are kept.`
         }
-        variant={deactivateTarget?.isActive ? 'danger' : 'info'}
-        confirmLabel={deactivateTarget?.isActive ? t('adminUsers.deactivate') : t('adminUsers.activate')}
-        onConfirm={() => {
-          if (deactivateTarget) {
-            toggleActive.mutate(
-              { userId: deactivateTarget.userId, isActive: !deactivateTarget.isActive },
-              { onSettled: () => setDeactivateTarget(null) },
-            );
-          }
-        }}
-        onCancel={() => setDeactivateTarget(null)}
-        isLoading={toggleActive.isPending}
+        confirmLabel={confirm ? 'Activate' : 'Deactivate'}
+        variant={confirm ? 'info' : 'danger'}
+        isLoading={bulk.isPending}
+        onConfirm={runBulk}
+        onCancel={() => setConfirm(null)}
       />
-
-      {/* Bulk action confirm */}
-      <ConfirmDialog
-        isOpen={!!bulkAction}
-        title={t('adminUsers.confirmBulkAction')}
-        message={
-          bulkAction === 'delete'
-            ? t('adminUsers.bulkDeleteWarning', { count: selected.size })
-            : t('adminUsers.bulkUpdateWarning', {
-                count: selected.size,
-                action: bulkAction === 'activate' ? t('adminUsers.activate').toLowerCase() : t('adminUsers.deactivate').toLowerCase(),
-              })
-        }
-        variant={bulkAction === 'delete' ? 'danger' : 'warning'}
-        confirmLabel={t('adminUsers.confirm')}
-        onConfirm={() => {
-          if (bulkAction) {
-            bulkMutation.mutate({ action: bulkAction, userIds: Array.from(selected) });
-          }
-        }}
-        onCancel={() => setBulkAction(null)}
-        isLoading={bulkMutation.isPending}
-      />
-    </div>
+    </AdminShell>
   );
 }

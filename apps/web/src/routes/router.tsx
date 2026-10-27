@@ -90,6 +90,17 @@ const Q2ForwardedPage = lazy(() => import('@/features/q2/pages/Q2ForwardedPage')
 const Q2SentBackPage = lazy(() => import('@/features/q2/pages/Q2SentBackPage'));
 const Q2AnalyticsPage = lazy(() => import('@/features/q2/pages/Q2AnalyticsPage'));
 
+// Q3 hiring-ops workspace ("Q3" Figma page). Its own shell, for the same reason as Q1 and Q2.
+const Q3Layout = lazy(() => import('@/features/q3/components/Q3Layout'));
+const Q3WorkspaceDashboardPage = lazy(() => import('@/features/q3/pages/Q3DashboardPage'));
+const Q3ReferredCvsPage = lazy(() => import('@/features/q3/pages/Q3ReferredCvsPage'));
+const Q3CompanyReviewPage = lazy(() => import('@/features/q3/pages/Q3CompanyReviewPage'));
+const Q3SchedulingPage = lazy(() => import('@/features/q3/pages/Q3SchedulingPage'));
+const Q3InterviewsPage = lazy(() => import('@/features/q3/pages/Q3InterviewsPage'));
+const Q3RoundsPage = lazy(() => import('@/features/q3/pages/Q3RoundsPage'));
+const Q3DocumentsPage = lazy(() => import('@/features/q3/pages/Q3DocumentsPage'));
+const Q3ReturnedPage = lazy(() => import('@/features/q3/pages/Q3ReturnedPage'));
+
 // Public marketing pages
 const AboutPage = lazy(() => import('@/features/public/pages/AboutPage'));
 const ContactPage = lazy(() => import('@/features/public/pages/ContactPage'));
@@ -121,6 +132,12 @@ const NotificationsPage = lazy(() => import('@/features/candidates/pages/Notific
 const SalaryInsightsPage = lazy(() => import('@/features/public/pages/SalaryInsightsPage'));
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/AdminUsersPage'));
 const AdminJobsPage = lazy(() => import('@/features/admin/pages/AdminJobsPage'));
+const AdminJobDetailPage = lazy(() => import('@/features/admin/pages/AdminJobDetailPage'));
+const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/AdminUserDetailPage'));
+const AdminApplicationsPage = lazy(() => import('@/features/admin/pages/AdminApplicationsPage'));
+const AdminApplicationDetailPage = lazy(() => import('@/features/admin/pages/AdminApplicationDetailPage'));
+const AdminCompaniesPage = lazy(() => import('@/features/admin/pages/AdminCompaniesPage'));
+const AdminAuditLogPage = lazy(() => import('@/features/admin/pages/AdminAuditLogPage'));
 // const AssessmentsListPage = lazy(() => import('@/features/candidates/pages/AssessmentsListPage'));
 // const SkillAssessmentPage = lazy(() => import('@/features/candidates/pages/SkillAssessmentPage'));
 const BlogCmsPage = lazy(() => import('@/features/admin/pages/BlogCmsPage'));
@@ -279,6 +296,59 @@ export const router = createBrowserRouter([
               { path: '/q2/analytics', element: withSuspense(<Q2AnalyticsPage />) },
             ],
           },
+          // Q3 hiring-ops workspace. `/api/q3/*` is @Roles(Q3, Admin), so the client guard is the
+          // same pair — never wider than the server's (2eb4db7). Outside DashboardLayout because
+          // these pages draw their own sidebar and topbar; Q3Layout supplies the toast provider.
+          //
+          // /recruitment/q3/* is untouched and still reachable, as /recruitment/* stayed for Q1/Q2.
+          {
+            element: <ProtectedRoute allow={[Role.Q3, Role.Admin]} />,
+            errorElement: <DashboardErrorFallback />,
+            children: [
+              {
+                element: withSuspense(<Q3Layout />),
+                children: [
+                  { path: '/q3', element: <Navigate to="/q3/dashboard" replace /> },
+                  { path: '/q3/dashboard', element: withSuspense(<Q3WorkspaceDashboardPage />) },
+                  { path: '/q3/referred', element: withSuspense(<Q3ReferredCvsPage />) },
+                  { path: '/q3/company-review', element: withSuspense(<Q3CompanyReviewPage />) },
+                  { path: '/q3/scheduling', element: withSuspense(<Q3SchedulingPage />) },
+                  { path: '/q3/scheduling/:mapId', element: withSuspense(<Q3SchedulingPage />) },
+                  { path: '/q3/interviews', element: withSuspense(<Q3InterviewsPage />) },
+                  { path: '/q3/decisions', element: withSuspense(<Q3RoundsPage />) },
+                  { path: '/q3/decisions/:mapId', element: withSuspense(<Q3RoundsPage />) },
+                  { path: '/q3/documents', element: withSuspense(<Q3DocumentsPage />) },
+                  { path: '/q3/documents/:mapId', element: withSuspense(<Q3DocumentsPage />) },
+                  { path: '/q3/offers', element: withSuspense(<Q3DocumentsPage />) },
+                  { path: '/q3/offers/:mapId', element: withSuspense(<Q3DocumentsPage />) },
+                  { path: '/q3/returned', element: withSuspense(<Q3ReturnedPage />) },
+                ],
+              },
+            ],
+          },
+          // Admin panel. `/api/admin/*` is @Roles(Admin) at the controller, so the client guard is
+          // Admin alone. Outside DashboardLayout for the Q1–Q3 reason: every page draws AdminShell
+          // (sidebar, header, breadcrumbs), and DashboardLayout stacked a second breadcrumb row on
+          // top of the page's own.
+          {
+            element: <ProtectedRoute allow={[Role.Admin]} />,
+            errorElement: <DashboardErrorFallback />,
+            children: [
+              { path: '/admin', element: withSuspense(<AdminDashboardPage />) },
+              { path: '/admin/users', element: withSuspense(<AdminUsersPage />) },
+              { path: '/admin/users/:userId', element: withSuspense(<AdminUserDetailPage />) },
+              { path: '/admin/employer-approvals', element: withSuspense(<AdminEmployerApprovalsPage />) },
+              { path: '/admin/companies', element: withSuspense(<AdminCompaniesPage />) },
+              { path: '/admin/jobs', element: withSuspense(<AdminJobsPage />) },
+              { path: '/admin/jobs/:jobId', element: withSuspense(<AdminJobDetailPage />) },
+              { path: '/admin/applications', element: withSuspense(<AdminApplicationsPage />) },
+              { path: '/admin/applications/:mapId', element: withSuspense(<AdminApplicationDetailPage />) },
+              { path: '/admin/blog', element: withSuspense(<BlogCmsPage />) },
+              { path: '/admin/settings', element: withSuspense(<AdminSettingsPage />) },
+              { path: '/admin/reports', element: withSuspense(<ReportsPage />) },
+              { path: '/admin/audit', element: withSuspense(<AdminAuditLogPage />) },
+            ],
+          },
           {
             element: <DashboardLayout />,
             errorElement: <DashboardErrorFallback />,
@@ -319,20 +389,8 @@ export const router = createBrowserRouter([
                   // { path: '/candidate/dashboard', element: withSuspense(<DashboardHome />) },
                 ],
               },
-              // Client / Admin company area moved to Employer Portal (see sibling route tree)
-              // Admin
-              {
-                element: <ProtectedRoute allow={[Role.Admin]} />,
-                children: [
-                  { path: '/admin', element: withSuspense(<AdminDashboardPage />) },
-                  { path: '/admin/users', element: withSuspense(<AdminUsersPage />) },
-                  { path: '/admin/jobs', element: withSuspense(<AdminJobsPage />) },
-                  { path: '/admin/blog', element: withSuspense(<BlogCmsPage />) },
-                  { path: '/admin/settings', element: withSuspense(<AdminSettingsPage />) },
-                  { path: '/admin/reports', element: withSuspense(<ReportsPage />) },
-                  { path: '/admin/employer-approvals', element: withSuspense(<AdminEmployerApprovalsPage />) },
-                ],
-              },
+              // Client / Admin company area moved to Employer Portal (see sibling route tree).
+              // The admin panel moved out to its own AdminShell group, above.
               // QC / Recruitment
               {
                 element: <ProtectedRoute allow={[Role.QC1, Role.QC2, Role.Admin]} />,

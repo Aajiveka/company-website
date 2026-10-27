@@ -53,6 +53,26 @@ docker compose exec -e SEED_DEMO_USERS=1 api npx tsx prisma/seed.ts
 
 **Never set `SEED_DEMO_USERS=1` in production** — the demo passwords equal the usernames.
 
+## 4. The first admin
+
+A production database has no logins, so create the first admin from the box:
+
+```bash
+docker compose exec api npx tsx scripts/create-admin.ts \
+  --username jane --name "Jane Doe" --email jane@example.com
+```
+
+No password is passed or printed. The script prints a single-use set-password link, valid
+for 24 hours, which the new admin opens to choose their own; only its hash is stored. It
+refuses to run while an active admin already exists (add `--force` to override), so it
+cannot be used to quietly add admins to a live system.
+
+Every later admin and staff account (QC1, QC2, Q3, Admin) is created in the admin panel at
+**/admin/users → Add staff member**, which mails the same kind of link. Where email is not
+configured (`EMAIL_DRIVER=log`), the panel shows the link once so it can be handed over.
+Candidates register themselves; employers register and are approved at
+**/admin/employer-approvals**.
+
 ## Migrating the legacy data
 
 `apps/api/prisma/migrate-data.ts` copies the legacy database into Postgres. It needs the
