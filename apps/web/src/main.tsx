@@ -26,7 +26,22 @@ function App() {
   );
 }
 
+/**
+ * Earlier builds cached every /api response — signed-in data included — in 'api-cache'. The
+ * service worker no longer writes to it (vite.config.ts), but a cache Workbox stops using is
+ * never deleted, so drop it once here. Fire-and-forget: Cache Storage may be absent or blocked.
+ */
+function purgeLegacyApiCache() {
+  try {
+    if (typeof caches !== 'undefined') void caches.delete('api-cache').catch(() => {});
+  } catch {
+    // No Cache Storage in this context; nothing was ever cached here.
+  }
+}
+
 async function bootstrap() {
+  purgeLegacyApiCache();
+
   // Start the MSW mock API until the real SQL Server-backed API is reachable.
   // If service-worker registration is unavailable (e.g. blocked in an e2e spec
   // that mocks the network itself), fall back to rendering without MSW rather

@@ -106,25 +106,41 @@ export default defineConfig(({ mode: _mode }) => ({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          {
-            // Everything under /api except the document routes. A published brochure is
-            // multi-megabyte binary: caching it would evict a hundred real API responses, and a
-            // service-worker-mediated response cannot answer the range requests a PDF viewer
-            // makes. The negative lookahead leaves those requests to the network untouched.
-            urlPattern: /\/api\/(?!site-docs\/).*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
+          /*
+           * Only the PUBLIC job catalogue is cached; every other /api request goes straight to
+           * the network, untouched by the service worker. The previous rule matched all of /api:
+           *
+           *  - It held the notification stream (/api/notifications/stream, an SSE response that
+           *    never ends). Workbox reads a body to cache it, so each page load left one stream
+           *    open in the worker after the page was gone; at the browser's six connections per
+           *    host the next request (/auth/me) could not get a socket, and the app logged the
+           *    user out. CI's crawler failed on the seventh page of every role.
+           *  - It stored signed-in responses (profile, admin and candidate data) in Cache Storage
+           *    for a day, outliving logout — on a shared machine, the next person could be served
+           *    them whenever the network failed.
+           *  - Being first, it shadowed the job-detail rule below, which never ran.
+           *
+           * Order matters: Workbox uses the first matching route.
+           */
           {
             urlPattern: /\/api\/jobs\/\d+$/i,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'job-details-cache',
               expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 3 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // The public listing, search, filters and suggestions — @Public() on JobsController,
+            // identical for every visitor. /jobs/recommended and /jobs/:id/apply are per-user and
+            // deliberately do not match.
+            urlPattern: /\/api\/jobs(\/(search|filters|suggestions))?(\?.*)?$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'public-jobs-cache',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
