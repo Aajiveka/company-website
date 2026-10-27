@@ -14,6 +14,7 @@ import { JobsModule } from '@/modules/jobs/jobs.module';
 import { RecruitmentModule } from '@/modules/recruitment/recruitment.module';
 import { Q1Module } from '@/modules/q1/q1.module';
 import { Q2Module } from '@/modules/q2/q2.module';
+import { Q3Module } from '@/modules/q3/q3.module';
 import { StorageModule } from '@/modules/storage/storage.module';
 import { FilesModule } from '@/modules/files/files.module';
 import { ExportsModule } from '@/modules/exports/exports.module';
@@ -36,7 +37,7 @@ import { SiteDocumentsModule } from '@/modules/site-documents/site-documents.mod
     NotificationsModule,
     EmailModule,
     JwtModule.register({}),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: env.THROTTLE_LIMIT_PER_MIN }]),
     AuthModule,
     JobsModule,
     CandidatesModule,
@@ -44,6 +45,7 @@ import { SiteDocumentsModule } from '@/modules/site-documents/site-documents.mod
     RecruitmentModule,
     Q1Module,
     Q2Module,
+    Q3Module,
     StorageModule,
     FilesModule,
     ExportsModule,

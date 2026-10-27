@@ -28,6 +28,9 @@ jobs:
       - name: Unit tests (web)
         run: npm run test
         working-directory: apps/web
+      - name: Unit tests (api)
+        run: npm test
+        working-directory: apps/api
       - run: npm run build
       - name: Vitest (web)
         run: npx vitest run
@@ -89,6 +92,9 @@ jobs:
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-only-access-secret-not-for-production-use
       JWT_REFRESH_SECRET: ci-only-refresh-secret-not-for-production-use
+      # The suite reloads every page of six roles from one runner address; the default
+      # 60/min starts answering 429 on /auth/me part-way through.
+      THROTTLE_LIMIT_PER_MIN: '1000'
 
     steps:
       - uses: actions/checkout@v4

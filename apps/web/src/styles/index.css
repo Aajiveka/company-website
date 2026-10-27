@@ -166,6 +166,56 @@
 
   --shadow-q2-card: 0 1px 2px rgb(23 32 51 / 0.04);
   --shadow-q2-pop: 0 10px 30px rgb(23 32 51 / 0.12);
+
+  /* ---------------------------------------------------------------- */
+  /* Q3 hiring-ops workspace ("Q3" page of the Aajiveka UI Figma)      */
+  /*                                                                   */
+  /* A fourth namespace. Q3 is drawn on a different palette from Q1    */
+  /* and Q2 — a deeper #2F5BD8 blue, Tailwind-gray inks (#111827 /     */
+  /* #374151 / #6B7280) and its own green, amber and red — so it does  */
+  /* not borrow `q2-*`, for the same reason `q1-*` and `q2-*` are      */
+  /* separate. Hexes are read straight off the Figma nodes.            */
+  /* ---------------------------------------------------------------- */
+  --color-q3-blue: #2f5bd8;
+  --color-q3-blue-hover: #284fc2;
+  --color-q3-blue-soft: #edf2fe;
+  --color-q3-blue-tint: #f5f8ff;
+  --color-q3-blue-wash: #f8faff;
+
+  --color-q3-green: #2e8b47;
+  --color-q3-green-soft: #e7f5ec;
+  --color-q3-green-tint: #f4faf6;
+  --color-q3-green-line: #cde9d6;
+  --color-q3-amber: #c96a12;
+  --color-q3-amber-soft: #fdf1e3;
+  --color-q3-amber-tint: #fff9f0;
+  --color-q3-red: #d23b3b;
+  --color-q3-red-soft: #fdecec;
+  --color-q3-red-line: #f3c7c7;
+  --color-q3-violet: #7c3aed;
+  --color-q3-violet-soft: #f1ebfd;
+
+  --color-q3-canvas: #f5f6fa;
+  --color-q3-surface: #ffffff;
+  --color-q3-line: #e7e9f0;
+  --color-q3-line-strong: #cbd0da;
+  --color-q3-chip: #eef0f4;
+  --color-q3-field: #f8f9fb;
+  --color-q3-head: #fafbfc;
+  --color-q3-track: #e8eaf0;
+  --color-q3-skeleton: #dde1e8;
+  --color-q3-overlay: rgb(11 16 32 / 0.45);
+
+  --color-q3-ink: #111827;
+  --color-q3-ink-soft: #374151;
+  --color-q3-ink-mid: #4b5563;
+  --color-q3-muted: #6b7280;
+  --color-q3-muted-light: #9ca3af;
+  --color-q3-brand: #172033;
+
+  --shadow-q3-toast: 0 8px 24px rgb(18 23 38 / 0.18);
+  --shadow-q3-modal: 0 20px 48px rgb(10 15 33 / 0.22);
+  --shadow-q3-pop: 0 8px 24px rgb(18 23 38 / 0.12);
 }
 
 @keyframes slide-up {

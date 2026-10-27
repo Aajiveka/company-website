@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { EmailService } from '@/common/email/email.service';
@@ -26,6 +26,14 @@ export class OfferLetterService {
     joiningDate?: string;
     userId: number;
   }) {
+    // One offer per application (JobSubscriberMapID is unique): a second create surfaced as
+    // an unhandled P2002 — a 500 — instead of a clear answer.
+    const existing = await this.db.offerLetter.findUnique({
+      where: { jobSubscriberMapID: BigInt(input.jobSubscriberMapId) },
+      select: { id: true },
+    });
+    if (existing) throw new ConflictException('An offer letter already exists for this application');
+
     const offer = await this.db.offerLetter.create({
       data: {
         jobSubscriberMapID: BigInt(input.jobSubscriberMapId),
@@ -108,6 +116,10 @@ export class OfferLetterService {
       select: { id: true, status: true, jobSubscriberMapID: true },
     });
     if (!offer) throw new NotFoundException('Offer letter not found');
+    // A draft has not reached the candidate, and an answered offer stays answered.
+    if (offer.status !== 'Sent') {
+      throw new ConflictException(`This offer is ${offer.status.toLowerCase()} and cannot be answered`);
+    }
 
     const newStatus = accept ? 'Accepted' : 'Rejected';
     await this.db.offerLetter.update({

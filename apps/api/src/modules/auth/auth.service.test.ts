@@ -161,13 +161,43 @@ describe('AuthService', () => {
     it('rotates tokens on valid refresh', async () => {
       const payload = { sub: 1, roleId: 1, type: 'refresh', jti: 'session-1' };
       mockJwt.verifyAsync.mock.mockImplementation(async () => payload);
-      mockDb.secActiveSessions.findFirst.mock.mockImplementation(async () => ({ sessionID: 'session-1' }));
+      mockDb.secActiveSessions.deleteMany.mock.mockImplementation(async () => ({ count: 1 }));
       mockDb.secUser.findFirst.mock.mockImplementation(async () => ({ userID: 1n, userName: 'u', nodeID: 10n, subscriberID: 5n }));
+      mockDb.secMapUserRoles.findFirst.mock.mockImplementation(async () => ({ roleId: 1 }));
       mockDb.subscriberCVDetails.findUnique.mock.mockImplementation(async () => ({ fullName: 'U', emailID: '', mobileNo1: 'u' }));
 
       const result = await svc.refresh('valid-token');
       assert.ok(result.accessToken);
       assert.equal(mockDb.secActiveSessions.deleteMany.mock.callCount(), 1);
+    });
+
+    // Regression: check-then-delete let concurrent replays of one token each get a session.
+    it('honours a refresh token once, even when replayed concurrently', async () => {
+      mockJwt.verifyAsync.mock.mockImplementation(async () => ({ sub: 1, roleId: 1, type: 'refresh', jti: 'session-2' }));
+      let live = true;
+      mockDb.secActiveSessions.deleteMany.mock.mockImplementation(async () => {
+        const count = live ? 1 : 0;
+        live = false;
+        return { count };
+      });
+      mockDb.secUser.findFirst.mock.mockImplementation(async () => ({ userID: 1n, userName: 'u', nodeID: 10n, subscriberID: 5n }));
+      mockDb.secMapUserRoles.findFirst.mock.mockImplementation(async () => ({ roleId: 1 }));
+      mockDb.subscriberCVDetails.findUnique.mock.mockImplementation(async () => ({ fullName: 'U', emailID: '', mobileNo1: 'u' }));
+
+      const results = await Promise.allSettled([svc.refresh('t'), svc.refresh('t'), svc.refresh('t')]);
+      assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+    });
+
+    // Regression: the role came from the old token, so a role change never took effect.
+    it('issues the role the mapping holds now, not the one in the old token', async () => {
+      mockJwt.verifyAsync.mock.mockImplementation(async () => ({ sub: 2, roleId: 5, type: 'refresh', jti: 'session-3' }));
+      mockDb.secActiveSessions.deleteMany.mock.mockImplementation(async () => ({ count: 1 }));
+      mockDb.secUser.findFirst.mock.mockImplementation(async () => ({ userID: 2n, userName: 'qc2', nodeID: 3n, subscriberID: null }));
+      mockDb.secMapUserRoles.findFirst.mock.mockImplementation(async () => ({ roleId: 3 }));
+      mockDb.mstrPerson.findUnique.mock.mockImplementation(async () => ({ firstName: 'Q', lastName: 'C', emailID: 'q@x.com' }));
+
+      const result = await svc.refresh('t');
+      assert.equal(result.user.roleId, 3);
     });
 
     it('throws on invalid JWT', async () => {
@@ -177,7 +207,7 @@ describe('AuthService', () => {
 
     it('throws on revoked session', async () => {
       mockJwt.verifyAsync.mock.mockImplementation(async () => ({ sub: 1, roleId: 1, type: 'refresh', jti: 'gone' }));
-      mockDb.secActiveSessions.findFirst.mock.mockImplementation(async () => null);
+      mockDb.secActiveSessions.deleteMany.mock.mockImplementation(async () => ({ count: 0 }));
       await assert.rejects(() => svc.refresh('revoked'), UnauthorizedException);
     });
   });
@@ -424,6 +454,20 @@ describe('AuthService', () => {
       const result = await svc.forgotPassword('admin');
       assert.ok(result.message.includes('If that account exists'));
       assert.equal(mockEmail.sendPasswordReset.mock.callCount(), 1);
+    });
+
+    // Regression: a candidate's NodeID is their SubscriberID, which collides with
+    // PersonNodeIDs — the link went to the staff member who shared the number.
+    it("mails a candidate's link to the candidate, never the person sharing their NodeID", async () => {
+      mockDb.secUser.findFirst.mock.mockImplementation(async () => ({ userID: 9n, nodeID: 1n, subscriberID: 1n }));
+      mockDb.authPasswordReset.create.mock.mockImplementation(async () => ({}));
+      mockDb.subscriberCVDetails.findUnique.mock.mockImplementation(async () => ({ emailID: 'candidate@x.com' }));
+      mockDb.mstrPerson.findUnique.mock.mockImplementation(async () => ({ emailID: 'qc1@aajiveka.com' }));
+
+      await svc.forgotPassword('9876543210');
+      assert.equal(mockEmail.sendPasswordReset.mock.callCount(), 1);
+      assert.equal(mockEmail.sendPasswordReset.mock.calls[0].arguments[0], 'candidate@x.com');
+      assert.equal(mockDb.mstrPerson.findUnique.mock.callCount(), 0);
     });
 
     it('returns same response for non-existent user (no enumeration)', async () => {

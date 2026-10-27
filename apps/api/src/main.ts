@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { text } from 'express';
@@ -9,7 +10,13 @@ import { env } from './config/env';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // The API is only reachable through the web container's nginx — one hop. Without this,
+  // req.ip is nginx's address for every request, so the throttler put all users in one
+  // bucket: six logins a minute site-wide locked everyone out. With exactly one trusted hop,
+  // Express takes the address nginx appended, which a client cannot spoof.
+  app.set('trust proxy', 1);
 
   app.setGlobalPrefix('api');
   // BillDesk posts a JWS with Content-Type: application/jose. Express's JSON parser would

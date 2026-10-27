@@ -52,6 +52,11 @@ model CandidateDocumentUploaded {
   subscriberID                 BigInt?                            @map("SubscriberID")
   documentTypeID               Int?                               @map("DocumentTypeID")  // FK -> MstrDocumentType (unverified-empty)
   documentPath                 String? @db.VarChar(500)           @map("DocumentPath")
+  /// The candidate's own filename and the byte size, for "aadhaar_ishita.pdf · 1.2 MB" on Q3's
+  /// Documents screen. The storage key is never the client's filename, so it was lost; NULL on
+  /// every row uploaded before these columns existed.
+  fileName                     String? @db.VarChar(255)           @map("FileName")
+  sizeBytes                    Int?                               @map("SizeBytes")
   flgStatus                    Int? @db.SmallInt                  @map("flgStatus")
   timestampIns                 DateTime? @db.Timestamp(6)         @map("TimestampIns")
   loginIDIns                   Int?                               @map("LoginIDIns")
@@ -250,6 +255,8 @@ model JobSubscriberMapping {
   CandidateJobScore            CandidateJobScore?                 @relation("CandidateJobScoreToJobSubscriberMapping")
   ApplicationMatchReview       ApplicationMatchReview?            @relation("ApplicationMatchReviewToJobSubscriberMapping")
   OfferLetter                  OfferLetter?                       @relation("OfferLetterToJobSubscriberMapping")
+  ApplicationHiring            ApplicationHiring?                 @relation("ApplicationHiringToJobSubscriberMapping")
+  Q3Activity                   Q3Activity[]                       @relation("Q3ActivityToJobSubscriberMapping")
   @@index([jobID])
   @@index([subscriberID])
   @@index([jobMapStatusID])
@@ -1579,7 +1586,7 @@ model InterviewRound {
   interviewModeID              Int?                               @map("InterviewModeID")
   meetingLink                  String? @db.VarChar(500)           @map("MeetingLink")
   scheduledAt                  DateTime? @db.Timestamp(6)         @map("ScheduledAt")
-  /// Pending | Scheduled | Completed | Cancelled
+  /// Pending | Scheduled | Completed | Cancelled | NoShow | RescheduleRequested
   status                       String @db.VarChar(20)             @default("Pending") @map("Status")
   /// Passed | Failed | Hold | Pending
   result                       String @db.VarChar(20)             @default("Pending") @map("Result")
@@ -1587,11 +1594,32 @@ model InterviewRound {
   createdAt                    DateTime @db.Timestamp(6)          @default(now()) @map("CreatedAt")
   updatedAt                    DateTime? @db.Timestamp(6)         @map("UpdatedAt")
 
+  // ── Q3 hiring ops (Figma "Q3") ──
+  /// JSON [{ name, title, email }]. InterviewerName/InterviewerEmail mirror the first entry.
+  interviewers                 String? @db.Text                   @map("Interviewers")
+  hrTitle                      String? @db.VarChar(200)           @map("HRTitle")
+  durationMins                 Int @db.SmallInt                   @default(45) @map("DurationMins")
+  isFinal                      Boolean                            @default(false) @map("IsFinal")
+  slotsSharedAt                DateTime? @db.Timestamp(6)         @map("SlotsSharedAt")
+  slotsRequestedAt             DateTime? @db.Timestamp(6)         @map("SlotsRequestedAt")
+  invitesSentAt                DateTime? @db.Timestamp(6)         @map("InvitesSentAt")
+  reminderSentAt               DateTime? @db.Timestamp(6)         @map("ReminderSentAt")
+  candidateConfirmedAt         DateTime? @db.Timestamp(6)         @map("CandidateConfirmedAt")
+  candidateJoinedAt            DateTime? @db.Timestamp(6)         @map("CandidateJoinedAt")
+  conductedAt                  DateTime? @db.Timestamp(6)         @map("ConductedAt")
+  resultDueAt                  DateTime? @db.Timestamp(6)         @map("ResultDueAt")
+  /// NextRound | FinalRound | Hold | Rejected | Selected — see shared/hiring.ts.
+  decision                     String? @db.VarChar(20)            @map("Decision")
+  decidedAt                    DateTime? @db.Timestamp(6)         @map("DecidedAt")
+  decisionMailSentAt           DateTime? @db.Timestamp(6)         @map("DecisionMailSentAt")
+
   mapping                      JobSubscriberMapping               @relation("InterviewRoundToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
   interviewMode                MstrInterviewMode?                 @relation("InterviewRoundToMstrInterviewMode", fields: [interviewModeID], references: [interviewModeID])
   slots                        InterviewSlot[]                    @relation("InterviewSlotToInterviewRound")
 
   @@index([jobSubscriberMapID])
+  @@index([scheduledAt])
+  @@index([status])
   @@map("tblInterviewRound")
 }
 
@@ -1602,6 +1630,8 @@ model InterviewSlot {
   interviewRoundID             BigInt                             @map("InterviewRoundID")
   slotDateTime                 DateTime @db.Timestamp(6)          @map("SlotDateTime")
   isSelected                   Boolean                            @default(false) @map("IsSelected")
+  /// "Candidate unavailable" on Q3's Slot Scheduling screen.
+  isUnavailable                Boolean                            @default(false) @map("IsUnavailable")
 
   round                        InterviewRound                     @relation("InterviewSlotToInterviewRound", fields: [interviewRoundID], references: [id], onDelete: Cascade)
 
@@ -1624,12 +1654,25 @@ model CvReferral {
   status                       String @db.VarChar(20)             @default("Referred") @map("Status")
   /// Pending | Selected | Rejected (company's review of the referred CV)
   companyReviewStatus          String @db.VarChar(20)             @default("Pending") @map("CompanyReviewStatus")
+  /// When the company shortlisted the CV. Stops the 14-day clock.
+  companyShortlistedAt         DateTime? @db.Timestamp(6)         @map("CompanyShortlistedAt")
+
+  // ── Returned to Q2 (Figma "Q3" 07) ──
+  returnedAt                   DateTime? @db.Timestamp(6)         @map("ReturnedAt")
+  returnedBy                   BigInt?                            @map("ReturnedBy")
+  /// CV missing | Incomplete profile | Role mismatch | Duplicate referral | Auto-expired
+  returnReason                 String? @db.VarChar(50)            @map("ReturnReason")
+  returnNote                   String? @db.VarChar(1000)          @map("ReturnNote")
+  q2MailSentAt                 DateTime? @db.Timestamp(6)         @map("Q2MailSentAt")
+  q2AcknowledgedAt             DateTime? @db.Timestamp(6)         @map("Q2AcknowledgedAt")
+  reReferredAt                 DateTime? @db.Timestamp(6)         @map("ReReferredAt")
 
   mapping                      JobSubscriberMapping               @relation("CvReferralToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
 
   @@index([jobSubscriberMapID])
   @@index([status])
   @@index([expiresAt])
+  @@index([returnedAt])
   @@map("tblCvReferral")
 }
 
@@ -1709,6 +1752,46 @@ model OfferLetter {
   mapping                      JobSubscriberMapping               @relation("OfferLetterToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
 
   @@map("tblOfferLetter")
+}
+
+/// Q3's per-application state that has no other home: the document hand-off to the company
+/// and joining (Figma "Q3" 06 · Documents & Offer). Created on first touch.
+model ApplicationHiring {
+  jobSubscriberMapID           BigInt                             @id @map("JobSubscriberMapID")
+  selectedAt                   DateTime? @db.Timestamp(6)         @map("SelectedAt")
+  docsRequestedAt              DateTime? @db.Timestamp(6)         @map("DocsRequestedAt")
+  docsDueAt                    DateTime? @db.Date                 @map("DocsDueAt")
+  docsForwardedAt              DateTime? @db.Timestamp(6)         @map("DocsForwardedAt")
+  docsApprovedAt               DateTime? @db.Timestamp(6)         @map("DocsApprovedAt")
+  joinedAt                     DateTime? @db.Timestamp(6)         @map("JoinedAt")
+  onHoldAt                     DateTime? @db.Timestamp(6)         @map("OnHoldAt")
+  timestampIns                 DateTime @db.Timestamp(6)          @default(now()) @map("TimestampIns")
+  timestampUpd                 DateTime? @db.Timestamp(6)         @map("TimestampUpd")
+
+  mapping                      JobSubscriberMapping               @relation("ApplicationHiringToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+
+  @@map("tblApplicationHiring")
+}
+
+/// Everything Q3 does to an application — calls, mails, nudges, reminders, slot requests.
+/// Append-only: the row is the record of what was said and how.
+model Q3Activity {
+  id                           BigInt                             @id @default(autoincrement()) @map("Q3ActivityID")
+  jobSubscriberMapID           BigInt                             @map("JobSubscriberMapID")
+  interviewRoundID             BigInt?                            @map("InterviewRoundID")
+  /// See Q3ActivityKind in shared/hiring.ts.
+  kind                         String @db.VarChar(30)             @map("Kind")
+  /// Call | Mail | WhatsApp
+  channel                      String? @db.VarChar(20)            @map("Channel")
+  note                         String? @db.VarChar(2000)          @map("Note")
+  createdAt                    DateTime @db.Timestamp(6)          @default(now()) @map("CreatedAt")
+  createdBy                    BigInt?                            @map("CreatedBy")
+
+  mapping                      JobSubscriberMapping               @relation("Q3ActivityToJobSubscriberMapping", fields: [jobSubscriberMapID], references: [jobSubscriberMapID])
+
+  @@index([jobSubscriberMapID])
+  @@index([createdAt])
+  @@map("tblQ3Activity")
 }
 
 /// Q1's screening workspace state for one candidate (Figma "Q1 Flow").

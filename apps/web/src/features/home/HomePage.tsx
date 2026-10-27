@@ -61,7 +61,9 @@ export default function HomePage() {
         ]}
       />
       {/* -------------------------------- Hero -------------------------------- */}
-      <section className="hero-banner relative flex min-h-[28rem] items-center overflow-hidden md:h-[600px] lg:h-[745px]">
+      {/* On phones the content outgrows min-h, so centring alone put the headline under the fixed
+          header; reserve its height there like PageBanner does. From md the fixed heights fit. */}
+      <section className="hero-banner relative flex min-h-[28rem] items-center overflow-hidden pt-(--nav-h) pb-10 md:h-[600px] md:pt-0 md:pb-0 lg:h-[745px]">
         <img
           src="/image/slider_laptop.webp"
           alt=""

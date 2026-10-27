@@ -35,7 +35,11 @@ export function PortalHeader({ profile }: { profile: PortalProfile | null }) {
               className="size-[33px] rounded-md object-cover"
               decoding="async"
             />
-            <span className="font-display text-xl font-bold tracking-[-0.5px] text-aj-blue">Aajiveka</span>
+            {/* Below 375px the wordmark ran under the Wallet pill; the mark alone carries the
+                brand there, and the name stays as the link's accessible text. */}
+            <span className="font-display text-xl font-bold tracking-[-0.5px] text-aj-blue max-[374px]:sr-only">
+              Aajiveka
+            </span>
           </Link>
 
           <ul className="hidden items-center gap-1 lg:flex">

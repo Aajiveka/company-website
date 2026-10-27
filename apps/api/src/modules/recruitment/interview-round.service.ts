@@ -4,6 +4,7 @@ import { AuditService } from '@/modules/audit/audit.service';
 import { EmailService } from '@/common/email/email.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
 import { JobMapStatus } from '@/shared/status';
+import { CvReferralService } from './cv-referral.service';
 
 /** Multi-round interview management (Q3/Company workflow). */
 @Injectable()
@@ -13,6 +14,7 @@ export class InterviewRoundService {
     private readonly audit: AuditService,
     private readonly email: EmailService,
     private readonly applications: JobApplicationsService,
+    private readonly referrals: CvReferralService,
   ) {}
 
   private get db() {
@@ -36,7 +38,7 @@ export class InterviewRoundService {
     // Resolve interview mode name → id (if numeric already, use directly)
     let interviewModeID: number | null = null;
     const parsed = Number(input.interviewMode);
-    if (!Number.isNaN(parsed)) {
+    if (input.interviewMode.trim() !== '' && !Number.isNaN(parsed)) {
       interviewModeID = parsed;
     } else {
       const mode = await this.db.mstrInterviewMode.findFirst({
@@ -71,6 +73,9 @@ export class InterviewRoundService {
         })),
       });
     }
+
+    // A company that books a round has shortlisted the CV — stop its review clock.
+    await this.referrals.markShortlisted(input.jobSubscriberMapId);
 
     // Transition application status based on round number
     const statusMap: Record<number, number> = {

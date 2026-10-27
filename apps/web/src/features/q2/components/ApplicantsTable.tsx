@@ -166,7 +166,9 @@ export function ApplicantsTable({
         </div>
       ) : (
         <>
-          <div className={cn('overflow-x-auto', isPlaceholderData && 'opacity-60 transition-opacity')}>
+          {/* `relative` makes this scroller the containing block for the header's sr-only text;
+              without it that absolute span escaped the scroll box and widened the page on phones. */}
+          <div className={cn('relative overflow-x-auto', isPlaceholderData && 'opacity-60 transition-opacity')}>
             <table className="w-full min-w-[58rem] border-collapse text-left">
               <thead>
                 <tr className="border-y border-q2-line dark:border-gray-700">

@@ -11,7 +11,10 @@
     "q3Login": "Q3 Login",
     "adminLogin": "Admin Login",
     "subscribeNow": "Subscribe Now",
-    "student": "Student"
+    "student": "Student",
+    "menu": "Menu",
+    "logout": "Logout",
+    "admin": "Admin"
   },
   "student": {
     "title": "Student Guide",
@@ -116,7 +119,9 @@
     "viewMembership": "View membership",
     "checkMembership": "Check membership",
     "renewOrUpgrade": "Renew or upgrade",
-    "choosePlan": "Choose a plan"
+    "choosePlan": "Choose a plan",
+    "view": "View",
+    "previous": "Previous"
   },
   "dashboard": "Dashboard",
   "recruitment": {

@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { json, recordRequest, type RequestLog } from './support/mocks';
 import { mockQC1Session, mockQC2Session } from './support/auth-helpers';
+import { pageScrollsSideways } from './support/layout';
 import {
   Q2_ANALYTICS,
   Q2_APPLICANT_ROWS,
@@ -121,24 +122,6 @@ async function mockQ2(
       return route.fulfill(json({ mapId: 102, status: 'Forwarded' }));
     });
   }
-}
-
-/**
- * Whether the PAGE scrolls sideways.
- *
- * Deliberately not `documentElement.scrollWidth - clientWidth`: Chromium counts a wide
- * descendant towards the root's scrollWidth even when an inner `overflow-x: auto` container
- * clips it, so that measure reports ~471px of overflow on a phone for a table that in fact
- * scrolls correctly inside its own wrapper. `body.scrollWidth` and an actual scroll attempt
- * describe what the user experiences.
- */
-async function pageScrollsSideways(page: Page) {
-  return page.evaluate(() => {
-    window.scrollTo(9999, 0);
-    const moved = window.scrollX > 0;
-    window.scrollTo(0, 0);
-    return moved || document.body.scrollWidth > document.documentElement.clientWidth + 1;
-  });
 }
 
 test.describe('Q2 dashboard', () => {

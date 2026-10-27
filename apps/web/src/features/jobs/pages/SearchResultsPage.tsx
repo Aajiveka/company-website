@@ -150,13 +150,13 @@ export default function SearchResultsPage() {
       <section className="py-10 md:py-14">
         <div className="container mx-auto max-w-4xl">
           {/* Tabs */}
-          <div className="mb-8 flex gap-2 border-b border-gray-200 dark:border-gray-700">
+          <div className="mb-8 flex gap-2 overflow-x-auto border-b border-gray-200 dark:border-gray-700">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={cn(
-                  'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition',
+                  'flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition',
                   activeTab === tab.key
                     ? 'border-primary text-primary'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400',

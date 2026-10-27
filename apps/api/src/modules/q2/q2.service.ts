@@ -229,8 +229,11 @@ export class Q2Service {
    * Q1 loads these one candidate at a time, which is fine for a profile page but would be
    * five queries per row here — the All Applicants table is ten rows and the dashboard counts
    * every application. Same eight requirements and therefore the same percentages.
+   *
+   * Public because Q3's Referred CVs table prints the same PROFILE percentage for the same
+   * candidates, and a second loader would be a second place for the numbers to disagree.
    */
-  private async factsFor(subscriberIds: number[]): Promise<Map<number, ScreeningProfileFacts>> {
+  async factsFor(subscriberIds: number[]): Promise<Map<number, ScreeningProfileFacts>> {
     const ids = [...new Set(subscriberIds)].filter((id) => Number.isFinite(id));
     if (!ids.length) return new Map();
     const bigIds = ids.map((id) => BigInt(id));
@@ -793,6 +796,19 @@ export class Q2Service {
         data: { firstViewedAt: new Date(), timestampUpd: new Date(), loginIDUpd: userId ? BigInt(userId) : null },
       });
     }
+
+    // Q3's Returned to Q2 screen shows whether Q2 has picked a returned CV back up. Opening
+    // the application is that acknowledgement: the status mail links nowhere else, and Q2 has
+    // no other step between receiving a returned CV and fixing or re-referring it.
+    await this.db.cvReferral.updateMany({
+      where: {
+        jobSubscriberMapID: BigInt(mapId),
+        status: { in: ['Returned', 'Expired'] },
+        q2AcknowledgedAt: null,
+        reReferredAt: null,
+      },
+      data: { q2AcknowledgedAt: new Date() },
+    });
 
     const cv = mapping.subscriber?.SubscriberCVDetails;
     const f = facts.get(subscriberId);

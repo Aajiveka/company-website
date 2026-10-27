@@ -283,13 +283,16 @@ export class ExportsController {
     await this.send(res, format, filename, rows, JOB_COLUMNS);
   }
 
+  // Admin only. This export is unscoped — every company's applications with candidate
+  // contact details — and Client being allowed here leaked all of it to any employer.
+  // Employers export their own pipeline through `applicants`, which is client-scoped.
   @Get('applications')
-  @Roles(Role.Client, Role.Admin)
+  @Roles(Role.Admin)
   @ApiQuery({ name: 'format', enum: ['csv', 'xlsx', 'pdf'], required: false })
   @ApiQuery({ name: 'jobId', required: false, description: 'Filter by job ID' })
   @ApiQuery({ name: 'from', required: false, description: 'Start date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'to', required: false, description: 'End date (YYYY-MM-DD)' })
-  @ApiOperation({ summary: 'Export applications as CSV (client/admin)' })
+  @ApiOperation({ summary: 'Export applications as CSV (admin)' })
   async applications(
     @Query('format') format: Format = 'csv',
     @Query('jobId') jobId: string | undefined,
@@ -298,6 +301,7 @@ export class ExportsController {
     @CurrentUser() user: RequestUser,
     @Res() res: Response,
   ) {
+    if (jobId && !/^\d+$/.test(jobId)) throw new BadRequestException('jobId must be a number');
     const rows = await this.exports.exportApplications({
       jobId: jobId ? Number(jobId) : undefined,
       from,

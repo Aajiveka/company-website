@@ -7,6 +7,7 @@ import { ScoringService } from './scoring.service';
 import { CvReferralService } from './cv-referral.service';
 import { InterviewRoundService } from './interview-round.service';
 import { OfferLetterService } from './offer-letter.service';
+import { MappingAccessService } from './mapping-access.service';
 import { CvExpiryProcessor, CV_EXPIRY_QUEUE, CV_EXPIRY_JOB } from './cv-expiry.processor';
 import { CandidatesService } from '@/modules/candidates/candidates.service';
 import { JobsModule } from '@/modules/jobs/jobs.module';
@@ -23,6 +24,7 @@ import { JobsModule } from '@/modules/jobs/jobs.module';
     CvReferralService,
     InterviewRoundService,
     OfferLetterService,
+    MappingAccessService,
     CvExpiryProcessor,
     CandidatesService,
   ],

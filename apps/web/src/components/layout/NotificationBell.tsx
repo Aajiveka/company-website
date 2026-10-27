@@ -73,7 +73,7 @@ function deriveFromAppliedJobs(jobs: AppliedJob[], t: (key: string, opts?: Recor
         title: t('notifications.interviewScheduled'),
         body: `${job.designation} · ${job.interview.mode ?? ''}`,
         time: job.interview.scheduledOn,
-        to: `/candidate/applied-jobs`,
+        to: '/candidate/interviews',
       });
     }
   }
@@ -90,7 +90,7 @@ function fromSSE(n: InAppNotification): Notification {
     title: n.title,
     body: n.message,
     time: n.createdAt,
-    to: n.link ?? '/candidate/notifications',
+    to: n.link ?? '/candidate/all-notifications',
   };
 }
 

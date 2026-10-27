@@ -84,7 +84,7 @@ export default function JobDetailPage() {
       <Card className="mt-3">
         {/* Header */}
         <div className="p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex min-w-0 gap-4">
               <InitialAvatar text={job.company || '?'} className={cn('size-14 text-xl', avatarTone(job.company || 'j'))} />
               <div className="min-w-0">
@@ -131,7 +131,7 @@ export default function JobDetailPage() {
         </div>
 
         {/* Body + overview rail */}
-        <div className="grid border-t border-aj-line-soft lg:grid-cols-[1fr_320px] dark:border-gray-700">
+        <div className="grid grid-cols-1 border-t border-aj-line-soft lg:grid-cols-[1fr_320px] dark:border-gray-700">
           <div className="space-y-6 p-5 sm:p-6">
             <Prose title="About the role" text={job.description} />
             <Prose title="Key responsibilities" text={job.keyResponsibilities} />

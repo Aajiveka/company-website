@@ -273,6 +273,13 @@ export class PaymentsService {
     }
 
     if (event.event === 'payment.failed') {
+      // Razorpay sends payment.failed for every failed attempt on an order, and delivery order
+      // is not guaranteed — an earlier attempt's failure can arrive after the capture. It must
+      // not turn a paid order (whose subscription is already granted) back into FAILED.
+      if (order.subscription || order.status === PaymentStatus.SUCCESS) {
+        this.logger.log(`late payment.failed for settled ${order.orderRef}, ignoring`);
+        return { orderRef: order.orderRef, status: order.status, alreadySettled: true };
+      }
       await this.db.paymentOrder.update({
         where: { orderID: order.orderID },
         data: {

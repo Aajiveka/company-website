@@ -16,8 +16,14 @@ const HEARTBEAT_INTERVAL = 30_000;
 export class SseNotificationsService implements OnModuleDestroy {
   private readonly logger = new Logger(SseNotificationsService.name);
 
-  /** Active SSE connections keyed by userId. */
-  private readonly clients = new Map<number, SseClient>();
+  /**
+   * Active SSE connections, several per user. It used to be one per user: every new stream
+   * ended the previous one, and each closed stream's handler removed whichever was current.
+   * Two streams for one user — a second tab, or a page that remounted the bell — then
+   * evicted each other every second, and the reconnects ate the 60/min throttle until the
+   * app showed "You're offline".
+   */
+  private readonly clients = new Map<number, Set<SseClient>>();
 
   /** In-memory notification store keyed by id. */
   private readonly store: InAppNotification[] = [];
@@ -35,8 +41,8 @@ export class SseNotificationsService implements OnModuleDestroy {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
-    for (const client of this.clients.values()) {
-      client.res.end();
+    for (const conns of this.clients.values()) {
+      for (const client of conns) client.res.end();
     }
     this.clients.clear();
   }
@@ -46,19 +52,30 @@ export class SseNotificationsService implements OnModuleDestroy {
   /* ------------------------------------------------------------------ */
 
   addClient(userId: number, roleId: number, res: Response): void {
-    // Close any existing connection for this user.
-    this.removeClient(userId);
-    this.clients.set(userId, { userId, roleId, res });
-    this.logger.log(`SSE client connected: userId=${userId} (${this.clients.size} active)`);
+    let conns = this.clients.get(userId);
+    if (!conns) this.clients.set(userId, (conns = new Set()));
+    conns.add({ userId, roleId, res });
+    this.logger.log(`SSE client connected: userId=${userId} (${conns.size} for this user)`);
   }
 
-  removeClient(userId: number): void {
-    const existing = this.clients.get(userId);
-    if (existing) {
-      existing.res.end();
-      this.clients.delete(userId);
-      this.logger.log(`SSE client disconnected: userId=${userId} (${this.clients.size} active)`);
+  /** Drops one connection — the one that closed — leaving the user's others open. */
+  removeClient(userId: number, res: Response): void {
+    const conns = this.clients.get(userId);
+    if (!conns) return;
+    for (const client of conns) {
+      if (client.res !== res) continue;
+      conns.delete(client);
+      client.res.end();
+      this.logger.log(`SSE client disconnected: userId=${userId} (${conns.size} for this user)`);
     }
+    if (!conns.size) this.clients.delete(userId);
+  }
+
+  /** One entry per connected user, whatever the number of connections. */
+  private connectedUsers() {
+    return [...this.clients.entries()]
+      .filter(([, conns]) => conns.size > 0)
+      .map(([userId, conns]) => ({ userId, roleId: [...conns][0].roleId }));
   }
 
   /* ------------------------------------------------------------------ */
@@ -79,16 +96,16 @@ export class SseNotificationsService implements OnModuleDestroy {
   }
 
   broadcastToRole(roleId: number, notification: Omit<InAppNotification, 'id' | 'userId' | 'read' | 'createdAt'>): void {
-    for (const client of this.clients.values()) {
-      if (client.roleId === roleId) {
-        this.sendNotification(client.userId, notification);
+    for (const user of this.connectedUsers()) {
+      if (user.roleId === roleId) {
+        this.sendNotification(user.userId, notification);
       }
     }
   }
 
   broadcastToAll(notification: Omit<InAppNotification, 'id' | 'userId' | 'read' | 'createdAt'>): void {
-    for (const client of this.clients.values()) {
-      this.sendNotification(client.userId, notification);
+    for (const user of this.connectedUsers()) {
+      this.sendNotification(user.userId, notification);
     }
   }
 
@@ -153,21 +170,23 @@ export class SseNotificationsService implements OnModuleDestroy {
   /* ------------------------------------------------------------------ */
 
   private writeEvent(userId: number, data: InAppNotification): void {
-    const client = this.clients.get(userId);
-    if (!client) return;
-    try {
-      client.res.write(`data: ${JSON.stringify(data)}\n\n`);
-    } catch {
-      this.removeClient(userId);
+    for (const client of this.clients.get(userId) ?? []) {
+      try {
+        client.res.write(`data: ${JSON.stringify(data)}\n\n`);
+      } catch {
+        this.removeClient(userId, client.res);
+      }
     }
   }
 
   private heartbeat(): void {
-    for (const [userId, client] of this.clients) {
-      try {
-        client.res.write(': ping\n\n');
-      } catch {
-        this.removeClient(userId);
+    for (const [userId, conns] of this.clients) {
+      for (const client of conns) {
+        try {
+          client.res.write(': ping\n\n');
+        } catch {
+          this.removeClient(userId, client.res);
+        }
       }
     }
   }

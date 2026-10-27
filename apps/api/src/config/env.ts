@@ -17,6 +17,10 @@ const schema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  // Requests per minute per client IP for routes without their own @Throttle (the auth
+  // routes keep their tighter limits). The e2e suite reloads ~25 pages a minute from one
+  // address and needs more headroom than a person does.
+  THROTTLE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(60),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   REDIS_URL: z.string().default('redis://localhost:16379'),

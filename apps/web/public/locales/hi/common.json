@@ -11,7 +11,10 @@
     "q3Login": "Q3 लॉगिन",
     "adminLogin": "एडमिन लॉगिन",
     "subscribeNow": "सब्सक्राइब करें",
-    "student": "छात्र"
+    "student": "छात्र",
+    "menu": "मेनू",
+    "logout": "लॉगआउट",
+    "admin": "एडमिन"
   },
   "student": {
     "title": "छात्र गाइड",
@@ -116,7 +119,9 @@
     "viewMembership": "सदस्यता देखें",
     "checkMembership": "सदस्यता जांचें",
     "renewOrUpgrade": "नवीनीकरण या अपग्रेड करें",
-    "choosePlan": "योजना चुनें"
+    "choosePlan": "योजना चुनें",
+    "view": "देखें",
+    "previous": "पिछला"
   },
   "dashboard": "डैशबोर्ड",
   "recruitment": {

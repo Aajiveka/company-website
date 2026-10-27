@@ -10,7 +10,7 @@
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "test": "node --import tsx --test 'src/**/*.test.ts'",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:generate": "prisma generate",

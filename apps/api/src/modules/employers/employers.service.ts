@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
+import { CvReferralService } from '@/modules/recruitment/cv-referral.service';
 import { StorageService } from '@/modules/storage/storage.service';
 import { avatarUrl } from '@/modules/files/avatar-url';
 import {
@@ -192,6 +193,7 @@ export class EmployersService {
     private readonly audit: AuditService,
     private readonly applications: JobApplicationsService,
     private readonly storage: StorageService,
+    private readonly referrals: CvReferralService,
   ) {}
 
   private get db() {
@@ -1174,6 +1176,12 @@ export class EmployersService {
     };
     const next = map[dto.decision];
     await this.applications.transitionStatus(jobSubscriberMapId, next.jobMapStatusId, userId, next.historyStatusId);
+    // A CV Q3 forwarded is on a 14-day review clock; the company's answer settles it.
+    if (dto.decision === 'Shortlisted' || dto.decision === 'Interview' || dto.decision === 'Hired') {
+      await this.referrals.markShortlisted(jobSubscriberMapId);
+    } else if (dto.decision === 'Rejected') {
+      await this.referrals.markCompanyRejected(jobSubscriberMapId);
+    }
     await this.audit.record({
       userId,
       action: 'applicant.decision',
@@ -2062,6 +2070,14 @@ export class EmployersService {
       throw new NotFoundException('Application not found');
     }
 
+    // The upload must be this applicant's. Only the application was checked before, so a
+    // company with one applicant could set the status of any candidate's document.
+    const upload = await this.db.candidateDocumentUploaded.findFirst({
+      where: { docUploadID: BigInt(input.docUploadId), subscriberID: mapping.subscriberID },
+      select: { docUploadID: true },
+    });
+    if (!upload) throw new NotFoundException('Document not found');
+
     const statusId = input.status === 'Approved' ? 1 : 3; // 1=Verified, 3=NeedsCorrection
     await this.db.candidateDocumentStatus.create({
       data: {
@@ -2080,7 +2096,56 @@ export class EmployersService {
       data: { flgStatus: statusId, timestampUpd: new Date(), loginIDUpd: userId },
     });
 
+    await this.settleDocumentHandOff(jobSubscriberMapId, userId, input.status);
+
     return { ok: true };
+  }
+
+  /**
+   * Q3 forwards a selected candidate's verified documents to the company, and the offer
+   * unlocks once the company approves them. A correction sends the set back to Q3; approving
+   * the last outstanding document approves the set.
+   */
+  private async settleDocumentHandOff(jobSubscriberMapId: number, userId: number, status: 'Approved' | 'NeedsCorrection') {
+    const hiring = await this.db.applicationHiring.findUnique({
+      where: { jobSubscriberMapID: BigInt(jobSubscriberMapId) },
+    });
+    if (!hiring?.docsForwardedAt || hiring.docsApprovedAt) return;
+    const now = new Date();
+
+    if (status === 'NeedsCorrection') {
+      await this.db.applicationHiring.update({
+        where: { jobSubscriberMapID: hiring.jobSubscriberMapID },
+        data: { docsForwardedAt: null, timestampUpd: now },
+      });
+      return;
+    }
+
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: BigInt(jobSubscriberMapId) },
+      select: { subscriberID: true },
+    });
+    const uploads = await this.db.candidateDocumentUploaded.findMany({
+      where: { subscriberID: mapping?.subscriberID ?? -1, documentMap: { jobSubscriberMapID: BigInt(jobSubscriberMapId) } },
+      select: { docUploadID: true },
+    });
+    if (!uploads.length) return;
+    const approvals = await this.db.candidateDocumentStatus.findMany({
+      where: {
+        docUploadID: { in: uploads.map((u) => u.docUploadID) },
+        statusID: 1,
+        userID: BigInt(userId),
+        timestampIns: { gte: hiring.docsForwardedAt },
+      },
+      select: { docUploadID: true },
+    });
+    const approved = new Set(approvals.map((a) => String(a.docUploadID)));
+    if (uploads.every((u) => approved.has(String(u.docUploadID)))) {
+      await this.db.applicationHiring.update({
+        where: { jobSubscriberMapID: hiring.jobSubscriberMapID },
+        data: { docsApprovedAt: now, timestampUpd: now },
+      });
+    }
   }
 
   /** Public company page — no auth required. */

@@ -128,7 +128,7 @@ export class ExportsService {
   async exportUsers(filters: UserExportFilters = {}) {
     const where: Record<string, unknown> = {};
     if (filters.roleId) where.roleID = filters.roleId;
-    if (filters.isActive !== undefined) where.active = filters.isActive ? 'Y' : 'N';
+    if (filters.isActive !== undefined) where.active = filters.isActive ? '1' : '0'; // login accepts only '1'
 
     const dateFilter: Record<string, unknown> = {};
     if (filters.from) dateFilter.gte = new Date(filters.from);
@@ -161,7 +161,7 @@ export class ExportsService {
       userName: u.userName ?? '',
       email: u.userMail ?? '',
       roleId: u.roleID ?? 0,
-      active: u.active === 'Y' ? 'Yes' : 'No',
+      active: u.active === '1' ? 'Yes' : 'No',
     }));
   }
 

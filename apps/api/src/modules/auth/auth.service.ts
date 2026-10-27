@@ -217,7 +217,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
     if (payload.type !== 'refresh') throw new UnauthorizedException('Not a refresh token');
-    if (await this.isRevoked(payload.jti)) throw new UnauthorizedException('Refresh token revoked');
+    // Claim the session atomically. A separate "is it live?" read followed by a delete let
+    // concurrent requests with the same (possibly stolen) token each mint a new session.
+    const { count } = await this.db.secActiveSessions.deleteMany({ where: { sessionID: payload.jti } });
+    if (!count) throw new UnauthorizedException('Refresh token revoked');
 
     const user = await this.db.secUser.findFirst({
       where: { userID: payload.sub, active: '1' },
@@ -228,14 +231,20 @@ export class AuthService {
     // Rebuild the full user from the database. The old implementation rebuilt it from the
     // JWT payload, so fullName silently degraded to userName and email became '' after
     // every refresh.
+    // The role is re-read as login reads it, not carried over from the old token — otherwise
+    // a role change never reached a user who kept refreshing.
+    const mapping = await this.db.secMapUserRoles.findFirst({
+      where: { userID: user.userID },
+      select: { roleId: true },
+    });
+    const roleId = (mapping?.roleId ?? Role.Subscriber) as RoleId;
     const authUser: AuthUser = {
       userId: Number(user.userID),
       userName: user.userName ?? '',
-      ...(await this.identityFor(user, payload.roleId)),
-      roleId: payload.roleId,
+      ...(await this.identityFor(user, roleId)),
+      roleId,
     };
 
-    await this.revoke(payload.jti);
     const t = await this.issueTokens(authUser);
     return { user: authUser, accessToken: t.accessToken, refreshToken: t.refreshToken };
   }
@@ -594,7 +603,7 @@ export class AuthService {
   async forgotPassword(userName: string) {
     const user = await this.db.secUser.findFirst({
       where: { userName, active: '1' },
-      select: { userID: true, nodeID: true },
+      select: { userID: true, nodeID: true, subscriberID: true },
     });
 
     if (user) {
@@ -607,13 +616,21 @@ export class AuthService {
         },
       });
 
-      const person = user.nodeID
-        ? await this.db.mstrPerson.findUnique({
-            where: { personNodeID: user.nodeID },
+      // NodeID is polymorphic (see identityFor): for a candidate it is the SubscriberID, and
+      // those ids overlap PersonNodeIDs. Resolving it against tblMstrPerson mailed candidate
+      // reset links to whichever staff or employer shared the number.
+      const contact = user.subscriberID
+        ? await this.db.subscriberCVDetails.findUnique({
+            where: { subscriberID: user.subscriberID },
             select: { emailID: true },
           })
-        : null;
-      const email = person?.emailID;
+        : user.nodeID
+          ? await this.db.mstrPerson.findUnique({
+              where: { personNodeID: user.nodeID },
+              select: { emailID: true },
+            })
+          : null;
+      const email = contact?.emailID;
 
       if (email) {
         const resetUrl = `${env.APP_URL}/reset-password?token=${token}`;
@@ -776,10 +793,5 @@ export class AuthService {
    */
   private async revoke(jti: string) {
     await this.db.secActiveSessions.deleteMany({ where: { sessionID: jti } });
-  }
-
-  private async isRevoked(jti: string) {
-    const live = await this.db.secActiveSessions.findFirst({ where: { sessionID: jti } });
-    return !live;
   }
 }

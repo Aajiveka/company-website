@@ -16,6 +16,7 @@ import {
   SetJobStatusDto,
   UpdateBrandingDto,
   UpdateCompanyProfileDto,
+  ReviewApplicantDocumentDto,
   UpdateJobDto,
 } from './dto/employers.dto';
 
@@ -282,7 +283,7 @@ export class EmployersController {
   reviewApplicantDocument(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: RequestUser,
-    @Body() body: { docUploadId: number; status: 'Approved' | 'NeedsCorrection'; comments?: string },
+    @Body() body: ReviewApplicantDocumentDto,
   ) {
     return this.clients.reviewApplicantDocument(user.userId, id, body);
   }

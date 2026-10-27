@@ -51,7 +51,7 @@ export class NotificationsController {
 
     // Clean up when the client disconnects
     req.on('close', () => {
-      this.sse.removeClient(user.userId);
+      this.sse.removeClient(user.userId, res);
     });
   }
 

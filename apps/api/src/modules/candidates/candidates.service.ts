@@ -1247,6 +1247,13 @@ export class CandidatesService {
     if (!map) throw new BadRequestException('This document has not been requested');
 
     const stored = await this.storage.upload(documentTypeId, userId, file);
+    // Display only — Q3's Documents screen prints it under the document. The storage key is
+    // never derived from it, since the client's filename is attacker-controlled.
+    const fileName =
+      [...(file.originalname ?? '')]
+        .filter((ch) => ch !== '/' && ch !== '\\' && ch.charCodeAt(0) >= 0x20)
+        .join('')
+        .slice(0, 255) || null;
 
     const existing = await this.db.candidateDocumentUploaded.findFirst({
       where: { documentMapID: map.documentMapID },
@@ -1255,7 +1262,14 @@ export class CandidatesService {
     if (existing) {
       await this.db.candidateDocumentUploaded.update({
         where: { docUploadID: existing.docUploadID },
-        data: { documentPath: stored.key, flgStatus: 0, timestampUpd: now, loginIDUpd: userId },
+        data: {
+          documentPath: stored.key,
+          fileName,
+          sizeBytes: stored.size,
+          flgStatus: 0,
+          timestampUpd: now,
+          loginIDUpd: userId,
+        },
       });
     } else {
       await this.db.candidateDocumentUploaded.create({
@@ -1264,6 +1278,8 @@ export class CandidatesService {
           subscriberID: subscriberId,
           documentTypeID: documentTypeId,
           documentPath: stored.key,
+          fileName,
+          sizeBytes: stored.size,
           flgStatus: 0,
           timestampIns: now,
           loginIDIns: userId,

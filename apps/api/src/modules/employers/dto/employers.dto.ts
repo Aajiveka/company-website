@@ -466,3 +466,12 @@ export class ApplicantNoteDto {
   @IsString()
   note!: string;
 }
+
+/** Company review of one applicant document. Was an inline type, so nothing validated it. */
+export class ReviewApplicantDocumentDto {
+  @ApiProperty() @Type(() => Number) @IsInt() @Min(1) docUploadId!: number;
+  @ApiProperty({ enum: ['Approved', 'NeedsCorrection'] })
+  @IsIn(['Approved', 'NeedsCorrection'])
+  status!: 'Approved' | 'NeedsCorrection';
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) comments?: string;
+}

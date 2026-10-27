@@ -30,3 +30,15 @@ const HERO_ROUTES = new Set([
 export function hasHeroBehindHeader(pathname: string): boolean {
   return HERO_ROUTES.has(pathname.replace(/\/+$/, '') || '/');
 }
+
+/**
+ * Heroes that sit behind the header but are pale — the testimonial banner is #D6DFE4. They still
+ * reserve the header height (above), but a transparent header's white controls vanish on them,
+ * so the header starts solid there.
+ */
+const PALE_HERO_ROUTES = new Set(['/testimonial']);
+
+/** Whether the header may start transparent: only over a dark hero. */
+export function headerStartsTransparent(pathname: string): boolean {
+  return hasHeroBehindHeader(pathname) && !PALE_HERO_ROUTES.has(pathname.replace(/\/+$/, '') || '/');
+}

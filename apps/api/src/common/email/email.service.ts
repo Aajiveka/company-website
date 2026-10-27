@@ -13,6 +13,7 @@ import {
   type InterviewScheduledEmailData,
 } from './templates/interview-scheduled.template';
 import { paymentReceiptTemplate, type PaymentReceiptEmailData } from './templates/payment-receipt.template';
+import { q3NoticeTemplate, type Q3NoticeEmailData } from './templates/q3-notice.template';
 
 /**
  * High-level email service that pairs HTML templates with the queue-based
@@ -83,6 +84,14 @@ export class EmailService {
       `Interview Scheduled: ${data.jobTitle} at ${data.companyName}`,
       interviewScheduledTemplate(data),
     );
+  }
+
+  /**
+   * Every Q3 hiring-ops mail — interview invites, round results, document requests, status
+   * mails to Q2, nudges to a company. Values are escaped by the template.
+   */
+  async sendQ3Notice(to: string, subject: string, data: Q3NoticeEmailData): Promise<void> {
+    await this.sendMail(to, subject, q3NoticeTemplate(data));
   }
 
   /** Payment confirmation receipt. */

@@ -39,6 +39,7 @@ services:
       CORS_ORIGIN: ${APP_URL:-http://localhost:8080}
       APP_URL: ${APP_URL:-http://localhost:8080}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      THROTTLE_LIMIT_PER_MIN: ${THROTTLE_LIMIT_PER_MIN:-60}
       STORAGE_LOCAL_ROOT: /repo/storage
       S3_BUCKET: ${S3_BUCKET:-}
       AWS_REGION: ${AWS_REGION:-ap-south-1}

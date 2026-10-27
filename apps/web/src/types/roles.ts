@@ -33,5 +33,5 @@ export const ROLE_HOME: Record<RoleId, string> = {
   [Role.Client]: '/company',
   [Role.Admin]: '/admin',
   [Role.Subscription]: '/pricing',
-  [Role.Q3]: '/recruitment/q3',
+  [Role.Q3]: '/q3/dashboard',
 };
