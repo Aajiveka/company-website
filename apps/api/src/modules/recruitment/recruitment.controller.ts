@@ -14,7 +14,9 @@ import {
   ApproveRejectCandidateDto,
   AssignDocumentsDto,
   AssignJobDto,
+  AddSlotsDto,
   CandidatesQueryDto,
+  CompanyReviewReferralDto,
   CreateInterviewRoundDto,
   CreateOfferDto,
   ForwardToCompanyDto,
@@ -232,6 +234,18 @@ export class RecruitmentController {
     return this.referrals.forwardToCompany(dto.referralIds, user.userId);
   }
 
+  @Post('referrals/:id/company-review')
+  @Roles(Role.Client, Role.Admin)
+  @ApiOperation({ summary: 'Company shortlists (with slots) or rejects a forwarded CV' })
+  async companyReview(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CompanyReviewReferralDto,
+  ) {
+    const clientId = await this.recruitment.clientIdForUser(user.userId);
+    return this.referrals.companyReview(id, user.userId, Number(clientId), dto);
+  }
+
   // ── Multi-round interview management ──────────────────────────────────
 
   @Post('interview-rounds')
@@ -239,7 +253,12 @@ export class RecruitmentController {
   @ApiOperation({ summary: 'Create an interview round with optional slot offers' })
   async createRound(@CurrentUser() user: RequestUser, @Body() dto: CreateInterviewRoundDto) {
     await this.access.assertMapping(dto.jobSubscriberMapId, user);
-    return this.rounds.createRound({ ...dto, userId: user.userId });
+    const created = await this.rounds.createRound({ ...dto, userId: user.userId });
+    // A company (or Q3 for it) booking a round has shortlisted the CV — stop its review clock.
+    // Here, not in InterviewRoundService: CvReferralService depends on that service, so the
+    // reverse dependency would be a cycle Nest cannot construct.
+    await this.referrals.markShortlisted(dto.jobSubscriberMapId);
+    return created;
   }
 
   @Get('interview-rounds/:mapId')
@@ -248,6 +267,20 @@ export class RecruitmentController {
   async listRounds(@Param('mapId', ParseIntPipe) mapId: number, @CurrentUser() user: RequestUser) {
     await this.access.assertMapping(mapId, user);
     return this.rounds.listRounds(mapId);
+  }
+
+  @Post('interview-rounds/:roundId/slots')
+  @Roles(Role.Q3, Role.Client, Role.Admin)
+  @ApiOperation({ summary: 'Add/replace offered slots for a round' })
+  async addSlots(
+    @Param('roundId', ParseIntPipe) roundId: number,
+    @CurrentUser() user: RequestUser,
+    @Body() dto: AddSlotsDto,
+  ) {
+    // Client is allowed in, so the round must belong to the caller's company — the same check
+    // every other per-round route makes.
+    await this.access.assertRound(roundId, user);
+    return this.rounds.addSlots(roundId, dto.slots, user.userId);
   }
 
   @Post('interview-rounds/:roundId/select-slot')
@@ -271,7 +304,7 @@ export class RecruitmentController {
     @Body() dto: SubmitRoundResultDto,
   ) {
     await this.access.assertRound(roundId, user);
-    return this.rounds.submitResult(roundId, dto.result, user.userId, dto.feedback);
+    return this.rounds.submitResult(roundId, dto.result, user.userId, dto.feedback, dto.next);
   }
 
   // ── Offer letter management ─────────────────────────────────────────
@@ -302,6 +335,14 @@ export class RecruitmentController {
   ) {
     await this.access.assertOffer(id, user);
     return this.offers.respondToOffer(id, dto.accept, user.userId);
+  }
+
+  @Post('offers/:id/mark-joined')
+  @Roles(Role.Q3, Role.Client, Role.Admin)
+  @ApiOperation({ summary: 'Mark candidate as joined after offer acceptance' })
+  async markJoined(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: RequestUser) {
+    await this.access.assertOffer(id, user);
+    return this.offers.markJoined(id, user.userId);
   }
 
   @Get('offers/:mapId')

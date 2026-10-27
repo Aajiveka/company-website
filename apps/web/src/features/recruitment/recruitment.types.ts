@@ -97,9 +97,13 @@ export interface ReferralRow {
 /** An interview round with its offered slots. */
 export interface InterviewRoundRow {
   roundId: number;
+  jobSubscriberMapId?: number;
   roundNumber: number;
   roundName: string | null;
   interviewerName: string | null;
+  interviewerEmail?: string | null;
+  hrName?: string | null;
+  hrEmail?: string | null;
   interviewModeId: number | null;
   meetingLink: string | null;
   scheduledAt: string | null;

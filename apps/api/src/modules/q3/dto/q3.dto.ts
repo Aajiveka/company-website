@@ -242,7 +242,7 @@ export class ChecklistDto {
   done!: boolean;
 }
 
-export class DecisionDto {
+export class Q3RoundDecisionDto {
   @ApiProperty({ enum: Object.values(RoundDecision) })
   @IsIn(Object.values(RoundDecision))
   decision!: RoundDecisionValue;

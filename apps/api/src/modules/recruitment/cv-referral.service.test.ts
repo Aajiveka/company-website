@@ -18,7 +18,7 @@ describe('CvReferralService.expireStale', () => {
         updateMany: async (args: any) => { wheres.push(args.where); return { count: 0 }; },
       },
     };
-    const svc = new CvReferralService({ client: db } as any, {} as any, {} as any, {} as any);
+    const svc = new CvReferralService({ client: db } as any, {} as any, {} as any, {} as any, {} as any);
     const out = await svc.expireStale(new Date('2026-10-18T00:00:00Z'));
     assert.deepEqual(out, { expired: 0 });
     assert.equal(wheres[0].companyReviewStatus, 'Pending');

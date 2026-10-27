@@ -22,14 +22,7 @@ import {
 import { getErrorMessage } from '@/lib/axios';
 import { cn } from '@/lib/cn';
 
-const FUNNEL_COLORS = [
-  'bg-slate-500',
-  'bg-[#1A56DB]',
-  'bg-sky-500',
-  'bg-amber-500',
-  'bg-emerald-500',
-  'bg-rose-500',
-];
+const FUNNEL_COLORS = ['bg-slate-500', 'bg-[#1A56DB]', 'bg-amber-500', 'bg-emerald-500', 'bg-rose-500'];
 
 export function AnalyticsPage() {
   const { data, isLoading, isError, error, isFetching } = useCompanyAnalytics();
@@ -39,15 +32,25 @@ export function AnalyticsPage() {
   const rates = data?.rates;
   const funnel = useMemo(
     () => [
-      { label: 'Applied', value: data?.totalApplications ?? 0 },
-      { label: 'New / Mapped', value: data?.mapped ?? 0 },
-      { label: 'Shortlisted', value: data?.shortlisted ?? 0 },
-      { label: 'Interview', value: data?.interviewScheduled ?? 0 },
-      { label: 'Hired', value: data?.selected ?? 0 },
+      { label: 'Applied', value: data?.funnel?.applied ?? 0 },
+      { label: 'Passed screening', value: data?.funnel?.passedScreening ?? 0 },
+      { label: 'Interviewed', value: data?.funnel?.interviewed ?? 0 },
+      { label: 'Hired', value: data?.funnel?.hired ?? 0 },
       { label: 'Rejected', value: data?.rejected ?? 0 },
     ],
     [data],
   );
+  const currentStages = [
+    { label: 'New', value: data?.mapped ?? 0 },
+    { label: 'Awaiting review', value: data?.inReview ?? 0 },
+    { label: 'Shortlisted', value: data?.shortlisted ?? 0 },
+    { label: 'In interview', value: data?.interviewScheduled ?? 0 },
+    { label: 'On hold', value: data?.onHold ?? 0 },
+    { label: 'Hired', value: data?.selected ?? 0 },
+    { label: 'Rejected at screening', value: data?.rejectedAtScreening ?? 0 },
+    { label: 'Rejected after interview', value: data?.rejectedAfterInterview ?? 0 },
+    { label: 'Expired / withdrawn', value: data?.closedOther ?? 0 },
+  ];
   const funnelMax = Math.max(...funnel.map((f) => f.value), 1);
   const applied = funnel[0]?.value || 1;
 
@@ -136,7 +139,7 @@ export function AnalyticsPage() {
         <StatCard
           label="Shortlist rate"
           value={isLoading ? '…' : `${rates?.shortlistRate ?? 0}%`}
-          delta={data ? `${data.shortlisted} shortlisted` : undefined}
+          delta={data ? `${data.funnel.passedScreening} passed screening` : undefined}
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <StatCard
@@ -151,12 +154,16 @@ export function AnalyticsPage() {
         <StatCard
           label="Interview rate"
           value={isLoading ? '…' : `${rates?.interviewRate ?? 0}%`}
-          delta={data ? `${data.interviewScheduled} in interview` : undefined}
+          delta={data ? `${data.funnel.interviewed} interviewed · ${data.interviewScheduled} in progress` : undefined}
         />
         <StatCard
           label="Reject rate"
           value={isLoading ? '…' : `${rates?.rejectRate ?? 0}%`}
-          delta={data ? `${data.rejected} rejected` : undefined}
+          delta={
+            data
+              ? `${data.rejectedAtScreening} at screening · ${data.rejectedAfterInterview} after interview`
+              : undefined
+          }
           icon={<XCircle className="h-4 w-4" />}
         />
         <StatCard
@@ -187,7 +194,7 @@ export function AnalyticsPage() {
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-xs font-semibold text-slate-800">Hiring funnel</h3>
             <span className="text-[11px] text-slate-400">
-              {isFetching && !isLoading ? 'Updating…' : 'Live snapshot'}
+              {isFetching && !isLoading ? 'Updating…' : 'How far applications got'}
             </span>
           </div>
           <div className="space-y-2">
@@ -234,19 +241,14 @@ export function AnalyticsPage() {
             ))}
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 px-2.5 py-2 text-center">
-            <div>
-              <p className="text-sm font-semibold tabular-nums text-slate-900">{data?.shortlisted ?? 0}</p>
-              <p className="text-[10px] text-slate-500">Shortlisted</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold tabular-nums text-slate-900">{data?.interviewScheduled ?? 0}</p>
-              <p className="text-[10px] text-slate-500">Interview</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold tabular-nums text-slate-900">{data?.selected ?? 0}</p>
-              <p className="text-[10px] text-slate-500">Hired</p>
-            </div>
+          <h3 className="mb-1.5 mt-4 text-xs font-semibold text-slate-800">Applications by current stage</h3>
+          <div className="grid grid-cols-3 gap-2 rounded-lg bg-slate-50 px-2.5 py-2 text-center">
+            {currentStages.map((s) => (
+              <div key={s.label}>
+                <p className="text-sm font-semibold tabular-nums text-slate-900">{s.value}</p>
+                <p className="text-[10px] text-slate-500">{s.label}</p>
+              </div>
+            ))}
           </div>
         </section>
       </div>
@@ -255,7 +257,7 @@ export function AnalyticsPage() {
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
           <h3 className="text-xs font-semibold text-slate-800">Job performance</h3>
           <p className="text-[11px] text-slate-400">
-            Conversion % of applications per role — included in CSV exports
+            How far each role&apos;s applications got — included in CSV exports
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -266,8 +268,8 @@ export function AnalyticsPage() {
                 <th className="px-3 py-2">City</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Apps</th>
-                <th className="px-3 py-2">Shortlisted</th>
-                <th className="px-3 py-2">Interview</th>
+                <th className="px-3 py-2">Screened in</th>
+                <th className="px-3 py-2">Interviewed</th>
                 <th className="px-3 py-2">Hired</th>
                 <th className="px-3 py-2">Rejected</th>
                 <th className="px-3 py-2">Shortlist %</th>
@@ -302,9 +304,9 @@ export function AnalyticsPage() {
       </section>
 
       <p className="mt-3 text-[11px] text-slate-400">
-        <strong className="font-medium text-slate-500">Full audit CSV</strong> includes summary metrics, monthly
-        applications, job performance, and every applicant row (contact, status, job) for compliance / leadership
-        reviews.
+        <strong className="font-medium text-slate-500">Full audit CSV</strong> includes summary metrics, the funnel,
+        monthly applications, job performance, and every applicant row (contact, status, interview stage, job) for
+        compliance / leadership reviews.
       </p>
     </div>
   );

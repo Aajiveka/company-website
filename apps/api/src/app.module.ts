@@ -65,6 +65,7 @@ import { SiteDocumentsModule } from '@/modules/site-documents/site-documents.mod
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+    // Named wildcard: Nest 11's router rejects a bare '*' and only converts it with a warning.
+    consumer.apply(RequestLoggerMiddleware).forRoutes('{*splat}');
   }
 }

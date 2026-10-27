@@ -27,7 +27,7 @@ import {
   ChecklistDto,
   ConfirmSlotDto,
   ContactDto,
-  DecisionDto,
+  Q3RoundDecisionDto,
   DocumentRequestDto,
   ForwardDto,
   InterviewsQueryDto,
@@ -269,7 +269,7 @@ export class Q3Controller {
   @ApiOperation({ summary: 'Record the company decision for a round' })
   decide(
     @Param('roundId', ParseIntPipe) roundId: number,
-    @Body() dto: DecisionDto,
+    @Body() dto: Q3RoundDecisionDto,
     @CurrentUser() user: RequestUser,
   ) {
     return this.interviews.decide(roundId, dto, user.userId);

@@ -43,7 +43,7 @@ import {
   type RoundRow,
 } from './q3-read.service';
 import { firstName, mailDate, mailDateTime, mailTime, maskEmail } from './q3-mail';
-import type { ChecklistDto, ConfirmSlotDto, ContactDto, DecisionDto } from './dto/q3.dto';
+import type { ChecklistDto, ConfirmSlotDto, ContactDto, Q3RoundDecisionDto } from './dto/q3.dto';
 
 /** JobMapStatus for "this round is on" — what the rest of the app shows as the stage. */
 function interviewStatusFor(r: { roundNumber: number; isFinal: boolean }) {
@@ -577,7 +577,7 @@ export class Q3InterviewsService {
   }
 
   /** "Save decision & send mail". */
-  async decide(roundId: number, dto: DecisionDto, userId: number) {
+  async decide(roundId: number, dto: Q3RoundDecisionDto, userId: number) {
     const { app, round } = await this.roundOrThrow(roundId);
     const latest = latestRound(app)!;
     if (latest.id !== round.id) throw new ConflictException('A later round already exists');

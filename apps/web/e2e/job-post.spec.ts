@@ -120,8 +120,9 @@ test.describe('Job Posting Flow', () => {
     await pickSearchable(page, /industry type/i, 'Technology');
     await pickSearchable(page, /location/i, 'Mumbai');
     await page.locator('[data-field="minExp"] input').fill('2');
-    await page.getByPlaceholder('e.g. 600000').fill('500000');
-    await page.getByPlaceholder('e.g. 1200000').fill('1200000');
+    // CTC is entered in lakhs; the form sends rupees.
+    await page.getByPlaceholder('e.g. 6', { exact: true }).fill('5');
+    await page.getByPlaceholder('e.g. 12', { exact: true }).fill('12');
     await page.locator('[data-field="educationDetail"] input').fill('B.Tech in Computer Science');
     await page.locator('[data-field="department"] input').fill('Engineering');
     await page.getByLabel(/^skills$/i).click();
