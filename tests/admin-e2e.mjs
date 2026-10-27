@@ -168,6 +168,13 @@ check('dashboard loads with no console/API errors', !dashProblems.length, dashPr
 
 const firstJob = (await api('/admin/jobs?status=Active&pageSize=1', { token: T })).data.items[0];
 const firstApp = (await api('/admin/applications?pageSize=1', { token: T })).data.items[0];
+// A freshly seeded database (CI) has the demo job but no applications; the application
+// detail page is then skipped rather than crashing the run.
+const appDetail = firstApp ? [`/admin/applications/${firstApp.mapId}`] : [];
+if (!firstJob) {
+  console.error('No Active job to moderate — seed the demo job (npm run db:seed) first.');
+  process.exit(2);
+}
 const pages = [
   '/admin/users',
   '/admin/users/1',
@@ -176,7 +183,7 @@ const pages = [
   '/admin/jobs',
   `/admin/jobs/${firstJob.jobId}`,
   '/admin/applications',
-  `/admin/applications/${firstApp.mapId}`,
+  ...appDetail,
   '/admin/blog',
   '/admin/settings',
   '/admin/reports',
@@ -288,7 +295,7 @@ let staffId;
   check('the account history records creation and deactivation',
     deact.history.some((h) => h.action === 'admin.user_created') && deact.history.some((h) => h.action === 'admin.user_updated'));
 
-  await go(page, `${BASE}/admin/users/5`);
+  await go(page, `${BASE}/admin/users/${adminLogin.data.user.userId}`);
   check('an admin cannot deactivate their own account (button disabled)', await page.getByRole('button', { name: 'Deactivate account' }).isDisabled());
   // The one expected failure is the 409 for the taken username.
   const sp = w.take().filter((p) => !p.startsWith('[api 409]'));
@@ -343,7 +350,7 @@ let staffId;
 /* ─── 8. Responsive: no sideways scroll, nav reachable, at 8 widths ─── */
 
 const VIEWPORTS = [320, 375, 390, 430, 768, 1024, 1280, 1440];
-const RESPONSIVE_PAGES = ['/admin', '/admin/users', '/admin/jobs', '/admin/applications', `/admin/applications/${firstApp.mapId}`, '/admin/users/1', '/admin/audit', '/admin/employer-approvals'];
+const RESPONSIVE_PAGES = ['/admin', '/admin/users', '/admin/jobs', '/admin/applications', ...appDetail, '/admin/users/1', '/admin/audit', '/admin/employer-approvals'];
 {
   // Same signed-in context as above: a fresh login would spend the 5/min login allowance.
   const rpage = await ctx.newPage();

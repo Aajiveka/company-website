@@ -148,6 +148,12 @@ jobs:
       - name: Run e2e
         run: node tests/e2e.mjs
 
+      # The admin panel's workflows (job close/reopen, staff onboarding, employer approval,
+      # audit trail) at eight widths, against the same API. Login is limited to 5/min and the
+      # crawler above has just signed in six roles, so wait out the window first.
+      - name: Run admin panel e2e
+        run: sleep 60 && node tests/admin-e2e.mjs
+
   docker:
     name: docker images build
     runs-on: ubuntu-latest
