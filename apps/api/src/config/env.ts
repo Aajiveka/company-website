@@ -22,7 +22,13 @@ const schema = z.object({
   // address and needs more headroom than a person does.
   THROTTLE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(60),
 
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // Required everywhere a database is used. Unit tests (NODE_ENV=test, set by `npm test`) mock
+  // Prisma and never connect, but importing a service still loads this module — without a
+  // placeholder, CI's unit-test job (which has no database) failed whole test files on load.
+  DATABASE_URL:
+    process.env.NODE_ENV === 'test'
+      ? z.string().min(1).default('postgresql://unit-tests-do-not-connect@localhost:1/none')
+      : z.string().min(1, 'DATABASE_URL is required'),
   REDIS_URL: z.string().default('redis://localhost:16379'),
 
   /** Where password-reset links point. */
