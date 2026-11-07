@@ -19,10 +19,12 @@ const cv = {
     mobile: '7654893567',
     address: 'Chandigarh',
     cityId: 1,
-    dob: '',
+    dob: '1998-08-15',
     gender: 'F',
   },
-  professional: { tagNames: ['React', 'Node.js'] },
+  professional: { tagNames: ['React', 'Node.js'], totalExp: 5, totalExpMonths: 2, subFunctionId: 7, noticePeriod: 30 },
+  careerProfile: { preferredCityIds: [1], preferredWorkModes: ['Hybrid'], desiredJobType: ['Permanent'] },
+  personalDetails: { maritalStatus: 'Single / unmarried', workPermitCountries: [] },
   headline: 'Full-stack engineer',
   summary: 'Builds hiring products.',
   employment: [
@@ -32,7 +34,7 @@ const cv = {
     { subscriberEducationId: 1, degreeId: 1, courseTypeId: null, instituteName: 'Panjab University', startYear: 2014, passingYear: 2018, specialization: '', marks: '' },
   ],
   projects: [
-    { subscriberProjectId: 1, title: 'HRMS Portal', clientName: 'Acme', projectStatus: 'Completed', workedFromYear: 2022, workedTillYear: 2023, projectSite: 'Onsite', natureOfEmployment: 'Full Time', teamSize: 4, roleDescr: '', skillsUsed: ['reactjs'], details: 'Payroll module.' },
+    { subscriberProjectId: 1, title: 'HRMS Portal', clientName: 'Acme', projectStatus: 'Finished', workedFromMonth: 3, workedFromYear: 2022, workedTillMonth: 11, workedTillYear: 2023, projectSite: 'Onsite', natureOfEmployment: 'Full Time', teamSize: 4, roleDescr: '', skillsUsed: ['reactjs'], details: 'Payroll module.' },
   ],
   itSkills: [{ subscriberItSkillId: 1, skillName: 'PostgreSQL', version: '16', lastUsedYear: 2026, expYears: 3, expMonths: 6 }],
   certificates: [
@@ -47,7 +49,15 @@ const cv = {
 
 vi.mock('../../../candidate.api', () => ({
   useCvEditProfile: () => ({ data: cv, isLoading: false }),
-  useCvMasters: () => ({ data: { designations: [{ id: 1, label: 'Engineer' }], degrees: [{ id: 1, label: 'B.Tech' }], courses: [], cities: [{ id: 1, label: 'Chandigarh' }] } }),
+  useCvMasters: () => ({
+    data: {
+      designations: [{ id: 1, label: 'Engineer' }],
+      degrees: [{ id: 1, label: 'B.Tech' }],
+      courses: [],
+      cities: [{ id: 1, label: 'Chandigarh' }],
+      subFunctions: [{ id: 7, label: 'Software Development' }],
+    },
+  }),
   useUpsertCertificate: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteCertificate: () => ({ mutate: vi.fn(), isPending: false }),
 }));
@@ -61,7 +71,7 @@ const { default: ResumeBuilderPage } = await import('../ResumeBuilderPage');
 
 /** The off-screen node Download rasterises. */
 const exportSheet = () => {
-  const node = document.querySelector('[aria-hidden="true"] .bg-white');
+  const node = document.querySelector('[data-export-sheet] [data-resume-sheet]');
   if (!node) throw new Error('export sheet not rendered');
   return node as HTMLElement;
 };
@@ -94,10 +104,10 @@ describe('ResumeBuilderPage export sheet', () => {
     const sheet = exportSheet();
 
     expect(sheet).toHaveTextContent('Chandigarh');
-    expect(sheet).toHaveTextContent('https://linkedin.com/in/swati');
+    expect(sheet).toHaveTextContent('linkedin.com/in/swati');
     expect(sheet).toHaveTextContent('AWS-12345');
     expect(sheet).toHaveTextContent('Payroll module.');
-    expect(sheet).toHaveTextContent('Hindi — Expert');
+    expect(sheet).toHaveTextContent(/Hindi\W+Expert/);
     expect(sheet).toHaveTextContent('3 yrs 6 mos');
   });
 
@@ -110,5 +120,36 @@ describe('ResumeBuilderPage export sheet', () => {
     expect(sheet).toHaveTextContent('Swati Kumari');
     expect(sheet).toHaveTextContent('Infosys');
     expect(sheet).toHaveTextContent('HRMS Portal');
+  });
+
+  it('prints what the candidate filled in beyond the core sections', () => {
+    renderPage();
+    const sheet = exportSheet();
+
+    expect(sheet).toHaveTextContent('15 Aug 1998');
+    expect(sheet).toHaveTextContent('Single / unmarried');
+    expect(sheet).toHaveTextContent('5 yrs 2 mos');
+    expect(sheet).toHaveTextContent('Software Development');
+    expect(sheet).toHaveTextContent('30 days');
+    expect(sheet).toHaveTextContent('Hybrid');
+    // Month precision on projects, not just the years.
+    expect(sheet).toHaveTextContent('Mar 2022 – Nov 2023');
+  });
+});
+
+describe('ResumeBuilderPage templates', () => {
+  it('offers eleven templates', () => {
+    renderPage();
+    expect(screen.getAllByRole('button', { name: / template$/ })).toHaveLength(11);
+  });
+
+  it('exports in the template that was picked', async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Modern Sidebar template' }));
+
+    expect(screen.getByRole('button', { name: 'Modern Sidebar template' })).toHaveAttribute('aria-pressed', 'true');
+    // The sidebar layout is the only one that prints a "Contact" section.
+    expect(exportSheet()).toHaveTextContent('Contact');
+    expect(exportSheet()).toHaveTextContent('Infosys');
   });
 });

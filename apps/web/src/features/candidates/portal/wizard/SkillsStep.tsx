@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Trash2 } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   useDeleteItSkill,
   useDeleteLanguage,
   useUpdateKeySkills,
   useUpsertItSkill,
   useUpsertLanguage,
+  useSuggestions,
 } from '../../candidate.api';
 import type { CvEditProfile, LanguageProficiency } from '../../candidate.types';
+import { Combobox } from '../components/Combobox';
 import { Btn, Chip, Field, Input, Select } from '../components/primitives';
 import { AddAnother, DraftHeader, StepShell, type StepProps } from './StepShell';
+import { saveErrorMessage } from '../saveError';
 
 const PROFICIENCIES: { id: LanguageProficiency; label: string }[] = [
   { id: 1, label: 'Beginner' },
@@ -36,6 +40,8 @@ const IT_SKILL_YEARS = Array.from({ length: 31 }, (_, i) => CURRENT_YEAR - i);
 
 const emptyItSkillDraft = (): ItSkillDraft => ({ name: '', version: '', lastUsedYear: String(CURRENT_YEAR) });
 
+const asOption = (label: string) => ({ id: label, label });
+
 /** Step 5 — Skills & languages (Figma 7:4501). */
 export function SkillsStep({
   cv,
@@ -59,8 +65,22 @@ export function SkillsStep({
   const saveItSkill = useUpsertItSkill();
   const removeItSkill = useDeleteItSkill();
 
-  const addSkill = () => {
-    const value = entry.trim();
+  // Suggestions are what other candidates have saved, so a skill one of them added is offered here.
+  const skillQuery = useDebounce(entry.trim(), 250);
+  const skillSuggestions = useSuggestions('keySkill', skillQuery);
+  const itQuery = useDebounce(itDraft?.name.trim() ?? '', 250);
+  const itSuggestions = useSuggestions('itSkill', itQuery, !!itDraft);
+  const langQuery = useDebounce(langDraft?.name.trim() ?? '', 250);
+  const langSuggestions = useSuggestions('language', langQuery, !!langDraft);
+
+  // A skill already on the list is not worth suggesting again.
+  const skillOptions = useMemo(() => {
+    const have = new Set(skills.map((s) => s.toLowerCase()));
+    return (skillSuggestions.data ?? []).filter((s) => !have.has(s.toLowerCase())).map(asOption);
+  }, [skillSuggestions.data, skills]);
+
+  const addSkill = (raw: string = entry) => {
+    const value = raw.replace(/\s+/g, ' ').trim();
     if (!value) return;
     if (skills.some((s) => s.toLowerCase() === value.toLowerCase())) {
       setEntry('');
@@ -80,8 +100,8 @@ export function SkillsStep({
         proficiencyId: (Number(langDraft?.proficiencyId) || 2) as LanguageProficiency,
       });
       return true;
-    } catch {
-      setError('Could not save this language. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err, 'this language'));
       return false;
     }
   };
@@ -103,8 +123,8 @@ export function SkillsStep({
         lastUsedYear: Number(itDraft?.lastUsedYear) || undefined,
       });
       return true;
-    } catch {
-      setError('Could not save this IT skill. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err, 'this IT skill', { skillName: 'IT skill name' }));
       return false;
     }
   };
@@ -128,8 +148,8 @@ export function SkillsStep({
         finalSkills.length !== (cv.professional?.tagNames.length ?? 0) ||
         finalSkills.some((s, i) => s !== cv.professional?.tagNames[i]);
       if (changed) await saveSkills.mutateAsync({ tagNames: finalSkills });
-    } catch {
-      setError('Could not save your skills. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err, 'your skills'));
       return;
     }
 
@@ -153,20 +173,19 @@ export function SkillsStep({
     >
       <Field label="Skills" htmlFor="skill">
         <div className="flex gap-2">
-          <Input
-            id="skill"
-            value={entry}
-            placeholder="Type a skill and press Enter"
-            onChange={(e) => setEntry(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                // Enter inside the wizard form would otherwise submit the step.
-                e.preventDefault();
-                addSkill();
-              }
-            }}
-          />
-          <Btn variant="secondary" onClick={addSkill} disabled={!entry.trim()}>
+          {/* Enter adds the typed skill rather than submitting the step — Combobox's onSelect. */}
+          <div className="min-w-0 flex-1">
+            <Combobox
+              id="skill"
+              value={entry}
+              placeholder="Type a skill and press Enter"
+              onChange={setEntry}
+              options={skillOptions}
+              loading={skillSuggestions.isFetching}
+              onSelect={(label) => addSkill(label)}
+            />
+          </div>
+          <Btn variant="secondary" onClick={() => addSkill()} disabled={!entry.trim()}>
             Add
           </Btn>
         </div>
@@ -227,11 +246,13 @@ export function SkillsStep({
 
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Skill" htmlFor="itName">
-                <Input
+                <Combobox
                   id="itName"
                   placeholder="e.g. PostgreSQL"
                   value={itDraft.name}
-                  onChange={(e) => setItDraft({ ...itDraft, name: e.target.value })}
+                  onChange={(name) => setItDraft({ ...itDraft, name })}
+                  options={(itSuggestions.data ?? []).map(asOption)}
+                  loading={itSuggestions.isFetching}
                 />
               </Field>
               <Field label="Version" htmlFor="itVersion">
@@ -312,11 +333,13 @@ export function SkillsStep({
 
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Language" htmlFor="langName">
-                <Input
+                <Combobox
                   id="langName"
                   placeholder="e.g. Hindi"
                   value={langDraft.name}
-                  onChange={(e) => setLangDraft({ ...langDraft, name: e.target.value })}
+                  onChange={(name) => setLangDraft({ ...langDraft, name })}
+                  options={(langSuggestions.data ?? []).map(asOption)}
+                  loading={langSuggestions.isFetching}
                 />
               </Field>
               <Field label="Proficiency" htmlFor="langProf">

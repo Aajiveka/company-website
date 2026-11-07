@@ -68,6 +68,42 @@ export function educationTitle(
   return labelOf(degrees, entry.degreeId) ?? labelOf(courses, entry.courseTypeId) ?? 'Qualification';
 }
 
+/** How a qualification was graded. The column is free text, so the scale is stored with it. */
+export type MarksScale = 'percent' | 'cgpa10' | 'cgpa4';
+
+const PLAIN_NUMBER = /^\d+(\.\d+)?$/;
+
+/**
+ * Splits a stored score ("80%", "8.5/10", "8.5 CGPA", "3.6/4") into its number and scale. A
+ * bare number is a percentage — that is what the field asked for before it had a scale. Any
+ * other shape comes back as typed under `percent`, so editing it never loses what was there.
+ */
+export function parseMarks(raw: string | null | undefined): { scale: MarksScale; value: string } {
+  const marks = raw?.trim() ?? '';
+  const percent = /^(\d+(?:\.\d+)?)\s*%?$/.exec(marks);
+  if (percent) return { scale: 'percent', value: percent[1]! };
+  const outOf4 = /^(\d+(?:\.\d+)?)\s*\/\s*4$/.exec(marks);
+  if (outOf4) return { scale: 'cgpa4', value: outOf4[1]! };
+  const outOf10 = /^(\d+(?:\.\d+)?)\s*(?:c?gpa|\/\s*10)$/i.exec(marks);
+  if (outOf10) return { scale: 'cgpa10', value: outOf10[1]! };
+  return { scale: 'percent', value: marks };
+}
+
+/** The stored form of a score: "80%", "8.5/10", "3.6/4". Anything not a number is kept as typed. */
+export function composeMarks(scale: MarksScale, value: string): string {
+  const v = value.trim();
+  if (!PLAIN_NUMBER.test(v)) return v;
+  return scale === 'cgpa10' ? `${v}/10` : scale === 'cgpa4' ? `${v}/4` : `${v}%`;
+}
+
+/** A score as printed: "Percentage: 80%", "CGPA: 8.5/10" — never a bare number nobody can read. */
+export function formatMarks(raw: string | null | undefined): string {
+  const { scale, value } = parseMarks(raw);
+  if (!value) return '';
+  if (!PLAIN_NUMBER.test(value)) return `Score: ${value}`;
+  return scale === 'percent' ? `Percentage: ${value}%` : `CGPA: ${composeMarks(scale, value)}`;
+}
+
 /** Joins the non-empty parts with a middle dot, the separator the design uses throughout. */
 export function dotted(...parts: (string | null | undefined)[]): string {
   return parts.filter(Boolean).join(' · ');

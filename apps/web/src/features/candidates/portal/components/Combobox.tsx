@@ -1,9 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Input } from './primitives';
 
 export interface ComboboxOption {
-  id: number;
+  id: number | string;
   label: string;
   /** Secondary line — the institution's city, so two similarly named colleges are tellable apart. */
   hint?: string | null;
@@ -21,6 +22,9 @@ export interface ComboboxOption {
  * every other text field on the step; only the dropdown is added. `components/ui/Autocomplete`
  * was not reused because it is skinned for the teal public site and renders its own bare
  * `<input>`, which would not match the wizard's field height, radius or border.
+ *
+ * Typed text that matches no suggestion gets an "Add “…”" row, so it is plain that a new
+ * value is accepted — the API files it where the next candidate will be offered it.
  */
 export function Combobox({
   id,
@@ -30,7 +34,7 @@ export function Combobox({
   placeholder,
   invalid,
   loading,
-  emptyHint,
+  onSelect,
 }: {
   id?: string;
   value: string;
@@ -39,8 +43,11 @@ export function Combobox({
   placeholder?: string;
   invalid?: boolean;
   loading?: boolean;
-  /** Shown when nothing matched, to make clear that typing a new name is fine. */
-  emptyHint?: string;
+  /**
+   * Called with the chosen text — a suggestion, or the typed text via "Add" or Enter. Without
+   * it, choosing just fills the box. A chip input passes it to add a chip and clear the box.
+   */
+  onSelect?: (label: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -49,10 +56,16 @@ export function Combobox({
   const listId = useId();
 
   // An exact hit means the candidate has already picked this one; re-offering it is noise.
+  const typed = value.replace(/\s+/g, ' ').trim();
   const suggestions = useMemo(
-    () => options.filter((o) => o.label.toLowerCase() !== value.trim().toLowerCase()),
-    [options, value],
+    () => options.filter((o) => o.label.toLowerCase() !== typed.toLowerCase()),
+    [options, typed],
   );
+  // Offered whenever the typed text is not already a suggestion — even while others match,
+  // because "Java" matching "JavaScript" does not mean the candidate meant JavaScript.
+  // While a search is in flight the list may be stale, so wait for it rather than flicker.
+  const canAdd = !!typed && !loading && suggestions.length === options.length;
+  const rowCount = suggestions.length + (canAdd ? 1 : 0);
 
   useEffect(() => {
     if (!open) return;
@@ -71,10 +84,17 @@ export function Combobox({
     item?.scrollIntoView?.({ block: 'nearest' });
   }, [active]);
 
-  const pick = (option: ComboboxOption) => {
-    onChange(option.label);
+  const choose = (label: string) => {
+    if (onSelect) onSelect(label);
+    else onChange(label);
     setOpen(false);
     setActive(-1);
+  };
+
+  /** Row `i` is a suggestion, or — one past them — the "Add" row. */
+  const pickRow = (i: number) => {
+    if (i < suggestions.length) choose(suggestions[i].label);
+    else if (canAdd) choose(typed);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -85,16 +105,19 @@ export function Combobox({
     if (!open) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActive((i) => (i < suggestions.length - 1 ? i + 1 : 0));
+      setActive((i) => (i < rowCount - 1 ? i + 1 : 0));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActive((i) => (i > 0 ? i - 1 : suggestions.length - 1));
+      setActive((i) => (i > 0 ? i - 1 : rowCount - 1));
     } else if (e.key === 'Enter') {
-      // Only swallow Enter when a suggestion is highlighted — otherwise it must still submit
-      // the step, which is what every other field on the form does.
-      if (active >= 0 && suggestions[active]) {
+      // Only swallow Enter when a row is highlighted, or when a chip input is waiting for the
+      // typed text — otherwise it must still submit the step, like every other field does.
+      if (active >= 0 && active < rowCount) {
         e.preventDefault();
-        pick(suggestions[active]);
+        pickRow(active);
+      } else if (onSelect && typed) {
+        e.preventDefault();
+        choose(typed);
       }
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -124,7 +147,7 @@ export function Combobox({
         onKeyDown={onKeyDown}
       />
 
-      {open && (suggestions.length > 0 || (!loading && value.trim() && emptyHint)) && (
+      {open && rowCount > 0 && (
         <ul
           ref={listRef}
           id={listId}
@@ -140,7 +163,7 @@ export function Combobox({
               // mousedown, not click: click fires after blur, which closes the list first.
               onMouseDown={(e) => {
                 e.preventDefault();
-                pick(o);
+                choose(o.label);
               }}
               onMouseEnter={() => setActive(i)}
               className={cn(
@@ -152,8 +175,25 @@ export function Combobox({
               {o.hint && <span className="block truncate text-xs text-slate-400">{o.hint}</span>}
             </li>
           ))}
-          {suggestions.length === 0 && emptyHint && (
-            <li className="px-3.5 py-2 text-xs text-slate-400">{emptyHint}</li>
+          {canAdd && (
+            <li
+              id={`${listId}-${suggestions.length}`}
+              role="option"
+              aria-selected={active === suggestions.length}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                choose(typed);
+              }}
+              onMouseEnter={() => setActive(suggestions.length)}
+              className={cn(
+                'flex cursor-pointer items-center gap-2 px-3.5 py-2 text-sm font-medium text-aj-blue',
+                suggestions.length > 0 && 'border-t border-aj-line-soft dark:border-gray-700',
+                active === suggestions.length && 'bg-blue-50 dark:bg-blue-950',
+              )}
+            >
+              <Plus className="size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 truncate">Add “{typed}”</span>
+            </li>
           )}
         </ul>
       )}

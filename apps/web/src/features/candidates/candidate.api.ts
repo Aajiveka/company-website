@@ -48,10 +48,12 @@ export function useAppliedJobs(enabled = true) {
   });
 }
 
+const CV_MASTERS_KEY = ['candidate', 'cv-masters'];
+
 /** id-backed lookup lists for the CV editor. */
 export function useCvMasters() {
   return useQuery({
-    queryKey: ['candidate', 'cv-masters'],
+    queryKey: CV_MASTERS_KEY,
     queryFn: () => api.get<CvMasters>('/candidates/me/cv-masters').then((r) => r.data),
     staleTime: 10 * 60_000, // 10 minutes
   });
@@ -80,6 +82,23 @@ export function useInstituteSearch(query: string, stateId: number | null, enable
         .get<CvInstituteOption[]>('/candidates/me/institutes', {
           params: { q: query || undefined, stateId: stateId ?? undefined, limit: 20 },
         })
+        .then((r) => r.data),
+    enabled,
+    placeholderData: (prev) => prev,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Typeahead for the fields with no master — key skills, IT skills, languages. The API learns
+ * them from what candidates have saved, so anything one candidate adds is offered to the next.
+ */
+export function useSuggestions(kind: 'keySkill' | 'itSkill' | 'language', query: string, enabled = true) {
+  return useQuery({
+    queryKey: ['candidate', 'suggestions', kind, query],
+    queryFn: () =>
+      api
+        .get<string[]>('/candidates/me/suggestions', { params: { kind, q: query || undefined, limit: 15 } })
         .then((r) => r.data),
     enabled,
     placeholderData: (prev) => prev,
@@ -124,9 +143,15 @@ export function useUpdatePersonal() {
 export function useUpdateProfessional() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: Partial<CvProfessional>) =>
+    mutationFn: (payload: Partial<CvProfessional> & { subFunctionName?: string; skillName?: string }) =>
       api.put('/candidates/me/professional', payload).then((r) => r.data),
-    onSuccess: () => invalidateCv(qc),
+    onSuccess: (_data, payload) => {
+      invalidateCv(qc);
+      // A typed-in function or skill was added to the masters; refetch so it has a label.
+      if (payload.subFunctionName || payload.skillName) {
+        qc.invalidateQueries({ queryKey: CV_MASTERS_KEY });
+      }
+    },
   });
 }
 
@@ -137,6 +162,8 @@ export function useUpsertEducation() {
     mutationFn: (payload: {
       subscriberEducationId?: number;
       courseTypeId?: number;
+      /** A course typed in via "Add" — the API files it under degreeId and saves its new id. */
+      courseName?: string;
       degreeId: number;
       instituteName?: string;
       passingYear?: number;
@@ -145,7 +172,12 @@ export function useUpsertEducation() {
       courseMode?: string;
       marks?: string;
     }) => api.put('/candidates/me/education', payload).then((r) => r.data),
-    onSuccess: () => invalidateCv(qc),
+    onSuccess: (_data, payload) => {
+      invalidateCv(qc);
+      if (payload.courseName) qc.invalidateQueries({ queryKey: CV_MASTERS_KEY });
+      // A new institution was added to the master; drop cached searches so it is found.
+      qc.invalidateQueries({ queryKey: ['candidate', 'institutes'] });
+    },
   });
 }
 
@@ -165,6 +197,8 @@ export function useUpsertEmployment() {
       subscriberEmployerId?: number;
       employer: string;
       designationId?: number;
+      /** A job title typed in via "Add" — the API adds it to the master and saves its new id. */
+      designationName?: string;
       employeeTypeId?: number;
       joiningDate?: string;
       releavingDate?: string;
@@ -173,7 +207,10 @@ export function useUpsertEmployment() {
       jobDescr?: string;
       noticePeriodDays?: number;
     }) => api.put('/candidates/me/employment', payload).then((r) => r.data),
-    onSuccess: () => invalidateCv(qc),
+    onSuccess: (_data, payload) => {
+      invalidateCv(qc);
+      if (payload.designationName) qc.invalidateQueries({ queryKey: CV_MASTERS_KEY });
+    },
   });
 }
 

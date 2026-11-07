@@ -449,7 +449,8 @@
     "more": "+{{count}} और",
     "selected": "{{count}} चयनित",
     "clearAll": "सब हटाएं",
-    "remove": "{{label}} हटाएं"
+    "remove": "{{label}} हटाएं",
+    "add": "“{{label}}” जोड़ें"
   },
   "payment": {
     "error": {

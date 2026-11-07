@@ -3,6 +3,7 @@ import { useUpdateSummary } from '../../candidate.api';
 import type { CvEditProfile } from '../../candidate.types';
 import { Field, Textarea } from '../components/primitives';
 import { StepShell, type StepProps } from './StepShell';
+import { saveErrorMessage } from '../saveError';
 
 const MAX = 600;
 
@@ -29,8 +30,8 @@ export function SummaryStep({
     try {
       if (value !== (cv.summary ?? '')) await save.mutateAsync({ profileSummary: value });
       onNext();
-    } catch {
-      setError('Could not save your summary. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err, 'your summary'));
     }
   };
 

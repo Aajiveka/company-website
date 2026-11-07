@@ -5,6 +5,7 @@ import { useUpdateCareerProfile, useUpdateProfessional } from '../../candidate.a
 import { JOB_TYPES, WORK_MODES, type CvEditProfile, type CvMasters } from '../../candidate.types';
 import { Field, Input, Select } from '../components/primitives';
 import { FieldGrid, StepShell, type StepProps } from './StepShell';
+import { saveErrorMessage } from '../saveError';
 
 const NOTICE_PERIODS = [0, 15, 30, 60, 90] as const;
 
@@ -67,8 +68,8 @@ export function PreferencesStep({
       });
 
       onNext();
-    } catch {
-      setError('Could not save your preferences. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err, 'your preferences'));
     }
   };
 

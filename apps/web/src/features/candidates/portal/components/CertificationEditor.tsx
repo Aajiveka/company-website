@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { useDeleteCertificate, useUpsertCertificate } from '../../candidate.api';
 import type { CvCertificateEntry } from '../../candidate.types';
 import { Btn, Field, Input, Select } from './primitives';
+import { saveErrorMessage } from '../saveError';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -73,8 +74,8 @@ export function CertificationEditor({ rows }: { rows: CvCertificateEntry[] }) {
         validFromYear: draft.validFromYear ? Number(draft.validFromYear) : undefined,
       });
       setDraft(null);
-    } catch {
-      setError('Could not save this certification. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err, 'this certification'));
     }
   };
 

@@ -4,12 +4,18 @@ import type { CvEditProfile, CvEmploymentEntry, CvMasters } from '../../candidat
 import { Field, Input, Select, Textarea } from '../components/primitives';
 import { dotted, duration, labelOf, monthYear } from '../format';
 import { AddAnother, DraftHeader, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
+import { saveErrorMessage } from '../saveError';
+
+/** Job-title value standing in for one the candidate typed, until save gives it an id. */
+const NEW_DESIGNATION = '__new__';
 
 /** A blank draft row. `id` absent means "create" when saved. */
 interface Draft {
   subscriberEmployerId?: number;
   employer: string;
   designationId: string;
+  /** Text typed into the Job Title "Add" row; only meaningful while designationId is NEW_DESIGNATION. */
+  designationName: string;
   employeeTypeId: string;
   joiningDate: string;
   releavingDate: string;
@@ -20,6 +26,7 @@ interface Draft {
 const emptyDraft = (): Draft => ({
   employer: '',
   designationId: '',
+  designationName: '',
   employeeTypeId: '',
   joiningDate: '',
   releavingDate: '',
@@ -31,6 +38,7 @@ const toDraft = (e: CvEmploymentEntry): Draft => ({
   subscriberEmployerId: e.subscriberEmployerId,
   employer: e.employer,
   designationId: e.designationId ? String(e.designationId) : '',
+  designationName: '',
   employeeTypeId: e.employeeTypeId ? String(e.employeeTypeId) : '',
   joiningDate: e.joiningDate ? e.joiningDate.slice(0, 10) : '',
   releavingDate: e.releavingDate ? e.releavingDate.slice(0, 10) : '',
@@ -78,7 +86,9 @@ export function ExperienceStep({
       await upsert.mutateAsync({
         subscriberEmployerId: draft.subscriberEmployerId,
         employer: draft.employer.trim(),
-        designationId: draft.designationId ? Number(draft.designationId) : undefined,
+        designationId:
+          draft.designationId && draft.designationId !== NEW_DESIGNATION ? Number(draft.designationId) : undefined,
+        designationName: draft.designationId === NEW_DESIGNATION ? draft.designationName : undefined,
         employeeTypeId: draft.employeeTypeId ? Number(draft.employeeTypeId) : undefined,
         joiningDate: draft.joiningDate || undefined,
         releavingDate: draft.flgCurrent ? undefined : draft.releavingDate || undefined,
@@ -86,8 +96,8 @@ export function ExperienceStep({
         jobDescr: draft.jobDescr || undefined,
       });
       return true;
-    } catch {
-      setError('Could not save this role. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err, 'this role'));
       return false;
     }
   };
@@ -164,8 +174,12 @@ export function ExperienceStep({
                 id="designationId"
                 value={draft.designationId}
                 onChange={(e) => set('designationId', e.target.value)}
+                onCreate={(label) =>
+                  setDraft((d) => (d ? { ...d, designationId: NEW_DESIGNATION, designationName: label } : d))
+                }
               >
                 <option value="">Select</option>
+                {draft.designationName && <option value={NEW_DESIGNATION}>{draft.designationName}</option>}
                 {masters?.designations.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.label}

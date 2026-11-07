@@ -18,7 +18,8 @@ import { PrismaService } from '@/prisma/prisma.service';
 
 const mockDb = {
   mstrEducationType: { findUnique: mock.fn() },
-  mstrCourse: { findUnique: mock.fn() },
+  mstrCourse: { findUnique: mock.fn(), findFirst: mock.fn(), create: mock.fn() },
+  mstrInstitute: { createMany: mock.fn() },
   subscriberEducation: { findFirst: mock.fn(), create: mock.fn(), updateMany: mock.fn() },
 };
 
@@ -70,6 +71,9 @@ describe('CandidatesService — education', () => {
       descr: 'B.Tech',
     }));
     mockDb.mstrCourse.findUnique.mock.mockImplementation(async () => ({ educationTypeID: 136 }));
+    mockDb.mstrCourse.findFirst.mock.mockImplementation(async () => null);
+    mockDb.mstrCourse.create.mock.mockImplementation(async () => ({ degreeID: 2001 }));
+    mockDb.mstrInstitute.createMany.mock.mockImplementation(async () => ({ count: 1 }));
     mockDb.subscriberEducation.findFirst.mock.mockImplementation(async () => null);
     mockDb.subscriberEducation.create.mock.mockImplementation(async () => ({ subscriberEducationID: 5n }));
     mockDb.subscriberEducation.updateMany.mock.mockImplementation(async () => ({ count: 1 }));
@@ -161,6 +165,18 @@ describe('CandidatesService — education', () => {
     }
   });
 
+  it('rejects a CGPA above its scale', async () => {
+    const service = buildService();
+    assert.equal(
+      await rejection(() => service.upsertEducation(1, 2, validDto({ marks: '4.2/4' }))),
+      'CGPA must be between 0 and 4.',
+    );
+    assert.equal(
+      await rejection(() => service.upsertEducation(1, 2, validDto({ marks: '12 CGPA' }))),
+      'CGPA must be between 0 and 10.',
+    );
+  });
+
   it('refuses the same qualification from the same institution twice', async () => {
     const service = buildService();
     mockDb.subscriberEducation.findFirst.mock.mockImplementation(async () => ({ subscriberEducationID: 4n }));
@@ -183,5 +199,37 @@ describe('CandidatesService — education', () => {
     await service.upsertEducation(1, 2, validDto({ instituteName: 'A College Nobody Listed' }));
     const data = mockDb.subscriberEducation.create.mock.calls.at(-1)?.arguments[0]?.data;
     assert.equal(data.instituteName, 'A College Nobody Listed');
+  });
+
+  it('adds an unlisted institution to the master, keyed as the seed keys it', async () => {
+    const service = buildService();
+    await service.upsertEducation(1, 2, validDto({ instituteName: '  Haridwar   University ' }));
+    const args = mockDb.mstrInstitute.createMany.mock.calls.at(-1)?.arguments[0];
+    // skipDuplicates + the UNIQUE SearchKey is what stops a respelling becoming a second row.
+    assert.equal(args.skipDuplicates, true);
+    assert.deepEqual(args.data, [
+      { name: 'Haridwar University', searchKey: 'haridwar university', searchText: 'haridwar university hu' },
+    ]);
+  });
+
+  it('files a typed-in course under the chosen qualification and saves its new id', async () => {
+    const service = buildService();
+    mockDb.mstrCourse.findUnique.mock.mockImplementation(async () => ({ educationTypeID: 136 }));
+    await service.upsertEducation(1, 2, validDto({ courseTypeId: undefined, courseName: 'Drone Technology' }));
+
+    const created = mockDb.mstrCourse.create.mock.calls.at(-1)?.arguments[0]?.data;
+    assert.deepEqual(created, { degreeName: 'Drone Technology', shortForm: 'Drone Technology', educationTypeID: 136 });
+    const saved = mockDb.subscriberEducation.create.mock.calls.at(-1)?.arguments[0]?.data;
+    assert.equal(saved.courseTypeID, 2001);
+  });
+
+  it('reuses an existing course whatever the case, rather than adding a duplicate', async () => {
+    const service = buildService();
+    mockDb.mstrCourse.findFirst.mock.mockImplementation(async () => ({ degreeID: 1020 }));
+    await service.upsertEducation(1, 2, validDto({ courseTypeId: undefined, courseName: 'computer science' }));
+
+    assert.equal(mockDb.mstrCourse.create.mock.callCount(), 0);
+    const saved = mockDb.subscriberEducation.create.mock.calls.at(-1)?.arguments[0]?.data;
+    assert.equal(saved.courseTypeID, 1020);
   });
 });

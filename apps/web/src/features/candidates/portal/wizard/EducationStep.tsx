@@ -12,37 +12,48 @@ import {
 } from '../../candidate.types';
 import { Combobox } from '../components/Combobox';
 import { Field, Input, Select } from '../components/primitives';
-import { dotted, educationTitle, labelOf, years } from '../format';
+import { composeMarks, dotted, educationTitle, formatMarks, labelOf, parseMarks, years, type MarksScale } from '../format';
 import { AddAnother, DraftHeader, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
 import { educationDraftSchema, type EducationErrors } from './validation';
+import { saveErrorMessage } from '../saveError';
+
+/** Course value standing in for one the candidate typed, until save gives it an id. */
+const NEW_COURSE = '__new__';
 
 interface Draft {
   subscriberEducationId?: number;
   degreeId: string;
   courseTypeId: string;
+  /** Text typed into the Course "Add" row; only meaningful while courseTypeId is NEW_COURSE. */
+  courseName: string;
   instituteName: string;
   startYear: string;
   passingYear: string;
   specialization: string;
   courseMode: string;
+  /** The number as typed; `marksScale` says whether it is a percentage or a CGPA. */
   marks: string;
+  marksScale: MarksScale;
 }
 
 const emptyDraft = (): Draft => ({
   degreeId: '',
   courseTypeId: '',
+  courseName: '',
   instituteName: '',
   startYear: '',
   passingYear: '',
   specialization: '',
   courseMode: '',
   marks: '',
+  marksScale: 'percent',
 });
 
 const toDraft = (e: CvEducationEntry): Draft => ({
   subscriberEducationId: e.subscriberEducationId,
   degreeId: e.degreeId ? String(e.degreeId) : '',
   courseTypeId: e.courseTypeId ? String(e.courseTypeId) : '',
+  courseName: '',
   instituteName: e.instituteName,
   startYear: e.startYear ? String(e.startYear) : '',
   // A legacy row can hold an end year that precedes its start year — the two fields were
@@ -52,8 +63,15 @@ const toDraft = (e: CvEducationEntry): Draft => ({
   passingYear: e.passingYear && !(e.startYear && e.passingYear < e.startYear) ? String(e.passingYear) : '',
   specialization: e.specialization ?? '',
   courseMode: e.courseMode,
-  marks: e.marks,
+  marks: parseMarks(e.marks).value,
+  marksScale: parseMarks(e.marks).scale,
 });
+
+const MARKS_SCALES: { value: MarksScale; label: string }[] = [
+  { value: 'percent', label: 'Percentage %' },
+  { value: 'cgpa10', label: 'CGPA (out of 10)' },
+  { value: 'cgpa4', label: 'CGPA (out of 4)' },
+];
 
 /** Selectable years, newest first — a recent year is the common answer, so it comes first. */
 const yearsBetween = (from: number, to: number) =>
@@ -175,7 +193,9 @@ export function EducationStep({
     // An untouched extra form is not an error — the candidate opened it and changed their mind.
     if (!draft || isBlank(draft)) return true;
 
-    const parsed = educationDraftSchema.safeParse(draft);
+    // Validated in its stored form, so "8.5" under CGPA is checked as "8.5/10", not as 8.5%.
+    const marks = composeMarks(draft.marksScale, draft.marks);
+    const parsed = educationDraftSchema.safeParse({ ...draft, marks });
     if (!parsed.success) {
       const next: EducationErrors = {};
       for (const issue of parsed.error.issues) {
@@ -203,27 +223,24 @@ export function EducationStep({
 
     setErrors({});
     try {
+      const isNewCourse = draft.courseTypeId === NEW_COURSE;
       await upsert.mutateAsync({
         subscriberEducationId: draft.subscriberEducationId,
         degreeId: Number(draft.degreeId),
-        courseTypeId: draft.courseTypeId ? Number(draft.courseTypeId) : undefined,
+        courseTypeId: draft.courseTypeId && !isNewCourse ? Number(draft.courseTypeId) : undefined,
+        courseName: isNewCourse ? draft.courseName : undefined,
         instituteName: draft.instituteName.trim() || undefined,
         passingYear: draft.passingYear ? Number(draft.passingYear) : undefined,
         startYear: draft.startYear ? Number(draft.startYear) : undefined,
         specialization: draft.specialization.trim() || undefined,
         courseMode: draft.courseMode || undefined,
-        marks: draft.marks.trim() || undefined,
+        marks: marks || undefined,
       });
       return true;
-    } catch (e) {
+    } catch (err) {
       // The API's message names the rule that failed ("End year cannot be earlier than start
       // year"), which is more use than a generic retry prompt.
-      const message =
-        (e as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
-      setError(
-        (Array.isArray(message) ? message[0] : message) ??
-          'Could not save this qualification. Please try again.',
-      );
+      setError(saveErrorMessage(err, 'this qualification'));
       return false;
     }
   };
@@ -273,7 +290,7 @@ export function EducationStep({
                 labelOf(masters?.courses, e.courseTypeId),
                 years(e.startYear, e.passingYear),
                 e.courseMode || null,
-                e.marks || null,
+                formatMarks(e.marks) || null,
               )}
               onEdit={() => {
                 setErrors({});
@@ -304,7 +321,7 @@ export function EducationStep({
                 // Clearing the course is not optional: it belonged to the previous
                 // qualification's list, and leaving it would file a B.Tech branch under an MBBS.
                 onChange={(e) => {
-                  setDraft((d) => (d ? { ...d, degreeId: e.target.value, courseTypeId: '' } : d));
+                  setDraft((d) => (d ? { ...d, degreeId: e.target.value, courseTypeId: '', courseName: '' } : d));
                   setErrors((x) => ({ ...x, degreeId: undefined, courseTypeId: undefined }));
                 }}
               >
@@ -335,7 +352,6 @@ export function EducationStep({
                 onChange={(v) => set('instituteName', v)}
                 loading={institutes.isFetching}
                 options={(institutes.data ?? []).map((i) => ({ id: i.id, label: i.label, hint: i.city }))}
-                emptyHint="Not listed — type your institution's name and it will be saved."
               />
             </Field>
 
@@ -348,8 +364,13 @@ export function EducationStep({
                 // anything once a qualification narrows it.
                 disabled={!draft.degreeId}
                 onChange={(e) => set('courseTypeId', e.target.value)}
+                onCreate={(label) => {
+                  setDraft((d) => (d ? { ...d, courseTypeId: NEW_COURSE, courseName: label } : d));
+                  setErrors((x) => ({ ...x, courseTypeId: undefined }));
+                }}
               >
                 <option value="">{draft.degreeId ? 'Select' : 'Select education first'}</option>
+                {draft.courseName && <option value={NEW_COURSE}>{draft.courseName}</option>}
                 {courses.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.label}
@@ -411,15 +432,33 @@ export function EducationStep({
               />
             </Field>
 
-            <Field label="Percentage %" htmlFor="marks" error={errors.marks}>
-              <Input
-                id="marks"
-                inputMode="decimal"
-                placeholder="e.g. 80"
-                invalid={!!errors.marks}
-                value={draft.marks}
-                onChange={(e) => set('marks', e.target.value)}
-              />
+            <Field label="Percentage / CGPA" htmlFor="marks" error={errors.marks}>
+              <div className="flex gap-2">
+                <div className="w-40 shrink-0">
+                  <Select
+                    aria-label="Grading scale"
+                    value={draft.marksScale}
+                    onChange={(e) => {
+                      setDraft((d) => (d ? { ...d, marksScale: e.target.value as MarksScale } : d));
+                      setErrors((x) => ({ ...x, marks: undefined }));
+                    }}
+                  >
+                    {MARKS_SCALES.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <Input
+                  id="marks"
+                  inputMode="decimal"
+                  placeholder={draft.marksScale === 'percent' ? 'e.g. 80' : draft.marksScale === 'cgpa4' ? 'e.g. 3.6' : 'e.g. 8.5'}
+                  invalid={!!errors.marks}
+                  value={draft.marks}
+                  onChange={(e) => set('marks', e.target.value)}
+                />
+              </div>
             </Field>
           </FieldGrid>
 

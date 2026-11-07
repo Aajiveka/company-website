@@ -16,6 +16,7 @@ import { Field, Input, Select } from '../components/primitives';
 import { isFresherProfile } from '../../fresher';
 import { FieldGrid, StepShell, type StepProps } from './StepShell';
 import { optionalText } from './validation';
+import { saveErrorMessage } from '../saveError';
 
 const schema = z.object({
   fullName: z.string().min(2, 'Enter your full name'),
@@ -35,6 +36,12 @@ type Values = z.infer<typeof schema>;
 /** 0–50 years and 0–11 months, the ranges every job portal offers for total experience. */
 const YEARS = Array.from({ length: 51 }, (_, i) => i);
 const MONTHS = Array.from({ length: 12 }, (_, i) => i);
+
+/** Option value standing in for a function or skill the candidate typed, until save gives it an id. */
+const NEW_ENTRY = '__new__';
+
+/** The masters' Descr column width — a longer typed-in name cannot be stored. */
+const MASTER_NAME_MAX = 100;
 
 /** Step 1 — Personal Details (Figma 7:3777). */
 export function PersonalStep({
@@ -64,7 +71,11 @@ export function PersonalStep({
   // completion scores on — not the free-typed key skills, which is a different field.
   const [subFunctionId, setSubFunctionId] = useState(String(cv.professional?.subFunctionId ?? ''));
   const [skillId, setSkillId] = useState(String(cv.professional?.skillId ?? ''));
+  // Text typed into "Add …" — sent by name on save, and the API adds it to the master.
+  const [newSubFunction, setNewSubFunction] = useState('');
+  const [newSkill, setNewSkill] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ subFunction?: string; skill?: string }>({});
 
   const chooseFresher = (value: boolean) => {
     setFresher(value);
@@ -107,6 +118,24 @@ export function PersonalStep({
       return;
     }
 
+    // Caught here rather than left to the API, so the message sits under the field at fault.
+    const tooLong: typeof fieldErrors = {};
+    if (subFunctionId === NEW_ENTRY && newSubFunction.length > MASTER_NAME_MAX) {
+      tooLong.subFunction = `Keep this to ${MASTER_NAME_MAX} characters or fewer.`;
+    }
+    if (skillId === NEW_ENTRY && newSkill.length > MASTER_NAME_MAX) {
+      // The usual cause is a list typed into a one-skill field.
+      tooLong.skill = `Primary Skill is your one main skill (up to ${MASTER_NAME_MAX} characters). Add the rest as Key Skills in the Skills step.`;
+    }
+    setFieldErrors(tooLong);
+    if (tooLong.subFunction || tooLong.skill) {
+      setError('Please fix the highlighted fields.');
+      return;
+    }
+
+    // Four saves run in turn; the message names the one that failed.
+    let stage = 'your personal details';
+    let labels: Record<string, string> = {};
     try {
       await savePersonal.mutateAsync({
         fullName: values.fullName,
@@ -119,27 +148,38 @@ export function PersonalStep({
       });
 
       if ((values.headline ?? '') !== (cv.headline ?? '')) {
+        stage = 'your professional title';
         await saveHeadline.mutateAsync({ resumeHeadline: values.headline ?? '' });
       }
 
-      const nextSubFunctionId = subFunctionId ? Number(subFunctionId) : null;
-      const nextSkillId = skillId ? Number(skillId) : null;
+      const subFunctionName = subFunctionId === NEW_ENTRY ? newSubFunction : undefined;
+      const skillName = skillId === NEW_ENTRY ? newSkill : undefined;
+      const nextSubFunctionId = subFunctionId && !subFunctionName ? Number(subFunctionId) : null;
+      const nextSkillId = skillId && !skillName ? Number(skillId) : null;
       if (
+        subFunctionName ||
+        skillName ||
         totalExp !== (cv.professional?.totalExp ?? 0) ||
         totalExpMonths !== (cv.professional?.totalExpMonths ?? 0) ||
         nextSubFunctionId !== (cv.professional?.subFunctionId ?? null) ||
         nextSkillId !== (cv.professional?.skillId ?? null)
       ) {
+        stage = 'your experience, function and primary skill';
+        labels = { skillName: 'Primary Skill' };
         await saveProfessional.mutateAsync({
           ...cv.professional,
           totalExp,
           totalExpMonths,
           subFunctionId: nextSubFunctionId,
           skillId: nextSkillId,
+          subFunctionName,
+          skillName,
         });
       }
 
       if (values.linkedIn && values.linkedIn !== existingLinkedIn?.url) {
+        stage = 'your LinkedIn URL';
+        labels = { url: 'LinkedIn URL', title: 'LinkedIn URL' };
         await saveLink.mutateAsync({
           subscriberAccomplishmentId: existingLinkedIn?.subscriberAccomplishmentId,
           kind: 'ONLINE_PROFILE',
@@ -149,8 +189,8 @@ export function PersonalStep({
       }
 
       onNext();
-    } catch {
-      setError('Could not save. Please try again.');
+    } catch (err) {
+      setError(saveErrorMessage(err, stage, labels));
     }
   });
 
@@ -256,9 +296,23 @@ export function PersonalStep({
           <Input id="headline" placeholder="e.g. Senior Full-Stack Engineer" {...form.register('headline')} />
         </Field>
 
-        <Field label="Function / Department" htmlFor="subFunction">
-          <Select id="subFunction" value={subFunctionId} onChange={(e) => setSubFunctionId(e.target.value)}>
+        <Field label="Function / Department" htmlFor="subFunction" error={fieldErrors.subFunction}>
+          <Select
+            id="subFunction"
+            value={subFunctionId}
+            invalid={!!fieldErrors.subFunction}
+            onChange={(e) => {
+              setSubFunctionId(e.target.value);
+              setFieldErrors((f) => ({ ...f, subFunction: undefined }));
+            }}
+            onCreate={(label) => {
+              setNewSubFunction(label);
+              setSubFunctionId(NEW_ENTRY);
+              setFieldErrors((f) => ({ ...f, subFunction: undefined }));
+            }}
+          >
             <option value="">Select</option>
+            {newSubFunction && <option value={NEW_ENTRY}>{newSubFunction}</option>}
             {masters?.subFunctions?.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.label}
@@ -267,9 +321,23 @@ export function PersonalStep({
           </Select>
         </Field>
 
-        <Field label="Primary Skill" htmlFor="primarySkill">
-          <Select id="primarySkill" value={skillId} onChange={(e) => setSkillId(e.target.value)}>
+        <Field label="Primary Skill" htmlFor="primarySkill" error={fieldErrors.skill}>
+          <Select
+            id="primarySkill"
+            value={skillId}
+            invalid={!!fieldErrors.skill}
+            onChange={(e) => {
+              setSkillId(e.target.value);
+              setFieldErrors((f) => ({ ...f, skill: undefined }));
+            }}
+            onCreate={(label) => {
+              setNewSkill(label);
+              setSkillId(NEW_ENTRY);
+              setFieldErrors((f) => ({ ...f, skill: undefined }));
+            }}
+          >
             <option value="">Select</option>
+            {newSkill && <option value={NEW_ENTRY}>{newSkill}</option>}
             {masters?.skills?.map((sk) => (
               <option key={sk.id} value={sk.id}>
                 {sk.label}

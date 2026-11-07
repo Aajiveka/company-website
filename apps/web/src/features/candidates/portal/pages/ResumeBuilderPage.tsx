@@ -1,67 +1,76 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, Eye, Pencil, Plus } from 'lucide-react';
+import { Check, Download, Eye, Pencil, Plus } from 'lucide-react';
 import { useToast } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { useCvEditProfile, useCvMasters } from '../../candidate.api';
-import type { CvEditProfile, CvMasters } from '../../candidate.types';
 import { ModuleHeader } from '../components/ModuleFrame';
-import { Btn, Card, CardBody, CardHeader, Chip, SkeletonRows } from '../components/primitives';
+import { Btn, Card, CardBody, CardHeader, SkeletonRows } from '../components/primitives';
 import { CertificationEditor } from '../components/CertificationEditor';
 import { computeResumeScore, type SectionState } from '../resumeScore';
-import { dotted, duration, educationTitle, labelOf, monthYear, years } from '../format';
 import { stepHref, type WizardStepKey } from '../wizardSteps';
+import { buildResumeData } from '../resume/resumeData';
+import { exportResumePdf } from '../resume/exportPdf';
+import { ResumeDocument, ResumeSectionPreview, type SectionKey } from '../resume/templates';
+import {
+  isFullBleed,
+  SHEET_HEIGHT,
+  SHEET_WIDTH,
+  TEMPLATES,
+  type TemplateId,
+} from '../resume/templateCatalog';
 
-type Template = 'classic' | 'ats';
 type SectionId =
-  | 'personal'
-  | 'summary'
-  | 'experience'
-  | 'education'
-  | 'projects'
-  | 'skills'
-  | 'itSkills'
-  | 'certifications'
-  | 'accomplishments';
-
-/** The editor's left rail: the sections a wizard step owns, so "Edit" always has somewhere to go. */
-const SECTIONS: { id: SectionId; label: string; step: WizardStepKey }[] = [
-  { id: 'personal', label: 'Personal Info', step: 'personal' },
-  { id: 'summary', label: 'Summary', step: 'summary' },
-  { id: 'experience', label: 'Work Experience', step: 'experience' },
-  { id: 'education', label: 'Education', step: 'education' },
-  { id: 'projects', label: 'Projects', step: 'projects' },
-  { id: 'skills', label: 'Skills', step: 'skills' },
-  { id: 'certifications', label: 'Certifications', step: 'skills' },
-];
+  'personal' | 'summary' | 'experience' | 'education' | 'projects' | 'skills' | 'certifications';
 
 /**
- * Everything that goes into the preview and the PDF, in print order.
- *
- * Wider than the left rail: IT skills and accomplishments are filled in on the profile page
- * rather than in the wizard, but a candidate who entered them expects them on the resume.
+ * The editor's left rail: the sections a wizard step owns, so "Edit" always has somewhere to go,
+ * and which parts of the resume each one shows.
  */
-const RESUME_SECTIONS: SectionId[] = [
-  'personal',
-  'summary',
-  'experience',
-  'education',
-  'projects',
-  'skills',
-  'itSkills',
-  'certifications',
-  'accomplishments',
+const SECTIONS: {
+  id: SectionId;
+  label: string;
+  step: WizardStepKey;
+  shows: (SectionKey | 'header')[];
+}[] = [
+  {
+    id: 'personal',
+    label: 'Personal Info',
+    step: 'personal',
+    shows: ['header', 'snapshot', 'personal', 'preferences'],
+  },
+  { id: 'summary', label: 'Summary', step: 'summary', shows: ['summary'] },
+  { id: 'experience', label: 'Work Experience', step: 'experience', shows: ['experience'] },
+  { id: 'education', label: 'Education', step: 'education', shows: ['education'] },
+  { id: 'projects', label: 'Projects', step: 'projects', shows: ['projects'] },
+  { id: 'skills', label: 'Skills', step: 'skills', shows: ['skills', 'itSkills', 'languages'] },
+  {
+    id: 'certifications',
+    label: 'Certifications',
+    step: 'skills',
+    shows: ['certifications', 'accomplishments'],
+  },
 ];
 
-/** A4 at 96 dpi. Fixing the export width keeps the PDF identical on every screen size. */
-const SHEET_WIDTH = 794;
+const TEMPLATE_KEY = 'aj.resumeTemplate';
+
+/** The last template this browser chose. Storage can be unavailable, so it is never required. */
+function savedTemplate(): TemplateId {
+  try {
+    const id = localStorage.getItem(TEMPLATE_KEY);
+    if (TEMPLATES.some((t) => t.id === id)) return id as TemplateId;
+  } catch {
+    /* private mode or blocked storage — fall back to the default */
+  }
+  return 'overleaf';
+}
 
 /**
  * Resume Builder — Figma nodes 7:6743 through 7:7714.
  *
  * Reads the same CV the profile does, so there is no second copy of a candidate's history to
- * drift: the builder chooses a template and exports, and every "Edit" goes to the wizard step
- * that owns the data.
+ * drift: the builder chooses one of eleven templates and exports, and every "Edit" goes to the
+ * wizard step that owns the data.
  */
 export default function ResumeBuilderPage() {
   const { data: cv, isLoading } = useCvEditProfile();
@@ -69,42 +78,33 @@ export default function ResumeBuilderPage() {
   const { notify } = useToast();
 
   const [section, setSection] = useState<SectionId>('personal');
-  const [template, setTemplate] = useState<Template>('classic');
+  const [template, setTemplate] = useState<TemplateId>(savedTemplate);
   const [preview, setPreview] = useState(false);
   const [exporting, setExporting] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const scoring = useMemo(() => (cv ? computeResumeScore(cv) : null), [cv]);
+  const data = useMemo(() => (cv ? buildResumeData(cv, masters) : null), [cv, masters]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TEMPLATE_KEY, template);
+    } catch {
+      /* not worth surfacing — the choice just will not be remembered */
+    }
+  }, [template]);
 
   const onDownload = async () => {
-    if (!sheetRef.current || !cv) {
+    const node = sheetRef.current?.querySelector<HTMLElement>('[data-resume-sheet]');
+    if (!node || !data) {
       notify('Your resume is still loading. Try again in a moment.', 'error');
       return;
     }
     setExporting(true);
     try {
-      const html2canvas = (await import('html2canvas-pro')).default;
-      const { jsPDF } = await import('jspdf');
-
-      const canvas = await html2canvas(sheetRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-
-      let heightLeft = imgHeight;
-      let position = 0;
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      while (heightLeft > 0) {
-        position -= pageHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(`${(cv.personal?.fullName || 'resume').replace(/\s+/g, '_')}_Resume.pdf`);
+      await exportResumePdf(node, `${data.name.replace(/\s+/g, '_')}_Resume.pdf`, {
+        fullBleed: isFullBleed(template),
+      });
     } catch {
       notify('Could not build the PDF. Try printing the preview instead.', 'error');
     } finally {
@@ -112,7 +112,7 @@ export default function ResumeBuilderPage() {
     }
   };
 
-  if (isLoading || !cv || !scoring) {
+  if (isLoading || !cv || !scoring || !data) {
     return (
       <>
         <ModuleHeader title="Resume Builder" />
@@ -124,6 +124,8 @@ export default function ResumeBuilderPage() {
       </>
     );
   }
+
+  const current = SECTIONS.find((s) => s.id === section) ?? SECTIONS[0]!;
 
   return (
     <>
@@ -143,80 +145,101 @@ export default function ResumeBuilderPage() {
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[200px_1fr_200px] lg:items-start">
-        {/* Sections + templates */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader title="Sections" />
-            <CardBody className="space-y-1">
-              {SECTIONS.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    setSection(s.id);
-                    setPreview(false);
-                  }}
-                  aria-current={section === s.id ? 'true' : undefined}
-                  className={cn(
-                    'block w-full rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors',
-                    section === s.id
-                      ? 'bg-blue-50 text-aj-blue dark:bg-blue-950'
-                      : 'text-slate-600 hover:bg-aj-canvas dark:text-gray-300 dark:hover:bg-gray-700',
-                  )}
-                >
-                  {s.label}
-                </button>
-              ))}
-              {/* "Add Section" in the design opens the wizard, which is where a section that
-                  has no content yet actually gets filled in. */}
-              <Link
-                to={stepHref('personal')}
-                className="mt-1 flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold text-aj-blue transition-colors hover:bg-blue-50 dark:hover:bg-blue-950"
-              >
-                <Plus className="size-4" aria-hidden />
-                Add Section
-              </Link>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader title="Templates" />
-            <CardBody className="space-y-2">
-              {(
-                [
-                  { id: 'classic' as const, label: 'Classic', blurb: 'Headings with a rule' },
-                  { id: 'ats' as const, label: 'ATS Pro', blurb: 'Plain, parser-friendly' },
-                ]
-              ).map((t) => (
+      <Card className="mb-4">
+        <CardHeader title="Templates" />
+        <CardBody>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {TEMPLATES.map((t) => {
+              const active = template === t.id;
+              return (
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => setTemplate(t.id)}
-                  aria-pressed={template === t.id}
+                  // The thumbnail is a whole resume; without this its text would be the button's name.
+                  aria-label={`${t.label} template`}
+                  aria-pressed={active}
+                  onClick={() => {
+                    setTemplate(t.id);
+                    setPreview(true);
+                  }}
                   className={cn(
-                    'block w-full rounded-lg border p-3 text-left transition-colors',
-                    template === t.id
-                      ? 'border-aj-blue bg-blue-50 dark:bg-blue-950'
+                    'group rounded-xl border p-2 text-left transition-colors',
+                    active
+                      ? 'border-aj-blue bg-blue-50 ring-2 ring-aj-blue/30 dark:bg-blue-950'
                       : 'border-aj-line hover:border-aj-blue dark:border-gray-700',
                   )}
                 >
-                  <span className="block text-[13px] font-bold text-slate-800 dark:text-gray-100">{t.label}</span>
+                  <div
+                    aria-hidden
+                    className="relative overflow-hidden rounded-md border border-aj-line bg-white shadow-sm dark:border-gray-700"
+                  >
+                    <ScaledSheet crop>
+                      <ResumeDocument data={data} templateId={t.id} />
+                    </ScaledSheet>
+                    {active && (
+                      <span className="absolute right-1.5 top-1.5 flex size-5 items-center justify-center rounded-full bg-aj-blue text-white">
+                        <Check className="size-3.5" />
+                      </span>
+                    )}
+                  </div>
+                  <span className="mt-2 block text-[13px] font-bold text-slate-800 dark:text-gray-100">
+                    {t.label}
+                  </span>
                   <span className="block text-[11px] text-slate-500">{t.blurb}</span>
                 </button>
-              ))}
-            </CardBody>
-          </Card>
-        </div>
+              );
+            })}
+          </div>
+        </CardBody>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-[200px_1fr_200px] lg:items-start">
+        <Card>
+          <CardHeader title="Sections" />
+          <CardBody className="space-y-1">
+            {SECTIONS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  setSection(s.id);
+                  setPreview(false);
+                }}
+                aria-current={!preview && section === s.id ? 'true' : undefined}
+                className={cn(
+                  'block w-full rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors',
+                  !preview && section === s.id
+                    ? 'bg-blue-50 text-aj-blue dark:bg-blue-950'
+                    : 'text-slate-600 hover:bg-aj-canvas dark:text-gray-300 dark:hover:bg-gray-700',
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+            {/* "Add Section" in the design opens the wizard, which is where a section that
+                has no content yet actually gets filled in. */}
+            <Link
+              to={stepHref('personal')}
+              className="mt-1 flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold text-aj-blue transition-colors hover:bg-blue-50 dark:hover:bg-blue-950"
+            >
+              <Plus className="size-4" aria-hidden />
+              Add Section
+            </Link>
+          </CardBody>
+        </Card>
 
         {/* Sheet */}
         <Card className="min-w-0">
           <CardHeader
-            title={preview ? 'Preview' : (SECTIONS.find((s) => s.id === section)?.label ?? 'Resume')}
+            title={
+              preview
+                ? `Preview · ${TEMPLATES.find((t) => t.id === template)?.label}`
+                : current.label
+            }
             action={
               !preview && (
                 <Link
-                  to={stepHref(SECTIONS.find((s) => s.id === section)?.step ?? 'personal')}
+                  to={stepHref(current.step)}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-aj-blue hover:text-aj-blue-hover"
                 >
                   <Pencil className="size-3.5" aria-hidden />
@@ -226,30 +249,38 @@ export default function ResumeBuilderPage() {
             }
           />
           <CardBody>
-            {!preview && section === 'experience' && (
-              <div className="mb-4">
-                <Link
-                  to={stepHref('experience')}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-aj-blue px-4 py-2 text-[13px] font-semibold text-aj-blue transition-colors hover:bg-blue-50 dark:hover:bg-blue-950"
-                >
-                  <Plus className="size-4" aria-hidden />
-                  Add Experience
-                </Link>
+            {preview ? (
+              <div className="overflow-hidden rounded-md border border-aj-line shadow-sm dark:border-gray-700">
+                <ScaledSheet>
+                  <ResumeDocument data={data} templateId={template} />
+                </ScaledSheet>
               </div>
-            )}
-            {!preview && section === 'certifications' ? (
-              // The only section the design gives its own form rather than a preview.
-              <CertificationEditor rows={cv.certificates} />
             ) : (
-              <div className="bg-white p-6 font-sans text-slate-800">
-                {preview ? (
-                  RESUME_SECTIONS.map((id) => (
-                    <SectionBody key={id} id={id} cv={cv} masters={masters} template={template} />
-                  ))
-                ) : (
-                  <SectionBody id={section} cv={cv} masters={masters} template={template} />
+              <>
+                {section === 'experience' && (
+                  <div className="mb-4">
+                    <Link
+                      to={stepHref('experience')}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-aj-blue px-4 py-2 text-[13px] font-semibold text-aj-blue transition-colors hover:bg-blue-50 dark:hover:bg-blue-950"
+                    >
+                      <Plus className="size-4" aria-hidden />
+                      Add Experience
+                    </Link>
+                  </div>
                 )}
-              </div>
+                {section === 'certifications' ? (
+                  // The only section the design gives its own form rather than a preview.
+                  <CertificationEditor rows={cv.certificates} />
+                ) : (
+                  <div className="rounded-md bg-white p-6">
+                    <ResumeSectionPreview
+                      data={data}
+                      templateId={template}
+                      sections={current.shows}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </CardBody>
         </Card>
@@ -271,7 +302,9 @@ export default function ResumeBuilderPage() {
               {scoring.sections.map((s) => (
                 <li key={s.key} className="flex items-center justify-between gap-2 text-xs">
                   <span className="truncate text-slate-600 dark:text-gray-300">{s.label}</span>
-                  <span className={cn('shrink-0 font-semibold', STATE_CLASS[s.state])}>{s.hint}</span>
+                  <span className={cn('shrink-0 font-semibold', STATE_CLASS[s.state])}>
+                    {s.hint}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -280,17 +313,18 @@ export default function ResumeBuilderPage() {
       </div>
 
       {/*
-        What Download exports, kept out of view and rendered whatever the editor is showing.
-        The visible sheet is only ever one section (and is replaced entirely by the form on
-        the Certifications tab), so exporting the on-screen node produced a one-section PDF —
-        or, on Certifications, no PDF at all.
+        What Download exports: the whole resume in the chosen template at full A4 width, kept out
+        of view and rendered whatever the editor is showing. Exporting the on-screen node used to
+        produce a one-section PDF — or, on the Certifications tab, no PDF at all.
       */}
-      <div aria-hidden className="pointer-events-none fixed top-0 -left-[10000px]" style={{ width: SHEET_WIDTH }}>
-        <div ref={sheetRef} className="bg-white p-8 font-sans text-slate-800">
-          {RESUME_SECTIONS.map((id) => (
-            <SectionBody key={id} id={id} cv={cv} masters={masters} template={template} />
-          ))}
-        </div>
+      <div
+        aria-hidden
+        data-export-sheet
+        ref={sheetRef}
+        className="pointer-events-none fixed top-0 -left-[10000px]"
+        style={{ width: SHEET_WIDTH }}
+      >
+        <ResumeDocument data={data} templateId={template} />
       </div>
     </>
   );
@@ -302,243 +336,45 @@ const STATE_CLASS: Record<SectionState, string> = {
   missing: 'text-slate-400',
 };
 
-const PROFICIENCY: Record<number, string> = { 1: 'Beginner', 2: 'Proficient', 3: 'Expert' };
+/**
+ * Draws an A4 sheet scaled down to the width it is given. `crop` shows the first page only —
+ * what a thumbnail needs; without it the frame grows with the resume.
+ */
+function ScaledSheet({ children, crop = false }: { children: ReactNode; crop?: boolean }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.25);
+  const [height, setHeight] = useState(SHEET_HEIGHT);
 
-/** "3 yrs 6 mos" for an IT skill's depth; null when neither half was entered. */
-function expLength(yrs: number | null, months: number | null): string | null {
-  const parts = [yrs ? `${yrs} yr${yrs === 1 ? '' : 's'}` : null, months ? `${months} mo${months === 1 ? '' : 's'}` : null];
-  return parts.filter(Boolean).join(' ') || null;
-}
+  useLayoutEffect(() => {
+    const outer = outerRef.current;
+    if (!outer) return;
+    const update = () => {
+      if (outer.clientWidth) setScale(outer.clientWidth / SHEET_WIDTH);
+      setHeight(innerRef.current?.offsetHeight || SHEET_HEIGHT);
+    };
+    update();
+    // jsdom has no ResizeObserver; the initial measurement is enough there.
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(update);
+    observer.observe(outer);
+    if (innerRef.current) observer.observe(innerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
-function Heading({ children, template }: { children: string; template: Template }) {
   return (
-    <h3
-      className={cn(
-        'mb-2 mt-5 font-display text-sm font-bold uppercase tracking-wide text-slate-800 first:mt-0',
-        template === 'classic' && 'border-b border-slate-300 pb-1',
-      )}
+    <div
+      ref={outerRef}
+      className="relative overflow-hidden bg-white"
+      style={{ height: (crop ? SHEET_HEIGHT : height) * scale }}
     >
-      {children}
-    </h3>
+      <div
+        ref={innerRef}
+        className="absolute left-0 top-0"
+        style={{ width: SHEET_WIDTH, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+      >
+        {children}
+      </div>
+    </div>
   );
-}
-
-function SectionBody({
-  id,
-  cv,
-  masters,
-  template,
-}: {
-  id: SectionId;
-  cv: CvEditProfile;
-  masters: CvMasters | undefined;
-  template: Template;
-}) {
-  const empty = <p className="text-xs italic text-slate-400">Nothing added yet.</p>;
-
-  switch (id) {
-    case 'personal': {
-      // Online profiles are stored as accomplishments; on a resume they belong in the header.
-      const links = cv.accomplishments.filter((a) => a.kind === 'ONLINE_PROFILE' && a.url);
-      return (
-        <section>
-          <h2 className="font-display text-xl font-bold text-slate-900">{cv.personal?.fullName || 'Your Name'}</h2>
-          {cv.headline && <p className="text-sm font-semibold text-slate-600">{cv.headline}</p>}
-          <p className="mt-1 text-xs text-slate-500">
-            {dotted(
-              cv.personal?.email,
-              cv.personal?.mobile,
-              labelOf(masters?.cities, cv.personal?.cityId),
-              cv.personal?.address,
-            )}
-          </p>
-          {links.length > 0 && (
-            <p className="mt-0.5 text-xs text-slate-500">{links.map((a) => a.url).join(' · ')}</p>
-          )}
-        </section>
-      );
-    }
-
-    case 'summary':
-      return (
-        <section>
-          <Heading template={template}>Summary</Heading>
-          {cv.summary ? <p className="whitespace-pre-line text-[13px] leading-relaxed">{cv.summary}</p> : empty}
-        </section>
-      );
-
-    case 'experience':
-      return (
-        <section>
-          <Heading template={template}>Work Experience</Heading>
-          {cv.employment.length
-            ? cv.employment.map((e) => (
-                <div key={e.subscriberEmployerId} className="mb-3">
-                  <p className="text-[13px] font-bold">
-                    {labelOf(masters?.designations, e.designationId) ?? 'Role'} — {e.employer}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {dotted(
-                      [monthYear(e.joiningDate), e.flgCurrent ? 'Present' : monthYear(e.releavingDate)]
-                        .filter(Boolean)
-                        .join(' – ') || null,
-                      duration(e.joiningDate, e.flgCurrent ? null : e.releavingDate),
-                    )}
-                  </p>
-                  {e.jobDescr && <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed">{e.jobDescr}</p>}
-                </div>
-              ))
-            : empty}
-        </section>
-      );
-
-    case 'projects':
-      return (
-        <section>
-          <Heading template={template}>Projects</Heading>
-          {cv.projects.length
-            ? cv.projects.map((p) => (
-                <div key={p.subscriberProjectId} className="mb-3">
-                  <p className="text-[13px] font-bold">
-                    {dotted(p.title, p.clientName || null)}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {dotted(
-                      years(p.workedFromYear, p.workedTillYear),
-                      p.projectStatus || null,
-                      p.projectSite || null,
-                      p.natureOfEmployment || null,
-                      p.teamSize ? `Team of ${p.teamSize}` : null,
-                    )}
-                  </p>
-                  {p.skillsUsed.length > 0 && (
-                    <p className="text-xs text-slate-500">Skills: {p.skillsUsed.join(', ')}</p>
-                  )}
-                  {p.roleDescr && <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed">{p.roleDescr}</p>}
-                  {p.details && <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed">{p.details}</p>}
-                </div>
-              ))
-            : empty}
-        </section>
-      );
-
-    case 'itSkills':
-      return (
-        <section>
-          <Heading template={template}>Technical Skills</Heading>
-          {cv.itSkills.length
-            ? cv.itSkills.map((s) => {
-                const meta = dotted(
-                  s.version || null,
-                  expLength(s.expYears, s.expMonths),
-                  s.lastUsedYear ? `last used ${s.lastUsedYear}` : null,
-                );
-                return (
-                  <p key={s.subscriberItSkillId} className="mb-1 text-[13px]">
-                    <span className="font-bold">{s.skillName}</span>
-                    {meta && <span className="text-slate-500"> · {meta}</span>}
-                  </p>
-                );
-              })
-            : empty}
-        </section>
-      );
-
-    case 'accomplishments': {
-      // The header already carries the online profiles, so this lists the rest.
-      const rows = cv.accomplishments.filter((a) => a.kind !== 'ONLINE_PROFILE');
-      return (
-        <section>
-          <Heading template={template}>Accomplishments</Heading>
-          {rows.length
-            ? rows.map((a) => (
-                <div key={a.subscriberAccomplishmentId} className="mb-2">
-                  <p className="text-[13px] font-bold">{dotted(a.title, a.eventYear ? String(a.eventYear) : null)}</p>
-                  {a.descr && <p className="whitespace-pre-line text-[13px] leading-relaxed">{a.descr}</p>}
-                  {a.url && <p className="text-xs text-slate-500">{a.url}</p>}
-                </div>
-              ))
-            : empty}
-        </section>
-      );
-    }
-
-    case 'education':
-      return (
-        <section>
-          <Heading template={template}>Education</Heading>
-          {cv.education.length
-            ? cv.education.map((e) => (
-                <div key={e.subscriberEducationId} className="mb-2">
-                  <p className="text-[13px] font-bold">
-                    {educationTitle(masters?.degrees, masters?.courses, e)}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {dotted(
-                      e.instituteName,
-                      // The branch, now that the qualification is the headline above it.
-                      labelOf(masters?.courses, e.courseTypeId),
-                      e.specialization || null,
-                      years(e.startYear, e.passingYear),
-                      e.marks || null,
-                    )}
-                  </p>
-                </div>
-              ))
-            : empty}
-        </section>
-      );
-
-    case 'skills':
-      return (
-        <section>
-          <Heading template={template}>Skills</Heading>
-          {cv.professional?.tagNames.length ? (
-            template === 'ats' ? (
-              // A parser reads a comma list far more reliably than styled chips.
-              <p className="text-[13px]">{cv.professional.tagNames.join(', ')}</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {cv.professional.tagNames.map((s) => (
-                  <Chip key={s} label={s} />
-                ))}
-              </div>
-            )
-          ) : (
-            empty
-          )}
-          {cv.languages.length > 0 && (
-            <p className="mt-2 text-xs text-slate-500">
-              Languages:{' '}
-              {cv.languages
-                .map((l) => [l.languageName, PROFICIENCY[l.proficiencyId]].filter(Boolean).join(' — '))
-                .join(', ')}
-            </p>
-          )}
-        </section>
-      );
-
-    case 'certifications':
-      return (
-        <section>
-          <Heading template={template}>Certifications</Heading>
-          {cv.certificates.length
-            ? cv.certificates.map((c) => (
-                <div key={c.subscriberCertificateId} className="mb-1.5">
-                  <p className="text-[13px] font-bold">{c.certificateName}</p>
-                  <p className="text-xs text-slate-500">
-                    {dotted(
-                      c.certificationId || null,
-                      c.validFromYear
-                        ? `${c.validFromYear}${c.neverExpires ? ' · no expiry' : c.validTillYear ? ` – ${c.validTillYear}` : ''}`
-                        : null,
-                      c.certificateUrl || null,
-                    )}
-                  </p>
-                </div>
-              ))
-            : empty}
-        </section>
-      );
-  }
 }

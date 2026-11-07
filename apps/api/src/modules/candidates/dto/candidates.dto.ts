@@ -16,6 +16,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 /* ------------------------------------------------------------------------- *
@@ -108,9 +109,12 @@ export class UpdatePersonalDto {
   @IsNotEmpty()
   mobile!: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'YYYY-MM-DD. Optional — an empty string means "not given" and clears it.' })
   @IsOptional()
-  @IsDateString()
+  // The form sends '' for an untouched date field. That is "not given", not a malformed date —
+  // rejecting it blocked every candidate who skipped DOB from getting past step 1.
+  @ValidateIf((o: { dob?: string }) => o.dob !== '')
+  @IsDateString({}, { message: 'Date of Birth must be a valid date' })
   dob?: string;
 
   @ApiProperty({ enum: ['M', 'F'] })
@@ -134,10 +138,28 @@ export class UpdateProfessionalDto {
   @IsInt()
   subFunctionId?: number;
 
+  @ApiPropertyOptional({
+    description:
+      'A function the candidate typed that is not in tblMstrSubFunctions. Matched case-insensitively ' +
+      'against the master, added to it if absent, and wins over subFunctionId.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  subFunctionName?: string;
+
   @ApiPropertyOptional({ description: 'tblMstrSkills.SkillID' })
   @IsOptional()
   @IsInt()
   skillId?: number;
+
+  @ApiPropertyOptional({
+    description: 'Same as subFunctionName, for tblMstrSkills. Wins over skillId.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  skillName?: string;
 
   @ApiPropertyOptional({ description: 'Whole years of experience' })
   @IsOptional()
@@ -207,6 +229,16 @@ export class UpsertEducationDto {
   @IsOptional()
   @IsInt()
   courseTypeId?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'A course the candidate typed that is not listed under degreeId. Matched case-insensitively ' +
+      'within that qualification, added to tblMstrCourse if absent, and wins over courseTypeId.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  courseName?: string;
 
   @ApiProperty({
     description: 'tblMstrEducationType.EducationTypeID — the qualification, e.g. B.Tech, MBA, ITI, 12th',
@@ -288,6 +320,31 @@ export class InstituteSearchDto {
   limit?: number;
 }
 
+/** The free-text fields that have no master of their own, so their suggestions are learned. */
+export const SUGGESTION_KINDS = ['keySkill', 'itSkill', 'language'] as const;
+export type SuggestionKind = (typeof SUGGESTION_KINDS)[number];
+
+/** Query for the key-skill / IT-skill / language typeahead. */
+export class SuggestionSearchDto {
+  @ApiProperty({ enum: SUGGESTION_KINDS })
+  @IsIn(SUGGESTION_KINDS)
+  kind!: SuggestionKind;
+
+  @ApiPropertyOptional({ description: 'What the candidate has typed so far. Blank lists the most used.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  q?: string;
+
+  @ApiPropertyOptional({ description: 'Max rows to return (1-50, default 15)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number;
+}
+
 export class UpsertEmploymentDto {
   @ApiPropertyOptional({ description: 'Omit to create a new entry' })
   @IsOptional()
@@ -304,6 +361,16 @@ export class UpsertEmploymentDto {
   @IsOptional()
   @IsInt()
   designationId?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'A job title the candidate typed that is not in tblMstrDesignation. Matched case-insensitively, ' +
+      'added to the master if absent, and wins over designationId.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  designationName?: string;
 
   @ApiPropertyOptional({ description: 'tblMstrEmpType.EmployeeTypeID' })
   @IsOptional()

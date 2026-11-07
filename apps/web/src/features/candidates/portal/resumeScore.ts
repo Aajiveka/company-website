@@ -1,4 +1,5 @@
 import type { CvEditProfile } from '../candidate.types';
+import { isFresherProfile } from '../fresher';
 
 /**
  * The "Resume Score" panel in the Figma resume builder.
@@ -27,6 +28,9 @@ export function computeResumeScore(cv: CvEditProfile) {
   const summaryLength = cv.summary?.trim().length ?? 0;
   const skillCount = cv.professional?.tagNames.length ?? 0;
   const describedRoles = cv.employment.filter((e) => e.jobDescr?.trim()).length;
+  // A fresher has no jobs to list, so scoring them "missing" costs a quarter of the score for
+  // something they cannot add. Their projects are what a recruiter reads in its place.
+  const fresher = !cv.employment.length && isFresherProfile(cv);
 
   const sections: ScoreSection[] = [
     {
@@ -44,17 +48,29 @@ export function computeResumeScore(cv: CvEditProfile) {
       state: summaryLength >= 200 ? 'complete' : summaryLength > 0 ? 'partial' : 'missing',
       hint: summaryLength >= 200 ? 'complete' : summaryLength > 0 ? 'too short' : 'missing',
     },
-    {
-      key: 'experience',
-      label: 'Experience',
-      weight: 25,
-      state: !cv.employment.length ? 'missing' : describedRoles === cv.employment.length ? 'complete' : 'partial',
-      hint: !cv.employment.length
-        ? 'missing'
-        : describedRoles === cv.employment.length
-          ? 'complete'
-          : 'describe every role',
-    },
+    fresher
+      ? {
+          key: 'experience',
+          label: 'Experience',
+          weight: 25,
+          state: cv.projects.length ? 'complete' : 'missing',
+          hint: cv.projects.length ? 'fresher · projects' : 'add projects',
+        }
+      : {
+          key: 'experience',
+          label: 'Experience',
+          weight: 25,
+          state: !cv.employment.length
+            ? 'missing'
+            : describedRoles === cv.employment.length
+              ? 'complete'
+              : 'partial',
+          hint: !cv.employment.length
+            ? 'missing'
+            : describedRoles === cv.employment.length
+              ? 'complete'
+              : 'describe every role',
+        },
     {
       key: 'education',
       label: 'Education',

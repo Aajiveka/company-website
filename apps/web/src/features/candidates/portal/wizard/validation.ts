@@ -71,7 +71,11 @@ export const educationDraftSchema = z
       if (percent) {
         const value = Number(percent[1]);
         if (value < 0 || value > 100) fail('marks', 'Percentage must be between 0 and 100.');
-      } else if (!cgpa) {
+      } else if (cgpa) {
+        // "8.5 CGPA" names no scale; out of 10 is the Indian default.
+        const scale = Number(cgpa[4] ?? 10);
+        if (Number(cgpa[1]) > scale) fail('marks', `CGPA must be between 0 and ${scale}.`);
+      } else {
         fail('marks', 'Enter a percentage (0-100) or a CGPA such as "8.5 CGPA".');
       }
     }

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import argon2 from 'argon2';
 import { PrismaService } from '@/prisma/prisma.service';
 import { StorageService } from '@/modules/storage/storage.service';
@@ -6,11 +7,13 @@ import { avatarUrl } from '@/modules/files/avatar-url';
 import { AuditService } from '@/modules/audit/audit.service';
 import { JobMapStatus, SubscriberStatus, JOB_STATUS_ACTIVE } from '@/shared/status';
 import { pdfPageCount } from '@/shared/pdf';
+import { instituteSearchKey, instituteSearchText } from '@/shared/institute-key';
 import { EDUCATION_MAX_YEAR_AHEAD, EDUCATION_MIN_YEAR } from './dto/candidates.dto';
 import type {
   CreateJobAlertDto,
   CreateSavedSearchDto,
   InstituteSearchDto,
+  SuggestionSearchDto,
   UpdateCareerProfileDto,
   UpdateDiversityDto,
   UpdateHeadlineDto,
@@ -35,6 +38,20 @@ const AVATAR_TYPES: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',
 };
+
+/**
+ * Seeds the language typeahead before any candidate has saved one: English plus the 22
+ * languages of the Eighth Schedule. Everything candidates add on top is learned from
+ * tblSubscriberLanguage.
+ */
+const BASE_LANGUAGES = [
+  'English', 'Hindi', 'Assamese', 'Bengali', 'Bodo', 'Dogri', 'Gujarati', 'Kannada', 'Kashmiri',
+  'Konkani', 'Maithili', 'Malayalam', 'Manipuri', 'Marathi', 'Nepali', 'Odia', 'Punjabi',
+  'Sanskrit', 'Santali', 'Sindhi', 'Tamil', 'Telugu', 'Urdu',
+];
+
+/** Collapses runs of whitespace, so "Drone   Pilot " is stored and matched as "Drone Pilot". */
+const tidy = (name: string) => name.replace(/\s+/g, ' ').trim();
 
 /* ------------------------------------------------------------------ *
  * Activity timeline
@@ -421,7 +438,11 @@ export class CandidatesService {
       if (percent) {
         const value = Number(percent[1]);
         if (value < 0 || value > 100) throw new BadRequestException('Percentage must be between 0 and 100.');
-      } else if (!cgpa) {
+      } else if (cgpa) {
+        // "8.5 CGPA" names no scale; out of 10 is the Indian default.
+        const scale = Number(cgpa[4] ?? 10);
+        if (Number(cgpa[1]) > scale) throw new BadRequestException(`CGPA must be between 0 and ${scale}.`);
+      } else {
         throw new BadRequestException('Enter a percentage (0-100) or a CGPA such as "8.5 CGPA".');
       }
     }
@@ -727,12 +748,18 @@ export class CandidatesService {
     });
     if (!cv) throw new BadRequestException('Save your personal details first');
 
+    // A typed-in name wins over the id: the picker offers "Add …" for anything the masters lack.
+    const subFunctionId = dto.subFunctionName?.trim()
+      ? await this.resolveSubFunction(dto.subFunctionName)
+      : dto.subFunctionId;
+    const skillId = dto.skillName?.trim() ? await this.resolveSkill(dto.skillName) : dto.skillId;
+
     const now = new Date();
     await this.db.subscriberCVDetails.update({
       where: { subscriberID: subscriberId },
       data: {
-        ...(dto.subFunctionId !== undefined && { subFunctionID: dto.subFunctionId }),
-        ...(dto.skillId !== undefined && { skillID: dto.skillId }),
+        ...(subFunctionId !== undefined && { subFunctionID: subFunctionId }),
+        ...(skillId !== undefined && { skillID: skillId }),
         ...(dto.totalExp !== undefined && { totalExp: dto.totalExp }),
         ...(dto.currentCtc !== undefined && { currentCTC: dto.currentCtc }),
         ...(dto.currentCityId !== undefined && { currentCityID: dto.currentCityId }),
@@ -792,9 +819,154 @@ export class CandidatesService {
     return { ok: true };
   }
 
+  /**
+   * Id of the master row named `name`, adding the row if there is none.
+   *
+   * This is how "Add …" in the wizard's dropdowns works: whatever one candidate adds becomes a
+   * suggestion for the next. Matching is case-insensitive, so "sales manager" lands on the
+   * existing "Sales Manager" rather than minting a near-duplicate.
+   */
+  private async findOrCreateByName(
+    name: string,
+    find: (descr: string) => Promise<number | undefined>,
+    create: (descr: string) => Promise<number>,
+  ): Promise<number> {
+    const descr = tidy(name);
+    return (await find(descr)) ?? create(descr);
+  }
+
+  /** tblMstrSubFunctions. New rows carry no FunctionID — nothing typed says which parent it is. */
+  private resolveSubFunction(name: string) {
+    return this.findOrCreateByName(
+      name,
+      async (descr) =>
+        (await this.db.mstrSubFunctions.findFirst({
+          where: { descr: { equals: descr, mode: 'insensitive' } },
+          select: { subFunctionID: true },
+        }))?.subFunctionID,
+      async (descr) =>
+        (await this.db.mstrSubFunctions.create({ data: { descr }, select: { subFunctionID: true } })).subFunctionID,
+    );
+  }
+
+  private resolveSkill(name: string) {
+    return this.findOrCreateByName(
+      name,
+      async (descr) =>
+        (await this.db.mstrSkills.findFirst({
+          where: { descr: { equals: descr, mode: 'insensitive' } },
+          select: { skillID: true },
+        }))?.skillID,
+      async (descr) => (await this.db.mstrSkills.create({ data: { descr }, select: { skillID: true } })).skillID,
+    );
+  }
+
+  private resolveDesignation(name: string) {
+    return this.findOrCreateByName(
+      name,
+      async (descr) =>
+        (await this.db.mstrDesignation.findFirst({
+          where: { descr: { equals: descr, mode: 'insensitive' } },
+          select: { designationID: true },
+        }))?.designationID,
+      async (descr) =>
+        (await this.db.mstrDesignation.create({ data: { descr }, select: { designationID: true } })).designationID,
+    );
+  }
+
+  /** A course belongs to one qualification, so it is matched and added within `degreeId` only. */
+  private resolveCourse(name: string, degreeId: number) {
+    return this.findOrCreateByName(
+      name,
+      async (degreeName) =>
+        (await this.db.mstrCourse.findFirst({
+          where: { educationTypeID: degreeId, degreeName: { equals: degreeName, mode: 'insensitive' } },
+          select: { degreeID: true },
+        }))?.degreeID,
+      async (degreeName) =>
+        (
+          await this.db.mstrCourse.create({
+            // ShortForm is required and nothing typed gives one; the name is the honest stand-in.
+            data: { degreeName, shortForm: degreeName.slice(0, 50), educationTypeID: degreeId },
+            select: { degreeID: true },
+          })
+        ).degreeID,
+    );
+  }
+
+  /**
+   * Adds a typed-in institution to tblMstrInstitute so the next candidate is offered it.
+   *
+   * Keyed exactly as the seed keys it, and the SearchKey column is UNIQUE, so a spelling that
+   * normalises to an existing row ("Haridwar Univ." vs "haridwar univ") is skipped rather than
+   * doubled. No state or city — nothing typed says where it is.
+   */
+  private async rememberInstitute(name: string | undefined) {
+    const label = tidy(name ?? '');
+    const searchKey = instituteSearchKey(label);
+    // The master column is 300 wide; the education row allows 500. A name that long is a
+    // paste, not an institution worth suggesting.
+    if (!searchKey || label.length > 300) return;
+    await this.db.mstrInstitute.createMany({
+      data: [{ name: label, searchKey, searchText: instituteSearchText(label) }],
+      skipDuplicates: true,
+    });
+  }
+
+  /**
+   * Typeahead for the free-text fields with no master: key skills, IT skills and languages.
+   *
+   * The suggestions are what candidates have already saved, so anything one candidate adds is
+   * offered to the next — no master table, and nothing to moderate before it shows up. Spellings
+   * that differ only in case are one suggestion, ranked by how many candidates used it.
+   */
+  async suggest(dto: SuggestionSearchDto) {
+    const limit = dto.limit ?? 15;
+    const q = tidy(dto.q ?? '').toLowerCase();
+    // Typed % and _ are literal characters here, not LIKE wildcards.
+    const escaped = q.replace(/[\\%_]/g, (c) => `\\${c}`);
+    const contains = `%${escaped}%`;
+    const startsWith = `${escaped}%`;
+
+    const source = {
+      // Key skills: the tag master, the primary-skill master, and every candidate's chips.
+      keySkill: Prisma.sql`
+        SELECT "TagName" AS v FROM "tblMstrTags"
+        UNION ALL SELECT "Descr" FROM "tblMstrSkills"
+        UNION ALL SELECT s FROM "tblSubscriberProfileExtra", unnest(string_to_array("KeySkills", ',')) AS s`,
+      itSkill: Prisma.sql`
+        SELECT "SkillName" AS v FROM "tblSubscriberITSkill"
+        UNION ALL SELECT "TagName" FROM "tblMstrTags"`,
+      language: Prisma.sql`
+        SELECT unnest(${BASE_LANGUAGES}::text[]) AS v
+        UNION ALL SELECT "LanguageName" FROM "tblSubscriberLanguage"`,
+    }[dto.kind];
+
+    const rows = await this.db.$queryRaw<{ label: string }[]>`
+      SELECT MIN(btrim(v)) AS label
+        FROM (${source}) AS src
+       WHERE btrim(COALESCE(v, '')) <> ''
+         AND lower(btrim(v)) LIKE ${contains}
+       GROUP BY lower(btrim(v))
+       ORDER BY bool_or(lower(btrim(v)) LIKE ${startsWith}) DESC, COUNT(*) DESC, MIN(btrim(v)) ASC
+       LIMIT ${limit}
+    `;
+    return rows.map((r) => r.label);
+  }
+
   /** Port of spSubscriberCVUpdate_Education — create when no id, else update in place. */
   async upsertEducation(userId: number, subscriberId: number, dto: UpsertEducationDto) {
+    if (dto.courseName?.trim()) {
+      // The qualification has to be real before a course is filed under it.
+      const degree = await this.db.mstrEducationType.findUnique({
+        where: { educationTypeID: dto.degreeId },
+        select: { educationTypeID: true },
+      });
+      if (!degree) throw new BadRequestException('Choose a valid education qualification.');
+      dto = { ...dto, courseTypeId: await this.resolveCourse(dto.courseName, dto.degreeId) };
+    }
     await this.validateEducation(subscriberId, dto);
+    await this.rememberInstitute(dto.instituteName);
     const now = new Date();
     // Conditional, because two editors write this row and they do not show the same fields.
     // An unconditional mapping made the CV manager blank the institute and passing year it
@@ -831,9 +1003,12 @@ export class CandidatesService {
   /** New (the legacy app never wrote to tblSubscriberEmployer, only read it) — same upsert shape as education. */
   async upsertEmployment(userId: number, subscriberId: number, dto: UpsertEmploymentDto) {
     const now = new Date();
+    const designationId = dto.designationName?.trim()
+      ? await this.resolveDesignation(dto.designationName)
+      : dto.designationId;
     const data = {
       employer: dto.employer,
-      designationID: dto.designationId ?? null,
+      designationID: designationId ?? null,
       employeeTypeID: dto.employeeTypeId ?? null,
       joiningDate: dto.joiningDate ? new Date(dto.joiningDate) : null,
       releavingDate: dto.flgCurrent ? null : dto.releavingDate ? new Date(dto.releavingDate) : null,
@@ -1026,6 +1201,13 @@ export class CandidatesService {
     // An in-progress project has no end, so a "worked till" typed before the status was
     // switched must not survive as a contradictory end date.
     const inProgress = dto.projectStatus === 'In Progress';
+    // Compared as year*12+month so January 2025 sorts before February 2025 and after December
+    // 2024. A missing month counts as January, which is how the editor reads it back.
+    if (!inProgress && dto.workedFromYear && dto.workedTillYear) {
+      const from = dto.workedFromYear * 12 + (dto.workedFromMonth ?? 1);
+      const till = dto.workedTillYear * 12 + (dto.workedTillMonth ?? 1);
+      if (till < from) throw new BadRequestException('Worked till cannot be earlier than worked from.');
+    }
     const data = {
       title: dto.title.trim(),
       clientName: dto.clientName?.trim() || null,

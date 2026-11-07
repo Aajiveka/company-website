@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { EducationStep } from '../EducationStep';
 import { optionValues, selectOption, selectedValue } from '@/test-utils/selectOption';
 import type { CvEditProfile, CvEducationEntry, CvMasters } from '../../../candidate.types';
@@ -89,14 +90,12 @@ const renderStep = (cv: CvEditProfile) =>
 async function fillValidDraft(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText(/^education/i), '136');
   await user.type(screen.getByLabelText(/institution/i), 'Patna University');
-  await user.selectOptions(screen.getByLabelText(/^course \*/i), '1020');
+  await selectOption(user, /^course \*/i, '1020');
   await user.type(screen.getByLabelText(/specialization/i), 'Computer Science');
 }
 
-const courseOptions = () =>
-  within(screen.getByLabelText(/^course \*/i))
-    .getAllByRole('option')
-    .map((o) => o.textContent);
+/** The course ids on offer — Course is a searchable dropdown, since it offers "Add". */
+const courseOptions = (user: ReturnType<typeof userEvent.setup>) => optionValues(user, /^course \*/i);
 
 describe('EducationStep', () => {
   beforeEach(() => {
@@ -121,12 +120,7 @@ describe('EducationStep', () => {
 
     await user.selectOptions(screen.getByLabelText(/^education/i), '136');
 
-    expect(courseOptions()).toEqual([
-      'Select',
-      'Computer Science and Engineering',
-      'Information Technology',
-      'Mechanical Engineering',
-    ]);
+    expect(await courseOptions(user)).toEqual(['1020', '1021', '1022']);
   });
 
   it('offers B.Com courses, not engineering branches, once B.Com is chosen', async () => {
@@ -135,7 +129,7 @@ describe('EducationStep', () => {
 
     await user.selectOptions(screen.getByLabelText(/^education/i), '132');
 
-    expect(courseOptions()).toEqual(['Select', 'Accounting and Finance', 'Taxation']);
+    expect(await courseOptions(user)).toEqual(['1010', '1011']);
   });
 
   it('never offers an engineering branch under MBBS', async () => {
@@ -144,7 +138,7 @@ describe('EducationStep', () => {
 
     await user.selectOptions(screen.getByLabelText(/^education/i), '145');
 
-    expect(courseOptions()).toEqual(['Select', 'Medicine and Surgery']);
+    expect(await courseOptions(user)).toEqual(['1030']);
   });
 
   it('resets the chosen course when the qualification changes', async () => {
@@ -152,12 +146,12 @@ describe('EducationStep', () => {
     renderStep(cvWith([]));
 
     await user.selectOptions(screen.getByLabelText(/^education/i), '136');
-    await user.selectOptions(screen.getByLabelText(/^course \*/i), '1021');
-    expect(screen.getByLabelText(/^course \*/i)).toHaveValue('1021');
+    await selectOption(user, /^course \*/i, '1021');
+    expect(selectedValue(/^course \*/i)).toBe('1021');
 
     // Keeping it would file an Information Technology branch under a B.Com.
     await user.selectOptions(screen.getByLabelText(/^education/i), '132');
-    expect(screen.getByLabelText(/^course \*/i)).toHaveValue('');
+    expect(selectedValue(/^course \*/i)).toBe('');
   });
 
   it('keeps the Course dropdown closed until a qualification is picked', () => {
@@ -182,12 +176,41 @@ describe('EducationStep', () => {
 
     await user.selectOptions(screen.getByLabelText(/^education/i), '136');
     await user.type(screen.getByLabelText(/institution/i), 'A College Nobody Listed');
-    await user.selectOptions(screen.getByLabelText(/^course \*/i), '1020');
+    await selectOption(user, /^course \*/i, '1020');
     await user.type(screen.getByLabelText(/specialization/i), 'Computer Science');
     await user.click(screen.getByRole('button', { name: /save & continue/i }));
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
     expect(mutateAsync.mock.calls[0][0]).toMatchObject({ instituteName: 'A College Nobody Listed' });
+  });
+
+  it('offers to add an institution that is not listed', async () => {
+    const user = userEvent.setup();
+    instituteSearch.mockReturnValue({ data: [], isFetching: false });
+    renderStep(cvWith([]));
+
+    await user.type(screen.getByLabelText(/institution/i), 'Haridwar University');
+
+    expect(screen.getByRole('option', { name: /add “haridwar university”/i })).toBeInTheDocument();
+  });
+
+  it('sends a typed-in course by name, for the API to file under the chosen qualification', async () => {
+    const user = userEvent.setup();
+    renderStep(cvWith([]));
+
+    await user.selectOptions(screen.getByLabelText(/^education/i), '136');
+    await user.type(screen.getByLabelText(/institution/i), 'Patna University');
+    await user.click(screen.getByLabelText(/^course \*/i));
+    // Opening the panel focuses its search box.
+    await user.keyboard('Drone Technology');
+    // The "Add" row — its text comes from i18n, which the tests do not load.
+    await user.click(await screen.findByRole('option', { name: /add/i }));
+    await user.type(screen.getByLabelText(/specialization/i), 'Drones');
+    await user.click(screen.getByRole('button', { name: /save & continue/i }));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({ degreeId: 136, courseName: 'Drone Technology' });
+    expect(mutateAsync.mock.calls[0][0].courseTypeId).toBeUndefined();
   });
 
   it('fills the institution field from a suggestion', async () => {
@@ -238,6 +261,19 @@ describe('EducationStep', () => {
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
     expect(mutateAsync.mock.calls[0][0]).toMatchObject({ marks: '8.5 CGPA' });
+  });
+
+  it('saves a CGPA with its scale when the scale is picked', async () => {
+    const user = userEvent.setup();
+    renderStep(cvWith([]));
+
+    await fillValidDraft(user);
+    await user.selectOptions(screen.getByLabelText(/grading scale/i), 'cgpa10');
+    await user.type(screen.getByLabelText(/percentage/i), '8.5');
+    await user.click(screen.getByRole('button', { name: /save & continue/i }));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({ marks: '8.5/10' });
   });
 
   // An end year before the start year is not a mistake to catch on submit — it is never on
@@ -314,7 +350,7 @@ describe('EducationStep', () => {
     await user.click(screen.getByRole('button', { name: /edit/i }));
 
     expect(screen.getByLabelText(/^education/i)).toHaveValue('136');
-    expect(screen.getByLabelText(/^course \*/i)).toHaveValue('1020');
+    expect(selectedValue(/^course \*/i)).toBe('1020');
     expect(screen.getByLabelText(/institution/i)).toHaveValue('Patna University');
     expect(selectedValue(/start year/i)).toBe('2016');
     expect(selectedValue(/end year/i)).toBe('2020');
@@ -344,15 +380,23 @@ describe('EducationStep', () => {
 
   it('surfaces the rule the API rejected rather than a bare retry prompt', async () => {
     const user = userEvent.setup();
-    mutateAsync.mockRejectedValue({
-      response: { data: { message: 'That course does not belong to B.Tech.' } },
-    });
+    mutateAsync.mockRejectedValue(
+      new AxiosError('Bad Request', 'ERR_BAD_REQUEST', undefined, null, {
+        status: 400,
+        statusText: 'Bad Request',
+        data: { message: 'That course does not belong to B.Tech.' },
+        headers: new AxiosHeaders(),
+        config: { headers: new AxiosHeaders() },
+      }),
+    );
     renderStep(cvWith([]));
 
     await fillValidDraft(user);
     await user.click(screen.getByRole('button', { name: /save & continue/i }));
 
-    expect(await screen.findByText('That course does not belong to B.Tech.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Could not save this qualification. That course does not belong to B.Tech.'),
+    ).toBeInTheDocument();
   });
 
   it('does not advance the wizard when the save fails', async () => {

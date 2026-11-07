@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { isAxiosError } from 'axios';
 import { useDeleteProject, useUpsertProject } from '../../candidate.api';
 import {
   EMPLOYMENT_TYPES,
@@ -11,6 +10,7 @@ import {
 import { Field, Input, Select, Textarea } from '../components/primitives';
 import { dotted } from '../format';
 import { AddAnother, DraftHeader, FieldGrid, SavedRow, StepShell, type StepProps } from './StepShell';
+import { saveErrorMessage } from '../saveError';
 
 interface Draft {
   subscriberProjectId?: number;
@@ -74,19 +74,6 @@ const toDraft = (p: CvProjectEntry): Draft => ({
   details: p.details,
 });
 
-/**
- * The API answers a rejected field with `message: ["natureOfEmployment must be one of …"]`.
- * Showing it beats "Please try again", which invites the candidate to press Save repeatedly
- * against a validation error that will never clear on its own.
- */
-const saveErrorMessage = (err: unknown): string => {
-  const fallback = 'Could not save this project. Please try again.';
-  if (!isAxiosError(err) || err.response?.status !== 400) return fallback;
-  const message = (err.response?.data as { message?: string | string[] } | undefined)?.message;
-  const first = Array.isArray(message) ? message[0] : message;
-  return first ? `Could not save this project — ${first}` : fallback;
-};
-
 /** Step 7 — Projects (Figma 7:8408). */
 export function ProjectsStep({
   cv,
@@ -99,15 +86,32 @@ export function ProjectsStep({
 }: StepProps & { cv: CvEditProfile }) {
   const [draft, setDraft] = useState<Draft | null>(cv.projects.length ? null : emptyDraft());
   const [error, setError] = useState<string | null>(null);
+  const [tillError, setTillError] = useState<string | null>(null);
 
   const upsert = useUpsertProject();
   const remove = useDeleteProject();
 
-  const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
+  const set = <K extends keyof Draft>(key: K, value: Draft[K]) => {
     setDraft((d) => (d ? { ...d, [key]: value } : d));
+    // Either end of the range can fix it, so editing either clears the message.
+    if (key === 'workedFrom' || key === 'workedTill') setTillError(null);
+  };
 
   const saveDraft = async (): Promise<boolean> => {
     if (!draft || !draft.title.trim()) return true;
+    // `min` greys out earlier months in the picker, but a typed value gets past it. Both are
+    // `YYYY-MM`, so comparing the strings compares the months. An in-progress project sends no
+    // end at all, so its stale end month is no reason to block the save.
+    if (
+      draft.projectStatus !== 'In Progress' &&
+      draft.workedFrom &&
+      draft.workedTill &&
+      draft.workedTill < draft.workedFrom
+    ) {
+      setTillError('Worked Till cannot be earlier than Worked From.');
+      setError('Please fix the highlighted fields.');
+      return false;
+    }
     const from = splitMonth(draft.workedFrom);
     const till = splitMonth(draft.workedTill);
     try {
@@ -131,7 +135,7 @@ export function ProjectsStep({
       });
       return true;
     } catch (err) {
-      setError(saveErrorMessage(err));
+      setError(saveErrorMessage(err, 'this project'));
       return false;
     }
   };
@@ -150,6 +154,7 @@ export function ProjectsStep({
   /** Discards the open editor without saving. */
   const closeDraft = () => {
     setError(null);
+    setTillError(null);
     setDraft(null);
   };
 
@@ -179,7 +184,10 @@ export function ProjectsStep({
                 p.workedFromYear ? `${p.workedFromYear} – ${p.workedTillYear ?? 'Present'}` : null,
                 p.skillsUsed.join(', ') || null,
               )}
-              onEdit={() => setDraft(toDraft(p))}
+              onEdit={() => {
+                setTillError(null);
+                setDraft(toDraft(p));
+              }}
               onDelete={() => remove.mutate(p.subscriberProjectId)}
               deleting={remove.isPending}
             />
@@ -224,10 +232,12 @@ export function ProjectsStep({
               />
             </Field>
 
-            <Field label="Worked Till" htmlFor="workedTill">
+            <Field label="Worked Till" htmlFor="workedTill" error={tillError ?? undefined}>
               <Input
                 id="workedTill"
                 type="month"
+                min={draft.workedFrom || undefined}
+                invalid={!!tillError}
                 value={draft.workedTill}
                 onChange={(e) => set('workedTill', e.target.value)}
               />

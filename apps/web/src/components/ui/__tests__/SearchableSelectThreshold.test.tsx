@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Select } from '../Select';
 import { optionsFromChildren } from '../searchable/optionsFromChildren';
+import { SearchableDropdown } from '../searchable/SearchableDropdown';
 import { SEARCHABLE_THRESHOLD } from '../searchable/useOptionSearch';
 import { selectOption, selectedValue } from '@/test-utils/selectOption';
 
@@ -70,6 +71,52 @@ describe('Select — native / searchable switchover', () => {
     expect(selectedValue('District')).toBe('12');
     await user.click(screen.getByLabelText('District'));
     expect(screen.getByRole('option', { name: /Option 12/ })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+describe('SearchableDropdown — adding an entry the list lacks', () => {
+  const renderCreatable = (onCreate = vi.fn()) => {
+    render(
+      <SearchableDropdown
+        aria-label="Function"
+        options={opts(50)}
+        value=""
+        onValueChange={vi.fn()}
+        onCreate={onCreate}
+      />,
+    );
+    return onCreate;
+  };
+
+  it('offers "Add" for text that matches nothing, and hands the trimmed text over on click', async () => {
+    const user = userEvent.setup();
+    const onCreate = renderCreatable();
+
+    await user.click(screen.getByLabelText('Function'));
+    await user.type(screen.getByRole('combobox'), '  Drone   Pilot ');
+    await user.click(screen.getByRole('option', { name: /multiSelect\.add/ }));
+
+    expect(onCreate).toHaveBeenCalledWith('Drone Pilot');
+  });
+
+  it('picks the "Add" row with Enter when it is the only row', async () => {
+    const user = userEvent.setup();
+    const onCreate = renderCreatable();
+
+    await user.click(screen.getByLabelText('Function'));
+    await user.type(screen.getByRole('combobox'), 'Drone Pilot{Enter}');
+
+    expect(onCreate).toHaveBeenCalledWith('Drone Pilot');
+  });
+
+  it('does not offer "Add" for an exact match, whatever the case', async () => {
+    const user = userEvent.setup();
+    renderCreatable();
+
+    await user.click(screen.getByLabelText('Function'));
+    await user.type(screen.getByRole('combobox'), 'option 7');
+
+    expect(screen.queryByRole('option', { name: /multiSelect\.add/ })).toBeNull();
   });
 });
 

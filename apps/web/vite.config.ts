@@ -86,6 +86,9 @@ export default defineConfig(({ mode: _mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
+        // The resume template's Computer Modern (~770 KB) is for the few who open the builder,
+        // not every install; it is cached on first use by the rule below instead.
+        globIgnores: ['**/fonts/cmu/**'],
         /**
          * Never answer an /api navigation with the app shell.
          *
@@ -104,6 +107,15 @@ export default defineConfig(({ mode: _mode }) => ({
               cacheName: 'google-fonts',
               expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/fonts/cmu/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'resume-fonts',
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [200] },
             },
           },
           /*

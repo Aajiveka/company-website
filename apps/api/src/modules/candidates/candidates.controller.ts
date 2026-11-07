@@ -24,6 +24,7 @@ import {
   CreateReferralDto,
   CreateSavedSearchDto,
   InstituteSearchDto,
+  SuggestionSearchDto,
   UpdateCareerProfileDto,
   UpdateDiversityDto,
   UpdateHeadlineDto,
@@ -85,6 +86,18 @@ export class CandidatesController {
   })
   searchInstitutes(@Query() dto: InstituteSearchDto) {
     return this.candidates.searchInstitutes(dto);
+  }
+
+  @Get('me/suggestions')
+  @ApiOperation({
+    summary: 'Typeahead for key skills, IT skills and languages',
+    description:
+      'These fields have no master table, so the suggestions are what candidates have already saved — ' +
+      'whatever one candidate adds is offered to the next. Case-variant spellings collapse to one, ' +
+      'ranked by how many candidates used it.',
+  })
+  suggest(@Query() dto: SuggestionSearchDto) {
+    return this.candidates.suggest(dto);
   }
 
   @Get('me/cv-edit')

@@ -246,17 +246,24 @@ export const Textarea = forwardRef<
  * Note that the searchable shape has no `<select>` element, so a forwarded `ref` is null and
  * `register()` will not bind — the wizard's fields are all controlled, which is what this
  * relies on. Use react-hook-form's `<Controller>` if you need one here.
+ *
+ * `onCreate` offers "Add “…”" for text that matches no option, and always uses the searchable
+ * shape, since a native `<select>` has nowhere to type.
  */
 export const Select = forwardRef<
   HTMLSelectElement,
-  React.SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }
->(function Select({ className, invalid, children, ...rest }, ref) {
+  React.SelectHTMLAttributes<HTMLSelectElement> & {
+    invalid?: boolean;
+    onCreate?: (label: string) => void;
+  }
+>(function Select({ className, invalid, onCreate, children, ...rest }, ref) {
   const { options, placeholder, clearable } = useMemo(
     () => optionsFromChildren(children),
     [children],
   );
 
-  if (options.length > SEARCHABLE_THRESHOLD && !rest.multiple) {
+  // "Add …" needs somewhere to type, so a creatable list is searchable however short it is.
+  if ((options.length > SEARCHABLE_THRESHOLD || onCreate) && !rest.multiple) {
     const { value, onChange, id, disabled, required, name, 'aria-label': ariaLabel } = rest;
     return (
       <SearchableDropdown
@@ -271,6 +278,7 @@ export const Select = forwardRef<
         disabled={disabled}
         invalid={invalid}
         clearable={clearable && !required}
+        onCreate={onCreate}
         aria-label={ariaLabel}
         aria-labelledby={id ? `${id}-label` : undefined}
         triggerClassName={cn(

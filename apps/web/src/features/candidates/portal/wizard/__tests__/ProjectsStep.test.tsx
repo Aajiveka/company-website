@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AxiosError, AxiosHeaders } from 'axios';
 import { ProjectsStep } from '../ProjectsStep';
@@ -39,6 +39,9 @@ const project = (overrides: Partial<CvProjectEntry> = {}): CvProjectEntry => ({
   details: 'test',
   ...overrides,
 });
+
+/** jsdom has no month picker for userEvent to drive, so the value is set as the picker would. */
+const fireMonth = (input: HTMLElement, value: string) => fireEvent.change(input, { target: { value } });
 
 const cvWith = (projects: CvProjectEntry[]) => ({ projects } as unknown as CvEditProfile);
 
@@ -108,7 +111,10 @@ describe('ProjectsStep', () => {
     await user.type(screen.getByLabelText(/project title/i), 'HRMS');
     await user.click(screen.getByRole('button', { name: /save & continue/i }));
 
-    expect(await screen.findByText(/natureOfEmployment must be one of/i)).toBeInTheDocument();
+    // Named by its on-screen label, with what to do about it — not the API's property name.
+    expect(
+      await screen.findByText('Could not save this project. Nature of Employment: choose one of the options in the list.'),
+    ).toBeInTheDocument();
   });
 
   it('falls back to the generic message when the failure carries no field detail', async () => {
@@ -120,6 +126,43 @@ describe('ProjectsStep', () => {
     await user.click(screen.getByRole('button', { name: /save & continue/i }));
 
     expect(await screen.findByText('Could not save this project. Please try again.')).toBeInTheDocument();
+  });
+
+  it('refuses a Worked Till earlier than Worked From', async () => {
+    const user = userEvent.setup();
+    renderStep([]);
+
+    await user.type(screen.getByLabelText(/project title/i), 'HRMS');
+    fireMonth(screen.getByLabelText(/worked from/i), '2026-01');
+    fireMonth(screen.getByLabelText(/worked till/i), '2025-01');
+    await user.click(screen.getByRole('button', { name: /save & continue/i }));
+
+    expect(await screen.findByText('Worked Till cannot be earlier than Worked From.')).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('accepts a Worked Till in the same month as Worked From', async () => {
+    const user = userEvent.setup();
+    renderStep([]);
+
+    await user.type(screen.getByLabelText(/project title/i), 'HRMS');
+    fireMonth(screen.getByLabelText(/worked from/i), '2025-03');
+    fireMonth(screen.getByLabelText(/worked till/i), '2025-03');
+    await user.click(screen.getByRole('button', { name: /save & continue/i }));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({
+      workedFromMonth: 3,
+      workedFromYear: 2025,
+      workedTillMonth: 3,
+      workedTillYear: 2025,
+    });
+  });
+
+  it('greys out months before Worked From in the Worked Till picker', () => {
+    renderStep([]);
+    fireMonth(screen.getByLabelText(/worked from/i), '2026-01');
+    expect(screen.getByLabelText(/worked till/i)).toHaveAttribute('min', '2026-01');
   });
 
   it('does not advance the wizard when the save fails', async () => {

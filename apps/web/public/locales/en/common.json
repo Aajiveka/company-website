@@ -449,7 +449,8 @@
     "more": "+{{count}} more",
     "selected": "{{count}} selected",
     "clearAll": "Clear all",
-    "remove": "Remove {{label}}"
+    "remove": "Remove {{label}}",
+    "add": "Add “{{label}}”"
   },
   "payment": {
     "error": {

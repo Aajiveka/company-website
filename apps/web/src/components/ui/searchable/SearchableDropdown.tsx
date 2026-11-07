@@ -1,12 +1,12 @@
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronDown, X } from 'lucide-react';
+import { Check, ChevronDown, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useAnchoredPanel } from '../useAnchoredPanel';
 import { SearchField } from './SearchField';
 import { useComboboxKeys } from './useComboboxKeys';
-import { useOptionSearch, type SearchOption } from './useOptionSearch';
+import { norm, useOptionSearch, type SearchOption } from './useOptionSearch';
 
 export interface SearchableDropdownProps {
   options: readonly SearchOption[];
@@ -33,6 +33,12 @@ export interface SearchableDropdownProps {
   triggerClassName?: string;
   /** Renders to the right of the value, before the chevron. */
   icon?: React.ReactNode;
+  /**
+   * When set, a query that matches no option exactly gets an "Add “…”" row at the foot of the
+   * list, and picking it hands the typed text here. The caller decides what a new entry is —
+   * usually it adds an option for it and selects that.
+   */
+  onCreate?: (label: string) => void;
 }
 
 /**
@@ -56,6 +62,7 @@ export function SearchableDropdown({
   'aria-describedby': ariaDescribedBy,
   triggerClassName,
   icon,
+  onCreate,
 }: SearchableDropdownProps) {
   const { t } = useTranslation('common');
   const listId = useId();
@@ -77,19 +84,31 @@ export function SearchableDropdown({
   const selected = useMemo(() => options.find((o) => o.value === value), [options, value]);
   const { items, hiddenCount } = useOptionSearch(options, query);
 
+  const createLabel = query.replace(/\s+/g, ' ').trim();
+  const canCreate =
+    !!onCreate && !!createLabel && !options.some((o) => norm(o.label) === norm(createLabel));
+  // The "Add" row sits after the matches, so it is addressed as the index one past them.
+  const count = items.length + (canCreate ? 1 : 0);
+
   const pick = useCallback(
     (index: number) => {
+      if (canCreate && index === items.length) {
+        onCreate?.(createLabel);
+        close();
+        setQuery('');
+        return;
+      }
       const option = items[index];
       if (!option || option.disabled) return;
       onValueChange(option.value);
       close();
       setQuery('');
     },
-    [items, onValueChange, close],
+    [items, onValueChange, close, canCreate, onCreate, createLabel],
   );
 
   const { activeIndex, setActiveIndex, onKeyDown, optionId, activeId } = useComboboxKeys({
-    count: items.length,
+    count,
     listId,
     onPick: pick,
     onClose: close,
@@ -181,7 +200,7 @@ export function SearchableDropdown({
             />
 
             <ul id={listId} role="listbox" aria-label={panelLabel} aria-labelledby={panelLabelledBy} className="py-1">
-              {items.length === 0 && (
+              {items.length === 0 && !canCreate && (
                 <li className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">
                   {t('multiSelect.noOptions')}
                 </li>
@@ -227,6 +246,29 @@ export function SearchableDropdown({
                   </li>
                 );
               })}
+              {canCreate && (
+                <li>
+                  <div
+                    id={optionId(items.length)}
+                    role="option"
+                    aria-selected={false}
+                    className={cn(
+                      'flex cursor-pointer items-center gap-2 border-t border-gray-100 px-3 py-2 text-sm font-medium text-primary dark:border-gray-700',
+                      activeIndex === items.length && 'bg-primary/5',
+                    )}
+                    onMouseEnter={() => setActiveIndex(items.length)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      pick(items.length);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate">
+                      {t('multiSelect.add', { label: createLabel })}
+                    </span>
+                  </div>
+                </li>
+              )}
               {hiddenCount > 0 && (
                 <li className="border-t border-gray-100 px-3 py-2 text-xs text-gray-400 dark:border-gray-700 dark:text-gray-500">
                   {t('multiSelect.more', { count: hiddenCount })}
