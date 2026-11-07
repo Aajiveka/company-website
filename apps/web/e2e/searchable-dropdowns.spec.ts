@@ -64,8 +64,12 @@ test.describe('Searchable dropdowns', () => {
 
     // Scoped to the open panel: the page's native <select>s own <option> elements too.
     const options = page.getByRole('listbox').getByRole('option');
-    await expect(options).toHaveCount(2);
+    // The two matches, then the "Add “agency”" row: the field accepts a function the list
+    // lacks, and no option matches the query exactly.
+    await expect(options).toHaveCount(3);
     await expect(options.first()).toHaveText('Agency Manager');
+    await expect(options.nth(1)).toHaveText('Travel Agency Coordinator');
+    await expect(options.last()).toHaveText('Add “agency”');
 
     await options.first().click();
     await expect(field).toHaveText(/Agency Manager/);
