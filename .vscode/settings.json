@@ -1,0 +1,8 @@
+{
+  // Use the repo's TypeScript (5.9, what `npm run build` and CI compile with), not the editor's
+  // bundled one. The bundled TS 6 rejects apps/api/tsconfig.json (moduleResolution node10,
+  // baseUrl) as errors, which breaks type resolution in the editor and shows phantom errors
+  // such as "Express has no exported member Multer" that the real build never reports.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
