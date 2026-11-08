@@ -401,6 +401,20 @@ describe('AdminService', () => {
       assert.equal(nextStepFor(20, 7, 3).owner, 'Candidate');
       assert.equal(nextStepFor(5, 7, 3).owner, null);
     });
+
+    it('never links into Q3 for an application Q3 does not hold (no referral)', () => {
+      // A company that interviewed / shortlisted / selected straight from its applicant list:
+      // the Q3 pages 404 for these, so the step names the company and links nowhere.
+      for (const status of [2, 15, 16, 19, 4]) {
+        const step = nextStepFor(status, 7, 3, false);
+        assert.equal(step.owner, 'Employer', `status ${status}`);
+        assert.equal(step.to, null, `status ${status}`);
+      }
+      assert.equal(nextStepFor(16, 7, 3, true).to, '/q3/decisions/7');
+      // Screening and closed stages are unaffected.
+      assert.equal(nextStepFor(1, 7, 3, false).to, '/q2/applications/7');
+      assert.equal(nextStepFor(5, 7, 3, false).owner, null);
+    });
   });
 
   // ── getSettings / updateSettings ──

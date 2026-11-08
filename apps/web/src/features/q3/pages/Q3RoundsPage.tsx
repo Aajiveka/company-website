@@ -23,6 +23,7 @@ import { getErrorMessage } from '@/lib/axios';
 import { useNudge, useQ3Rounds } from '../q3.api';
 import { TONE_PILL, dot, expLabel, firstName, fmtDay, fmtDayTime, fmtTime, fmtWeekday, sentAt, type Tone } from '../q3.format';
 import type { Q3Round, RoundDecision, RoundsDetail } from '../q3.types';
+import { ApplicationLoadError } from '../components/ApplicationLoadError';
 import { Crumbs, Q3Shell } from '../components/Q3Shell';
 import { QueueIndex, QueueSwitcher } from '../components/QueueSwitcher';
 import { RecordDecisionModal } from '../components/RecordDecisionModal';
@@ -54,7 +55,7 @@ export default function Q3RoundsPage() {
 }
 
 function RoundsDetailView({ mapId }: { mapId: string }) {
-  const { data, isLoading, isError, refetch } = useQ3Rounds(mapId);
+  const { data, isLoading, isError, error, refetch } = useQ3Rounds(mapId);
   const [dialog, setDialog] = useState<{ open: boolean; initial?: RoundDecision; seq: number }>({ open: false, seq: 0 });
 
   const subtitle = data ? (
@@ -77,13 +78,7 @@ function RoundsDetailView({ mapId }: { mapId: string }) {
           <SkeletonRows rows={4} />
         </Q3Card>
       ) : isError || !data ? (
-        <Q3Card>
-          <CardMessage
-            title="Couldn't load this application"
-            body="Check your connection and try again."
-            action={{ label: 'Retry', onClick: () => void refetch() }}
-          />
-        </Q3Card>
+        <ApplicationLoadError error={error} what="application" onRetry={() => void refetch()} />
       ) : (
         <div className="flex flex-col gap-5">
           <CandidateCard detail={data} onRecord={openDecision} />

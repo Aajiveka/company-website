@@ -27,6 +27,7 @@ import {
 } from '../q3.api';
 import { dot, expLabel, firstName, fmtDay, fmtSize, fmtWeekday, type Tone } from '../q3.format';
 import type { DocumentState, DocumentsDetail, Q3Document } from '../q3.types';
+import { ApplicationLoadError } from '../components/ApplicationLoadError';
 import { Crumbs, Q3Shell } from '../components/Q3Shell';
 import { Q3Modal } from '../components/Q3Modal';
 import { QueueIndex, QueueSwitcher } from '../components/QueueSwitcher';
@@ -98,7 +99,7 @@ export default function Q3DocumentsPage() {
 }
 
 function DocumentsDetailView({ mapId, offers }: { mapId: string; offers: boolean }) {
-  const { data, isLoading, isError, refetch } = useQ3Documents(mapId);
+  const { data, isLoading, isError, error, refetch } = useQ3Documents(mapId);
   const root = offers ? 'Offers & Joining' : 'Documents';
   const rootTo = offers ? '/q3/offers' : '/q3/documents';
 
@@ -120,13 +121,7 @@ function DocumentsDetailView({ mapId, offers }: { mapId: string; offers: boolean
           <SkeletonRows rows={5} />
         </Q3Card>
       ) : isError || !data ? (
-        <Q3Card>
-          <CardMessage
-            title="Couldn't load this application"
-            body="Check your connection and try again."
-            action={{ label: 'Retry', onClick: () => void refetch() }}
-          />
-        </Q3Card>
+        <ApplicationLoadError error={error} what="application" onRetry={() => void refetch()} />
       ) : (
         <Detail detail={data} />
       )}

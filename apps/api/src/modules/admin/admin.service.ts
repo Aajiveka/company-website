@@ -110,8 +110,15 @@ export function stageOf(statusId: number | null | undefined): PipelineStage {
  * Where the next move on an application is made, and by whom. Links into the workspace
  * pages Admin is already allowed into (router.tsx) — never an action the panel performs.
  */
-export function nextStepFor(statusId: number | null | undefined, mapId: number, jobId: number | null) {
+export function nextStepFor(statusId: number | null | undefined, mapId: number, jobId: number | null, inQ3 = true) {
   const stage = stageOf(statusId);
+  // Q3's pages only load applications Q2 referred (a tblCvReferral row). A company can take an
+  // applicant to interview, or select them, straight from its own applicant list; those reach
+  // the same statuses without a referral, and linking them into Q3 sent Admin to a 404.
+  if (!inQ3 && (stage === 'CompanyReview' || stage === 'Interview' || stage === 'Selection')) {
+    const what = stage === 'Interview' ? 'is interviewing' : stage === 'Selection' ? 'selected' : 'shortlisted';
+    return { owner: 'Employer', label: `The company ${what} this candidate directly — not referred through Q3`, to: null };
+  }
   switch (stage) {
     case 'Screening':
       return { owner: 'Q2', label: 'Match and refer in Q2', to: `/q2/applications/${mapId}` };
@@ -212,6 +219,8 @@ const APPLICATION_SELECT = {
       SecUser: { select: { userID: true } },
     },
   },
+  // Whether Q3 holds this application at all — see nextStepFor.
+  CvReferral: { select: { id: true }, take: 1 },
 } satisfies Prisma.JobSubscriberMappingSelect;
 
 function toApplicationRow(m: Prisma.JobSubscriberMappingGetPayload<{ select: typeof APPLICATION_SELECT }>) {
@@ -222,7 +231,7 @@ function toApplicationRow(m: Prisma.JobSubscriberMappingGetPayload<{ select: typ
     statusId: m.jobMapStatusID,
     status: m.jobMapStatus?.descr ?? (m.jobMapStatusID != null ? `Status ${m.jobMapStatusID}` : 'Unset'),
     stage: stageOf(m.jobMapStatusID),
-    nextStep: nextStepFor(m.jobMapStatusID, mapId, jobId),
+    nextStep: nextStepFor(m.jobMapStatusID, mapId, jobId, m.CvReferral.length > 0),
     appliedAt: (m.timestampIns ?? m.mapDate)?.toISOString() ?? null,
     updatedAt: m.timestampUpd?.toISOString() ?? null,
     candidate: {

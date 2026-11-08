@@ -43,6 +43,7 @@ import {
   type Tone,
 } from '../q3.format';
 import type { ContactChannel, Q3Round, Q3Slot, Recipients, Scheduling } from '../q3.types';
+import { ApplicationLoadError } from '../components/ApplicationLoadError';
 import { Crumbs, Q3Shell } from '../components/Q3Shell';
 import { QueueIndex, QueueSwitcher } from '../components/QueueSwitcher';
 import { RoundSetupModal } from '../components/RoundSetupModal';
@@ -85,7 +86,7 @@ export default function Q3SchedulingPage() {
 }
 
 function SchedulingScreen({ mapId }: { mapId: number }) {
-  const { data, isLoading, isError, refetch } = useQ3Scheduling(mapId);
+  const { data, isLoading, isError, error, refetch } = useQ3Scheduling(mapId);
 
   const subtitle = (
     // Block-level flex, like Crumbs, so the detail half ellipsizes on a phone instead of being clipped.
@@ -114,13 +115,7 @@ function SchedulingScreen({ mapId }: { mapId: number }) {
           </div>
         </div>
       ) : isError || !data ? (
-        <Q3Card>
-          <CardMessage
-            title="Couldn't load this candidate"
-            body="Check your connection and try again."
-            action={{ label: 'Retry', onClick: () => void refetch() }}
-          />
-        </Q3Card>
+        <ApplicationLoadError error={error} what="candidate" onRetry={() => void refetch()} />
       ) : (
         <SchedulingDetail key={mapId} data={data} />
       )}
