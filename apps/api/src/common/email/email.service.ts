@@ -107,6 +107,12 @@ export class EmailService {
  */
 function stripHtml(html: string): string {
   return html
+    // Keep each link's target. Dropping the tag alone turned the reset mail's "Reset Password"
+    // button into bare text, so a text-only client (and the log driver) got no usable link.
+    .replace(/<a\b[^>]*\bhref\s*=\s*(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi, (_m, _q, href: string, label: string) => {
+      const text = label.replace(/<[^>]+>/g, '').trim();
+      return !text || text === href ? href : `${text}: ${href}`;
+    })
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
     .replace(/<\/tr>/gi, '\n')

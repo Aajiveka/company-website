@@ -3,6 +3,12 @@ import { IsArray, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, M
 import { Transform, Type } from 'class-transformer';
 
 export class JobSearchQueryDto {
+  @ApiPropertyOptional({ description: 'Free-text keyword: matches the designation, company or a required skill (substring, any case)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  q?: string;
+
   @ApiPropertyOptional({ description: 'Designation / role (tblMstrDesignation.Descr)' })
   @IsOptional()
   @IsString()

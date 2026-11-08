@@ -4,6 +4,7 @@ import { AuditService } from '@/modules/audit/audit.service';
 import { EmailService } from '@/common/email/email.service';
 import { JobApplicationsService } from '@/modules/jobs/job-application.service';
 import { JobMapStatus, SubscriberStatus } from '@/shared/status';
+import { DEFAULT_HIRING_DOCUMENTS, DOCS_DUE_DAYS, RoundDecision, istDateAfter } from '@/shared/hiring';
 
 export type RoundDetails = {
   interviewerName?: string;
@@ -296,6 +297,63 @@ export class InterviewRoundService {
    * Record round result and advance pipeline.
    * next: Round2 | Round3 | Final | Select (when Passed).
    */
+  /**
+   * Writes the "selected" state Q3's workspace reads, exactly as Q3InterviewsService.decide
+   * does for its own Selected decision. Without it an employer "Hire" moved the status to
+   * SELECTED and nothing else: Q3 still showed the round awaiting a decision (and accepted a
+   * contradicting one), and the documents → offer → joined flow never opened, because it is
+   * keyed on ApplicationHiring.selectedAt.
+   */
+  private async recordSelection(
+    round: { id: bigint; conductedAt: Date | null; jobSubscriberMapID: bigint },
+    mapId: number,
+    userId: number,
+  ) {
+    const now = new Date();
+    await this.db.interviewRound.update({
+      where: { id: round.id },
+      data: {
+        decision: RoundDecision.SELECTED,
+        decidedAt: now,
+        isFinal: true,
+        conductedAt: round.conductedAt ?? now,
+        updatedAt: now,
+      },
+    });
+    await this.db.applicationHiring.upsert({
+      where: { jobSubscriberMapID: BigInt(mapId) },
+      create: { jobSubscriberMapID: BigInt(mapId), selectedAt: now, docsRequestedAt: now, docsDueAt: istDateAfter(now, DOCS_DUE_DAYS) },
+      update: { selectedAt: now, onHoldAt: null, docsRequestedAt: now, docsDueAt: istDateAfter(now, DOCS_DUE_DAYS), timestampUpd: now },
+    });
+    const mapping = await this.db.jobSubscriberMapping.findUnique({
+      where: { jobSubscriberMapID: BigInt(mapId) },
+      select: { subscriberID: true },
+    });
+    if (mapping?.subscriberID != null) {
+      const have = new Set(
+        (
+          await this.db.candidateDocumentMap.findMany({
+            where: { subscriberID: mapping.subscriberID },
+            select: { documentTypeID: true },
+          })
+        ).map((d) => d.documentTypeID),
+      );
+      const toCreate = DEFAULT_HIRING_DOCUMENTS.filter((id) => !have.has(id));
+      if (toCreate.length) {
+        await this.db.candidateDocumentMap.createMany({
+          data: toCreate.map((documentTypeID) => ({
+            subscriberID: mapping.subscriberID,
+            jobSubscriberMapID: BigInt(mapId),
+            documentTypeID,
+            flgStatus: 0,
+            timestampIns: now,
+            loginIDIns: userId,
+          })),
+        });
+      }
+    }
+  }
+
   async submitResult(
     roundId: number,
     result: 'Passed' | 'Failed' | 'Hold',
@@ -384,6 +442,7 @@ export class InterviewRoundService {
       const advance = next ?? (round.roundNumber >= 3 ? 'Select' : (`Round${round.roundNumber + 1}` as 'Round2' | 'Round3'));
 
       if (advance === 'Select') {
+        await this.recordSelection(round, mapId, userId);
         await this.applications.transitionStatus(
           mapId,
           JobMapStatus.SELECTED,

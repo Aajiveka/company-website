@@ -1,6 +1,7 @@
 import {
   Controller,
   Delete,
+  NotFoundException,
   Get,
   Param,
   Post,
@@ -66,8 +67,20 @@ export class FilesController {
     @Param('folder') folder: string,
     @Param('sub') sub: string,
     @Param('name') name: string,
+    @CurrentUser() user: RequestUser,
     @Res() res: Response,
   ) {
+    // This route takes a raw storage key, and keys leak: applicant document paths, Q2's CV
+    // path and upload responses all carry them. It used to serve any key to any signed-in
+    // user, so an employer could fetch any candidate's CV or identity documents. Now: the
+    // uploader (every key is `<folder>/<uploaderUserId>-<ts>-<rand>.<ext>`), or internal staff,
+    // who already have case-wide document access. Records shared with an employer or a
+    // candidate are served by their own ownership-checked routes. 404, not 403, so a probe
+    // cannot tell an existing key from a missing one.
+    const staff: number[] = [Role.QC1, Role.QC2, Role.Q3, Role.Admin];
+    if (!staff.includes(user.roleId) && !name.startsWith(`${user.userId}-`)) {
+      throw new NotFoundException('File not found');
+    }
     const body = await this.storage.read(`${folder}/${sub}/${name}`);
     // Never inline: a stored SVG or HTML would otherwise execute on our origin.
     res.setHeader('Content-Disposition', `attachment; filename="${name}"`);

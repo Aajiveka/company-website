@@ -56,6 +56,9 @@ const ORDER = [
   'tblMstrCily',
 ];
 
+/** Masters whose legacy label wins on an id clash (see seedMasterData). */
+const RESTORE_LABEL_ON_CONFLICT = new Set(['tblMstrWorkMode', 'tblMstrEmpType', 'tblMstrDesignation', 'tblMstrSkills']);
+
 function parsePsv(file: string): Record<string, string>[] {
   const lines = readFileSync(file, 'utf8').split('\n').filter((l) => l.trim());
   if (lines.length < 2) return [];
@@ -90,9 +93,18 @@ async function seedMasterData() {
       )
       .join(', ');
 
-    // ON CONFLICT DO NOTHING so the seed is safe to re-run.
+    // ON CONFLICT DO NOTHING so the seed is safe to re-run — except for the label masters the
+    // 20260810 migrations also insert into. On a fresh database those migrations run first and
+    // put "Hybrid", "Contract", "AI Engineer", … at ids 1, 2, 3; DO NOTHING then skipped the
+    // legacy rows at those ids ("Work From Home", "Full Time", …) and inserted the rest, so every
+    // dropdown showed duplicates and a filter on one copy missed jobs posted under the other.
+    // The legacy file holds every label the migrations add, so restoring its label is lossless,
+    // and on a database seeded before those migrations it is a no-op.
+    const onConflict = RESTORE_LABEL_ON_CONFLICT.has(table)
+      ? `ON CONFLICT ("${cols[0]}") DO UPDATE SET "Descr" = EXCLUDED."Descr"`
+      : 'ON CONFLICT DO NOTHING';
     await prisma.$executeRawUnsafe(
-      `INSERT INTO "${table}" (${quoted}) VALUES ${values} ON CONFLICT DO NOTHING`,
+      `INSERT INTO "${table}" (${quoted}) VALUES ${values} ${onConflict}`,
     );
     console.log(`  ${table.padEnd(28)} ${rows.length} rows`);
   }

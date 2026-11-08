@@ -22,7 +22,7 @@ export function PublicLayout({ contentClassName }: PublicLayoutProps = {}) {
       <CommandPalette />
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[1200] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-white focus:outline-none"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-1200 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-white focus:outline-none"
       >
         Skip to main content
       </a>
@@ -34,7 +34,10 @@ export function PublicLayout({ contentClassName }: PublicLayoutProps = {}) {
        * instead of each page guessing at a `pt-*`.
        */}
       {!heroBehindHeader && <div aria-hidden className="h-(--nav-h) shrink-0" />}
-      <main id="main-content" className={cn('flex-1', contentClassName)}>
+      {/* At least a viewport tall, so the footer starts below the fold. Pages are lazy-loaded:
+          with flex-1 alone the footer first painted at the bottom of the screen and was then
+          shoved down when the page arrived — Lighthouse measured CLS 0.5–0.8 from it alone. */}
+      <main id="main-content" className={cn('min-h-svh flex-1', contentClassName)}>
         <PageTransition transitionKey={location.pathname}>
           <Outlet />
         </PageTransition>

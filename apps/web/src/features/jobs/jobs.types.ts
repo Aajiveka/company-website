@@ -37,6 +37,8 @@ export interface JobDetail extends PublicJob {
 }
 
 export interface JobsQuery {
+  /** Free-text keyword: designation, company or skill (substring). */
+  q?: string;
   /** Role / designation -- the hero's first dropdown. */
   designation?: string;
   industry?: string;

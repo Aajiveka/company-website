@@ -62,9 +62,11 @@ test.describe('Job search — anonymous visitor', () => {
     await page.getByRole('searchbox', { name: /search jobs/i }).fill('react');
 
     await expect(page).toHaveURL(/[?&]q=react/);
-    // The field is debounced by 350ms, so the request trails the URL.
+    // The field is debounced by 350ms, so the request trails the URL. It is a keyword search
+    // (`q`: designation, company or skill) — sent as `designation` it had to equal a
+    // designation exactly, so "react" alone found nothing against the real API.
     await expect
-      .poll(() => searchQueries(log).some((q) => q.includes('designation=react')), { timeout: 5_000 })
+      .poll(() => searchQueries(log).some((q) => /[?&]q=react(&|$)/.test(q) && !q.includes('designation=')), { timeout: 5_000 })
       .toBe(true);
   });
 

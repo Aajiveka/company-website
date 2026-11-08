@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CandidatesService } from '@/modules/candidates/candidates.service';
 import { PaymentsService } from '@/modules/payments/payments.service';
-import { JOB_STATUS_ACTIVE } from '@/shared/status';
+import { JOB_STATUS_ACTIVE, JOB_STATUS_DRAFT } from '@/shared/status';
 import { JobApplicationsService, type JobApplicationDetails } from './job-application.service';
 import type { JobSearchQueryDto, FullTextSearchQueryDto, SuggestionsQueryDto } from './dto/jobs.dto';
 
@@ -46,6 +46,29 @@ export interface JobDetail extends PublicJob {
   teamSize: number | null;
   /** One entry per interview round, in order. Empty when the employer left it blank. */
   interviewRounds: string[];
+}
+
+/** Lower-case, letters and digits only: "Full-time" ≡ "Full Time" ≡ "fulltime". */
+const labelKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+/** UI filter value → every master label it should match. */
+const WORK_MODE_SYNONYMS: Record<string, string[]> = {
+  remote: ['Remote', 'Work From Home'],
+  workfromhome: ['Remote', 'Work From Home'],
+  inoffice: ['In-office', 'Work From Office'],
+  onsite: ['In-office', 'Work From Office'],
+  workfromoffice: ['In-office', 'Work From Office'],
+  hybrid: ['Hybrid'],
+};
+const EMPLOYMENT_TYPE_SYNONYMS: Record<string, string[]> = {
+  fulltime: ['Full Time'],
+  parttime: ['Part Time'],
+  contract: ['Contract'],
+  contractual: ['Contract'],
+  internship: ['Internship'],
+  intern: ['Internship'],
+};
+function expandLabels(values: string[], synonyms: Record<string, string[]>): string[] {
+  return [...new Set(values.flatMap((v) => synonyms[labelKey(v)] ?? [v.trim()]).filter(Boolean))];
 }
 
 @Injectable()
@@ -128,20 +151,37 @@ export class JobsService {
 
     const dateCutoff = this.postedWithinDate(q.postedWithin);
 
+    // Filter values arrive in the UI's spelling ("Full-time", "On-site"); the masters say
+    // "Full Time", and legacy jobs use "Work From Home" / "Work From Office" for what the filter
+    // calls Remote / In-office. Matching labels literally made the Full-time and Part-time boxes
+    // return nothing and hid every legacy-mode job from the work-mode filter.
+    const workModes = expandLabels([...(q.workModes ?? []), ...(q.workMode ? [q.workMode] : [])], WORK_MODE_SYNONYMS);
+    const employmentTypes = expandLabels(
+      [...(q.employmentTypes ?? []), ...(q.employmentType ? [q.employmentType] : [])],
+      EMPLOYMENT_TYPE_SYNONYMS,
+    );
+    const keyword = q.q?.trim();
+
     const where: Prisma.ClientJobsWhereInput = {
       statusID: JOB_STATUS_ACTIVE,
+      // The search box promises "job title, designation, keyword or company"; it used to be
+      // sent as an exact designation, so "python" or a company name found nothing.
+      ...(keyword
+        ? {
+            OR: [
+              { designation: { descr: { contains: keyword, mode: 'insensitive' as const } } },
+              { client: { clientName: { contains: keyword, mode: 'insensitive' as const } } },
+              { ClientJobSkill: { some: { skill: { descr: { contains: keyword, mode: 'insensitive' as const } } } } },
+            ],
+          }
+        : {}),
       ...(q.designation ? { designation: { descr: eq(q.designation) } } : {}),
       ...(q.industry ? { industryType: { industryType: eq(q.industry) } } : {}),
       // Single location (backward compat)
       ...(q.location ? { jobCity: { descr: eq(q.location) } } : {}),
-      // Single workMode (backward compat)
-      ...(q.workMode ? { workMode: { descr: eq(q.workMode) } } : {}),
-      // Single employmentType (backward compat)
-      ...(q.employmentType ? { employeeType: { descr: eq(q.employmentType) } } : {}),
-      // Multiple work modes
-      ...(q.workModes?.length ? { workMode: { descr: { in: q.workModes, mode: 'insensitive' } } } : {}),
-      // Multiple employment types
-      ...(q.employmentTypes?.length ? { employeeType: { descr: { in: q.employmentTypes, mode: 'insensitive' } } } : {}),
+      // Work modes / employment types: single and multi forms merged, synonyms expanded.
+      ...(workModes.length ? { workMode: { descr: { in: workModes, mode: 'insensitive' } } } : {}),
+      ...(employmentTypes.length ? { employeeType: { descr: { in: employmentTypes, mode: 'insensitive' } } } : {}),
       // Multiple locations (cities)
       ...(q.locations?.length ? { jobCity: { descr: { in: q.locations, mode: 'insensitive' } } } : {}),
       // Multiple states
@@ -518,7 +558,9 @@ export class JobsService {
         ClientJobs_EducationType: { include: { educationType: { select: { descr: true } } } },
       },
     });
-    if (!j) throw new NotFoundException('Job not found');
+    // A draft has never been published: it is the employer's work in progress (own route:
+    // /clients/me/jobs/:id). Closed/archived stay readable — applicants follow links to them.
+    if (!j || j.statusID === JOB_STATUS_DRAFT) throw new NotFoundException('Job not found');
     return {
       jobId: Number(j.jobID),
       designation: j.designation?.descr ?? '',

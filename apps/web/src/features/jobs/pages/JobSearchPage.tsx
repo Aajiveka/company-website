@@ -53,7 +53,8 @@ export default function JobSearchPage() {
   const isCandidate = isAuthenticated && user?.roleId === Role.Subscriber;
 
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [term, setTerm] = useState(params.get('q') ?? '');
+  // The home page's search bar links here with ?designation=; reading only ?q= dropped it.
+  const [term, setTerm] = useState(params.get('q') ?? params.get('designation') ?? '');
   const debouncedTerm = useDebounce(term, 350);
 
   const experience = params.getAll('exp');
@@ -96,7 +97,9 @@ export default function JobSearchPage() {
   const query = useMemo(
     () => ({
       pageSize: PAGE_SIZE,
-      designation: debouncedTerm || undefined,
+      // Keyword search (designation, company or skill). Sent as `designation` it had to equal a
+      // designation exactly, so "python" or a company name found nothing.
+      q: debouncedTerm || undefined,
       employmentTypes: jobTypesKey ? jobTypesKey.split('|') : undefined,
       workModes: workModesKey ? workModesKey.split('|') : undefined,
       locations: location ? [location] : undefined,
@@ -155,7 +158,7 @@ export default function JobSearchPage() {
 
       <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-start">
         {/* Filters */}
-        <div className="lg:w-[310px] lg:shrink-0">
+        <div className="lg:w-77.5 lg:shrink-0">
           <button
             type="button"
             onClick={() => setFiltersOpen((v) => !v)}

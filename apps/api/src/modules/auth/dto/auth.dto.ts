@@ -7,6 +7,7 @@ import {
   Matches,
   MaxLength,
   MinLength,
+  ValidateIf,
   registerDecorator,
   type ValidationArguments,
 } from 'class-validator';
@@ -170,12 +171,16 @@ export class RegisterEmployerDto {
   @MaxLength(200)
   companyName!: string;
 
-  @ApiProperty()
+  /** Becomes the employer's login (tblSecUser.UserName) and tblClientMstr.EmailID, both varchar(50). */
+  @ApiProperty({ maxLength: 50 })
   @IsEmail()
+  @MaxLength(50, { message: 'Company email must be 50 characters or fewer' })
   emailCompany!: string;
 
+  /** The form sends '' when the field is left empty — that is "not given", not a bad email. */
   @ApiPropertyOptional()
   @IsOptional()
+  @ValidateIf((o: { emailHR?: string }) => o.emailHR !== '')
   @IsEmail()
   emailHR?: string;
 

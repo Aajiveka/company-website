@@ -15,6 +15,15 @@ const ALLOWED: Record<string, string[]> = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
 };
 
+/** Leading bytes of each allowed type. DOCX is a ZIP container; DOC is an OLE2 compound file. */
+const SIGNATURES: Record<string, Buffer[]> = {
+  'application/pdf': [Buffer.from('%PDF-')],
+  'image/jpeg': [Buffer.from([0xff, 0xd8, 0xff])],
+  'image/png': [Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
+  'application/msword': [Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [Buffer.from([0x50, 0x4b, 0x03, 0x04])],
+};
+
 @Injectable()
 export class StorageService {
   constructor(
@@ -40,6 +49,12 @@ export class StorageService {
     // claiming to be a PDF.
     if (!allowedExts.includes(ext)) {
       throw new BadRequestException(`Extension ${ext || '(none)'} does not match ${file.mimetype}`);
+    }
+    // Both of the above are client-supplied labels. Check the bytes too: a text or HTML file
+    // renamed cv.pdf and sent as application/pdf used to be stored and served as a CV.
+    const sig = SIGNATURES[file.mimetype];
+    if (sig && !sig.some((s) => file.buffer.subarray(0, s.length).equals(s))) {
+      throw new BadRequestException(`The file's content is not a valid ${ext.slice(1).toUpperCase()}`);
     }
     return ext;
   }

@@ -8,6 +8,24 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
+/** Prisma known-request errors that mean "bad input", by error code. */
+const PRISMA_ERRORS: Record<string, { status: number; message: string; error: string }> = {
+  P2000: { status: HttpStatus.BAD_REQUEST, message: 'A value is too long for its field', error: 'Bad Request' },
+  P2002: { status: HttpStatus.CONFLICT, message: 'A record with these details already exists', error: 'Conflict' },
+  P2003: { status: HttpStatus.BAD_REQUEST, message: 'A referenced record does not exist', error: 'Bad Request' },
+  P2025: { status: HttpStatus.NOT_FOUND, message: 'Record not found', error: 'Not Found' },
+};
+
+/** Duck-typed so the filter does not depend on the generated client's runtime path. */
+function prismaClientError(e: unknown): e is { code: string } {
+  return (
+    typeof e === 'object' && e !== null &&
+    (e as { name?: string }).name === 'PrismaClientKnownRequestError' &&
+    typeof (e as { code?: unknown }).code === 'string' &&
+    (e as { code: string }).code in PRISMA_ERRORS
+  );
+}
+
 /**
  * Global exception filter that enforces a consistent error response shape
  * for every HTTP error the API returns.
@@ -65,6 +83,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = exception.message;
         error = exception.name;
       }
+    } else if (prismaClientError(exception)) {
+      // Constraint violations are the caller's input, not a server fault. They used to fall
+      // through to the 500 branch, so an unknown city id or an over-long field read as an outage.
+      const mapped = PRISMA_ERRORS[exception.code];
+      statusCode = mapped.status;
+      message = mapped.message;
+      error = mapped.error;
+      this.logger.warn(`${req.method} ${req.url} → ${statusCode} (Prisma ${exception.code})`);
     } else {
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'Internal server error';

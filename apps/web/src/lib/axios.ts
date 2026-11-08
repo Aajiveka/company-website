@@ -17,6 +17,10 @@ export const api = axios.create({
   baseURL: env.apiBaseUrl,
   headers: { 'Content-Type': 'application/json' },
   timeout: 30_000,
+  // Arrays as repeated keys (`workModes=Remote&workModes=Hybrid`). axios' default is
+  // `workModes[]=…`, a key the API's whitelisting validation rejects outright — so ticking any
+  // Job Type / Work Mode filter, or picking a location, turned the job search into a 400.
+  paramsSerializer: { indexes: null },
 });
 
 // ---------- helpers ----------

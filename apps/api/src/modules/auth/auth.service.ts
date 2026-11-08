@@ -601,10 +601,16 @@ export class AuthService {
    * ------------------------------------------------------------------ */
 
   async forgotPassword(userName: string) {
-    const user = await this.db.secUser.findFirst({
-      where: { userName, active: '1' },
-      select: { userID: true, nodeID: true, subscriberID: true },
-    });
+    // Same lookup as login: UserName (a candidate's is the mobile), then email. Login accepts
+    // an email, so people type their email here too — and got "a reset link has been sent"
+    // with nothing sent, because only the UserName was searched.
+    const identifier = userName.trim();
+    let user: { userID: bigint; nodeID: bigint | null; subscriberID: bigint | null } | null =
+      await this.db.secUser.findFirst({
+        where: { userName: identifier, active: '1' },
+        select: { userID: true, nodeID: true, subscriberID: true },
+      });
+    if (!user && identifier.includes('@')) user = await this.userByEmail(identifier);
 
     if (user) {
       const token = randomBytes(32).toString('hex');

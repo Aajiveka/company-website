@@ -1329,7 +1329,9 @@ export class CandidatesService {
             },
           },
           jobMapStatus: { select: { descr: true } },
-          JobSubscriberStatus: { orderBy: { mappedTimestamp: 'asc' } },
+          // Insertion order. MappedTimestamp is a legacy column no current writer fills, so
+          // ordering by it was arbitrary.
+          JobSubscriberStatus: { orderBy: { statusID: 'asc' } },
           JobInterviewStatus: {
             include: { interviewMode: { select: { descr: true } } },
             orderBy: { interviewScheduledOn: 'desc' },
@@ -1344,21 +1346,26 @@ export class CandidatesService {
     return rows.map((r) => {
       const descr = r.jobMapStatus?.descr ?? 'Mapped';
 
-      // Build the status history timeline.
-      // Always start with the initial "Applied" entry derived from mapDate.
+      // Build the status history timeline from the status log. Every write path logs the
+      // initial MAPPED row, so the synthetic "Applied" entry from mapDate is only a fallback
+      // for legacy applications that have no log — adding it unconditionally showed "Applied"
+      // twice. Timestamps come from TimestampIns, the column the writers actually fill;
+      // MappedTimestamp is never written, which left every step after the first undated.
       const statusHistory: Array<{ status: string; timestamp: string; comments: string | null }> = [];
 
-      statusHistory.push({
-        status: 'Applied',
-        timestamp: r.mapDate?.toISOString() ?? '',
-        comments: null,
-      });
+      if (!r.JobSubscriberStatus.some((sh) => sh.jobMapStatusID === 1)) {
+        statusHistory.push({
+          status: 'Applied',
+          timestamp: r.mapDate?.toISOString() ?? '',
+          comments: null,
+        });
+      }
 
       for (const sh of r.JobSubscriberStatus) {
         const name = sh.jobMapStatusID != null ? (statusName.get(sh.jobMapStatusID) ?? 'Unknown') : 'Unknown';
         statusHistory.push({
           status: name === 'Mapped' ? 'Applied' : name,
-          timestamp: sh.mappedTimestamp?.toISOString() ?? '',
+          timestamp: (sh.mappedTimestamp ?? sh.timestampIns)?.toISOString() ?? '',
           comments: sh.comments ?? null,
         });
       }
@@ -1604,13 +1611,16 @@ export class CandidatesService {
 
   /** Dashboard summary for the candidate. */
   async dashboard(subscriberId: number) {
-    const [appliedCount, savedCount, interviewMappings, cv, tags, education, employers] = await Promise.all([
+    const [appliedCount, savedCount, interviewMappings, cv, tags, education, employers, extra] = await Promise.all([
       this.db.jobSubscriberMapping.count({ where: { subscriberID: subscriberId } }),
       this.db.savedJob.count({ where: { subscriberID: subscriberId } }),
       this.db.jobSubscriberMapping.findMany({
         where: { subscriberID: subscriberId },
         select: {
           JobInterviewStatus: { select: { interviewStatusID: true }, take: 1 },
+          // The current interview model. Counting only the legacy table kept this at 0 for
+          // every interview Q3 or an employer has scheduled since the rounds workflow shipped.
+          InterviewRound: { where: { scheduledAt: { not: null } }, select: { id: true }, take: 1 },
         },
       }),
       this.db.subscriberCVDetails.findUnique({
@@ -1634,9 +1644,12 @@ export class CandidatesService {
       this.db.subscriberTags.count({ where: { subscriberID: subscriberId } }),
       this.db.subscriberEducation.count({ where: { subscriberID: subscriberId } }),
       this.db.subscriberEmployer.count({ where: { subscriberID: subscriberId } }),
+      this.db.subscriberProfileExtra.findUnique({ where: { subscriberID: subscriberId }, select: { keySkills: true } }),
     ]);
 
-    const interviewCount = interviewMappings.filter((m) => m.JobInterviewStatus.length > 0).length;
+    const interviewCount = interviewMappings.filter(
+      (m) => m.JobInterviewStatus.length > 0 || m.InterviewRound.length > 0,
+    ).length;
 
     // Profile completion: check key fields
     let filled = 0;
@@ -1651,7 +1664,10 @@ export class CandidatesService {
       if (cv.subFunctionID) filled++;
       if (cv.totalExp != null) filled++;
     }
-    if (tags > 0) filled++;
+    // Key skills live as text on the extras row; tblSubscriberTags only indexes the few that
+    // match a tblMstrTags name. Counting tags alone held every candidate who typed "React" or
+    // "Excel" at 90% forever. Same source order as the profile header (me()).
+    if (this.csvToList(extra?.keySkills ?? '').length > 0 || tags > 0) filled++;
     if (education > 0 || employers > 0) filled++;
 
     const profileCompletion = Math.round((filled / total) * 100);
@@ -1703,22 +1719,20 @@ export class CandidatesService {
 
   /** Upsert notification preferences. */
   async updateNotificationPrefs(subscriberId: number, dto: UpdateNotificationPrefsDto) {
+    // Every field the DTO accepts and the table stores. Only the four channel fields used to be
+    // written, so the eight per-topic toggles saved "successfully" and reverted on reload.
+    const FIELDS = [
+      'emailAlerts', 'pushAlerts', 'smsAlerts', 'jobAlertFrequency',
+      'newJobAlerts', 'weeklyJobDigest', 'profileViewAlerts', 'applicationStatusUpdates',
+      'recruiterMessages', 'interviewReminders', 'productUpdates', 'marketingOffers',
+    ] as const;
+    const given = Object.fromEntries(FIELDS.filter((k) => dto[k] !== undefined).map((k) => [k, dto[k]]));
     try {
       await this.db.notificationPreference.upsert({
         where: { subscriberID: subscriberId },
-        create: {
-          subscriberID: subscriberId,
-          emailAlerts: dto.emailAlerts ?? true,
-          pushAlerts: dto.pushAlerts ?? true,
-          smsAlerts: dto.smsAlerts ?? false,
-          jobAlertFrequency: dto.jobAlertFrequency ?? 'Daily',
-        },
-        update: {
-          ...(dto.emailAlerts !== undefined && { emailAlerts: dto.emailAlerts }),
-          ...(dto.pushAlerts !== undefined && { pushAlerts: dto.pushAlerts }),
-          ...(dto.smsAlerts !== undefined && { smsAlerts: dto.smsAlerts }),
-          ...(dto.jobAlertFrequency !== undefined && { jobAlertFrequency: dto.jobAlertFrequency }),
-        },
+        // Omitted fields take the column defaults, which match notificationPrefs()'s defaults.
+        create: { subscriberID: subscriberId, ...given },
+        update: given,
       });
     } catch {
       // Table may not exist yet — fail gracefully rather than crashing the API.
@@ -1786,50 +1800,78 @@ export class CandidatesService {
   }
 
   /** Recommended jobs based on candidate skills, city, and industry. */
+  /**
+   * Up to 20 active jobs, most relevant first.
+   *
+   * This used to be "any active job in your city OR your industry, newest first": the skills
+   * branch read tblSubscriberTags, which only holds the few names in tblMstrTags, so a Python
+   * developer in Pune was recommended every Pune job — sales, support, finance — and almost
+   * never a Python one. Jobs are now ranked on what the candidate actually told us: the role
+   * (designations held, function, preferred roles), the skills (Key Skills + IT skills),
+   * then preferred / current city and industry as tie-breakers.
+   */
   async recommendations(subscriberId: number) {
-    const [cv, tags] = await Promise.all([
+    const [cv, tags, extra, itSkills, employment, preferred] = await Promise.all([
       this.db.subscriberCVDetails.findUnique({
         where: { subscriberID: subscriberId },
-        select: { cityID: true, industryTypeID: true },
+        select: { cityID: true, currentCityID: true, industryTypeID: true, subFunction: { select: { descr: true } } },
       }),
       this.db.subscriberTags.findMany({
         where: { subscriberID: subscriberId },
         include: { tag: { select: { tagName: true } } },
       }),
+      this.db.subscriberProfileExtra.findUnique({
+        where: { subscriberID: subscriberId },
+        select: { keySkills: true, preferredJobRoles: true },
+      }),
+      this.db.subscriberITSkill.findMany({ where: { subscriberID: subscriberId }, select: { skillName: true } }),
+      this.db.subscriberEmployer.findMany({
+        where: { subscriberID: subscriberId },
+        select: { designationID: true, designation: { select: { descr: true } } },
+      }),
+      this.db.subscriberPrefferedLocations.findMany({ where: { subscriberID: subscriberId }, select: { cityID: true } }),
     ]);
 
-    // Build OR conditions: match by skills (tag names), city, or industry.
-    const orConditions: Record<string, unknown>[] = [];
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const skills = new Set(
+      [
+        ...this.csvToList(extra?.keySkills),
+        ...itSkills.map((s) => s.skillName),
+        ...tags.map((t) => t.tag?.tagName ?? ''),
+      ].map((s) => s.trim().toLowerCase()).filter(Boolean),
+    );
+    const roleNames = new Set(
+      [cv?.subFunction?.descr, ...employment.map((e) => e.designation?.descr), ...this.csvToList(extra?.preferredJobRoles)]
+        .filter((s): s is string => !!s?.trim())
+        .map(norm),
+    );
+    const designationIds = new Set(employment.map((e) => e.designationID).filter((id): id is number => id != null));
+    const cities = new Set([cv?.cityID, cv?.currentCityID, ...preferred.map((p) => p.cityID)].filter((id): id is number => id != null));
 
-    const tagNames = tags.map((t) => t.tag?.tagName).filter(Boolean);
-    if (tagNames.length) {
-      orConditions.push({
-        ClientJobSkill: {
-          some: { skill: { descr: { in: tagNames, mode: 'insensitive' } } },
-        },
-      });
-    }
-    if (cv?.cityID) {
-      orConditions.push({ jobCityID: cv.cityID });
-    }
-    if (cv?.industryTypeID) {
-      orConditions.push({ industryTypeID: cv.industryTypeID });
-    }
-
-    // If we have nothing to match on, return empty.
-    if (orConditions.length === 0) {
+    if (!skills.size && !roleNames.size && !designationIds.size && !cities.size && !cv?.industryTypeID) {
       return { rows: [], total: 0 };
     }
 
-    const where = {
-      statusID: JOB_STATUS_ACTIVE,
-      OR: orConditions,
-    };
+    // Candidate pool: anything that matches on at least one axis. Ranked below, in memory —
+    // the pool is bounded and a relevance order cannot be expressed as a single SQL sort key.
+    const designationMatches = roleNames.size
+      ? (await this.db.mstrDesignation.findMany({ select: { designationID: true, descr: true } }))
+          .filter((d) => d.descr && roleNames.has(norm(d.descr)))
+          .map((d) => d.designationID)
+      : [];
+    for (const id of designationMatches) designationIds.add(id);
 
-    const [rows, total] = await Promise.all([
+    const or: Prisma.ClientJobsWhereInput[] = [];
+    if (designationIds.size) or.push({ designationID: { in: [...designationIds] } });
+    if (skills.size) or.push({ ClientJobSkill: { some: { skill: { descr: { in: [...skills], mode: 'insensitive' } } } } });
+    if (cities.size) or.push({ jobCityID: { in: [...cities] } });
+    if (cv?.industryTypeID) or.push({ industryTypeID: cv.industryTypeID });
+
+    const where: Prisma.ClientJobsWhereInput = { statusID: JOB_STATUS_ACTIVE, OR: or };
+    const [pool, total] = await Promise.all([
       this.db.clientJobs.findMany({
         where,
-        take: 20,
+        take: 300,
         orderBy: { timestampIns: 'desc' },
         include: {
           client: { select: { clientName: true } },
@@ -1838,10 +1880,27 @@ export class CandidatesService {
           industryType: { select: { industryType: true } },
           employeeType: { select: { descr: true } },
           workMode: { select: { descr: true } },
+          ClientJobSkill: { select: { skill: { select: { descr: true } } } },
         },
       }),
       this.db.clientJobs.count({ where }),
     ]);
+
+    const scoreOf = (j: (typeof pool)[number]) => {
+      const required = j.ClientJobSkill.map((s) => s.skill?.descr?.toLowerCase() ?? '').filter(Boolean);
+      const overlap = required.filter((s) => skills.has(s)).length;
+      return (
+        (j.designationID != null && designationIds.has(j.designationID) ? 10 : 0) +
+        (required.length ? (overlap / required.length) * 6 : 0) +
+        (j.jobCityID != null && cities.has(j.jobCityID) ? 2 : 0) +
+        (cv?.industryTypeID && j.industryTypeID === cv.industryTypeID ? 1 : 0)
+      );
+    };
+    const rows = pool
+      .map((j) => ({ j, s: scoreOf(j) }))
+      .sort((a, b) => b.s - a.s || b.j.timestampIns.getTime() - a.j.timestampIns.getTime())
+      .slice(0, 20)
+      .map(({ j }) => j);
 
     return {
       rows: rows.map((j) => ({

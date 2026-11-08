@@ -213,6 +213,21 @@ function decodeInterviewProcess(raw: string | null | undefined): InterviewRoundD
     .filter((r) => r.process);
 }
 
+/**
+ * An applicant's skills as the employer should see them: the Key Skills the candidate typed
+ * (text on the extras row — the same source their own profile header uses), then the primary
+ * skill and any indexed tags. Reading only the tags left every applicant with no skills shown,
+ * because tblSubscriberTags can only hold the handful of names in tblMstrTags.
+ */
+function mergeSkills(keySkills: string | null | undefined, primary: string | undefined, tags: string[]): string[] {
+  const out = new Map<string, string>();
+  for (const s of [...(keySkills ?? '').split(','), primary ?? '', ...tags]) {
+    const t = s.trim();
+    if (t && !out.has(t.toLowerCase())) out.set(t.toLowerCase(), t);
+  }
+  return [...out.values()];
+}
+
 /** Normalize labels so "Full time" ≈ "Full Time", "In-office" ≈ "Work From Office", etc. */
 function normalizeMasterLabel(label: string): string {
   const s = label
@@ -430,6 +445,16 @@ export class EmployersService {
   /** Update owned company profile fields on tblClientMstr (+ HR contact row). */
   async updateProfile(userId: number, dto: UpdateCompanyProfileDto) {
     const clientId = await this.clientIdFor(userId);
+    // Both are foreign keys: an unknown id used to surface as a Prisma FK error, i.e. a 500.
+    if (dto.cityId !== undefined && !(await this.db.mstrCily.findUnique({ where: { cityID: dto.cityId }, select: { cityID: true } }))) {
+      throw new BadRequestException('Unknown city');
+    }
+    if (
+      dto.industryTypeId !== undefined &&
+      !(await this.db.mstrIndustryType.findUnique({ where: { industryTypeID: dto.industryTypeId }, select: { industryTypeID: true } }))
+    ) {
+      throw new BadRequestException('Unknown industry');
+    }
     await this.db.clientMstr.update({
       where: { clientID: clientId },
       data: {
@@ -676,8 +701,37 @@ export class EmployersService {
    * transaction — there is not a single BEGIN TRAN in the 97 procs — so a half-written job
    * was possible. This wraps the writes.
    */
+  /**
+   * Checks a job's ranges and master references before it is written. Without this a posting
+   * with minCtc > maxCtc (or minExp > maxExp) was saved and published as-is, and an unknown
+   * designation / city / mode id reached Postgres as a foreign-key violation — a 500.
+   * `j` is the job as it will be after the write (for an edit: stored values + the changes).
+   */
+  private async assertJobInput(j: {
+    designationId?: number | null; employmentTypeId?: number | null; workModeId?: number | null; cityId?: number | null;
+    industryTypeId?: number | null; minCtc?: number | null; maxCtc?: number | null; minExp?: number | null; maxExp?: number | null;
+  }) {
+    if (j.minCtc != null && j.maxCtc != null && j.minCtc > j.maxCtc) {
+      throw new BadRequestException('Minimum CTC cannot be more than maximum CTC');
+    }
+    if (j.minExp != null && j.maxExp != null && j.minExp > j.maxExp) {
+      throw new BadRequestException('Minimum experience cannot be more than maximum experience');
+    }
+    const checks: [number | null | undefined, () => Promise<unknown>, string][] = [
+      [j.designationId, () => this.db.mstrDesignation.findUnique({ where: { designationID: j.designationId! }, select: { designationID: true } }), 'designation'],
+      [j.employmentTypeId, () => this.db.mstrEmpType.findUnique({ where: { employeeTypeID: j.employmentTypeId! }, select: { employeeTypeID: true } }), 'employment type'],
+      [j.workModeId, () => this.db.mstrWorkMode.findUnique({ where: { workModeID: j.workModeId! }, select: { workModeID: true } }), 'work mode'],
+      [j.cityId, () => this.db.mstrCily.findUnique({ where: { cityID: j.cityId! }, select: { cityID: true } }), 'city'],
+      [j.industryTypeId, () => this.db.mstrIndustryType.findUnique({ where: { industryTypeID: j.industryTypeId! }, select: { industryTypeID: true } }), 'industry'],
+    ];
+    for (const [id, find, label] of checks) {
+      if (id != null && !(await find())) throw new BadRequestException(`Unknown ${label}`);
+    }
+  }
+
   async createJob(userId: number, dto: CreateJobDto, draft?: boolean) {
     const clientId = await this.clientIdFor(userId);
+    await this.assertJobInput(dto);
 
     return this.db.$transaction(async (tx) => {
       const job = await tx.clientJobs.create({
@@ -771,6 +825,7 @@ export class EmployersService {
             SubscriberTags: {
               include: { tag: { select: { tagName: true } } },
             },
+            SubscriberProfileExtra: { select: { keySkills: true } },
           },
         },
       },
@@ -784,7 +839,7 @@ export class EmployersService {
       const tagSkills = (r.subscriber?.SubscriberTags ?? [])
         .map((t) => t.tag?.tagName?.trim())
         .filter(Boolean) as string[];
-      const skills = [...new Set([...(primary ? [primary] : []), ...tagSkills])];
+      const skills = mergeSkills(r.subscriber?.SubscriberProfileExtra?.keySkills, primary, tagSkills);
       const noticeDays = cv?.noticePeriod ?? current?.noticePeriodDays ?? null;
       const latestRound = [...r.InterviewRound].sort((a, b) => b.roundNumber - a.roundNumber)[0];
       return {
@@ -939,7 +994,7 @@ export class EmployersService {
       .map((t) => t.tag?.tagName?.trim())
       .filter(Boolean) as string[];
     const primarySkill = cv?.skill?.descr?.trim();
-    const skills = [...new Set([...(primarySkill ? [primarySkill] : []), ...tagSkills])];
+    const skills = mergeSkills(extra?.keySkills, primarySkill, tagSkills);
     const hasResume = Boolean(uploaded?.latestCVPath?.trim() || cv?.cVPath?.trim());
     const genderRaw = cv?.gender?.trim() ?? '';
     const gender =
@@ -1135,6 +1190,17 @@ export class EmployersService {
   /** Edit an existing job posting. `draft`: true → Draft, false → Active, omit → leave status. */
   async updateJob(userId: number, jobId: number, dto: UpdateJobDto, draft?: boolean) {
     await this.ownedJob(userId, jobId);
+    const stored = await this.db.clientJobs.findUnique({
+      where: { jobID: jobId },
+      select: { minCTC: true, maxCTC: true, minExp: true, maxExp: true },
+    });
+    await this.assertJobInput({
+      ...dto,
+      minCtc: dto.minCtc ?? (stored?.minCTC != null ? Number(stored.minCTC) : null),
+      maxCtc: dto.maxCtc ?? (stored?.maxCTC != null ? Number(stored.maxCTC) : null),
+      minExp: dto.minExp !== undefined ? dto.minExp : stored?.minExp,
+      maxExp: dto.maxExp !== undefined ? dto.maxExp : stored?.maxExp,
+    });
 
     return this.db.$transaction(async (tx) => {
       await tx.clientJobs.update({

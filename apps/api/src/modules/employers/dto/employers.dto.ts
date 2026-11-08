@@ -540,50 +540,67 @@ export class ListApplicantsQueryDto {
   pageSize?: number = 10;
 }
 
+/**
+ * MaxLength values are the column widths (tblClientMstr, tblClientContacts): an over-long value
+ * used to reach Postgres and come back as a 500. Emails were plain strings, so "not-an-email"
+ * was saved as the company's address. '' still means "clear it" for the optional ones.
+ */
 export class UpdateCompanyProfileDto {
   @ApiPropertyOptional({ description: 'Company name (e.g. Maruti)' })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
   clientName?: string;
 
   @ApiPropertyOptional({ description: 'Company email' })
   @IsOptional()
-  @IsString()
+  @ValidateIf((o: { email?: string }) => o.email !== '')
+  @IsEmail({}, { message: 'Enter a valid company email' })
+  @MaxLength(50)
   email?: string;
 
   @ApiPropertyOptional({ description: 'Company contact number' })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   contactNo?: string;
 
   @ApiPropertyOptional({ description: 'HR contact email' })
   @IsOptional()
-  @IsString()
+  @ValidateIf((o: { hrEmail?: string }) => o.hrEmail !== '')
+  @IsEmail({}, { message: 'Enter a valid HR email' })
+  @MaxLength(100)
   hrEmail?: string;
 
   @ApiPropertyOptional({ description: 'HR contact number' })
   @IsOptional()
   @IsString()
+  @MaxLength(20)
   hrContactNo?: string;
 
   @ApiPropertyOptional({ description: 'HR contact person name' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   hrContactName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   website?: string;
 
   @ApiPropertyOptional({ description: 'Company location / address' })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   address?: string;
 
   @ApiPropertyOptional({ description: 'About company' })
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   description?: string;
 
   @ApiPropertyOptional()
@@ -596,9 +613,14 @@ export class UpdateCompanyProfileDto {
   @IsInt()
   industryTypeId?: number;
 
-  @ApiPropertyOptional({ description: 'Stored logo filename/path under uploads' })
+  /**
+   * Only '' (remove the logo) is accepted. A logo is set by uploading it (POST /clients/me/logo);
+   * a client-supplied value is a storage key that the public GET /clients/:id/logo streams, so
+   * accepting any string let a company publish any stored file — a candidate's CV included.
+   */
+  @ApiPropertyOptional({ description: "'' removes the logo; upload via POST /clients/me/logo to set one" })
   @IsOptional()
-  @IsString()
+  @IsIn([''], { message: 'Upload a logo with POST /clients/me/logo; companyLogo only accepts "" to remove it' })
   companyLogo?: string;
 }
 

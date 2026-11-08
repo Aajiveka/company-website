@@ -1343,7 +1343,10 @@ export class AdminService {
           clientAddress: reg.location ?? null,
           contactNo: reg.contactNumberCompany ?? null,
           emailID: reg.emailCompany,
-          companyLogo: reg.companyLogo ?? null,
+          // Not reg.companyLogo: that is free text from a public form, and this column is the
+          // storage key the public logo route streams — copying it let a registrant point the
+          // company logo at any stored file. The employer uploads a real logo after approval.
+          companyLogo: null,
           companyWebsite: reg.website ?? null,
           companyDescr: reg.aboutCompany ?? null,
           cityID: companyCityId!,

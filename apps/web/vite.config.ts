@@ -208,7 +208,10 @@ export default defineConfig(({ mode: _mode }) => ({
           'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
           'i18n-vendor': ['i18next', 'react-i18next', 'i18next-http-backend', 'i18next-browser-languagedetector'],
           'ui-vendor': ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          'pdf-vendor': ['html2canvas-pro', 'jspdf'],
+          // No 'pdf-vendor' entry: jspdf / html2canvas are only ever dynamically imported, but
+          // pinning them to a manual chunk also pinned a shared helper there, so the entry
+          // imported it and every page preloaded ~140 KB of PDF code. Left alone, Rollup puts
+          // them in lazy chunks loaded only when a PDF is exported.
           'state-vendor': ['zustand'],
         },
       },

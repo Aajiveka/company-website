@@ -751,7 +751,10 @@ export class Q2Service {
                 course: { select: { shortForm: true, degreeName: true } },
                 degree: { select: { descr: true } },
               },
-              orderBy: { subscriberEducationID: 'desc' },
+              // The highest qualification, approximated by the latest passing year. Ordering by
+              // id alone showed whichever row was typed last — "12th" for a graduate who
+              // added school after their degree.
+              orderBy: [{ passingYear: { sort: 'desc', nulls: 'last' } }, { subscriberEducationID: 'desc' }],
               take: 1,
             },
           },
@@ -782,10 +785,9 @@ export class Q2Service {
       this.ensureReview(mapId),
       this.ensureScore(mapId, userId),
       this.factsFor([subscriberId]),
-      this.db.subscriberITSkill.findMany({
-        where: { subscriberID: subscriberId },
-        select: { skillName: true },
-      }),
+      // Same source as the score itself — IT skills and Key Skills — or the panel would list
+      // as "missing" skills the score counted as matched.
+      this.scoring.candidateSkills(subscriberId),
     ]);
 
     // Opening an application starts the review clock, mirroring Q1's "opening a New candidate
@@ -816,7 +818,7 @@ export class Q2Service {
     const included = Q2Service.inclusions(review as unknown as Record<string, unknown>);
     const selectedCount = MATCH_CRITERIA.filter((c) => included[c.key]).length;
 
-    const candidateSkills = skills.map((s) => s.skillName.trim()).filter(Boolean);
+    const candidateSkills = skills;
     const requiredSkills = (mapping.job?.ClientJobSkill ?? [])
       .map((s) => s.skill?.descr ?? '')
       .filter(Boolean);
