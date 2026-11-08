@@ -160,9 +160,10 @@ check('admin lands on the admin dashboard', new URL(page.url()).pathname === '/a
 const stats = (await api('/admin/stats', { token: T })).data;
 await settle(page);
 const activeJobsCard = await page.getByRole('link', { name: /Active jobs/ }).innerText();
-check('dashboard "Active jobs" matches the database', activeJobsCard.includes(String(stats.jobs.byStatus.Active)), activeJobsCard.replace(/\s+/g, ' '));
+check('dashboard "Active jobs" matches the database', activeJobsCard.replace(/[,\s]/g, '').includes(String(stats.jobs.byStatus.Active)), activeJobsCard.replace(/\s+/g, ' '));
 const appsCard = await page.locator('main').getByRole('link', { name: /^Applications/ }).first().innerText();
-check('dashboard application total matches the database', appsCard.includes(String(stats.applications.total)), appsCard.replace(/\s+/g, ' '));
+// The card formats with thousands separators ("1,497"); compare digits only.
+check('dashboard application total matches the database', appsCard.replace(/[,\s]/g, '').includes(String(stats.applications.total)), appsCard.replace(/\s+/g, ' '));
 const dashProblems = w.take();
 check('dashboard loads with no console/API errors', !dashProblems.length, dashProblems.join(' | '));
 

@@ -26,3 +26,6 @@ e2e-*.png
 # Playwright test artifacts
 playwright-report/
 test-results/
+
+# QA suite run state (synthetic accounts, tokens)
+tests/qa/.state/
